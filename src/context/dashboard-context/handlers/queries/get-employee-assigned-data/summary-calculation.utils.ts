@@ -172,15 +172,13 @@ export async function calculatePrimaryDownwardEvaluationScore(
     const primaryAssignedWbsIds = primaryAssignedWbs.map((w) => w.wbs_item_id);
 
     // 할당된 WBS에 대한 완료된 평가 수 조회
+    // 주의: 1차 평가자가 여러 명일 수 있으므로, evaluatorId 조건 없이 모든 1차 평가를 확인
     let primaryCompletedCount = 0;
     if (primaryAssignedWbsIds.length > 0) {
       primaryCompletedCount = await downwardEvaluationRepository
         .createQueryBuilder('eval')
         .where('eval.periodId = :periodId', { periodId: evaluationPeriodId })
         .andWhere('eval.employeeId = :employeeId', { employeeId })
-        .andWhere('eval.evaluatorId = :evaluatorId', {
-          evaluatorId: primaryEvaluatorId,
-        })
         .andWhere('eval.wbsId IN (:...wbsIds)', {
           wbsIds: primaryAssignedWbsIds,
         })

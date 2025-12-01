@@ -108,7 +108,7 @@ async function 하향평가_상태를_조회한다(evaluationPeriodId, employeeI
         primaryEvaluators.push(...uniqueEvaluatorIds);
     }
     const primaryEvaluatorId = primaryEvaluators.length > 0 ? primaryEvaluators[0] : null;
-    const primaryStatus = await 평가자별_하향평가_상태를_조회한다(evaluationPeriodId, employeeId, downward_evaluation_types_1.DownwardEvaluationType.PRIMARY, primaryEvaluatorId, downwardEvaluationRepository, wbsAssignmentRepository);
+    const primaryStatus = await 평가자별_하향평가_상태를_조회한다(evaluationPeriodId, employeeId, downward_evaluation_types_1.DownwardEvaluationType.PRIMARY, null, downwardEvaluationRepository, wbsAssignmentRepository);
     let primaryEvaluatorInfo = null;
     if (primaryEvaluatorId && employeeRepository) {
         const evaluator = await employeeRepository

@@ -334,6 +334,9 @@ export class WbsSelfEvaluationService {
 
       let queryBuilder = repository.createQueryBuilder('evaluation');
 
+      // Soft Delete 필터 (삭제되지 않은 항목만 조회)
+      queryBuilder.andWhere('evaluation.deletedAt IS NULL');
+
       // 필터 적용
       if (filter.periodId) {
         queryBuilder.andWhere('evaluation.periodId = :periodId', {

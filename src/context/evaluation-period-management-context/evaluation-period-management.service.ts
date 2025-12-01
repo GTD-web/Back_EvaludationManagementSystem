@@ -631,4 +631,76 @@ export class EvaluationPeriodManagementContextService
 
     return result;
   }
+
+  /**
+   * 평가기간 설정을 복제한다
+   */
+  async 평가기간_복제한다(
+    targetPeriodId: string,
+    sourcePeriodId: string,
+    updatedBy: string,
+  ): Promise<EvaluationPeriodDto> {
+    this.logger.log(
+      `평가기간 복제 시작 - 소스: ${sourcePeriodId}, 타겟: ${targetPeriodId}`,
+    );
+
+    // 1. 소스 평가기간 조회
+    const sourcePeriod = await this.평가기간상세_조회한다(sourcePeriodId);
+    if (!sourcePeriod) {
+      throw new Error(`소스 평가기간을 찾을 수 없습니다. (id: ${sourcePeriodId})`);
+    }
+
+    // 2. 타겟 평가기간 조회
+    const targetPeriod = await this.평가기간상세_조회한다(targetPeriodId);
+    if (!targetPeriod) {
+      throw new Error(`타겟 평가기간을 찾을 수 없습니다. (id: ${targetPeriodId})`);
+    }
+
+    // 3. 타겟 평가기간에 소스 평가기간의 설정 복사 (기간 정보는 제외)
+    
+    // 3-1. 기본 정보 복사 (description, maxSelfEvaluationRate)
+    await this.평가기간기본정보_수정한다(
+      targetPeriodId,
+      {
+        name: targetPeriod.name, // 이름은 유지
+        description: sourcePeriod.description,
+        maxSelfEvaluationRate: sourcePeriod.maxSelfEvaluationRate,
+      },
+      updatedBy,
+    );
+
+    // 3-2. 등급 구간 복사
+    if (sourcePeriod.gradeRanges && sourcePeriod.gradeRanges.length > 0) {
+      await this.평가기간등급구간_수정한다(
+        targetPeriodId,
+        {
+          gradeRanges: sourcePeriod.gradeRanges.map((range) => ({
+            grade: range.grade,
+            minRange: range.minRange,
+            maxRange: range.maxRange,
+          })),
+        },
+        updatedBy,
+      );
+    }
+
+    // 3-3. 수동 허용 설정 복사
+    await this.전체수동허용설정_변경한다(
+      targetPeriodId,
+      {
+        criteriaSettingEnabled: sourcePeriod.criteriaSettingEnabled,
+        selfEvaluationSettingEnabled: sourcePeriod.selfEvaluationSettingEnabled,
+        finalEvaluationSettingEnabled: sourcePeriod.finalEvaluationSettingEnabled,
+      },
+      updatedBy,
+    );
+
+    this.logger.log(
+      `평가기간 복제 완료 - 소스: ${sourcePeriodId}, 타겟: ${targetPeriodId}`,
+    );
+
+    // 4. 업데이트된 타겟 평가기간 반환
+    const updatedPeriod = await this.평가기간상세_조회한다(targetPeriodId);
+    return updatedPeriod!;
+  }
 }

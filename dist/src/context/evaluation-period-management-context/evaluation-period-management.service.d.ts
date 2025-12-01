@@ -65,4 +65,5 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
     평가대상자를_자동평가자와_함께_등록한다(evaluationPeriodId: string, employeeId: string, createdBy: string): Promise<any>;
     단계_변경한다(periodId: string, targetPhase: EvaluationPeriodPhase, changedBy: string): Promise<EvaluationPeriodDto>;
     자동_단계_전이를_실행한다(): Promise<number>;
+    평가기간_복제한다(targetPeriodId: string, sourcePeriodId: string, updatedBy: string): Promise<EvaluationPeriodDto>;
 }

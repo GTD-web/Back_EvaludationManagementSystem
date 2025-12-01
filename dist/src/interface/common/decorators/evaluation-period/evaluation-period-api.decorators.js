@@ -20,6 +20,7 @@ exports.UpdateCriteriaSettingPermission = UpdateCriteriaSettingPermission;
 exports.UpdateSelfEvaluationSettingPermission = UpdateSelfEvaluationSettingPermission;
 exports.UpdateFinalEvaluationSettingPermission = UpdateFinalEvaluationSettingPermission;
 exports.UpdateManualSettingPermissions = UpdateManualSettingPermissions;
+exports.CopyEvaluationPeriod = CopyEvaluationPeriod;
 exports.ChangeEvaluationPeriodPhase = ChangeEvaluationPeriodPhase;
 exports.DeleteEvaluationPeriod = DeleteEvaluationPeriod;
 const common_1 = require("@nestjs/common");
@@ -666,6 +667,65 @@ function UpdateManualSettingPermissions() {
     }), (0, swagger_1.ApiResponse)({
         status: 200,
         description: '전체 수동 허용 설정이 성공적으로 변경되었습니다.',
+        type: evaluation_period_response_dto_1.EvaluationPeriodResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '잘못된 요청 데이터입니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: '평가 기간을 찾을 수 없습니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: 422,
+        description: '비즈니스 로직 오류로 처리할 수 없습니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: 500,
+        description: '서버 내부 오류',
+    }));
+}
+function CopyEvaluationPeriod() {
+    return (0, common_1.applyDecorators)((0, common_1.Patch)(':id/duplicate'), (0, swagger_1.ApiOperation)({
+        summary: '평가 기간 복제',
+        description: `소스 평가기간의 설정을 타겟 평가기간으로 복사합니다.
+
+**동작:**
+- 타겟 평가기간(URL의 :id)에 소스 평가기간(요청 본문의 sourceEvaluationPeriodId)의 설정을 복사
+- 기간(시작일, 마감일 등)은 유지하고 설정만 복사
+- 복사되는 항목: 설명, 자기평가 달성률 최대값, 등급 구간, 수동 허용 설정
+
+**복사되는 항목:**
+- description (평가기간 설명)
+- maxSelfEvaluationRate (자기평가 달성률 최대값)
+- gradeRanges (등급 구간 설정)
+- criteriaSettingEnabled (평가기준 설정 수동 허용)
+- selfEvaluationSettingEnabled (자기평가 설정 수동 허용)
+- finalEvaluationSettingEnabled (최종평가 설정 수동 허용)
+
+**유지되는 항목 (복사되지 않음):**
+- name (평가기간명)
+- startDate (시작일)
+- evaluationSetupDeadline (평가설정 마감일)
+- performanceDeadline (업무수행 마감일)
+- selfEvaluationDeadline (자기평가 마감일)
+- peerEvaluationDeadline (하향동료평가 마감일)
+- status (평가기간 상태)
+- currentPhase (현재 단계)
+
+**테스트 케이스:**
+- 기본 복제: 소스 평가기간의 설정이 타겟 평가기간에 정상 복사됨
+- 등급 구간 복제: 소스의 등급 구간 설정이 타겟에 정확히 복사됨
+- 수동 허용 설정 복제: 소스의 수동 허용 설정이 타겟에 정확히 복사됨
+- 기간 정보 유지: 타겟의 기간 정보(시작일, 마감일 등)는 변경되지 않음
+- 존재하지 않는 소스: 소스 평가기간 ID가 잘못된 경우 404 에러
+- 존재하지 않는 타겟: 타겟 평가기간 ID가 잘못된 경우 404 에러
+- 잘못된 UUID: UUID 형식이 잘못된 경우 400 에러`,
+    }), (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: '타겟 평가기간 ID (복사 대상)',
+        example: '123e4567-e89b-12d3-a456-426614174001',
+        schema: { type: 'string', format: 'uuid' },
+    }), (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '평가 기간 설정이 성공적으로 복사되었습니다.',
         type: evaluation_period_response_dto_1.EvaluationPeriodResponseDto,
     }), (0, swagger_1.ApiResponse)({
         status: 400,

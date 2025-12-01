@@ -1,4 +1,11 @@
-import { BadRequestException, Body, Controller, Query, Logger, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Query,
+  Logger,
+  Post,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { EvaluationPeriodManagementContextService } from '@context/evaluation-period-management-context/evaluation-period-management.service';
 import { EvaluationPeriodBusinessService } from '@business/evaluation-period/evaluation-period-business.service';
@@ -24,6 +31,7 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
 import {
   ChangeEvaluationPeriodPhase,
   CompleteEvaluationPeriod,
+  CopyEvaluationPeriod,
   CreateEvaluationPeriod,
   DeleteEvaluationPeriod,
   GetActiveEvaluationPeriods,
@@ -47,6 +55,7 @@ import {
 } from '@interface/common/decorators/evaluation-period/evaluation-period-api.decorators';
 import {
   ChangeEvaluationPeriodPhaseApiDto,
+  CopyEvaluationPeriodApiDto,
   CreateEvaluationPeriodApiDto,
   ManualPermissionSettingDto,
   PaginationQueryDto,
@@ -126,7 +135,9 @@ export class EvaluationPeriodManagementController {
         throw new BadRequestException('최대 범위는 0-1000 사이여야 합니다.');
       }
       if (range.minRange >= range.maxRange) {
-        throw new BadRequestException('최소 범위는 최대 범위보다 작아야 합니다.');
+        throw new BadRequestException(
+          '최소 범위는 최대 범위보다 작아야 합니다.',
+        );
       }
     }
 
@@ -510,6 +521,23 @@ export class EvaluationPeriodManagementController {
       periodId,
       contextDto,
       changedBy,
+    );
+  }
+
+  /**
+   * 평가 기간 설정을 복제합니다.
+   */
+  @CopyEvaluationPeriod()
+  async copyEvaluationPeriod(
+    @ParseId() periodId: string,
+    @Body() copyData: CopyEvaluationPeriodApiDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EvaluationPeriodDto> {
+    const updatedBy = user.id;
+    return await this.evaluationPeriodManagementService.평가기간_복제한다(
+      periodId,
+      copyData.sourceEvaluationPeriodId,
+      updatedBy,
     );
   }
 

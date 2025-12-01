@@ -454,6 +454,26 @@ export class EvaluationPeriodManagementApiClient {
     return response.body;
   }
 
+  /**
+   * 평가기간 복제 API 호출
+   *
+   * @param targetPeriodId - 복사 대상 평가기간 ID
+   * @param sourcePeriodId - 소스 평가기간 ID
+   * @returns 복제된 평가기간 정보
+   */
+  async duplicateEvaluationPeriod(
+    targetPeriodId: string,
+    sourcePeriodId: string,
+  ): Promise<any> {
+    const response = await this.testSuite
+      .request()
+      .patch(`/admin/evaluation-periods/${targetPeriodId}/duplicate`)
+      .send({ sourceEvaluationPeriodId: sourcePeriodId })
+      .expect(200);
+
+    return response.body;
+  }
+
   // ==================== DELETE: 삭제 ====================
 
   /**

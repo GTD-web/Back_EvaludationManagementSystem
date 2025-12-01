@@ -274,6 +274,19 @@ export class UpdateEvaluationPeriodStartDateApiDto {
 }
 
 /**
+ * 평가 기간 복제 API DTO
+ */
+export class CopyEvaluationPeriodApiDto {
+  @ApiProperty({
+    description: '복사할 소스 평가기간 ID (이 평가기간의 설정을 복사)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString({ message: '소스 평가기간 ID는 문자열이어야 합니다.' })
+  @IsNotEmpty({ message: '소스 평가기간 ID는 필수 입력 항목입니다.' })
+  sourceEvaluationPeriodId: string;
+}
+
+/**
  * 평가설정 단계 마감일 수정 API DTO
  */
 export class UpdateEvaluationSetupDeadlineApiDto {

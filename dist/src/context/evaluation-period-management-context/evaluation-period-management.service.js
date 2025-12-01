@@ -191,6 +191,39 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
         this.logger.log(`자동 단계 전이 컨텍스트 로직 완료 - 전이된 평가기간 수: ${result}`);
         return result;
     }
+    async 평가기간_복제한다(targetPeriodId, sourcePeriodId, updatedBy) {
+        this.logger.log(`평가기간 복제 시작 - 소스: ${sourcePeriodId}, 타겟: ${targetPeriodId}`);
+        const sourcePeriod = await this.평가기간상세_조회한다(sourcePeriodId);
+        if (!sourcePeriod) {
+            throw new Error(`소스 평가기간을 찾을 수 없습니다. (id: ${sourcePeriodId})`);
+        }
+        const targetPeriod = await this.평가기간상세_조회한다(targetPeriodId);
+        if (!targetPeriod) {
+            throw new Error(`타겟 평가기간을 찾을 수 없습니다. (id: ${targetPeriodId})`);
+        }
+        await this.평가기간기본정보_수정한다(targetPeriodId, {
+            name: targetPeriod.name,
+            description: sourcePeriod.description,
+            maxSelfEvaluationRate: sourcePeriod.maxSelfEvaluationRate,
+        }, updatedBy);
+        if (sourcePeriod.gradeRanges && sourcePeriod.gradeRanges.length > 0) {
+            await this.평가기간등급구간_수정한다(targetPeriodId, {
+                gradeRanges: sourcePeriod.gradeRanges.map((range) => ({
+                    grade: range.grade,
+                    minRange: range.minRange,
+                    maxRange: range.maxRange,
+                })),
+            }, updatedBy);
+        }
+        await this.전체수동허용설정_변경한다(targetPeriodId, {
+            criteriaSettingEnabled: sourcePeriod.criteriaSettingEnabled,
+            selfEvaluationSettingEnabled: sourcePeriod.selfEvaluationSettingEnabled,
+            finalEvaluationSettingEnabled: sourcePeriod.finalEvaluationSettingEnabled,
+        }, updatedBy);
+        this.logger.log(`평가기간 복제 완료 - 소스: ${sourcePeriodId}, 타겟: ${targetPeriodId}`);
+        const updatedPeriod = await this.평가기간상세_조회한다(targetPeriodId);
+        return updatedPeriod;
+    }
 };
 exports.EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService;
 exports.EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService_1 = __decorate([

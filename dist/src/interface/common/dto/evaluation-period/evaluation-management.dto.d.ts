@@ -40,6 +40,9 @@ export declare class UpdateEvaluationPeriodScheduleApiDto {
 export declare class UpdateEvaluationPeriodStartDateApiDto {
     startDate: string;
 }
+export declare class CopyEvaluationPeriodApiDto {
+    sourceEvaluationPeriodId: string;
+}
 export declare class UpdateEvaluationSetupDeadlineApiDto {
     evaluationSetupDeadline: string;
 }

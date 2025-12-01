@@ -200,6 +200,10 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
         };
         return await this.evaluationPeriodManagementService.전체수동허용설정_변경한다(periodId, contextDto, changedBy);
     }
+    async copyEvaluationPeriod(periodId, copyData, user) {
+        const updatedBy = user.id;
+        return await this.evaluationPeriodManagementService.평가기간_복제한다(periodId, copyData.sourceEvaluationPeriodId, updatedBy);
+    }
     async deleteEvaluationPeriod(periodId, user) {
         const deletedBy = user.id;
         const result = await this.evaluationPeriodManagementService.평가기간_삭제한다(periodId, deletedBy);
@@ -386,6 +390,15 @@ __decorate([
     __metadata("design:paramtypes", [String, evaluation_management_dto_1.UpdateManualSettingPermissionsApiDto, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluationPeriodManagementController.prototype, "updateManualSettingPermissions", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.CopyEvaluationPeriod)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseId)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, evaluation_management_dto_1.CopyEvaluationPeriodApiDto, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "copyEvaluationPeriod", null);
 __decorate([
     (0, evaluation_period_api_decorators_1.DeleteEvaluationPeriod)(),
     __param(0, (0, parse_uuid_decorator_1.ParseId)()),

@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ApiResponseDto = exports.ChangeEvaluationPeriodPhaseApiDto = exports.UpdateManualSettingPermissionsApiDto = exports.ManualPermissionSettingDto = exports.UpdateDefaultGradeRangesApiDto = exports.UpdateGradeRangesApiDto = exports.UpdatePeerEvaluationDeadlineApiDto = exports.UpdateSelfEvaluationDeadlineApiDto = exports.UpdatePerformanceDeadlineApiDto = exports.UpdateEvaluationSetupDeadlineApiDto = exports.UpdateEvaluationPeriodStartDateApiDto = exports.UpdateEvaluationPeriodScheduleApiDto = exports.UpdateEvaluationPeriodBasicApiDto = exports.CreateEvaluationPeriodApiDto = exports.CreateGradeRangeApiDto = exports.PaginationResponseDto = exports.PaginationQueryDto = void 0;
+exports.ApiResponseDto = exports.ChangeEvaluationPeriodPhaseApiDto = exports.UpdateManualSettingPermissionsApiDto = exports.ManualPermissionSettingDto = exports.UpdateDefaultGradeRangesApiDto = exports.UpdateGradeRangesApiDto = exports.UpdatePeerEvaluationDeadlineApiDto = exports.UpdateSelfEvaluationDeadlineApiDto = exports.UpdatePerformanceDeadlineApiDto = exports.UpdateEvaluationSetupDeadlineApiDto = exports.CopyEvaluationPeriodApiDto = exports.UpdateEvaluationPeriodStartDateApiDto = exports.UpdateEvaluationPeriodScheduleApiDto = exports.UpdateEvaluationPeriodBasicApiDto = exports.CreateEvaluationPeriodApiDto = exports.CreateGradeRangeApiDto = exports.PaginationResponseDto = exports.PaginationQueryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
@@ -308,6 +308,19 @@ __decorate([
     (0, date_transform_decorator_1.DateToUTC)(),
     __metadata("design:type", String)
 ], UpdateEvaluationPeriodStartDateApiDto.prototype, "startDate", void 0);
+class CopyEvaluationPeriodApiDto {
+    sourceEvaluationPeriodId;
+}
+exports.CopyEvaluationPeriodApiDto = CopyEvaluationPeriodApiDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '복사할 소스 평가기간 ID (이 평가기간의 설정을 복사)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    }),
+    (0, class_validator_1.IsString)({ message: '소스 평가기간 ID는 문자열이어야 합니다.' }),
+    (0, class_validator_1.IsNotEmpty)({ message: '소스 평가기간 ID는 필수 입력 항목입니다.' }),
+    __metadata("design:type", String)
+], CopyEvaluationPeriodApiDto.prototype, "sourceEvaluationPeriodId", void 0);
 class UpdateEvaluationSetupDeadlineApiDto {
     evaluationSetupDeadline;
 }

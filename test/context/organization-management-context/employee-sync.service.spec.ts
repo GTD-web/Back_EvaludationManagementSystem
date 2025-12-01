@@ -35,6 +35,9 @@ describe('EmployeeSyncService - SSO 직원 동기화 통합 테스트', () => {
   const testResults: any[] = [];
 
   beforeAll(async () => {
+    // 실제 SSO 서비스를 사용하도록 환경 변수 설정
+    process.env.SSO_USE_MOCK = 'false';
+
     module = await Test.createTestingModule({
       imports: [
         DatabaseModule,
@@ -64,7 +67,9 @@ describe('EmployeeSyncService - SSO 직원 동기화 통합 테스트', () => {
     try {
       await ssoService.초기화한다();
       await ssoService.부서계층구조를조회한다({});
-      console.log('✅ SSO 서비스 연결 확인 완료');
+      console.log('✅ 실제 SSO 서비스 연결 확인 완료');
+      console.log(`   - SSO_BASE_URL: ${process.env.SSO_BASE_URL}`);
+      console.log(`   - SSO_USE_MOCK: ${process.env.SSO_USE_MOCK}`);
     } catch (error) {
       console.warn(
         '⚠️ SSO 서비스 연결 실패 (테스트는 계속 진행):',
@@ -86,6 +91,9 @@ describe('EmployeeSyncService - SSO 직원 동기화 통합 테스트', () => {
 
     fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
     console.log(`✅ 테스트 결과가 저장되었습니다: ${outputPath}`);
+
+    // 환경 변수 정리
+    delete process.env.SSO_USE_MOCK;
 
     await dataSource.destroy();
     await module.close();

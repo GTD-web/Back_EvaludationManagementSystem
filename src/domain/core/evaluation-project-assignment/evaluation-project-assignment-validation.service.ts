@@ -293,18 +293,6 @@ export class EvaluationProjectAssignmentValidationService {
     // 평가기간 상태 검증 - 완료된 평가기간의 할당은 삭제할 수 없음
     // 실제 구현에서는 평가기간 서비스를 주입받아 상태 확인
     // 현재는 기본적인 검증만 수행
-
-    // 할당 후 일정 시간이 지난 경우 삭제 제한 (예: 24시간)
-    const now = new Date();
-    const assignedDate = new Date(assignment.assignedDate);
-    const hoursDiff =
-      (now.getTime() - assignedDate.getTime()) / (1000 * 60 * 60);
-
-    if (hoursDiff > 24) {
-      throw new EvaluationProjectAssignmentBusinessRuleViolationException(
-        '할당 후 24시간이 지난 할당은 삭제할 수 없습니다.',
-      );
-    }
   }
 
   /**

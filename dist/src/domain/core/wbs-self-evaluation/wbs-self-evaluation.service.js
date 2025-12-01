@@ -154,6 +154,7 @@ let WbsSelfEvaluationService = WbsSelfEvaluationService_1 = class WbsSelfEvaluat
         return this.executeSafeDomainOperation(async () => {
             const repository = this.transactionManager.getRepository(wbs_self_evaluation_entity_1.WbsSelfEvaluation, this.wbsSelfEvaluationRepository, manager);
             let queryBuilder = repository.createQueryBuilder('evaluation');
+            queryBuilder.andWhere('evaluation.deletedAt IS NULL');
             if (filter.periodId) {
                 queryBuilder.andWhere('evaluation.periodId = :periodId', {
                     periodId: filter.periodId,

@@ -228,6 +228,9 @@ export class EvaluationWbsAssignmentService
 
       const queryBuilder = repository.createQueryBuilder('assignment');
 
+      // Soft Delete 필터 (삭제되지 않은 항목만 조회)
+      queryBuilder.andWhere('assignment.deletedAt IS NULL');
+
       if (filter.periodId) {
         queryBuilder.andWhere('assignment.periodId = :periodId', {
           periodId: filter.periodId,

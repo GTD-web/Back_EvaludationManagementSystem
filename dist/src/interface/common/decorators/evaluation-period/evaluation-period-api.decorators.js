@@ -683,12 +683,12 @@ function UpdateManualSettingPermissions() {
     }));
 }
 function CopyEvaluationPeriod() {
-    return (0, common_1.applyDecorators)((0, common_1.Patch)(':id/duplicate'), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_1.Patch)(':targetId/duplicate/:sourceId'), (0, swagger_1.ApiOperation)({
         summary: '평가 기간 복제',
         description: `소스 평가기간의 설정을 타겟 평가기간으로 복사합니다.
 
 **동작:**
-- 타겟 평가기간(URL의 :id)에 소스 평가기간(요청 본문의 sourceEvaluationPeriodId)의 설정을 복사
+- 타겟 평가기간(URL의 :targetId)에 소스 평가기간(URL의 :sourceId)의 설정을 복사
 - 기간(시작일, 마감일 등)은 유지하고 설정만 복사
 - 복사되는 항목: 설명, 자기평가 달성률 최대값, 등급 구간, 수동 허용 설정
 
@@ -719,9 +719,14 @@ function CopyEvaluationPeriod() {
 - 존재하지 않는 타겟: 타겟 평가기간 ID가 잘못된 경우 404 에러
 - 잘못된 UUID: UUID 형식이 잘못된 경우 400 에러`,
     }), (0, swagger_1.ApiParam)({
-        name: 'id',
+        name: 'targetId',
         description: '타겟 평가기간 ID (복사 대상)',
         example: '123e4567-e89b-12d3-a456-426614174001',
+        schema: { type: 'string', format: 'uuid' },
+    }), (0, swagger_1.ApiParam)({
+        name: 'sourceId',
+        description: '소스 평가기간 ID (복사할 원본)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
         schema: { type: 'string', format: 'uuid' },
     }), (0, swagger_1.ApiResponse)({
         status: 200,

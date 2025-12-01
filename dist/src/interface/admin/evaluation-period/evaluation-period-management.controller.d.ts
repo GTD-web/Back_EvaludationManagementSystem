@@ -2,7 +2,7 @@ import { EvaluationPeriodManagementContextService } from '@context/evaluation-pe
 import { EvaluationPeriodBusinessService } from '@business/evaluation-period/evaluation-period-business.service';
 import type { EvaluationPeriodDto } from '../../../domain/core/evaluation-period/evaluation-period.types';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
-import { ChangeEvaluationPeriodPhaseApiDto, CopyEvaluationPeriodApiDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
+import { ChangeEvaluationPeriodPhaseApiDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
 export declare class EvaluationPeriodManagementController {
     private readonly evaluationPeriodBusinessService;
@@ -38,7 +38,7 @@ export declare class EvaluationPeriodManagementController {
     updateSelfEvaluationSettingPermission(periodId: string, permissionData: ManualPermissionSettingDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
     updateFinalEvaluationSettingPermission(periodId: string, permissionData: ManualPermissionSettingDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
     updateManualSettingPermissions(periodId: string, permissionData: UpdateManualSettingPermissionsApiDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
-    copyEvaluationPeriod(periodId: string, copyData: CopyEvaluationPeriodApiDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
+    copyEvaluationPeriod(targetPeriodId: string, sourcePeriodId: string, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
     deleteEvaluationPeriod(periodId: string, user: AuthenticatedUser): Promise<{
         success: boolean;
     }>;

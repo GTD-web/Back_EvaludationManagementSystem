@@ -25,7 +25,10 @@ import type {
   UpdateSelfEvaluationSettingPermissionDto,
 } from '@context/evaluation-period-management-context/interfaces/evaluation-period-creation.interface';
 import type { EvaluationPeriodDto } from '../../../domain/core/evaluation-period/evaluation-period.types';
-import { ParseId } from '@interface/common/decorators/parse-uuid.decorator';
+import {
+  ParseId,
+  ParseUUID,
+} from '@interface/common/decorators/parse-uuid.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -55,7 +58,6 @@ import {
 } from '@interface/common/decorators/evaluation-period/evaluation-period-api.decorators';
 import {
   ChangeEvaluationPeriodPhaseApiDto,
-  CopyEvaluationPeriodApiDto,
   CreateEvaluationPeriodApiDto,
   ManualPermissionSettingDto,
   PaginationQueryDto,
@@ -529,14 +531,14 @@ export class EvaluationPeriodManagementController {
    */
   @CopyEvaluationPeriod()
   async copyEvaluationPeriod(
-    @ParseId() periodId: string,
-    @Body() copyData: CopyEvaluationPeriodApiDto,
+    @ParseUUID('targetId') targetPeriodId: string,
+    @ParseUUID('sourceId') sourcePeriodId: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<EvaluationPeriodDto> {
     const updatedBy = user.id;
     return await this.evaluationPeriodManagementService.평가기간_복제한다(
-      periodId,
-      copyData.sourceEvaluationPeriodId,
+      targetPeriodId,
+      sourcePeriodId,
       updatedBy,
     );
   }

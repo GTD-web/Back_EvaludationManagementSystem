@@ -467,8 +467,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${targetPeriodId}/duplicate`)
-      .send({ sourceEvaluationPeriodId: sourcePeriodId })
+      .patch(
+        `/admin/evaluation-periods/${targetPeriodId}/duplicate/${sourcePeriodId}`,
+      )
       .expect(200);
 
     return response.body;

@@ -193,8 +193,9 @@ describe('평가기간 복제 E2E 테스트', () => {
 
       await testSuite
         .request()
-        .patch(`/admin/evaluation-periods/${targetPeriodId}/duplicate`)
-        .send({ sourceEvaluationPeriodId: fakeSourceId })
+        .patch(
+          `/admin/evaluation-periods/${targetPeriodId}/duplicate/${fakeSourceId}`,
+        )
         .expect(500); // 소스를 찾을 수 없어 에러 발생
 
       console.log('✅ 존재하지 않는 소스로 복제 시도 시 에러 반환');
@@ -216,8 +217,9 @@ describe('평가기간 복제 E2E 테스트', () => {
 
       await testSuite
         .request()
-        .patch(`/admin/evaluation-periods/${fakeTargetId}/duplicate`)
-        .send({ sourceEvaluationPeriodId: sourcePeriodId })
+        .patch(
+          `/admin/evaluation-periods/${fakeTargetId}/duplicate/${sourcePeriodId}`,
+        )
         .expect(500); // 타겟을 찾을 수 없어 에러 발생
 
       console.log('✅ 존재하지 않는 타겟으로 복제 시도 시 에러 반환');

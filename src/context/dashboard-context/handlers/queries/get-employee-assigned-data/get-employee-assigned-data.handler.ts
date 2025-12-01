@@ -158,6 +158,7 @@ export class GetEmployeeAssignedDataHandler
       this.downwardEvaluationRepository,
       this.evaluationLineMappingRepository,
       this.deliverableRepository,
+      this.employeeRepository,
     );
 
     // 7. 요약 정보 계산

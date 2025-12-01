@@ -2,7 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { EvaluationPeriod } from './evaluation-period.entity';
+
+// dayjs 플러그인 설정 (TypeScript 타입 인식을 위해 각 파일에서 extend 필요)
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { EvaluationPeriodService } from './evaluation-period.service';
 import {
   EvaluationPeriodPhase,

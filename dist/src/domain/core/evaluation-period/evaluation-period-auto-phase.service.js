@@ -21,7 +21,11 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const dayjs_1 = __importDefault(require("dayjs"));
+const utc_1 = __importDefault(require("dayjs/plugin/utc"));
+const timezone_1 = __importDefault(require("dayjs/plugin/timezone"));
 const evaluation_period_entity_1 = require("./evaluation-period.entity");
+dayjs_1.default.extend(utc_1.default);
+dayjs_1.default.extend(timezone_1.default);
 const evaluation_period_service_1 = require("./evaluation-period.service");
 const evaluation_period_types_1 = require("./evaluation-period.types");
 let EvaluationPeriodAutoPhaseService = EvaluationPeriodAutoPhaseService_1 = class EvaluationPeriodAutoPhaseService {

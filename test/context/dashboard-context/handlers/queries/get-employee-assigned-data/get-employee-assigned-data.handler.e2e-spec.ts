@@ -692,7 +692,11 @@ describe('GetEmployeeAssignedDataHandler', () => {
       const wbs = project.wbsList[0];
       expect(wbs.primaryDownwardEvaluation).toBeDefined();
       expect(wbs.primaryDownwardEvaluation!.isCompleted).toBe(true);
-      expect(wbs.primaryDownwardEvaluation!.evaluatorId).toBe(evaluatorId); // 첫 번째 평가자 정보가 표시됨
+      // 실제로 제출한 평가자의 정보가 표시되어야 함
+      expect(wbs.primaryDownwardEvaluation!.evaluatorId).toBe(
+        savedSecondEvaluator.id,
+      );
+      expect(wbs.primaryDownwardEvaluation!.evaluatorName).toBe('박평가자');
     });
 
     it('2차 평가자가 1차 평가를 제출해도 isCompleted와 isSubmitted가 true가 되어야 한다', async () => {
@@ -770,7 +774,15 @@ describe('GetEmployeeAssignedDataHandler', () => {
       const wbs = project.wbsList[0];
       expect(wbs.primaryDownwardEvaluation).toBeDefined();
       expect(wbs.primaryDownwardEvaluation!.isCompleted).toBe(true);
-      
+
+      // 실제로 제출한 평가자의 정보가 표시되어야 함
+      expect(wbs.primaryDownwardEvaluation!.evaluatorId).toBe(
+        savedSecondaryEvaluator.id,
+      );
+      expect(wbs.primaryDownwardEvaluation!.evaluatorName).toBe(
+        '최이차평가자',
+      );
+
       // 점수와 내용도 제대로 표시되어야 함
       expect(wbs.primaryDownwardEvaluation!.score).toBe(90);
       expect(wbs.primaryDownwardEvaluation!.evaluationContent).toBe(

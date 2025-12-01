@@ -113,7 +113,7 @@ let GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = class Ge
         if (mapping.isExcluded) {
             throw new evaluation_period_employee_mapping_exceptions_1.ExcludedEvaluationTargetAccessException(evaluationPeriodId, employeeId);
         }
-        const projects = await (0, project_wbs_utils_1.getProjectsWithWbs)(evaluationPeriodId, employeeId, mapping, this.projectAssignmentRepository, this.wbsAssignmentRepository, this.wbsItemRepository, this.criteriaRepository, this.selfEvaluationRepository, this.downwardEvaluationRepository, this.evaluationLineMappingRepository, this.deliverableRepository);
+        const projects = await (0, project_wbs_utils_1.getProjectsWithWbs)(evaluationPeriodId, employeeId, mapping, this.projectAssignmentRepository, this.wbsAssignmentRepository, this.wbsItemRepository, this.criteriaRepository, this.selfEvaluationRepository, this.downwardEvaluationRepository, this.evaluationLineMappingRepository, this.deliverableRepository, this.employeeRepository);
         let completedPerformances = 0;
         const totalWbs = projects.reduce((sum, project) => {
             project.wbsList.forEach((wbs) => {

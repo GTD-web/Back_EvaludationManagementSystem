@@ -115,12 +115,6 @@ let EvaluationProjectAssignmentValidationService = EvaluationProjectAssignmentVa
         await this.업데이트비즈니스규칙검증한다(id, updateData, existingAssignment, manager);
     }
     async 할당삭제비즈니스규칙검증한다(assignment) {
-        const now = new Date();
-        const assignedDate = new Date(assignment.assignedDate);
-        const hoursDiff = (now.getTime() - assignedDate.getTime()) / (1000 * 60 * 60);
-        if (hoursDiff > 24) {
-            throw new evaluation_project_assignment_exceptions_1.EvaluationProjectAssignmentBusinessRuleViolationException('할당 후 24시간이 지난 할당은 삭제할 수 없습니다.');
-        }
     }
     async 중복할당검증한다(periodId, employeeId, projectId, excludeId, manager) {
         const repository = this.transactionManager.getRepository(evaluation_project_assignment_entity_1.EvaluationProjectAssignment, this.evaluationProjectAssignmentRepository, manager);

@@ -38,6 +38,7 @@ const wbs_evaluation_criteria_entity_1 = require("../../domain/core/wbs-evaluati
 const wbs_item_module_1 = require("../../domain/common/wbs-item/wbs-item.module");
 const wbs_assignment_weight_calculation_service_1 = require("./services/wbs-assignment-weight-calculation.service");
 const wbs_assignment_validation_service_1 = require("./services/wbs-assignment-validation.service");
+const wbs_self_evaluation_module_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.module");
 let EvaluationCriteriaManagementContextModule = class EvaluationCriteriaManagementContextModule {
 };
 exports.EvaluationCriteriaManagementContextModule = EvaluationCriteriaManagementContextModule;
@@ -61,6 +62,7 @@ exports.EvaluationCriteriaManagementContextModule = EvaluationCriteriaManagement
             evaluation_line_module_1.EvaluationLineModule,
             evaluation_line_mapping_module_1.EvaluationLineMappingModule,
             wbs_evaluation_criteria_module_1.WbsEvaluationCriteriaModule,
+            wbs_self_evaluation_module_1.WbsSelfEvaluationModule,
             project_module_1.ProjectModule,
             employee_module_1.EmployeeModule,
             evaluation_period_module_1.EvaluationPeriodModule,

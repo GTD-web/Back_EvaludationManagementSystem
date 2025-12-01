@@ -577,23 +577,34 @@ export async function getProjectsWithWbs(
       };
       const deliverables = deliverablesMap.get(wbsItemId) || [];
 
-      // secondaryDownwardEvaluation의 evaluatorName이 비어있고, 프로젝트 PM이 있으면 PM 이름으로 채움
+      // 2차 평가자 설정: 매핑이 있으면 사용, 없으면 프로젝트 PM을 기본값으로 설정
       let secondaryEval = downwardEvalData.secondary;
-      if (
-        secondaryEval &&
-        !secondaryEval.evaluatorName &&
-        projectManager &&
-        secondaryEval.evaluatorId === projectManager.id
-      ) {
-        logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+      
+      if (secondaryEval) {
+        // 매핑이 있지만 evaluatorName이 비어있는 경우, PM 이름으로 채움
+        if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+          logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+            wbsId: wbsItemId,
+            evaluatorId: secondaryEval.evaluatorId,
+            pmId: projectManager.id,
+            pmName: projectManager.name,
+          });
+          secondaryEval = {
+            ...secondaryEval,
+            evaluatorName: projectManager.name,
+          };
+        }
+      } else if (projectManager) {
+        // 2차 평가자 매핑이 없으면 프로젝트 PM을 기본값으로 설정
+        logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
           wbsId: wbsItemId,
-          evaluatorId: secondaryEval.evaluatorId,
           pmId: projectManager.id,
           pmName: projectManager.name,
         });
         secondaryEval = {
-          ...secondaryEval,
+          evaluatorId: projectManager.id,
           evaluatorName: projectManager.name,
+          isCompleted: false,
         };
       }
 

@@ -32,7 +32,13 @@ let UserDashboardController = class UserDashboardController {
             ...project,
             wbsList: project.wbsList.map((wbs) => ({
                 ...wbs,
-                secondaryDownwardEvaluation: null,
+                secondaryDownwardEvaluation: wbs.secondaryDownwardEvaluation
+                    ? {
+                        evaluatorId: wbs.secondaryDownwardEvaluation.evaluatorId,
+                        evaluatorName: wbs.secondaryDownwardEvaluation.evaluatorName,
+                        isCompleted: wbs.secondaryDownwardEvaluation.isCompleted,
+                    }
+                    : null,
             })),
         }));
         const summaryWithoutSecondaryDownwardEvaluation = {
@@ -40,8 +46,8 @@ let UserDashboardController = class UserDashboardController {
             secondaryDownwardEvaluation: {
                 totalScore: null,
                 grade: null,
-                isSubmitted: false,
-                evaluators: [],
+                isSubmitted: data.summary.secondaryDownwardEvaluation?.isSubmitted || false,
+                evaluators: data.summary.secondaryDownwardEvaluation?.evaluators || [],
             },
         };
         return {

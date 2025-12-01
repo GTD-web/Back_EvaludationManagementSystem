@@ -412,19 +412,30 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             };
             const deliverables = deliverablesMap.get(wbsItemId) || [];
             let secondaryEval = downwardEvalData.secondary;
-            if (secondaryEval &&
-                !secondaryEval.evaluatorName &&
-                projectManager &&
-                secondaryEval.evaluatorId === projectManager.id) {
-                logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+            if (secondaryEval) {
+                if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+                    logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+                        wbsId: wbsItemId,
+                        evaluatorId: secondaryEval.evaluatorId,
+                        pmId: projectManager.id,
+                        pmName: projectManager.name,
+                    });
+                    secondaryEval = {
+                        ...secondaryEval,
+                        evaluatorName: projectManager.name,
+                    };
+                }
+            }
+            else if (projectManager) {
+                logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
                     wbsId: wbsItemId,
-                    evaluatorId: secondaryEval.evaluatorId,
                     pmId: projectManager.id,
                     pmName: projectManager.name,
                 });
                 secondaryEval = {
-                    ...secondaryEval,
+                    evaluatorId: projectManager.id,
                     evaluatorName: projectManager.name,
+                    isCompleted: false,
                 };
             }
             wbsList.push({

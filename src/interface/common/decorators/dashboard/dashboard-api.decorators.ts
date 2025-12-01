@@ -321,7 +321,7 @@ export function GetMyAssignedData() {
       summary: '나의 할당 정보 조회 (현재 로그인 사용자)',
       description: `현재 로그인한 사용자(피평가자)의 평가기간 내 할당된 모든 정보를 조회합니다.
 
-**중요: 피평가자는 상위 평가자의 하향평가 정보를 볼 수 없습니다.**
+**중요: 피평가자는 상위 평가자의 하향평가 내용(점수, 코멘트)을 볼 수 없지만, 평가자 정보는 확인할 수 있습니다.**
 
 **동작:**
 - JWT 토큰에서 현재 로그인한 사용자 정보 추출
@@ -332,15 +332,17 @@ export function GetMyAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
-  * **하향평가 정보는 제거됨 (primaryDownwardEvaluation, secondaryDownwardEvaluation = null)**
+  * **2차 하향평가 정보는 평가자 정보만 제공 (evaluatorId, evaluatorName, isCompleted)**
+  * **2차 하향평가 내용은 제거됨 (evaluationContent, score, submittedAt)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수)
   * **하향평가 점수/등급은 제거됨 (primaryDownwardEvaluation.totalScore/grade = null, secondaryDownwardEvaluation.totalScore/grade = null)**
+  * **2차 평가자 목록은 제공됨 (secondaryDownwardEvaluation.evaluators)**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
 
 **employees/:employeeId/assigned-data와의 차이점:**
 - JWT 토큰에서 자동으로 employeeId 추출 (URL 파라미터 불필요)
 - 피평가자가 자신의 정보만 조회 가능
-- 하향평가 정보가 모두 제거되어 반환됨 (보안)
+- 2차 하향평가의 평가 내용은 제거되지만 평가자 정보는 제공됨
 
 **테스트 케이스:**
 - 정상 조회: 유효한 JWT 토큰으로 자신의 할당 정보 조회 성공 (200)
@@ -349,8 +351,10 @@ export function GetMyAssignedData() {
 - 평가기준 포함: WBS별 평가기준이 올바르게 반환됨
 - 성과 포함: 등록된 성과 정보가 포함됨
 - 자기평가 포함: 등록된 자기평가 정보가 포함됨
-- **하향평가 제거: WBS별 primaryDownwardEvaluation, secondaryDownwardEvaluation이 모두 null**
+- **2차 평가자 정보 포함: WBS별 secondaryDownwardEvaluation에 evaluatorId, evaluatorName, isCompleted 포함**
+- **2차 평가 내용 제거: evaluationContent, score, submittedAt은 제거됨**
 - **하향평가 점수/등급 제거: summary의 primaryDownwardEvaluation, secondaryDownwardEvaluation의 totalScore, grade가 모두 null**
+- **2차 평가자 목록 포함: summary.secondaryDownwardEvaluation.evaluators 제공**
 - 요약 정보 정확성: summary 카운트가 실제 데이터와 일치
 - 할당 없음: 할당이 없는 경우 빈 배열 반환 (200)
 - 토큰 없음: Authorization 헤더 없이 요청 시 401 에러
@@ -369,11 +373,11 @@ export function GetMyAssignedData() {
       description: `나의 할당 정보 조회 성공
 
 **주의:** 응답 구조는 EmployeeAssignedDataResponseDto와 동일하지만, 
-피평가자 보호를 위해 다음 필드들은 항상 null로 반환됩니다:
-- wbs.primaryDownwardEvaluation: null
-- wbs.secondaryDownwardEvaluation: null
+피평가자 보호를 위해 다음 필드들은 제한됩니다:
+- wbs.primaryDownwardEvaluation: 전체 정보 제공
+- wbs.secondaryDownwardEvaluation: { evaluatorId, evaluatorName, isCompleted } 만 제공
 - summary.primaryDownwardEvaluation: { totalScore: null, grade: null }
-- summary.secondaryDownwardEvaluation: { totalScore: null, grade: null }`,
+- summary.secondaryDownwardEvaluation: { totalScore: null, grade: null, evaluators: [...] }`,
       type: EmployeeAssignedDataResponseDto,
     }),
     ApiNotFoundResponse({

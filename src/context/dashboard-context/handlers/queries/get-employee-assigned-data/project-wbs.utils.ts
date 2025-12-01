@@ -378,6 +378,7 @@ export async function getProjectsWithWbs(
       .getRawMany();
 
     // 하향평가 데이터를 primary/secondary로 분류
+    // 주의: 평가자 ID와 무관하게 해당 WBS의 평가가 완료되었는지 확인
     for (const row of downwardEvaluationRows) {
       const wbsId = row.downward_wbs_id;
       if (!wbsId) continue;
@@ -417,11 +418,8 @@ export async function getProjectsWithWbs(
             ? new Date(row.downward_completed_at)
             : undefined;
 
-      if (
-        row.downward_evaluation_type === 'primary' &&
-        primaryEvaluator &&
-        row.downward_evaluator_id === primaryEvaluator.evaluatorId
-      ) {
+      // 1차 평가: 평가자 ID와 무관하게 PRIMARY 타입 평가가 완료되었는지 확인
+      if (row.downward_evaluation_type === 'primary' && primaryEvaluator) {
         evalData.primary = {
           downwardEvaluationId: row.downward_id,
           evaluatorId: primaryEvaluator.evaluatorId,
@@ -431,10 +429,11 @@ export async function getProjectsWithWbs(
           isCompleted: row.downward_is_completed || false,
           submittedAt,
         };
-      } else if (
+      }
+      // 2차 평가: 평가자 ID와 무관하게 SECONDARY 타입 평가가 완료되었는지 확인
+      else if (
         row.downward_evaluation_type === 'secondary' &&
-        secondaryEvaluator &&
-        row.downward_evaluator_id === secondaryEvaluator.evaluatorId
+        secondaryEvaluator
       ) {
         evalData.secondary = {
           downwardEvaluationId: row.downward_id,

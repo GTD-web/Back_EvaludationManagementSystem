@@ -628,5 +628,154 @@ describe('GetEmployeeAssignedDataHandler', () => {
       expect(secondProjectResult).toBeDefined();
       expect(secondProjectResult!.wbsList.length).toBe(1);
     });
+
+    it('다른 1차 평가자가 제출해도 isCompleted와 isSubmitted가 true가 되어야 한다', async () => {
+      // Given
+      await 테스트데이터를_생성한다();
+
+      // 두 번째 1차 평가자 생성
+      const secondEvaluator = employeeRepository.create({
+        name: '박평가자',
+        employeeNumber: 'EMP003',
+        email: 'evaluator2@test.com',
+        externalId: 'EXT003',
+        departmentId: departmentId,
+        status: '재직중',
+        createdBy: systemAdminId,
+      });
+      const savedSecondEvaluator = await employeeRepository.save(secondEvaluator);
+
+      // 두 번째 1차 평가라인 매핑 추가 (첫 번째 평가자는 이미 생성됨)
+      // 이 상황은 평가자 교체 등으로 발생할 수 있음
+      const secondEvaluationLineMapping = evaluationLineMappingRepository.create({
+        evaluationPeriodId: evaluationPeriodId,
+        employeeId: employeeId,
+        evaluatorId: savedSecondEvaluator.id,
+        evaluationLineId: primaryEvaluationLineId,
+        wbsItemId: wbsItemId, // WBS별 매핑
+        createdBy: systemAdminId,
+      });
+      await evaluationLineMappingRepository.save(secondEvaluationLineMapping);
+
+      // 두 번째 평가자가 하향평가 제출
+      const downwardEvaluationRepository =
+        dataSource.getRepository(DownwardEvaluation);
+      const downwardEvaluation = downwardEvaluationRepository.create({
+        employeeId: employeeId,
+        evaluatorId: savedSecondEvaluator.id, // 두 번째 평가자
+        wbsId: wbsItemId,
+        periodId: evaluationPeriodId,
+        evaluationType: DownwardEvaluationType.PRIMARY,
+        evaluationDate: new Date(),
+        downwardEvaluationContent: '평가 내용',
+        downwardEvaluationScore: 85,
+        isCompleted: true, // 제출 완료
+        completedAt: new Date(),
+        createdBy: savedSecondEvaluator.id,
+      });
+      await downwardEvaluationRepository.save(downwardEvaluation);
+
+      const query = new GetEmployeeAssignedDataQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+
+      // When
+      const result = await handler.execute(query);
+
+      // Then
+      // summary의 isSubmitted가 true여야 함
+      expect(result.summary.primaryDownwardEvaluation.isSubmitted).toBe(true);
+
+      // WBS별 하향평가의 isCompleted가 true여야 함
+      const project = result.projects[0];
+      const wbs = project.wbsList[0];
+      expect(wbs.primaryDownwardEvaluation).toBeDefined();
+      expect(wbs.primaryDownwardEvaluation!.isCompleted).toBe(true);
+      expect(wbs.primaryDownwardEvaluation!.evaluatorId).toBe(evaluatorId); // 첫 번째 평가자 정보가 표시됨
+    });
+
+    it('2차 평가자가 1차 평가를 제출해도 isCompleted와 isSubmitted가 true가 되어야 한다', async () => {
+      // Given
+      await 테스트데이터를_생성한다();
+
+      // 2차 평가자 생성
+      const secondaryEvaluator = employeeRepository.create({
+        name: '최이차평가자',
+        employeeNumber: 'EMP004',
+        email: 'secondary@test.com',
+        externalId: 'EXT004',
+        departmentId: departmentId,
+        status: '재직중',
+        createdBy: systemAdminId,
+      });
+      const savedSecondaryEvaluator =
+        await employeeRepository.save(secondaryEvaluator);
+
+      // 2차 평가라인 생성
+      const secondaryLine = evaluationLineRepository.create({
+        evaluatorType: EvaluatorType.SECONDARY,
+        order: 2,
+        isRequired: true,
+        isAutoAssigned: false,
+        createdBy: systemAdminId,
+      });
+      const savedSecondaryLine =
+        await evaluationLineRepository.save(secondaryLine);
+
+      // 2차 평가라인 매핑
+      const secondaryEvaluationLineMapping =
+        evaluationLineMappingRepository.create({
+          evaluationPeriodId: evaluationPeriodId,
+          employeeId: employeeId,
+          evaluatorId: savedSecondaryEvaluator.id,
+          evaluationLineId: savedSecondaryLine.id,
+          wbsItemId: wbsItemId,
+          createdBy: systemAdminId,
+        });
+      await evaluationLineMappingRepository.save(secondaryEvaluationLineMapping);
+
+      // 2차 평가자가 1차 평가를 제출 (실제 시나리오에서 발생 가능)
+      const downwardEvaluationRepository =
+        dataSource.getRepository(DownwardEvaluation);
+      const downwardEvaluation = downwardEvaluationRepository.create({
+        employeeId: employeeId,
+        evaluatorId: savedSecondaryEvaluator.id, // 2차 평가자
+        wbsId: wbsItemId,
+        periodId: evaluationPeriodId,
+        evaluationType: DownwardEvaluationType.PRIMARY, // 1차 평가 타입
+        evaluationDate: new Date(),
+        downwardEvaluationContent: '2차 평가자가 작성한 1차 평가',
+        downwardEvaluationScore: 90,
+        isCompleted: true, // 제출 완료
+        completedAt: new Date(),
+        createdBy: savedSecondaryEvaluator.id,
+      });
+      await downwardEvaluationRepository.save(downwardEvaluation);
+
+      const query = new GetEmployeeAssignedDataQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+
+      // When
+      const result = await handler.execute(query);
+
+      // Then
+      // summary의 isSubmitted가 true여야 함 (2차 평가자가 제출했더라도)
+      expect(result.summary.primaryDownwardEvaluation.isSubmitted).toBe(true);
+
+      // WBS별 하향평가의 isCompleted가 true여야 함
+      const project = result.projects[0];
+      const wbs = project.wbsList[0];
+      expect(wbs.primaryDownwardEvaluation).toBeDefined();
+      expect(wbs.primaryDownwardEvaluation!.isCompleted).toBe(true);
+      
+      // 점수와 내용도 제대로 표시되어야 함
+      expect(wbs.primaryDownwardEvaluation!.score).toBe(90);
+      expect(wbs.primaryDownwardEvaluation!.evaluationContent).toBe(
+        '2차 평가자가 작성한 1차 평가',
+      );
+    });
   });
 });

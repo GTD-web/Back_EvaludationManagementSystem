@@ -282,11 +282,12 @@ export async function 하향평가_상태를_조회한다(
     primaryEvaluators.length > 0 ? primaryEvaluators[0] : null;
 
   // 3. PRIMARY 평가자의 하향평가 상태 조회
+  // 주의: 1차 평가자가 여러 명일 수 있으므로, evaluatorId를 null로 전달하여 모든 1차 평가를 확인
   const primaryStatus = await 평가자별_하향평가_상태를_조회한다(
     evaluationPeriodId,
     employeeId,
     DownwardEvaluationType.PRIMARY,
-    primaryEvaluatorId,
+    null, // 모든 1차 평가자의 평가를 확인하기 위해 null 전달
     downwardEvaluationRepository,
     wbsAssignmentRepository,
   );

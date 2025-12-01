@@ -90,9 +90,6 @@ async function calculatePrimaryDownwardEvaluationScore(evaluationPeriodId, emplo
                 .createQueryBuilder('eval')
                 .where('eval.periodId = :periodId', { periodId: evaluationPeriodId })
                 .andWhere('eval.employeeId = :employeeId', { employeeId })
-                .andWhere('eval.evaluatorId = :evaluatorId', {
-                evaluatorId: primaryEvaluatorId,
-            })
                 .andWhere('eval.wbsId IN (:...wbsIds)', {
                 wbsIds: primaryAssignedWbsIds,
             })

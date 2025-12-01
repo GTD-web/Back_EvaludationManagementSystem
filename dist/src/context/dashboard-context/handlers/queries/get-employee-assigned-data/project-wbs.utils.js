@@ -282,9 +282,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 : row.downward_completed_at
                     ? new Date(row.downward_completed_at)
                     : undefined;
-            if (row.downward_evaluation_type === 'primary' &&
-                primaryEvaluator &&
-                row.downward_evaluator_id === primaryEvaluator.evaluatorId) {
+            if (row.downward_evaluation_type === 'primary' && primaryEvaluator) {
                 evalData.primary = {
                     downwardEvaluationId: row.downward_id,
                     evaluatorId: primaryEvaluator.evaluatorId,
@@ -296,8 +294,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 };
             }
             else if (row.downward_evaluation_type === 'secondary' &&
-                secondaryEvaluator &&
-                row.downward_evaluator_id === secondaryEvaluator.evaluatorId) {
+                secondaryEvaluator) {
                 evalData.secondary = {
                     downwardEvaluationId: row.downward_id,
                     evaluatorId: secondaryEvaluator.evaluatorId,

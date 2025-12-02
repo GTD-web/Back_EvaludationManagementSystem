@@ -20,7 +20,7 @@ const evaluation_period_business_service_1 = require("../../../business/evaluati
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
-const default_grade_ranges_constant_1 = require("../../common/constants/default-grade-ranges.constant");
+const grade_ranges_store_1 = require("../../common/dto/evaluation-period/grade-ranges.store");
 let EvaluatorEvaluationPeriodManagementController = class EvaluatorEvaluationPeriodManagementController {
     evaluationPeriodBusinessService;
     evaluationPeriodManagementService;
@@ -29,7 +29,7 @@ let EvaluatorEvaluationPeriodManagementController = class EvaluatorEvaluationPer
         this.evaluationPeriodManagementService = evaluationPeriodManagementService;
     }
     async getDefaultGradeRanges() {
-        return (0, default_grade_ranges_constant_1.getDefaultGradeRanges)();
+        return (0, grade_ranges_store_1.getDefaultGradeRanges)();
     }
     async getActiveEvaluationPeriods() {
         return await this.evaluationPeriodManagementService.활성평가기간_조회한다();

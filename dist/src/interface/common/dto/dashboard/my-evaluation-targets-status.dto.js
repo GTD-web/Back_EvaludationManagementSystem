@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MyEvaluationTargetStatusResponseDto = exports.MyTargetSelfEvaluationDto = exports.PerformanceInputDto = exports.MyTargetEvaluationLineDto = exports.MyTargetWbsCriteriaDto = exports.MyTargetEvaluationCriteriaDto = exports.MyTargetExclusionInfoDto = exports.MyDownwardEvaluationStatusDto = exports.MyEvaluationStatusDetailDto = void 0;
+exports.MyEvaluationTargetStatusResponseDto = exports.MyTargetSelfEvaluationDto = exports.PerformanceInputDto = exports.SetupStatusDto = exports.MyTargetEvaluationLineDto = exports.MyTargetWbsCriteriaDto = exports.MyTargetEvaluationCriteriaDto = exports.MyTargetExclusionInfoDto = exports.MyDownwardEvaluationStatusDto = exports.MyEvaluationStatusDetailDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 class MyEvaluationStatusDetailDto {
@@ -209,6 +209,25 @@ __decorate([
     }),
     __metadata("design:type", Boolean)
 ], MyTargetEvaluationLineDto.prototype, "hasSecondaryEvaluator", void 0);
+class SetupStatusDto {
+    status;
+}
+exports.SetupStatusDto = SetupStatusDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria 상태 + 제출/승인 상태 통합)',
+        enum: [
+            'none',
+            'in_progress',
+            'pending',
+            'approved',
+            'revision_requested',
+            'revision_completed',
+        ],
+        example: 'approved',
+    }),
+    __metadata("design:type", String)
+], SetupStatusDto.prototype, "status", void 0);
 class PerformanceInputDto {
     status;
     totalWbsCount;
@@ -330,6 +349,7 @@ class MyEvaluationTargetStatusResponseDto {
     evaluationCriteria;
     wbsCriteria;
     evaluationLine;
+    setup;
     performanceInput;
     myEvaluatorTypes;
     selfEvaluation;
@@ -382,6 +402,14 @@ __decorate([
     (0, class_transformer_1.Type)(() => MyTargetEvaluationLineDto),
     __metadata("design:type", MyTargetEvaluationLineDto)
 ], MyEvaluationTargetStatusResponseDto.prototype, "evaluationLine", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria, evaluationLine 통합)',
+        type: () => SetupStatusDto,
+    }),
+    (0, class_transformer_1.Type)(() => SetupStatusDto),
+    __metadata("design:type", SetupStatusDto)
+], MyEvaluationTargetStatusResponseDto.prototype, "setup", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '성과 입력 정보',

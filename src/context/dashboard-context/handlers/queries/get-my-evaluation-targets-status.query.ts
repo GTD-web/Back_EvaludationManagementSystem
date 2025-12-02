@@ -32,6 +32,8 @@ import {
   평가라인_지정_여부를_확인한다,
   평가라인_상태를_계산한다,
 } from '../queries/get-employee-evaluation-period-status/evaluation-line.utils';
+import { 평가기준설정_상태를_계산한다 } from '../queries/get-employee-evaluation-period-status/evaluation-criteria.utils';
+import { EmployeeEvaluationStepApprovalService } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service';
 
 /**
  * 내가 담당하는 평가 대상자 현황 조회 쿼리
@@ -75,6 +77,7 @@ export class GetMyEvaluationTargetsStatusHandler
     private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
+    private readonly stepApprovalService: EmployeeEvaluationStepApprovalService,
   ) {}
 
   async execute(
@@ -278,6 +281,19 @@ export class GetMyEvaluationTargetsStatusHandler
               evaluatorTypes,
             );
 
+          // setup 상태 계산 (평가기준 설정 + 제출/승인 상태 통합)
+          // stepApproval 조회
+          const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(
+            mapping.id,
+          );
+
+          const setupStatus = 평가기준설정_상태를_계산한다(
+            evaluationCriteriaStatus,
+            wbsCriteriaStatus,
+            stepApproval?.criteriaSettingStatus ?? null,
+            mapping.isCriteriaSubmitted || false,
+          );
+
           results.push({
             employeeId,
             isEvaluationTarget: !mapping.isExcluded,
@@ -295,6 +311,9 @@ export class GetMyEvaluationTargetsStatusHandler
               status: evaluationLineStatus,
               hasPrimaryEvaluator,
               hasSecondaryEvaluator,
+            },
+            setup: {
+              status: setupStatus,
             },
             performanceInput: {
               status: performanceInputStatus,

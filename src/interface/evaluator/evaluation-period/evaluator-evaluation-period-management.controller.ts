@@ -59,7 +59,7 @@ import {
   UpdatePerformanceDeadlineApiDto,
   UpdateSelfEvaluationDeadlineApiDto,
 } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
-import { getDefaultGradeRanges } from '@interface/common/constants/default-grade-ranges.constant';
+import { getDefaultGradeRanges } from '@interface/common/dto/evaluation-period/grade-ranges.store';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
 
 /**

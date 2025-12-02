@@ -10,6 +10,7 @@ import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-period.entity';
 import { MyEvaluationTargetStatusDto } from '../../interfaces/dashboard-context.interface';
+import { EmployeeEvaluationStepApprovalService } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service';
 export declare class GetMyEvaluationTargetsStatusQuery {
     readonly evaluationPeriodId: string;
     readonly evaluatorId: string;
@@ -25,8 +26,9 @@ export declare class GetMyEvaluationTargetsStatusHandler implements IQueryHandle
     private readonly wbsCriteriaRepository;
     private readonly wbsSelfEvaluationRepository;
     private readonly evaluationPeriodRepository;
+    private readonly stepApprovalService;
     private readonly logger;
-    constructor(lineMappingRepository: Repository<EvaluationLineMapping>, lineRepository: Repository<EvaluationLine>, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, downwardEvaluationRepository: Repository<DownwardEvaluation>, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsCriteriaRepository: Repository<WbsEvaluationCriteria>, wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>, evaluationPeriodRepository: Repository<EvaluationPeriod>);
+    constructor(lineMappingRepository: Repository<EvaluationLineMapping>, lineRepository: Repository<EvaluationLine>, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, downwardEvaluationRepository: Repository<DownwardEvaluation>, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsCriteriaRepository: Repository<WbsEvaluationCriteria>, wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>, evaluationPeriodRepository: Repository<EvaluationPeriod>, stepApprovalService: EmployeeEvaluationStepApprovalService);
     execute(query: GetMyEvaluationTargetsStatusQuery): Promise<MyEvaluationTargetStatusDto[]>;
     private 내가_담당하는_하향평가_현황을_조회한다;
     private 성과입력_상태를_조회한다;

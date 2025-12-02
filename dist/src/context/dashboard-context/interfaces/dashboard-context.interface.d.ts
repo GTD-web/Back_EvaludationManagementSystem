@@ -209,6 +209,9 @@ export interface MyEvaluationTargetStatusDto {
         hasPrimaryEvaluator: boolean;
         hasSecondaryEvaluator: boolean;
     };
+    setup: {
+        status: 'none' | 'in_progress' | 'pending' | 'approved' | 'revision_requested' | 'revision_completed';
+    };
     performanceInput: {
         status: PerformanceInputStatus;
         totalWbsCount: number;

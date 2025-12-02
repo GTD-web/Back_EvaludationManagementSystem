@@ -574,6 +574,20 @@ export interface MyEvaluationTargetStatusDto {
   };
 
   /**
+   * 평가기준 설정 통합 상태
+   * (evaluationCriteria, wbsCriteria 상태 + 제출/승인 상태 통합)
+   */
+  setup: {
+    status:
+      | 'none'
+      | 'in_progress'
+      | 'pending'
+      | 'approved'
+      | 'revision_requested'
+      | 'revision_completed';
+  };
+
+  /**
    * 성과 입력 정보
    */
   performanceInput: {

@@ -92,6 +92,21 @@ let DownwardEvaluationService = DownwardEvaluationService_1 = class DownwardEval
             throw error;
         }
     }
+    async 완전_삭제한다(id) {
+        this.logger.log(`하향평가 완전 삭제 시작 - ID: ${id}`);
+        try {
+            const result = await this.downwardEvaluationRepository.delete(id);
+            if (result.affected === 0) {
+                this.logger.warn(`하향평가를 찾을 수 없음 - ID: ${id}`);
+                return;
+            }
+            this.logger.log(`하향평가 완전 삭제 완료 - ID: ${id}`);
+        }
+        catch (error) {
+            this.logger.error(`하향평가 완전 삭제 실패 - ID: ${id}`, error.stack);
+            throw error;
+        }
+    }
     async 조회한다(id) {
         this.logger.debug(`하향평가 조회 - ID: ${id}`);
         try {
@@ -104,10 +119,23 @@ let DownwardEvaluationService = DownwardEvaluationService_1 = class DownwardEval
             throw error;
         }
     }
+    async 활성_조회한다(id) {
+        this.logger.debug(`활성 하향평가 조회 - ID: ${id}`);
+        try {
+            return await this.downwardEvaluationRepository.findOne({
+                where: { id, deletedAt: null },
+            });
+        }
+        catch (error) {
+            this.logger.error(`활성 하향평가 조회 실패 - ID: ${id}`, error.stack);
+            throw error;
+        }
+    }
     async 필터_조회한다(filter) {
         this.logger.debug(`하향평가 필터 조회 - 필터: ${JSON.stringify(filter)}`);
         try {
             let queryBuilder = this.downwardEvaluationRepository.createQueryBuilder('evaluation');
+            queryBuilder.andWhere('evaluation.deletedAt IS NULL');
             if (filter.employeeId) {
                 queryBuilder.andWhere('evaluation.employeeId = :employeeId', {
                     employeeId: filter.employeeId,

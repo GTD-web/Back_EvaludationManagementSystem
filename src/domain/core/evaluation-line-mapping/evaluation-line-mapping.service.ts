@@ -233,6 +233,9 @@ export class EvaluationLineMappingService
 
       let queryBuilder = repository.createQueryBuilder('mapping');
 
+      // Soft delete 필터링 - 삭제되지 않은 데이터만 조회
+      queryBuilder.andWhere('mapping.deletedAt IS NULL');
+
       // 필터 적용
       if (filter.evaluationPeriodId) {
         queryBuilder.andWhere(

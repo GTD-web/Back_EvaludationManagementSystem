@@ -61,7 +61,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
 
       downwardEvaluationService = {
         필터_조회한다: jest.fn(),
-        삭제한다: jest.fn(),
+        완전_삭제한다: jest.fn(),
       } as any;
 
       const module: TestingModule = await Test.createTestingModule({
@@ -89,7 +89,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       evaluationLineMappingService.필터_조회한다.mockResolvedValue([mockExistingMapping]);
       evaluationLineMappingService.업데이트한다.mockResolvedValue(mockNewMapping);
       downwardEvaluationService.필터_조회한다.mockResolvedValue([mockDownwardEvaluation]);
-      downwardEvaluationService.삭제한다.mockResolvedValue(undefined);
+      downwardEvaluationService.완전_삭제한다.mockResolvedValue(undefined);
 
       // When
       await handler.execute(command);
@@ -103,10 +103,9 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
         evaluationType: DownwardEvaluationType.PRIMARY,
       });
 
-      // 하향평가 삭제가 호출되어야 함
-      expect(downwardEvaluationService.삭제한다).toHaveBeenCalledWith(
+      // 하향평가 완전 삭제가 호출되어야 함
+      expect(downwardEvaluationService.완전_삭제한다).toHaveBeenCalledWith(
         'downward-eval-id',
-        expect.any(String),
       );
     });
 
@@ -138,7 +137,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       // 하향평가 조회가 호출되지 않아야 함
       expect(downwardEvaluationService.필터_조회한다).not.toHaveBeenCalled();
       // 하향평가 삭제가 호출되지 않아야 함
-      expect(downwardEvaluationService.삭제한다).not.toHaveBeenCalled();
+      expect(downwardEvaluationService.완전_삭제한다).not.toHaveBeenCalled();
     });
 
     it('기존 매핑이 없는 경우 (신규 생성) 하향평가 삭제가 호출되지 않아야 한다', async () => {
@@ -161,7 +160,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       // 하향평가 조회가 호출되지 않아야 함
       expect(downwardEvaluationService.필터_조회한다).not.toHaveBeenCalled();
       // 하향평가 삭제가 호출되지 않아야 함
-      expect(downwardEvaluationService.삭제한다).not.toHaveBeenCalled();
+      expect(downwardEvaluationService.완전_삭제한다).not.toHaveBeenCalled();
     });
   });
 
@@ -216,7 +215,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
 
       downwardEvaluationService = {
         필터_조회한다: jest.fn(),
-        삭제한다: jest.fn(),
+        완전_삭제한다: jest.fn(),
       } as any;
 
       const module: TestingModule = await Test.createTestingModule({
@@ -246,7 +245,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       evaluationLineMappingService.삭제한다.mockResolvedValue(undefined);
       evaluationLineMappingService.생성한다.mockResolvedValue(mockNewMapping);
       downwardEvaluationService.필터_조회한다.mockResolvedValue([mockDownwardEvaluation]);
-      downwardEvaluationService.삭제한다.mockResolvedValue(undefined);
+      downwardEvaluationService.완전_삭제한다.mockResolvedValue(undefined);
 
       // When
       await handler.execute(command);
@@ -261,10 +260,9 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
         evaluationType: DownwardEvaluationType.SECONDARY,
       });
 
-      // 하향평가 삭제가 호출되어야 함
-      expect(downwardEvaluationService.삭제한다).toHaveBeenCalledWith(
+      // 하향평가 완전 삭제가 호출되어야 함
+      expect(downwardEvaluationService.완전_삭제한다).toHaveBeenCalledWith(
         'downward-eval-id',
-        expect.any(String),
       );
     });
 
@@ -298,7 +296,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       // 하향평가 조회가 호출되지 않아야 함
       expect(downwardEvaluationService.필터_조회한다).not.toHaveBeenCalled();
       // 하향평가 삭제가 호출되지 않아야 함
-      expect(downwardEvaluationService.삭제한다).not.toHaveBeenCalled();
+      expect(downwardEvaluationService.완전_삭제한다).not.toHaveBeenCalled();
     });
 
     it('기존 매핑이 없는 경우 (신규 생성) 하향평가 삭제가 호출되지 않아야 한다', async () => {
@@ -322,7 +320,7 @@ describe('평가자 구성 시 기존 하향평가 삭제', () => {
       // 하향평가 조회가 호출되지 않아야 함
       expect(downwardEvaluationService.필터_조회한다).not.toHaveBeenCalled();
       // 하향평가 삭제가 호출되지 않아야 함
-      expect(downwardEvaluationService.삭제한다).not.toHaveBeenCalled();
+      expect(downwardEvaluationService.완전_삭제한다).not.toHaveBeenCalled();
     });
   });
 });

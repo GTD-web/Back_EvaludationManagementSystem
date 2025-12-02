@@ -75,7 +75,7 @@ import {
 import {
   getDefaultGradeRanges,
   setDefaultGradeRanges,
-} from '@interface/common/constants/default-grade-ranges.constant';
+} from '@interface/common/dto/evaluation-period/grade-ranges.store';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
 
 /**

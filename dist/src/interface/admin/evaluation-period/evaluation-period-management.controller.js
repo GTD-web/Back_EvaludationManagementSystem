@@ -22,7 +22,7 @@ const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decor
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
-const default_grade_ranges_constant_1 = require("../../common/constants/default-grade-ranges.constant");
+const grade_ranges_store_1 = require("../../common/dto/evaluation-period/grade-ranges.store");
 let EvaluationPeriodManagementController = EvaluationPeriodManagementController_1 = class EvaluationPeriodManagementController {
     evaluationPeriodBusinessService;
     evaluationPeriodManagementService;
@@ -32,7 +32,7 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
         this.evaluationPeriodManagementService = evaluationPeriodManagementService;
     }
     async getDefaultGradeRanges() {
-        return (0, default_grade_ranges_constant_1.getDefaultGradeRanges)();
+        return (0, grade_ranges_store_1.getDefaultGradeRanges)();
     }
     async updateDefaultGradeRanges(updateData) {
         const gradeRanges = updateData.gradeRanges.map((range) => ({
@@ -64,8 +64,8 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
                 throw new common_1.BadRequestException('등급 구간이 겹칩니다.');
             }
         }
-        (0, default_grade_ranges_constant_1.setDefaultGradeRanges)(gradeRanges);
-        return (0, default_grade_ranges_constant_1.getDefaultGradeRanges)();
+        (0, grade_ranges_store_1.setDefaultGradeRanges)(gradeRanges);
+        return (0, grade_ranges_store_1.getDefaultGradeRanges)();
     }
     async getActiveEvaluationPeriods() {
         return await this.evaluationPeriodManagementService.활성평가기간_조회한다();

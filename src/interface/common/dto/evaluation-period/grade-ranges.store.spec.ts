@@ -1,7 +1,7 @@
 import {
   getDefaultGradeRanges,
   setDefaultGradeRanges,
-} from './default-grade-ranges.constant';
+} from './grade-ranges.store';
 
 describe('기본 등급 구간 상수 테스트', () => {
   const originalRanges = getDefaultGradeRanges();
@@ -161,7 +161,4 @@ describe('기본 등급 구간 상수 테스트', () => {
     });
   });
 });
-
-
-
 

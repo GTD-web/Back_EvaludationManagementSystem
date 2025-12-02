@@ -47,4 +47,4 @@ function setDefaultGradeRanges(ranges) {
     defaultGradeRanges = [...ranges];
 }
 exports.DEFAULT_GRADE_RANGES = getDefaultGradeRanges();
-//# sourceMappingURL=default-grade-ranges.constant.js.map
+//# sourceMappingURL=grade-ranges.store.js.map

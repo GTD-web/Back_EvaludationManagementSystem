@@ -43,6 +43,7 @@ import { WbsItemModule } from '@domain/common/wbs-item/wbs-item.module';
 import { WbsAssignmentWeightCalculationService } from './services/wbs-assignment-weight-calculation.service';
 import { WbsAssignmentValidationService } from './services/wbs-assignment-validation.service';
 import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.module';
+import { DownwardEvaluationModule } from '@domain/core/downward-evaluation/downward-evaluation.module';
 
 /**
  * 평가기준관리 컨텍스트 모듈 (MVP 버전)
@@ -80,6 +81,7 @@ import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-se
     EvaluationPeriodModule,
     EvaluationPeriodEmployeeMappingModule,
     WbsItemModule,
+    DownwardEvaluationModule,
   ],
   providers: [
     EvaluationCriteriaManagementService,

@@ -325,7 +325,6 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 : undefined;
             if (row.downward_evaluation_type === 'primary') {
                 evalData.primary = {
-                    downwardEvaluationId: row.downward_id,
                     evaluatorId: actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
                     evaluatorName: actualEvaluatorName ||
                         primaryEvaluator?.evaluatorName ||
@@ -338,7 +337,6 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             }
             else if (row.downward_evaluation_type === 'secondary') {
                 evalData.secondary = {
-                    downwardEvaluationId: row.downward_id,
                     evaluatorId: actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
                     evaluatorName: actualEvaluatorName ||
                         secondaryEvaluator?.evaluatorName ||

@@ -16,6 +16,8 @@ const common_1 = require("@nestjs/common");
 const evaluation_line_service_1 = require("../../../../../domain/core/evaluation-line/evaluation-line.service");
 const evaluation_line_mapping_service_1 = require("../../../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const evaluation_line_types_1 = require("../../../../../domain/core/evaluation-line/evaluation-line.types");
+const downward_evaluation_service_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.service");
+const downward_evaluation_types_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.types");
 class ConfigurePrimaryEvaluatorCommand {
     employeeId;
     periodId;
@@ -32,10 +34,12 @@ exports.ConfigurePrimaryEvaluatorCommand = ConfigurePrimaryEvaluatorCommand;
 let ConfigurePrimaryEvaluatorHandler = ConfigurePrimaryEvaluatorHandler_1 = class ConfigurePrimaryEvaluatorHandler {
     evaluationLineService;
     evaluationLineMappingService;
+    downwardEvaluationService;
     logger = new common_1.Logger(ConfigurePrimaryEvaluatorHandler_1.name);
-    constructor(evaluationLineService, evaluationLineMappingService) {
+    constructor(evaluationLineService, evaluationLineMappingService, downwardEvaluationService) {
         this.evaluationLineService = evaluationLineService;
         this.evaluationLineMappingService = evaluationLineMappingService;
+        this.downwardEvaluationService = downwardEvaluationService;
     }
     async execute(command) {
         const { employeeId, periodId, evaluatorId, createdBy } = command;
@@ -72,6 +76,22 @@ let ConfigurePrimaryEvaluatorHandler = ConfigurePrimaryEvaluatorHandler_1 = clas
             if (primaryMappings.length > 0) {
                 const existingMapping = primaryMappings[0];
                 const mappingId = existingMapping.DTO로_변환한다().id;
+                const previousEvaluatorId = existingMapping.evaluatorId;
+                if (previousEvaluatorId && previousEvaluatorId !== evaluatorId) {
+                    this.logger.log(`1차 평가자 변경 감지 - 기존 평가자: ${previousEvaluatorId}, 새 평가자: ${evaluatorId}`);
+                    const existingDownwardEvaluations = await this.downwardEvaluationService.필터_조회한다({
+                        employeeId,
+                        evaluatorId: previousEvaluatorId,
+                        periodId,
+                        evaluationType: downward_evaluation_types_1.DownwardEvaluationType.PRIMARY,
+                    });
+                    for (const downwardEval of existingDownwardEvaluations) {
+                        if (!downwardEval.deletedAt) {
+                            await this.downwardEvaluationService.삭제한다(downwardEval.id, createdBy || evaluatorId);
+                            this.logger.log(`기존 1차 평가자의 하향평가 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`);
+                        }
+                    }
+                }
                 mappingEntity = await this.evaluationLineMappingService.업데이트한다(mappingId, {
                     evaluatorId,
                     updatedBy: createdBy || evaluatorId,
@@ -117,6 +137,7 @@ exports.ConfigurePrimaryEvaluatorHandler = ConfigurePrimaryEvaluatorHandler;
 exports.ConfigurePrimaryEvaluatorHandler = ConfigurePrimaryEvaluatorHandler = ConfigurePrimaryEvaluatorHandler_1 = __decorate([
     (0, cqrs_1.CommandHandler)(ConfigurePrimaryEvaluatorCommand),
     __metadata("design:paramtypes", [evaluation_line_service_1.EvaluationLineService,
-        evaluation_line_mapping_service_1.EvaluationLineMappingService])
+        evaluation_line_mapping_service_1.EvaluationLineMappingService,
+        downward_evaluation_service_1.DownwardEvaluationService])
 ], ConfigurePrimaryEvaluatorHandler);
 //# sourceMappingURL=configure-primary-evaluator.handler.js.map

@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { EvaluationLineService } from '../../../../../domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '../../../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluatorType } from '../../../../../domain/core/evaluation-line/evaluation-line.types';
+import { DownwardEvaluationService } from '../../../../../domain/core/downward-evaluation/downward-evaluation.service';
+import { DownwardEvaluationType } from '../../../../../domain/core/downward-evaluation/downward-evaluation.types';
 
 /**
  * 2차 평가자 구성 커맨드
@@ -51,6 +53,7 @@ export class ConfigureSecondaryEvaluatorHandler
   constructor(
     private readonly evaluationLineService: EvaluationLineService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
+    private readonly downwardEvaluationService: DownwardEvaluationService,
   ) {}
 
   async execute(
@@ -101,6 +104,38 @@ export class ConfigureSecondaryEvaluatorHandler
       if (existingMappings.length > 0) {
         for (const existingMapping of existingMappings) {
           const mappingId = existingMapping.DTO로_변환한다().id;
+          const previousEvaluatorId = existingMapping.evaluatorId;
+
+          // 평가자가 변경되는 경우, 기존 평가자의 해당 WBS 하향평가 삭제
+          if (previousEvaluatorId && previousEvaluatorId !== evaluatorId) {
+            this.logger.log(
+              `2차 평가자 변경 감지 - WBS: ${wbsItemId}, 기존 평가자: ${previousEvaluatorId}, 새 평가자: ${evaluatorId}`,
+            );
+
+            // 기존 평가자가 작성한 해당 WBS의 SECONDARY 하향평가 조회
+            const existingDownwardEvaluations =
+              await this.downwardEvaluationService.필터_조회한다({
+                employeeId,
+                evaluatorId: previousEvaluatorId,
+                periodId,
+                wbsId: wbsItemId,
+                evaluationType: DownwardEvaluationType.SECONDARY,
+              });
+
+            // 기존 평가자의 하향평가 삭제
+            for (const downwardEval of existingDownwardEvaluations) {
+              if (!downwardEval.deletedAt) {
+                await this.downwardEvaluationService.삭제한다(
+                  downwardEval.id,
+                  createdBy || evaluatorId,
+                );
+                this.logger.log(
+                  `기존 2차 평가자의 하향평가 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`,
+                );
+              }
+            }
+          }
+
           await this.evaluationLineMappingService.삭제한다(
             mappingId,
             createdBy || evaluatorId,

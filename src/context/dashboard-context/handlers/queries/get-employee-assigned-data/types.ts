@@ -53,7 +53,6 @@ export interface WbsPerformance {
  * WBS 하향평가 정보
  */
 export interface WbsDownwardEvaluationInfo {
-  downwardEvaluationId?: string;
   evaluatorId?: string;
   evaluatorName?: string;
   evaluationContent?: string;

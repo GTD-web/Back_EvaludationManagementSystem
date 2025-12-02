@@ -51,7 +51,6 @@ export declare class DeliverableInfoDto implements DeliverableInfo {
     createdAt: Date;
 }
 export declare class WbsDownwardEvaluationDto implements WbsDownwardEvaluationInfo {
-    downwardEvaluationId?: string;
     evaluatorId?: string;
     evaluatorName?: string;
     evaluationContent?: string;

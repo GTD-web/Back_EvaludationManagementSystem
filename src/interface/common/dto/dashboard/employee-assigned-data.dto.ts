@@ -325,13 +325,6 @@ export class DeliverableInfoDto implements DeliverableInfo {
  */
 export class WbsDownwardEvaluationDto implements WbsDownwardEvaluationInfo {
   @ApiProperty({
-    description: '하향평가 ID',
-    example: '123e4567-e89b-12d3-a456-426614174014',
-    nullable: true,
-  })
-  downwardEvaluationId?: string;
-
-  @ApiProperty({
     description: '평가자 ID',
     example: '123e4567-e89b-12d3-a456-426614174002',
     nullable: true,

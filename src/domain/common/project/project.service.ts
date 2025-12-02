@@ -14,6 +14,8 @@ import {
   ProjectListOptions,
   ProjectStatus,
 } from './project.types';
+import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
+import { ProjectHasAssignmentsException } from './project.exceptions';
 
 /**
  * 프로젝트 도메인 서비스
@@ -25,6 +27,8 @@ export class ProjectService {
   constructor(
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @InjectRepository(EvaluationProjectAssignment)
+    private readonly evaluationProjectAssignmentRepository: Repository<EvaluationProjectAssignment>,
   ) {}
 
   /**
@@ -111,6 +115,7 @@ export class ProjectService {
    * 프로젝트를 삭제한다 (소프트 삭제)
    * @param id 프로젝트 ID
    * @param deletedBy 삭제자 ID
+   * @throws ProjectHasAssignmentsException 프로젝트에 할당이 존재하는 경우
    */
   async 삭제한다(id: string, deletedBy: string): Promise<void> {
     const project = await this.projectRepository.findOne({
@@ -121,6 +126,16 @@ export class ProjectService {
       throw new NotFoundException(
         `ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`,
       );
+    }
+
+    // 프로젝트에 할당이 있는지 확인 (삭제되지 않은 할당만 카운트)
+    const assignmentCount =
+      await this.evaluationProjectAssignmentRepository.count({
+        where: { projectId: id, deletedAt: IsNull() },
+      });
+
+    if (assignmentCount > 0) {
+      throw new ProjectHasAssignmentsException(id, assignmentCount);
     }
 
     project.삭제한다(deletedBy);

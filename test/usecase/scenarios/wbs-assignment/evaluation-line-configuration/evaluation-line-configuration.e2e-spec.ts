@@ -6,6 +6,8 @@ import { EvaluationTargetScenario } from '../../evaluation-target.scenario';
 import { ProjectAssignmentScenario } from '../../project-assignment/project-assignment.scenario';
 import { WbsAssignmentScenario } from '../wbs-assignment.scenario';
 import { EvaluationLineConfigurationScenario } from './evaluation-line-configuration.scenario';
+import { DownwardEvaluationApiClient } from '../../api-clients/downward-evaluation.api-client';
+import { DashboardApiClient } from '../../api-clients/dashboard.api-client';
 
 /**
  * 평가라인 변경 관리 시나리오 E2E 테스트
@@ -998,6 +1000,333 @@ describe('평가라인 변경 관리 시나리오', () => {
       expect(이차피평가자정보.downwardEvaluation.secondaryStatus).toBeDefined();
 
       console.log('✅ 평가자별 피평가자 현황 조회 검증 완료');
+    });
+  });
+
+  describe('평가자 변경 시 기존 하향평가 삭제 검증', () => {
+    let downwardEvaluationApiClient: DownwardEvaluationApiClient;
+    let dashboardApiClient: DashboardApiClient;
+
+    beforeAll(() => {
+      downwardEvaluationApiClient = new DownwardEvaluationApiClient(testSuite);
+      dashboardApiClient = new DashboardApiClient(testSuite);
+    });
+
+    it('1차 평가자 변경 시 기존 평가자의 하향평가가 삭제되어야 한다', async () => {
+      const 피평가자Id = employeeIds[0];
+      const 기존평가자Id = employeeIds[1];
+      const 새평가자Id = employeeIds[2];
+      const 프로젝트Id = projectIds[0];
+      const wbsItemId = wbsItemIds[0];
+
+      console.log('\n📍 1차 평가자 변경 시 하향평가 삭제 테스트 시작');
+
+      // 선행 조건: 프로젝트 및 WBS 할당
+      await projectAssignmentScenario.프로젝트를_할당한다({
+        employeeId: 피평가자Id,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      await wbsAssignmentScenario.WBS를_할당한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      // 1차 평가자 구성 (기존 평가자)
+      await evaluationLineConfigurationScenario.일차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        evaluatorId: 기존평가자Id,
+      });
+
+      // 기존 평가자가 하향평가 작성
+      const 하향평가결과 = await downwardEvaluationApiClient.upsertPrimary({
+        evaluateeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        wbsId: wbsItemId,
+        evaluatorId: 기존평가자Id,
+        downwardEvaluationContent: '기존 평가자의 하향평가 내용입니다.',
+        downwardEvaluationScore: 85,
+      });
+
+      expect(하향평가결과.id).toBeDefined();
+      console.log('📍 기존 평가자 하향평가 저장 완료:', 하향평가결과.id);
+
+      // 대시보드에서 하향평가 확인
+      const 변경전_할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      const 변경전_wbs = 변경전_할당정보.projects[0]?.wbsList?.find(
+        (wbs: any) => wbs.wbsId === wbsItemId,
+      );
+      expect(변경전_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(
+        기존평가자Id,
+      );
+      expect(변경전_wbs?.primaryDownwardEvaluation?.score).toBe(85);
+
+      console.log('📍 1차 평가자 변경 실행');
+
+      // 1차 평가자 변경 (새 평가자로)
+      await evaluationLineConfigurationScenario.일차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        evaluatorId: 새평가자Id,
+      });
+
+      // 대시보드에서 하향평가 삭제 확인
+      const 변경후_할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      const 변경후_wbs = 변경후_할당정보.projects[0]?.wbsList?.find(
+        (wbs: any) => wbs.wbsId === wbsItemId,
+      );
+
+      // 새 평가자로 변경되었고, 기존 하향평가는 삭제되었어야 함
+      expect(변경후_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(
+        새평가자Id,
+      );
+      expect(변경후_wbs?.primaryDownwardEvaluation?.isCompleted).toBe(false);
+      // 점수가 없거나 undefined 이어야 함 (삭제되었으므로)
+      expect(변경후_wbs?.primaryDownwardEvaluation?.score).toBeUndefined();
+
+      console.log('✅ 1차 평가자 변경 시 하향평가 삭제 검증 완료');
+    });
+
+    it('2차 평가자 변경 시 기존 평가자의 해당 WBS 하향평가가 삭제되어야 한다', async () => {
+      // 각 테스트마다 beforeEach에서 새로운 데이터가 생성되므로 동일 인덱스 사용 가능
+      const 피평가자Id = employeeIds[0];
+      const 기존평가자Id = employeeIds[1];
+      const 새평가자Id = employeeIds[2];
+      const 프로젝트Id = projectIds[0];
+      const wbsItemId = wbsItemIds[0];
+
+      console.log('\n📍 2차 평가자 변경 시 하향평가 삭제 테스트 시작');
+
+      // 선행 조건: 프로젝트 및 WBS 할당
+      await projectAssignmentScenario.프로젝트를_할당한다({
+        employeeId: 피평가자Id,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      await wbsAssignmentScenario.WBS를_할당한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      // 2차 평가자 구성 (기존 평가자)
+      await evaluationLineConfigurationScenario.이차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        periodId: evaluationPeriodId,
+        evaluatorId: 기존평가자Id,
+      });
+
+      // 기존 평가자가 2차 하향평가 작성
+      const 하향평가결과 = await downwardEvaluationApiClient.upsertSecondary({
+        evaluateeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        wbsId: wbsItemId,
+        evaluatorId: 기존평가자Id,
+        downwardEvaluationContent: '기존 2차 평가자의 하향평가 내용입니다.',
+        downwardEvaluationScore: 90,
+      });
+
+      expect(하향평가결과.id).toBeDefined();
+      console.log('📍 기존 2차 평가자 하향평가 저장 완료:', 하향평가결과.id);
+
+      // 대시보드에서 하향평가 확인
+      const 변경전_할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      const 변경전_wbs = 변경전_할당정보.projects[0]?.wbsList?.find(
+        (wbs: any) => wbs.wbsId === wbsItemId,
+      );
+      expect(변경전_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(
+        기존평가자Id,
+      );
+      expect(변경전_wbs?.secondaryDownwardEvaluation?.score).toBe(90);
+
+      console.log('📍 2차 평가자 변경 실행');
+
+      // 2차 평가자 변경 (새 평가자로)
+      await evaluationLineConfigurationScenario.이차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        periodId: evaluationPeriodId,
+        evaluatorId: 새평가자Id,
+      });
+
+      // 대시보드에서 하향평가 삭제 확인
+      const 변경후_할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      const 변경후_wbs = 변경후_할당정보.projects[0]?.wbsList?.find(
+        (wbs: any) => wbs.wbsId === wbsItemId,
+      );
+
+      // 새 평가자로 변경되었고, 기존 하향평가는 삭제되었어야 함
+      expect(변경후_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(
+        새평가자Id,
+      );
+      expect(변경후_wbs?.secondaryDownwardEvaluation?.isCompleted).toBe(false);
+      // 점수가 없거나 undefined 이어야 함 (삭제되었으므로)
+      expect(변경후_wbs?.secondaryDownwardEvaluation?.score).toBeUndefined();
+
+      console.log('✅ 2차 평가자 변경 시 하향평가 삭제 검증 완료');
+    });
+
+    it('동일한 평가자로 다시 구성 시 하향평가는 삭제되지 않아야 한다', async () => {
+      // 이 테스트는 성공한 1차/2차 평가자 변경 테스트와 동일한 인덱스 패턴을 사용
+      // 각 테스트마다 beforeEach에서 새로운 데이터가 생성되므로 충돌 없음
+      const 피평가자Id = employeeIds[0];
+      const 평가자Id = employeeIds[1];
+      const 프로젝트Id = projectIds[0];
+      const wbsItemId = wbsItemIds[0];
+
+      console.log('\n📍 동일 평가자 재구성 시 하향평가 유지 테스트 시작');
+
+      // 선행 조건: 프로젝트 및 WBS 할당
+      await projectAssignmentScenario.프로젝트를_할당한다({
+        employeeId: 피평가자Id,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      await wbsAssignmentScenario.WBS를_할당한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      // 1차 평가자 구성
+      await evaluationLineConfigurationScenario.일차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        evaluatorId: 평가자Id,
+      });
+
+      // 평가자가 하향평가 작성
+      const 하향평가결과 = await downwardEvaluationApiClient.upsertPrimary({
+        evaluateeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        wbsId: wbsItemId,
+        evaluatorId: 평가자Id,
+        downwardEvaluationContent: '평가자의 하향평가 내용입니다.',
+        downwardEvaluationScore: 88,
+      });
+
+      expect(하향평가결과.id).toBeDefined();
+      console.log('📍 하향평가 저장 완료:', 하향평가결과.id);
+
+      // 동일한 평가자로 다시 구성 (중복 구성 시도)
+      await evaluationLineConfigurationScenario.일차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        evaluatorId: 평가자Id, // 동일한 평가자
+      });
+
+      // 대시보드에서 하향평가 유지 확인
+      const 할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      const wbs = 할당정보.projects[0]?.wbsList?.find(
+        (w: any) => w.wbsId === wbsItemId,
+      );
+
+      // 동일 평가자이므로 하향평가가 유지되어야 함
+      expect(wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(평가자Id);
+      expect(wbs?.primaryDownwardEvaluation?.score).toBe(88);
+
+      console.log('✅ 동일 평가자 재구성 시 하향평가 유지 검증 완료');
+    });
+  });
+
+  describe('대시보드 응답에서 downwardEvaluationId 필드 제거 검증', () => {
+    let dashboardApiClient: DashboardApiClient;
+
+    beforeAll(() => {
+      dashboardApiClient = new DashboardApiClient(testSuite);
+    });
+
+    it('사용자 할당 정보 조회 응답에 downwardEvaluationId 필드가 없어야 한다', async () => {
+      const 피평가자Id = employeeIds[0];
+      const 평가자Id = employeeIds[1];
+      const 프로젝트Id = projectIds[0];
+      const wbsItemId = wbsItemIds[0];
+
+      console.log('\n📍 downwardEvaluationId 필드 제거 검증 시작');
+
+      // 선행 조건: 프로젝트 및 WBS 할당
+      await projectAssignmentScenario.프로젝트를_할당한다({
+        employeeId: 피평가자Id,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      await wbsAssignmentScenario.WBS를_할당한다({
+        employeeId: 피평가자Id,
+        wbsItemId: wbsItemId,
+        projectId: 프로젝트Id,
+        periodId: evaluationPeriodId,
+      });
+
+      // 평가자 구성
+      await evaluationLineConfigurationScenario.일차_평가자를_구성한다({
+        employeeId: 피평가자Id,
+        periodId: evaluationPeriodId,
+        evaluatorId: 평가자Id,
+      });
+
+      // 대시보드 조회
+      const 할당정보 = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: evaluationPeriodId,
+        employeeId: 피평가자Id,
+      });
+
+      // WBS의 하향평가 정보에서 downwardEvaluationId 필드가 없는지 확인
+      for (const project of 할당정보.projects) {
+        for (const wbs of project.wbsList) {
+          if (wbs.primaryDownwardEvaluation) {
+            expect(wbs.primaryDownwardEvaluation).not.toHaveProperty(
+              'downwardEvaluationId',
+            );
+            // 다른 필수 필드들은 있어야 함
+            expect(wbs.primaryDownwardEvaluation).toHaveProperty('evaluatorId');
+            expect(wbs.primaryDownwardEvaluation).toHaveProperty('isCompleted');
+          }
+          if (wbs.secondaryDownwardEvaluation) {
+            expect(wbs.secondaryDownwardEvaluation).not.toHaveProperty(
+              'downwardEvaluationId',
+            );
+            // 다른 필수 필드들은 있어야 함
+            expect(wbs.secondaryDownwardEvaluation).toHaveProperty(
+              'evaluatorId',
+            );
+            expect(wbs.secondaryDownwardEvaluation).toHaveProperty(
+              'isCompleted',
+            );
+          }
+        }
+      }
+
+      console.log('✅ downwardEvaluationId 필드 제거 검증 완료');
     });
   });
 

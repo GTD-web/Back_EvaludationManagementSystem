@@ -475,7 +475,6 @@ export async function getProjectsWithWbs(
       // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
       if (row.downward_evaluation_type === 'primary') {
         evalData.primary = {
-          downwardEvaluationId: row.downward_id,
           evaluatorId:
             actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
           evaluatorName:
@@ -492,7 +491,6 @@ export async function getProjectsWithWbs(
       // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
       else if (row.downward_evaluation_type === 'secondary') {
         evalData.secondary = {
-          downwardEvaluationId: row.downward_id,
           evaluatorId:
             actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
           evaluatorName:

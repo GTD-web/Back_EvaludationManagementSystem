@@ -1064,7 +1064,9 @@ describe('평가라인 변경 관리 시나리오', () => {
       const 변경전_wbs = 변경전_할당정보.projects[0]?.wbsList?.find(
         (wbs: any) => wbs.wbsId === wbsItemId,
       );
-      expect(변경전_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(기존평가자Id);
+      expect(변경전_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(
+        기존평가자Id,
+      );
       expect(변경전_wbs?.primaryDownwardEvaluation?.score).toBe(85);
 
       console.log('📍 1차 평가자 변경 실행');
@@ -1087,7 +1089,9 @@ describe('평가라인 변경 관리 시나리오', () => {
       );
 
       // 새 평가자로 변경되었고, 기존 하향평가는 삭제되었어야 함
-      expect(변경후_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(새평가자Id);
+      expect(변경후_wbs?.primaryDownwardEvaluation?.evaluatorId).toBe(
+        새평가자Id,
+      );
       expect(변경후_wbs?.primaryDownwardEvaluation?.isCompleted).toBe(false);
       // 점수가 없거나 undefined 이어야 함 (삭제되었으므로)
       expect(변경후_wbs?.primaryDownwardEvaluation?.score).toBeUndefined();
@@ -1096,11 +1100,12 @@ describe('평가라인 변경 관리 시나리오', () => {
     });
 
     it('2차 평가자 변경 시 기존 평가자의 해당 WBS 하향평가가 삭제되어야 한다', async () => {
-      const 피평가자Id = employeeIds[3];
-      const 기존평가자Id = employeeIds[4];
-      const 새평가자Id = employeeIds[5];
-      const 프로젝트Id = projectIds[1];
-      const wbsItemId = wbsItemIds[1];
+      // 각 테스트마다 beforeEach에서 새로운 데이터가 생성되므로 동일 인덱스 사용 가능
+      const 피평가자Id = employeeIds[0];
+      const 기존평가자Id = employeeIds[1];
+      const 새평가자Id = employeeIds[2];
+      const 프로젝트Id = projectIds[0];
+      const wbsItemId = wbsItemIds[0];
 
       console.log('\n📍 2차 평가자 변경 시 하향평가 삭제 테스트 시작');
 
@@ -1148,7 +1153,9 @@ describe('평가라인 변경 관리 시나리오', () => {
       const 변경전_wbs = 변경전_할당정보.projects[0]?.wbsList?.find(
         (wbs: any) => wbs.wbsId === wbsItemId,
       );
-      expect(변경전_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(기존평가자Id);
+      expect(변경전_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(
+        기존평가자Id,
+      );
       expect(변경전_wbs?.secondaryDownwardEvaluation?.score).toBe(90);
 
       console.log('📍 2차 평가자 변경 실행');
@@ -1172,7 +1179,9 @@ describe('평가라인 변경 관리 시나리오', () => {
       );
 
       // 새 평가자로 변경되었고, 기존 하향평가는 삭제되었어야 함
-      expect(변경후_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(새평가자Id);
+      expect(변경후_wbs?.secondaryDownwardEvaluation?.evaluatorId).toBe(
+        새평가자Id,
+      );
       expect(변경후_wbs?.secondaryDownwardEvaluation?.isCompleted).toBe(false);
       // 점수가 없거나 undefined 이어야 함 (삭제되었으므로)
       expect(변경후_wbs?.secondaryDownwardEvaluation?.score).toBeUndefined();
@@ -1295,16 +1304,24 @@ describe('평가라인 변경 관리 시나리오', () => {
       for (const project of 할당정보.projects) {
         for (const wbs of project.wbsList) {
           if (wbs.primaryDownwardEvaluation) {
-            expect(wbs.primaryDownwardEvaluation).not.toHaveProperty('downwardEvaluationId');
+            expect(wbs.primaryDownwardEvaluation).not.toHaveProperty(
+              'downwardEvaluationId',
+            );
             // 다른 필수 필드들은 있어야 함
             expect(wbs.primaryDownwardEvaluation).toHaveProperty('evaluatorId');
             expect(wbs.primaryDownwardEvaluation).toHaveProperty('isCompleted');
           }
           if (wbs.secondaryDownwardEvaluation) {
-            expect(wbs.secondaryDownwardEvaluation).not.toHaveProperty('downwardEvaluationId');
+            expect(wbs.secondaryDownwardEvaluation).not.toHaveProperty(
+              'downwardEvaluationId',
+            );
             // 다른 필수 필드들은 있어야 함
-            expect(wbs.secondaryDownwardEvaluation).toHaveProperty('evaluatorId');
-            expect(wbs.secondaryDownwardEvaluation).toHaveProperty('isCompleted');
+            expect(wbs.secondaryDownwardEvaluation).toHaveProperty(
+              'evaluatorId',
+            );
+            expect(wbs.secondaryDownwardEvaluation).toHaveProperty(
+              'isCompleted',
+            );
           }
         }
       }

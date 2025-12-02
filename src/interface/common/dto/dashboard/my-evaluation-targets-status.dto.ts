@@ -172,6 +172,33 @@ export class MyTargetEvaluationLineDto {
 }
 
 /**
+ * 평가기준 설정 통합 상태 DTO
+ * (평가항목 + WBS 평가기준 상태 + 제출/승인 상태를 통합)
+ */
+export class SetupStatusDto {
+  @ApiProperty({
+    description:
+      '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria 상태 + 제출/승인 상태 통합)',
+    enum: [
+      'none',
+      'in_progress',
+      'pending',
+      'approved',
+      'revision_requested',
+      'revision_completed',
+    ],
+    example: 'approved',
+  })
+  status:
+    | 'none'
+    | 'in_progress'
+    | 'pending'
+    | 'approved'
+    | 'revision_requested'
+    | 'revision_completed';
+}
+
+/**
  * 성과 입력 정보 DTO
  */
 export class PerformanceInputDto {
@@ -306,6 +333,14 @@ export class MyEvaluationTargetStatusResponseDto {
   })
   @Type(() => MyTargetEvaluationLineDto)
   evaluationLine: MyTargetEvaluationLineDto;
+
+  @ApiProperty({
+    description:
+      '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria, evaluationLine 통합)',
+    type: () => SetupStatusDto,
+  })
+  @Type(() => SetupStatusDto)
+  setup: SetupStatusDto;
 
   @ApiProperty({
     description: '성과 입력 정보',

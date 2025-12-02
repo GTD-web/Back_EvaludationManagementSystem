@@ -31,6 +31,8 @@ const evaluation_line_types_1 = require("../../../../domain/core/evaluation-line
 const downward_evaluation_score_utils_1 = require("../queries/get-employee-evaluation-period-status/downward-evaluation-score.utils");
 const self_evaluation_utils_1 = require("../queries/get-employee-evaluation-period-status/self-evaluation.utils");
 const evaluation_line_utils_1 = require("../queries/get-employee-evaluation-period-status/evaluation-line.utils");
+const evaluation_criteria_utils_1 = require("../queries/get-employee-evaluation-period-status/evaluation-criteria.utils");
+const employee_evaluation_step_approval_service_1 = require("../../../../domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service");
 class GetMyEvaluationTargetsStatusQuery {
     evaluationPeriodId;
     evaluatorId;
@@ -50,8 +52,9 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
     wbsCriteriaRepository;
     wbsSelfEvaluationRepository;
     evaluationPeriodRepository;
+    stepApprovalService;
     logger = new common_1.Logger(GetMyEvaluationTargetsStatusHandler_1.name);
-    constructor(lineMappingRepository, lineRepository, mappingRepository, downwardEvaluationRepository, projectAssignmentRepository, wbsAssignmentRepository, wbsCriteriaRepository, wbsSelfEvaluationRepository, evaluationPeriodRepository) {
+    constructor(lineMappingRepository, lineRepository, mappingRepository, downwardEvaluationRepository, projectAssignmentRepository, wbsAssignmentRepository, wbsCriteriaRepository, wbsSelfEvaluationRepository, evaluationPeriodRepository, stepApprovalService) {
         this.lineMappingRepository = lineMappingRepository;
         this.lineRepository = lineRepository;
         this.mappingRepository = mappingRepository;
@@ -61,6 +64,7 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
         this.wbsCriteriaRepository = wbsCriteriaRepository;
         this.wbsSelfEvaluationRepository = wbsSelfEvaluationRepository;
         this.evaluationPeriodRepository = evaluationPeriodRepository;
+        this.stepApprovalService = stepApprovalService;
     }
     async execute(query) {
         const { evaluationPeriodId, evaluatorId } = query;
@@ -160,6 +164,8 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     const selfEvaluationStatus = await (0, self_evaluation_utils_1.자기평가_진행_상태를_조회한다)(evaluationPeriodId, employeeId, this.wbsSelfEvaluationRepository, this.wbsAssignmentRepository, this.evaluationPeriodRepository);
                     const selfEvaluationStatusType = (0, self_evaluation_utils_1.자기평가_상태를_계산한다)(selfEvaluationStatus.totalMappingCount, selfEvaluationStatus.completedMappingCount);
                     const downwardEvaluationStatus = await this.내가_담당하는_하향평가_현황을_조회한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
+                    const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
+                    const setupStatus = (0, evaluation_criteria_utils_1.평가기준설정_상태를_계산한다)(evaluationCriteriaStatus, wbsCriteriaStatus, stepApproval?.criteriaSettingStatus ?? null, mapping.isCriteriaSubmitted || false);
                     results.push({
                         employeeId,
                         isEvaluationTarget: !mapping.isExcluded,
@@ -177,6 +183,9 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                             status: evaluationLineStatus,
                             hasPrimaryEvaluator,
                             hasSecondaryEvaluator,
+                        },
+                        setup: {
+                            status: setupStatus,
                         },
                         performanceInput: {
                             status: performanceInputStatus,
@@ -413,6 +422,7 @@ exports.GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandle
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        employee_evaluation_step_approval_service_1.EmployeeEvaluationStepApprovalService])
 ], GetMyEvaluationTargetsStatusHandler);
 //# sourceMappingURL=get-my-evaluation-targets-status.query.js.map

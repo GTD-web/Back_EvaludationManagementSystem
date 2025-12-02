@@ -18,10 +18,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const project_entity_1 = require("./project.entity");
 const project_types_1 = require("./project.types");
+const evaluation_project_assignment_entity_1 = require("../../core/evaluation-project-assignment/evaluation-project-assignment.entity");
+const project_exceptions_1 = require("./project.exceptions");
 let ProjectService = class ProjectService {
     projectRepository;
-    constructor(projectRepository) {
+    evaluationProjectAssignmentRepository;
+    constructor(projectRepository, evaluationProjectAssignmentRepository) {
         this.projectRepository = projectRepository;
+        this.evaluationProjectAssignmentRepository = evaluationProjectAssignmentRepository;
     }
     async 생성한다(data, createdBy) {
         if (data.projectCode) {
@@ -69,6 +73,12 @@ let ProjectService = class ProjectService {
         });
         if (!project) {
             throw new common_1.NotFoundException(`ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`);
+        }
+        const assignmentCount = await this.evaluationProjectAssignmentRepository.count({
+            where: { projectId: id, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        if (assignmentCount > 0) {
+            throw new project_exceptions_1.ProjectHasAssignmentsException(id, assignmentCount);
         }
         project.삭제한다(deletedBy);
         await this.projectRepository.save(project);
@@ -698,6 +708,8 @@ exports.ProjectService = ProjectService;
 exports.ProjectService = ProjectService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(project_entity_1.Project)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(evaluation_project_assignment_entity_1.EvaluationProjectAssignment)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], ProjectService);
 //# sourceMappingURL=project.service.js.map

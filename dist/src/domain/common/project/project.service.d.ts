@@ -1,9 +1,11 @@
 import { Repository } from 'typeorm';
 import { Project } from './project.entity';
 import { CreateProjectDto, UpdateProjectDto, ProjectDto, ProjectFilter, ProjectListOptions, ProjectStatus } from './project.types';
+import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 export declare class ProjectService {
     private readonly projectRepository;
-    constructor(projectRepository: Repository<Project>);
+    private readonly evaluationProjectAssignmentRepository;
+    constructor(projectRepository: Repository<Project>, evaluationProjectAssignmentRepository: Repository<EvaluationProjectAssignment>);
     생성한다(data: CreateProjectDto, createdBy: string): Promise<ProjectDto>;
     수정한다(id: string, data: UpdateProjectDto, updatedBy: string): Promise<ProjectDto>;
     삭제한다(id: string, deletedBy: string): Promise<void>;

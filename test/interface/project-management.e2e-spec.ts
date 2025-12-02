@@ -2,6 +2,8 @@ import { BaseE2ETest } from '../base-e2e.spec';
 import { ProjectStatus } from '../../src/domain/common/project/project.types';
 import { SSOService } from '../../src/domain/common/sso/sso.module';
 import type { ISSOService } from '../../src/domain/common/sso/interfaces';
+import { SeedDataScenario } from '../usecase/scenarios/seed-data.scenario';
+import { ProjectAssignmentScenario } from '../usecase/scenarios/project-assignment/project-assignment.scenario';
 
 /**
  * 프로젝트 관리 API E2E 테스트
@@ -568,6 +570,85 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
       await testSuite
         .request()
         .delete(`/admin/projects/${projectId}`)
+        .expect(404);
+    });
+
+    it('할당이 있는 프로젝트는 삭제할 수 없다 (409 Conflict)', async () => {
+      // Given - 시드 데이터 생성 (프로젝트, 직원, 평가기간, 할당 포함)
+      // with_period 시나리오는 이미 프로젝트 할당을 포함하여 생성됨
+      const seedDataScenario = new SeedDataScenario(testSuite);
+
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'with_period',
+        clearExisting: false,
+        projectCount: 1,
+        wbsPerProject: 1,
+        departmentCount: 1,
+        employeeCount: 1,
+      });
+
+      const seedProjectId = seedResult.projectIds?.[0];
+
+      expect(seedProjectId).toBeDefined();
+
+      // When - 할당이 있는 프로젝트 삭제 시도
+      const response = await testSuite
+        .request()
+        .delete(`/admin/projects/${seedProjectId}`)
+        .expect(409);
+
+      // Then - 409 Conflict 에러와 함께 할당 개수 정보 확인
+      expect(response.body.message).toContain('할당이 존재하여 삭제할 수 없습니다');
+
+      // 프로젝트가 여전히 존재하는지 확인
+      const projectResponse = await testSuite
+        .request()
+        .get(`/admin/projects/${seedProjectId}`)
+        .expect(200);
+
+      expect(projectResponse.body.id).toBe(seedProjectId);
+    });
+
+    it('할당이 취소된 프로젝트는 삭제할 수 있다', async () => {
+      // Given - 시드 데이터 생성 (프로젝트, 직원, 평가기간, 할당 포함)
+      // with_period 시나리오는 이미 프로젝트 할당을 포함하여 생성됨
+      const seedDataScenario = new SeedDataScenario(testSuite);
+      const projectAssignmentScenario = new ProjectAssignmentScenario(testSuite);
+
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'with_period',
+        clearExisting: false,
+        projectCount: 1,
+        wbsPerProject: 1,
+        departmentCount: 1,
+        employeeCount: 1,
+      });
+
+      const seedProjectId = seedResult.projectIds?.[0];
+      const employeeId = seedResult.employeeIds?.[0];
+      const periodId = seedResult.evaluationPeriodId;
+
+      expect(seedProjectId).toBeDefined();
+      expect(employeeId).toBeDefined();
+      expect(periodId).toBeDefined();
+
+      // 기존 할당 취소 (소프트 삭제)
+      await projectAssignmentScenario.프로젝트_할당을_프로젝트_ID로_취소한다({
+        employeeId: employeeId!,
+        projectId: seedProjectId!,
+        periodId: periodId!,
+      });
+
+      // When - 할당이 취소된 프로젝트 삭제
+      await testSuite
+        .request()
+        .delete(`/admin/projects/${seedProjectId}`)
+        .expect(204);
+
+      // Then - 프로젝트가 삭제되었는지 확인
+      await testSuite
+        .request()
+        .get(`/admin/projects/${seedProjectId}`)
         .expect(404);
     });
   });

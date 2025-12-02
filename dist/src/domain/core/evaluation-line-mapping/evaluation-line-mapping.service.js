@@ -113,6 +113,7 @@ let EvaluationLineMappingService = EvaluationLineMappingService_1 = class Evalua
         return this.executeSafeDomainOperation(async () => {
             const repository = this.transactionManager.getRepository(evaluation_line_mapping_entity_1.EvaluationLineMapping, this.evaluationLineMappingRepository, manager);
             let queryBuilder = repository.createQueryBuilder('mapping');
+            queryBuilder.andWhere('mapping.deletedAt IS NULL');
             if (filter.evaluationPeriodId) {
                 queryBuilder.andWhere('mapping.evaluationPeriodId = :evaluationPeriodId', {
                     evaluationPeriodId: filter.evaluationPeriodId,

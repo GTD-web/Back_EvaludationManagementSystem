@@ -122,17 +122,12 @@ export class ConfigureSecondaryEvaluatorHandler
                 evaluationType: DownwardEvaluationType.SECONDARY,
               });
 
-            // 기존 평가자의 하향평가 삭제
+            // 기존 평가자의 하향평가 완전 삭제 (hard delete)
             for (const downwardEval of existingDownwardEvaluations) {
-              if (!downwardEval.deletedAt) {
-                await this.downwardEvaluationService.삭제한다(
-                  downwardEval.id,
-                  createdBy || evaluatorId,
-                );
-                this.logger.log(
-                  `기존 2차 평가자의 하향평가 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`,
-                );
-              }
+              await this.downwardEvaluationService.완전_삭제한다(downwardEval.id);
+              this.logger.log(
+                `기존 2차 평가자의 하향평가 완전 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`,
+              );
             }
           }
 

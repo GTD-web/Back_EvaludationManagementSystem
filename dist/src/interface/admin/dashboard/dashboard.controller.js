@@ -52,11 +52,11 @@ let DashboardController = class DashboardController {
         return rest;
     }
     async getMyAssignedData(evaluationPeriodId, user) {
-        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id);
+        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id, user.id);
         return this.이차_하향평가_정보를_제거한다(data);
     }
-    async getEmployeeAssignedData(evaluationPeriodId, employeeId) {
-        return await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId);
+    async getEmployeeAssignedData(evaluationPeriodId, employeeId, user) {
+        return await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId, user.id);
     }
     이차_하향평가_정보를_제거한다(data) {
         const projectsWithoutSecondaryDownwardEvaluation = data.projects.map((project) => ({
@@ -350,8 +350,9 @@ __decorate([
     (0, dashboard_api_decorators_1.GetEmployeeAssignedData)(),
     __param(0, (0, decorators_1.ParseUUID)('evaluationPeriodId')),
     __param(1, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], DashboardController.prototype, "getEmployeeAssignedData", null);
 __decorate([

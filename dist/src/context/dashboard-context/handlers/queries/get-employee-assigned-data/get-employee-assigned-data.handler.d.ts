@@ -13,11 +13,13 @@ import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-ev
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
+import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { EmployeeAssignedDataResult } from './types';
 export declare class GetEmployeeAssignedDataQuery {
     readonly evaluationPeriodId: string;
     readonly employeeId: string;
-    constructor(evaluationPeriodId: string, employeeId: string);
+    readonly viewerId?: string | undefined;
+    constructor(evaluationPeriodId: string, employeeId: string, viewerId?: string | undefined);
 }
 export declare class GetEmployeeAssignedDataHandler implements IQueryHandler<GetEmployeeAssignedDataQuery, EmployeeAssignedDataResult> {
     private readonly evaluationPeriodRepository;
@@ -33,7 +35,8 @@ export declare class GetEmployeeAssignedDataHandler implements IQueryHandler<Get
     private readonly evaluationLineRepository;
     private readonly evaluationLineMappingRepository;
     private readonly deliverableRepository;
+    private readonly activityLogContextService;
     private readonly logger;
-    constructor(evaluationPeriodRepository: Repository<EvaluationPeriod>, employeeRepository: Repository<Employee>, departmentRepository: Repository<Department>, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsItemRepository: Repository<WbsItem>, criteriaRepository: Repository<WbsEvaluationCriteria>, selfEvaluationRepository: Repository<WbsSelfEvaluation>, downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineRepository: Repository<EvaluationLine>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, deliverableRepository: Repository<Deliverable>);
+    constructor(evaluationPeriodRepository: Repository<EvaluationPeriod>, employeeRepository: Repository<Employee>, departmentRepository: Repository<Department>, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsItemRepository: Repository<WbsItem>, criteriaRepository: Repository<WbsEvaluationCriteria>, selfEvaluationRepository: Repository<WbsSelfEvaluation>, downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineRepository: Repository<EvaluationLine>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, deliverableRepository: Repository<Deliverable>, activityLogContextService: EvaluationActivityLogContextService);
     execute(query: GetEmployeeAssignedDataQuery): Promise<EmployeeAssignedDataResult>;
 }

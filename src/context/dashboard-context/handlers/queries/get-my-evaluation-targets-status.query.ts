@@ -297,13 +297,55 @@ export class GetMyEvaluationTargetsStatusHandler
             mapping.isCriteriaSubmitted || false,
           );
 
-          // 평가자 확인 여부 계산
-          const viewedStatus = await this.평가자_확인여부를_계산한다(
-            evaluationPeriodId,
-            employeeId,
-            evaluatorId,
-            evaluatorTypes,
-          );
+          // 1차 평가 제출 여부 확인
+          const primaryEvaluationSubmitted =
+            await this.일차평가_제출_여부를_확인한다(
+              evaluationPeriodId,
+              employeeId,
+            );
+
+          // 평가자 확인 여부 계산 (자기평가 또는 1차 평가가 제출된 경우)
+          let viewedStatus: {
+            viewedByPrimaryEvaluator: boolean;
+            viewedBySecondaryEvaluator: boolean;
+            primaryEvaluationViewed: boolean;
+          } | null = null;
+
+          if (
+            selfEvaluationStatus.isSubmittedToEvaluator ||
+            primaryEvaluationSubmitted
+          ) {
+            viewedStatus = await this.평가자_확인여부를_계산한다(
+              evaluationPeriodId,
+              employeeId,
+              evaluatorId,
+              evaluatorTypes,
+            );
+          }
+
+          // selfEvaluation 객체 생성 (자기평가 제출 시에만 viewedBy 필드 포함)
+          const selfEvaluationResult: any = {
+            status: selfEvaluationStatusType,
+            totalMappingCount: selfEvaluationStatus.totalMappingCount,
+            completedMappingCount: selfEvaluationStatus.completedMappingCount,
+            totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
+            submittedToEvaluatorCount:
+              selfEvaluationStatus.submittedToEvaluatorCount,
+            isSubmittedToEvaluator: selfEvaluationStatus.isSubmittedToEvaluator,
+            submittedToManagerCount:
+              selfEvaluationStatus.submittedToManagerCount,
+            isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
+            totalScore: selfEvaluationStatus.totalScore,
+            grade: selfEvaluationStatus.grade,
+          };
+
+          // 자기평가가 제출된 경우에만 viewedBy 필드 추가
+          if (viewedStatus) {
+            selfEvaluationResult.viewedByPrimaryEvaluator =
+              viewedStatus.viewedByPrimaryEvaluator;
+            selfEvaluationResult.viewedBySecondaryEvaluator =
+              viewedStatus.viewedBySecondaryEvaluator;
+          }
 
           results.push({
             employeeId,
@@ -332,32 +374,15 @@ export class GetMyEvaluationTargetsStatusHandler
               inputCompletedCount,
             },
             myEvaluatorTypes: evaluatorTypes,
-            selfEvaluation: {
-              status: selfEvaluationStatusType,
-              totalMappingCount: selfEvaluationStatus.totalMappingCount,
-              completedMappingCount: selfEvaluationStatus.completedMappingCount,
-              totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
-              submittedToEvaluatorCount:
-                selfEvaluationStatus.submittedToEvaluatorCount,
-              isSubmittedToEvaluator:
-                selfEvaluationStatus.isSubmittedToEvaluator,
-              submittedToManagerCount:
-                selfEvaluationStatus.submittedToManagerCount,
-              isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
-              totalScore: selfEvaluationStatus.totalScore,
-              grade: selfEvaluationStatus.grade,
-              viewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
-              viewedBySecondaryEvaluator:
-                viewedStatus.viewedBySecondaryEvaluator,
-            },
+            selfEvaluation: selfEvaluationResult,
             downwardEvaluation: {
               ...downwardEvaluationStatus,
               secondaryStatus: downwardEvaluationStatus.secondaryStatus
-                ? {
-                    ...downwardEvaluationStatus.secondaryStatus,
-                    primaryEvaluationViewed:
-                      viewedStatus.primaryEvaluationViewed,
-                  }
+                ? this.이차평가_상태에_일차평가확인여부를_추가한다(
+                    downwardEvaluationStatus.secondaryStatus,
+                    viewedStatus,
+                    primaryEvaluationSubmitted,
+                  )
                 : null,
             },
           });
@@ -701,6 +726,66 @@ export class GetMyEvaluationTargetsStatusHandler
     } else {
       return 'in_progress';
     }
+  }
+
+  /**
+   * 1차 평가 제출 여부를 확인한다
+   *
+   * @param evaluationPeriodId 평가기간 ID
+   * @param employeeId 피평가자 ID
+   * @returns 1차 평가가 제출되었는지 여부
+   */
+  private async 일차평가_제출_여부를_확인한다(
+    evaluationPeriodId: string,
+    employeeId: string,
+  ): Promise<boolean> {
+    const primaryEvaluation = await this.downwardEvaluationRepository
+      .createQueryBuilder('de')
+      .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('de.employeeId = :employeeId', { employeeId })
+      .andWhere('de.evaluationType = :type', { type: 'primary' })
+      .andWhere('de.isCompleted = true')
+      .andWhere('de.completedAt IS NOT NULL')
+      .andWhere('de.deletedAt IS NULL')
+      .limit(1)
+      .getOne();
+
+    return !!primaryEvaluation;
+  }
+
+  /**
+   * 2차 평가 상태에 1차 평가 확인 여부를 추가한다
+   *
+   * 1차 평가가 제출된 경우에만 primaryEvaluationViewed 필드를 포함합니다.
+   *
+   * @param secondaryStatus 2차 평가 상태
+   * @param viewedStatus 확인 여부 정보 (없으면 필드 미포함)
+   * @param primaryEvaluationSubmitted 1차 평가 제출 여부
+   * @returns primaryEvaluationViewed가 조건부로 포함된 2차 평가 상태
+   */
+  private 이차평가_상태에_일차평가확인여부를_추가한다(
+    secondaryStatus: {
+      status: 'none' | 'in_progress' | 'complete';
+      assignedWbsCount: number;
+      completedEvaluationCount: number;
+      totalScore: number | null;
+      grade: string | null;
+    },
+    viewedStatus: {
+      viewedByPrimaryEvaluator: boolean;
+      viewedBySecondaryEvaluator: boolean;
+      primaryEvaluationViewed: boolean;
+    } | null,
+    primaryEvaluationSubmitted: boolean,
+  ): any {
+    const result: any = { ...secondaryStatus };
+
+    // viewedStatus가 있고, 1차 평가가 제출된 경우에만 primaryEvaluationViewed 포함
+    if (viewedStatus && primaryEvaluationSubmitted) {
+      result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
+    }
+
+    return result;
   }
 
   /**

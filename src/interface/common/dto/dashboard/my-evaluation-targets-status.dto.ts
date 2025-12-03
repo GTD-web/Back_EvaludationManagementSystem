@@ -8,7 +8,8 @@ import { Type } from 'class-transformer';
  */
 export class MyEvaluationStatusDetailDto {
   @ApiProperty({
-    description: '평가 상태 (할당수 = 완료수 = 0: none, 할당수 > 완료수: in_progress, 할당수 = 완료수 > 0: complete)',
+    description:
+      '평가 상태 (할당수 = 완료수 = 0: none, 할당수 > 완료수: in_progress, 할당수 = 완료수 > 0: complete)',
     enum: ['none', 'in_progress', 'complete'],
     example: 'in_progress',
   })
@@ -43,9 +44,8 @@ export class MyEvaluationStatusDetailDto {
 
   @ApiPropertyOptional({
     description:
-      '2차 평가자가 1차평가 제출을 확인했는지 여부 (2차 평가자인 경우에만 제공)',
+      '2차 평가자가 1차평가 제출을 확인했는지 여부 (1차 평가 제출 시에만 제공)',
     example: false,
-    nullable: true,
   })
   primaryEvaluationViewed?: boolean;
 }
@@ -297,17 +297,19 @@ export class MyTargetSelfEvaluationDto {
   })
   grade: string | null;
 
-  @ApiProperty({
-    description: '1차 평가자가 제출된 자기평가를 확인했는지 여부',
+  @ApiPropertyOptional({
+    description:
+      '1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
     example: false,
   })
-  viewedByPrimaryEvaluator: boolean;
+  viewedByPrimaryEvaluator?: boolean;
 
-  @ApiProperty({
-    description: '2차 평가자가 제출된 자기평가를 확인했는지 여부',
+  @ApiPropertyOptional({
+    description:
+      '2차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
     example: false,
   })
-  viewedBySecondaryEvaluator: boolean;
+  viewedBySecondaryEvaluator?: boolean;
 }
 
 /**

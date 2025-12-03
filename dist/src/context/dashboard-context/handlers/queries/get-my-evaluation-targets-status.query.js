@@ -169,7 +169,30 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     const downwardEvaluationStatus = await this.내가_담당하는_하향평가_현황을_조회한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
                     const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
                     const setupStatus = (0, evaluation_criteria_utils_1.평가기준설정_상태를_계산한다)(evaluationCriteriaStatus, wbsCriteriaStatus, stepApproval?.criteriaSettingStatus ?? null, mapping.isCriteriaSubmitted || false);
-                    const viewedStatus = await this.평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
+                    const primaryEvaluationSubmitted = await this.일차평가_제출_여부를_확인한다(evaluationPeriodId, employeeId);
+                    let viewedStatus = null;
+                    if (selfEvaluationStatus.isSubmittedToEvaluator ||
+                        primaryEvaluationSubmitted) {
+                        viewedStatus = await this.평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
+                    }
+                    const selfEvaluationResult = {
+                        status: selfEvaluationStatusType,
+                        totalMappingCount: selfEvaluationStatus.totalMappingCount,
+                        completedMappingCount: selfEvaluationStatus.completedMappingCount,
+                        totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
+                        submittedToEvaluatorCount: selfEvaluationStatus.submittedToEvaluatorCount,
+                        isSubmittedToEvaluator: selfEvaluationStatus.isSubmittedToEvaluator,
+                        submittedToManagerCount: selfEvaluationStatus.submittedToManagerCount,
+                        isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
+                        totalScore: selfEvaluationStatus.totalScore,
+                        grade: selfEvaluationStatus.grade,
+                    };
+                    if (viewedStatus) {
+                        selfEvaluationResult.viewedByPrimaryEvaluator =
+                            viewedStatus.viewedByPrimaryEvaluator;
+                        selfEvaluationResult.viewedBySecondaryEvaluator =
+                            viewedStatus.viewedBySecondaryEvaluator;
+                    }
                     results.push({
                         employeeId,
                         isEvaluationTarget: !mapping.isExcluded,
@@ -197,27 +220,11 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                             inputCompletedCount,
                         },
                         myEvaluatorTypes: evaluatorTypes,
-                        selfEvaluation: {
-                            status: selfEvaluationStatusType,
-                            totalMappingCount: selfEvaluationStatus.totalMappingCount,
-                            completedMappingCount: selfEvaluationStatus.completedMappingCount,
-                            totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
-                            submittedToEvaluatorCount: selfEvaluationStatus.submittedToEvaluatorCount,
-                            isSubmittedToEvaluator: selfEvaluationStatus.isSubmittedToEvaluator,
-                            submittedToManagerCount: selfEvaluationStatus.submittedToManagerCount,
-                            isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
-                            totalScore: selfEvaluationStatus.totalScore,
-                            grade: selfEvaluationStatus.grade,
-                            viewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
-                            viewedBySecondaryEvaluator: viewedStatus.viewedBySecondaryEvaluator,
-                        },
+                        selfEvaluation: selfEvaluationResult,
                         downwardEvaluation: {
                             ...downwardEvaluationStatus,
                             secondaryStatus: downwardEvaluationStatus.secondaryStatus
-                                ? {
-                                    ...downwardEvaluationStatus.secondaryStatus,
-                                    primaryEvaluationViewed: viewedStatus.primaryEvaluationViewed,
-                                }
+                                ? this.이차평가_상태에_일차평가확인여부를_추가한다(downwardEvaluationStatus.secondaryStatus, viewedStatus, primaryEvaluationSubmitted)
                                 : null,
                         },
                     });
@@ -414,6 +421,26 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
         else {
             return 'in_progress';
         }
+    }
+    async 일차평가_제출_여부를_확인한다(evaluationPeriodId, employeeId) {
+        const primaryEvaluation = await this.downwardEvaluationRepository
+            .createQueryBuilder('de')
+            .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('de.employeeId = :employeeId', { employeeId })
+            .andWhere('de.evaluationType = :type', { type: 'primary' })
+            .andWhere('de.isCompleted = true')
+            .andWhere('de.completedAt IS NOT NULL')
+            .andWhere('de.deletedAt IS NULL')
+            .limit(1)
+            .getOne();
+        return !!primaryEvaluation;
+    }
+    이차평가_상태에_일차평가확인여부를_추가한다(secondaryStatus, viewedStatus, primaryEvaluationSubmitted) {
+        const result = { ...secondaryStatus };
+        if (viewedStatus && primaryEvaluationSubmitted) {
+            result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
+        }
+        return result;
     }
     async 평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes) {
         const lastSelfEvaluationSubmitTime = await this.wbsSelfEvaluationRepository

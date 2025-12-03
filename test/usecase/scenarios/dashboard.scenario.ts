@@ -182,15 +182,24 @@ export class DashboardScenario {
 
   /**
    * 평가자가 피평가자의 할당 데이터를 조회한다
+   * (Activity Log 기록용 - viewerId를 전달하여 평가자가 조회했음을 기록)
    */
   async 평가자가_피평가자_할당_데이터를_조회한다(config: {
     evaluationPeriodId: string;
     evaluatorId: string;
     employeeId: string;
   }): Promise<any> {
+    // 평가자로 사용자 변경
+    this.testSuite.setCurrentUser({
+      id: config.evaluatorId,
+      email: `evaluator-${config.evaluatorId}@test.com`,
+      name: '평가자',
+      employeeNumber: 'EVAL001',
+    });
+
     const response = await this.testSuite
       .request()
-      .get(`/admin/dashboard/${config.evaluationPeriodId}/evaluators/${config.evaluatorId}/employees/${config.employeeId}/assigned-data`)
+      .get(`/admin/dashboard/${config.evaluationPeriodId}/employees/${config.employeeId}/assigned-data`)
       .expect(200);
 
     return response.body;

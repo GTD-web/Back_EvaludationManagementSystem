@@ -6,7 +6,6 @@ import { DownwardEvaluationService } from '@domain/core/downward-evaluation/down
 import {
   DownwardEvaluationNotFoundException,
   DownwardEvaluationAlreadyCompletedException,
-  DownwardEvaluationValidationException,
 } from '@domain/core/downward-evaluation/downward-evaluation.exceptions';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
@@ -57,16 +56,6 @@ export class SubmitDownwardEvaluationHandler
       // 이미 완료된 평가인지 확인
       if (evaluation.완료되었는가()) {
         throw new DownwardEvaluationAlreadyCompletedException(evaluationId);
-      }
-
-      // 필수 항목 검증
-      if (
-        !evaluation.downwardEvaluationContent ||
-        !evaluation.downwardEvaluationScore
-      ) {
-        throw new DownwardEvaluationValidationException(
-          '평가 내용과 점수는 필수 입력 항목입니다.',
-        );
       }
 
       // 하향평가 완료 처리

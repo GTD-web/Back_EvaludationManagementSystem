@@ -4,10 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { DownwardEvaluationService } from '@domain/core/downward-evaluation/downward-evaluation.service';
-import {
-  DownwardEvaluationAlreadyCompletedException,
-  DownwardEvaluationValidationException,
-} from '@domain/core/downward-evaluation/downward-evaluation.exceptions';
+import { DownwardEvaluationAlreadyCompletedException } from '@domain/core/downward-evaluation/downward-evaluation.exceptions';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
@@ -128,28 +125,6 @@ export class BulkSubmitDownwardEvaluationsHandler
               `이미 완료된 평가는 건너뜀: ${evaluation.id}`,
             );
             continue;
-          }
-
-          // 필수 항목 검증 (강제 제출 모드가 아닐 때만)
-          if (!forceSubmit) {
-            if (
-              !evaluation.downwardEvaluationContent ||
-              !evaluation.downwardEvaluationScore
-            ) {
-              failedItems.push({
-                evaluationId: evaluation.id,
-                error: '평가 내용과 점수는 필수 입력 항목입니다.',
-              });
-              this.logger.warn(
-                `필수 항목 누락으로 제출 실패: ${evaluation.id}`,
-              );
-              continue;
-            }
-          } else {
-            // 강제 제출 모드: 필수 항목이 없어도 제출 (승인 시 사용)
-            this.logger.debug(
-              `강제 제출 모드: 필수 항목 검증 건너뛰고 제출 처리: ${evaluation.id}`,
-            );
           }
 
           // 하향평가 완료 처리

@@ -456,7 +456,7 @@
   - 2차 평가자: WBS별 평가자 (wbsItemId IS NOT NULL)
 
 ### 3. 제출 프로세스
-- **필수 항목 검증**: 제출 시 downwardEvaluationContent와 downwardEvaluationScore 필수
+- **필수 항목 검증 제거**: 제출 시 downwardEvaluationContent와 downwardEvaluationScore가 없어도 제출 가능 (인사담당자에게 제출됨)
 - **재작성 요청 자동 완료**: 제출 시 해당 평가기간에 발생한 재작성 요청 자동 완료 처리
 - **중복 제출 방지**: 이미 완료된 평가는 재제출 불가
 

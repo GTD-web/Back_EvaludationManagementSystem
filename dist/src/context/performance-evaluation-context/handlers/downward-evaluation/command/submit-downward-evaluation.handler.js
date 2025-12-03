@@ -56,10 +56,6 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
             if (evaluation.완료되었는가()) {
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationAlreadyCompletedException(evaluationId);
             }
-            if (!evaluation.downwardEvaluationContent ||
-                !evaluation.downwardEvaluationScore) {
-                throw new downward_evaluation_exceptions_1.DownwardEvaluationValidationException('평가 내용과 점수는 필수 입력 항목입니다.');
-            }
             await this.downwardEvaluationService.수정한다(evaluationId, { isCompleted: true }, submittedBy);
             this.logger.debug(`단계 승인 상태를 pending으로 변경 시작 - 피평가자: ${evaluation.employeeId}, 평가기간: ${evaluation.periodId}, 평가유형: ${evaluation.evaluationType}`);
             const mapping = await this.mappingRepository.findOne({

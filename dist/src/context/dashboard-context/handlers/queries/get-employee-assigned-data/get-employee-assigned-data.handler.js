@@ -182,7 +182,7 @@ let GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = class Ge
                 submittedBy: mapping.criteriaSubmittedBy || null,
             },
         };
-        if (viewerId && viewerId !== employeeId) {
+        if (viewerId) {
             try {
                 const evaluationMappings = await this.evaluationLineMappingRepository.find({
                     where: {

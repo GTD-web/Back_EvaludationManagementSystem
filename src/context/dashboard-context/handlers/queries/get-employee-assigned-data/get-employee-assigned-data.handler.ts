@@ -274,8 +274,8 @@ export class GetEmployeeAssignedDataHandler
     };
 
     // 평가자가 피평가자의 데이터를 조회한 경우 Activity Log 기록
-    // viewerId가 있고, viewerId가 employeeId와 다르면 다른 사람(평가자)이 조회한 것
-    if (viewerId && viewerId !== employeeId) {
+    // viewerId가 있으면 평가자 관계 확인 (자기 자신을 평가하는 경우도 포함)
+    if (viewerId) {
       try {
         // 평가자-피평가자 관계 확인
         const evaluationMappings = await this.evaluationLineMappingRepository.find(
@@ -289,7 +289,8 @@ export class GetEmployeeAssignedDataHandler
           },
         );
 
-        // 평가자인 경우에만 Activity Log 기록
+        // 평가자 관계가 있는 경우에만 Activity Log 기록
+        // (피평가자가 자신을 평가하는 경우 포함)
         if (evaluationMappings.length > 0) {
           // EvaluationLineMapping에서 evaluationLine을 통해 evaluatorType 추출
           const evaluationLineIds = [

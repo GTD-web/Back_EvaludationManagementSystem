@@ -146,11 +146,15 @@ function GetMyEvaluationTargetsStatus() {
 - 내가 PRIMARY 또는 SECONDARY 평가자로 지정된 피평가자 목록 반환
 - 각 피평가자에 대한 내 평가자 유형 제공 (PRIMARY/SECONDARY)
 - 피평가자가 1차 평가자에게 자기평가를 제출했는지 여부 제공 (전체 자기평가 수, 제출된 수, 제출 완료 여부)
-- **자기평가 제출 시**: viewedByPrimaryEvaluator, viewedBySecondaryEvaluator 필드 추가 제공
-- **자기평가 미제출 시**: viewedBy 필드는 응답에 포함되지 않음
+- **자기평가 조회 관련 필드 (평가자 유형에 따라 제공):**
+  * **1차 평가자인 경우**: viewedByPrimaryEvaluator 필드 제공 (자기평가 제출 시에만)
+  * **2차 평가자인 경우**: viewedBySecondaryEvaluator 필드 제공 (자기평가 제출 시에만)
+  * **자기평가 미제출 시**: viewedBy 관련 필드는 응답에 포함되지 않음
 - 내가 담당하는 하향평가 현황 제공 (평가 대상 WBS 수, 완료 수, 평균 점수, 수정 가능 여부)
-- **1차 평가 제출 시**: secondaryStatus.primaryEvaluationViewed 필드 추가 제공
-- **1차 평가 미제출 시**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
+- **1차 평가 조회 관련 필드 (평가자 유형에 따라 제공):**
+  * **2차 평가자인 경우**: secondaryStatus.primaryEvaluationViewed 필드 제공 (1차 평가 제출 시에만)
+  * **1차 평가자인 경우**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
+  * **1차 평가 미제출 시**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
   * **평가 대상 WBS 수는 취소된 프로젝트 할당(소프트 딜리트)의 WBS 제외**
   * **취소된 프로젝트 할당에 속한 WBS의 하향평가는 카운트에서 제외됨**
 - 피평가자별 평가 대상 여부, 평가항목 설정 상태, WBS 평가기준 설정 상태, 평가라인 지정 상태, 성과 입력 상태 포함

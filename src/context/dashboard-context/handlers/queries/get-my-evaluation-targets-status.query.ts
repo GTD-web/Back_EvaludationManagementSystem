@@ -339,12 +339,19 @@ export class GetMyEvaluationTargetsStatusHandler
             grade: selfEvaluationStatus.grade,
           };
 
-          // 자기평가가 제출된 경우에만 viewedBy 필드 추가
+          // 자기평가가 제출된 경우에만 평가자 유형에 따라 viewedBy 필드 추가
           if (viewedStatus) {
-            selfEvaluationResult.viewedByPrimaryEvaluator =
-              viewedStatus.viewedByPrimaryEvaluator;
-            selfEvaluationResult.viewedBySecondaryEvaluator =
-              viewedStatus.viewedBySecondaryEvaluator;
+            // 1차 평가자인 경우: viewedByPrimaryEvaluator만 추가
+            if (evaluatorTypes.includes(EvaluatorType.PRIMARY)) {
+              selfEvaluationResult.viewedByPrimaryEvaluator =
+                viewedStatus.viewedByPrimaryEvaluator;
+            }
+            
+            // 2차 평가자인 경우: viewedBySecondaryEvaluator만 추가
+            if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
+              selfEvaluationResult.viewedBySecondaryEvaluator =
+                viewedStatus.viewedBySecondaryEvaluator;
+            }
           }
 
           results.push({
@@ -382,6 +389,7 @@ export class GetMyEvaluationTargetsStatusHandler
                     downwardEvaluationStatus.secondaryStatus,
                     viewedStatus,
                     primaryEvaluationSubmitted,
+                    evaluatorTypes,
                   )
                 : null,
             },
@@ -756,11 +764,12 @@ export class GetMyEvaluationTargetsStatusHandler
   /**
    * 2차 평가 상태에 1차 평가 확인 여부를 추가한다
    *
-   * 1차 평가가 제출된 경우에만 primaryEvaluationViewed 필드를 포함합니다.
+   * 2차 평가자이고 1차 평가가 제출된 경우에만 primaryEvaluationViewed 필드를 포함합니다.
    *
    * @param secondaryStatus 2차 평가 상태
    * @param viewedStatus 확인 여부 정보 (없으면 필드 미포함)
    * @param primaryEvaluationSubmitted 1차 평가 제출 여부
+   * @param evaluatorTypes 평가자 유형 배열
    * @returns primaryEvaluationViewed가 조건부로 포함된 2차 평가 상태
    */
   private 이차평가_상태에_일차평가확인여부를_추가한다(
@@ -777,11 +786,12 @@ export class GetMyEvaluationTargetsStatusHandler
       primaryEvaluationViewed: boolean;
     } | null,
     primaryEvaluationSubmitted: boolean,
+    evaluatorTypes: string[],
   ): any {
     const result: any = { ...secondaryStatus };
 
-    // viewedStatus가 있고, 1차 평가가 제출된 경우에만 primaryEvaluationViewed 포함
-    if (viewedStatus && primaryEvaluationSubmitted) {
+    // 2차 평가자이고, viewedStatus가 있고, 1차 평가가 제출된 경우에만 primaryEvaluationViewed 포함
+    if (evaluatorTypes.includes(EvaluatorType.SECONDARY) && viewedStatus && primaryEvaluationSubmitted) {
       result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
     }
 
@@ -857,7 +867,7 @@ export class GetMyEvaluationTargetsStatusHandler
 
     if (lastViewedTime) {
       // 1차 평가자인 경우: 자기평가 제출 확인
-      if (evaluatorTypes.includes('primary')) {
+      if (evaluatorTypes.includes(EvaluatorType.PRIMARY)) {
         if (
           lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
           lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
@@ -867,7 +877,7 @@ export class GetMyEvaluationTargetsStatusHandler
       }
 
       // 2차 평가자인 경우: 자기평가 + 1차평가 제출 확인
-      if (evaluatorTypes.includes('secondary')) {
+      if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
         // 자기평가 확인
         if (
           lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&

@@ -3,6 +3,7 @@ import { ParseUUID } from '@interface/common/decorators';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
+  GetEmployeeAssignedData,
   GetEmployeeEvaluationPeriodStatus,
   GetEvaluatorAssignedEmployeesData,
   GetMyAssignedData,
@@ -85,6 +86,23 @@ export class EvaluatorDashboardController {
 
     // 피평가자는 2차 평가자의 하향평가를 볼 수 없음 (1차 하향평가는 제공)
     return this.이차_하향평가_정보를_제거한다(data);
+  }
+
+  /**
+   * 사용자 할당 정보를 조회합니다.
+   * 평가자가 다른 직원의 데이터를 조회하면 Activity Log에 'viewed' 활동이 기록됩니다.
+   */
+  @GetEmployeeAssignedData()
+  async getEmployeeAssignedData(
+    @ParseUUID('evaluationPeriodId') evaluationPeriodId: string,
+    @ParseUUID('employeeId') employeeId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EmployeeAssignedDataResponseDto> {
+    return await this.dashboardService.사용자_할당_정보를_조회한다(
+      evaluationPeriodId,
+      employeeId,
+      user.id, // viewerId (평가자가 조회하므로 Activity Log 기록)
+    );
   }
 
   /**

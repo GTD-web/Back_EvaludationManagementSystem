@@ -188,10 +188,14 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                         grade: selfEvaluationStatus.grade,
                     };
                     if (viewedStatus) {
-                        selfEvaluationResult.viewedByPrimaryEvaluator =
-                            viewedStatus.viewedByPrimaryEvaluator;
-                        selfEvaluationResult.viewedBySecondaryEvaluator =
-                            viewedStatus.viewedBySecondaryEvaluator;
+                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY)) {
+                            selfEvaluationResult.viewedByPrimaryEvaluator =
+                                viewedStatus.viewedByPrimaryEvaluator;
+                        }
+                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
+                            selfEvaluationResult.viewedBySecondaryEvaluator =
+                                viewedStatus.viewedBySecondaryEvaluator;
+                        }
                     }
                     results.push({
                         employeeId,
@@ -224,7 +228,7 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                         downwardEvaluation: {
                             ...downwardEvaluationStatus,
                             secondaryStatus: downwardEvaluationStatus.secondaryStatus
-                                ? this.이차평가_상태에_일차평가확인여부를_추가한다(downwardEvaluationStatus.secondaryStatus, viewedStatus, primaryEvaluationSubmitted)
+                                ? this.이차평가_상태에_일차평가확인여부를_추가한다(downwardEvaluationStatus.secondaryStatus, viewedStatus, primaryEvaluationSubmitted, evaluatorTypes)
                                 : null,
                         },
                     });
@@ -435,9 +439,9 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
             .getOne();
         return !!primaryEvaluation;
     }
-    이차평가_상태에_일차평가확인여부를_추가한다(secondaryStatus, viewedStatus, primaryEvaluationSubmitted) {
+    이차평가_상태에_일차평가확인여부를_추가한다(secondaryStatus, viewedStatus, primaryEvaluationSubmitted, evaluatorTypes) {
         const result = { ...secondaryStatus };
-        if (viewedStatus && primaryEvaluationSubmitted) {
+        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY) && viewedStatus && primaryEvaluationSubmitted) {
             result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
         }
         return result;
@@ -482,13 +486,13 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
         let viewedBySecondaryEvaluator = false;
         let primaryEvaluationViewed = false;
         if (lastViewedTime) {
-            if (evaluatorTypes.includes('primary')) {
+            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY)) {
                 if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
                     lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
                     viewedByPrimaryEvaluator = true;
                 }
             }
-            if (evaluatorTypes.includes('secondary')) {
+            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
                 if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
                     lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
                     viewedBySecondaryEvaluator = true;

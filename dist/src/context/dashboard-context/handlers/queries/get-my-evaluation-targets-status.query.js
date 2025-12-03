@@ -170,14 +170,6 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
                     const setupStatus = (0, evaluation_criteria_utils_1.평가기준설정_상태를_계산한다)(evaluationCriteriaStatus, wbsCriteriaStatus, stepApproval?.criteriaSettingStatus ?? null, mapping.isCriteriaSubmitted || false);
                     const viewedStatus = await this.평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
-                    if (downwardEvaluationStatus.primaryStatus) {
-                        downwardEvaluationStatus.primaryStatus.isPrimaryEvaluationViewedByPrimaryEvaluator =
-                            viewedStatus.viewedByPrimaryEvaluator;
-                    }
-                    if (downwardEvaluationStatus.secondaryStatus) {
-                        downwardEvaluationStatus.secondaryStatus.isSecondaryEvaluationViewedBySecondaryEvaluator =
-                            viewedStatus.viewedBySecondaryEvaluator;
-                    }
                     results.push({
                         employeeId,
                         isEvaluationTarget: !mapping.isExcluded,
@@ -216,10 +208,18 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                             isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
                             totalScore: selfEvaluationStatus.totalScore,
                             grade: selfEvaluationStatus.grade,
-                            isSelfEvaluationViewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
-                            isSelfEvaluationViewedBySecondaryEvaluator: viewedStatus.viewedBySecondaryEvaluator,
+                            viewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
+                            viewedBySecondaryEvaluator: viewedStatus.viewedBySecondaryEvaluator,
                         },
-                        downwardEvaluation: downwardEvaluationStatus,
+                        downwardEvaluation: {
+                            ...downwardEvaluationStatus,
+                            secondaryStatus: downwardEvaluationStatus.secondaryStatus
+                                ? {
+                                    ...downwardEvaluationStatus.secondaryStatus,
+                                    primaryEvaluationViewed: viewedStatus.primaryEvaluationViewed,
+                                }
+                                : null,
+                        },
                     });
                 }
                 catch (error) {

@@ -22,7 +22,9 @@ const evaluation_period_entity_1 = require("../../../../domain/core/evaluation-p
 const employee_entity_1 = require("../../../../domain/common/employee/employee.entity");
 const department_entity_1 = require("../../../../domain/common/department/department.entity");
 const evaluation_line_mapping_entity_1 = require("../../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.entity");
+const evaluation_line_entity_1 = require("../../../../domain/core/evaluation-line/evaluation-line.entity");
 const evaluation_period_employee_mapping_entity_1 = require("../../../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
+const evaluation_activity_log_context_service_1 = require("../../../evaluation-activity-log-context/evaluation-activity-log-context.service");
 const get_employee_assigned_data_1 = require("./get-employee-assigned-data");
 class GetEvaluatorAssignedEmployeesDataQuery {
     evaluationPeriodId;
@@ -40,16 +42,20 @@ let GetEvaluatorAssignedEmployeesDataHandler = GetEvaluatorAssignedEmployeesData
     employeeRepository;
     departmentRepository;
     lineMappingRepository;
+    evaluationLineRepository;
     periodEmployeeMappingRepository;
     employeeAssignedDataHandler;
+    activityLogContextService;
     logger = new common_1.Logger(GetEvaluatorAssignedEmployeesDataHandler_1.name);
-    constructor(evaluationPeriodRepository, employeeRepository, departmentRepository, lineMappingRepository, periodEmployeeMappingRepository, employeeAssignedDataHandler) {
+    constructor(evaluationPeriodRepository, employeeRepository, departmentRepository, lineMappingRepository, evaluationLineRepository, periodEmployeeMappingRepository, employeeAssignedDataHandler, activityLogContextService) {
         this.evaluationPeriodRepository = evaluationPeriodRepository;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
         this.lineMappingRepository = lineMappingRepository;
+        this.evaluationLineRepository = evaluationLineRepository;
         this.periodEmployeeMappingRepository = periodEmployeeMappingRepository;
         this.employeeAssignedDataHandler = employeeAssignedDataHandler;
+        this.activityLogContextService = activityLogContextService;
     }
     async execute(query) {
         const { evaluationPeriodId, evaluatorId, employeeId } = query;
@@ -89,25 +95,52 @@ let GetEvaluatorAssignedEmployeesDataHandler = GetEvaluatorAssignedEmployeesData
         if (!employeeMapping) {
             throw new common_1.NotFoundException(`평가기간에 등록되지 않은 직원입니다. (employeeId: ${employeeId})`);
         }
-        const hasEvaluationRelation = await this.lineMappingRepository
+        const evaluationMappings = await this.lineMappingRepository
             .createQueryBuilder('mapping')
-            .where('mapping.evaluationPeriodId = :evaluationPeriodId', { evaluationPeriodId })
+            .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
+            evaluationPeriodId,
+        })
             .andWhere('mapping.evaluatorId = :evaluatorId', { evaluatorId })
             .andWhere('mapping.employeeId = :employeeId', { employeeId })
             .andWhere('mapping.deletedAt IS NULL')
-            .getCount();
-        if (hasEvaluationRelation === 0) {
+            .getMany();
+        if (evaluationMappings.length === 0) {
             throw new common_1.NotFoundException(`평가자가 해당 피평가자를 담당하지 않습니다. (evaluatorId: ${evaluatorId}, employeeId: ${employeeId})`);
         }
+        const evaluationLineIds = evaluationMappings.map((m) => m.evaluationLineId);
+        const evaluationLines = await this.evaluationLineRepository.findByIds(evaluationLineIds);
+        const evaluatorTypes = evaluationLines.map((line) => line.evaluatorType);
         this.logger.log('평가자-피평가자 관계 확인 완료', {
             evaluatorId,
             employeeId,
-            mappingCount: hasEvaluationRelation,
+            mappingCount: evaluationMappings.length,
+            evaluatorTypes,
         });
         const evaluateeData = await this.employeeAssignedDataHandler.execute({
             evaluationPeriodId,
             employeeId,
         });
+        try {
+            await this.activityLogContextService.활동내역을_기록한다({
+                periodId: evaluationPeriodId,
+                employeeId,
+                activityType: 'downward_evaluation',
+                activityAction: 'viewed',
+                activityTitle: '피평가자 할당 정보 조회',
+                performedBy: evaluatorId,
+                activityDate: new Date(),
+                activityMetadata: {
+                    evaluatorTypes,
+                },
+            });
+        }
+        catch (error) {
+            this.logger.warn('활동 내역 기록 실패', {
+                evaluatorId,
+                employeeId,
+                error: error.message,
+            });
+        }
         const { evaluationPeriod: _, ...evaluateeWithoutPeriod } = evaluateeData;
         this.logger.log('담당자의 피평가자 할당 정보 조회 완료', {
             evaluatorId,
@@ -148,12 +181,15 @@ exports.GetEvaluatorAssignedEmployeesDataHandler = GetEvaluatorAssignedEmployees
     __param(1, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
     __param(2, (0, typeorm_1.InjectRepository)(department_entity_1.Department)),
     __param(3, (0, typeorm_1.InjectRepository)(evaluation_line_mapping_entity_1.EvaluationLineMapping)),
-    __param(4, (0, typeorm_1.InjectRepository)(evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping)),
+    __param(4, (0, typeorm_1.InjectRepository)(evaluation_line_entity_1.EvaluationLine)),
+    __param(5, (0, typeorm_1.InjectRepository)(evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        get_employee_assigned_data_1.GetEmployeeAssignedDataHandler])
+        typeorm_2.Repository,
+        get_employee_assigned_data_1.GetEmployeeAssignedDataHandler,
+        evaluation_activity_log_context_service_1.EvaluationActivityLogContextService])
 ], GetEvaluatorAssignedEmployeesDataHandler);
 //# sourceMappingURL=get-evaluator-assigned-employees-data.query.js.map

@@ -164,4 +164,86 @@ export class DashboardScenario {
       프로젝트구조일관성,
     };
   }
+
+  /**
+   * 평가자가 담당하는 평가 대상자 현황을 조회한다
+   */
+  async 평가대상자_현황을_조회한다(config: {
+    evaluationPeriodId: string;
+    evaluatorId: string;
+  }): Promise<any> {
+    const response = await this.testSuite
+      .request()
+      .get(`/admin/dashboard/${config.evaluationPeriodId}/my-evaluation-targets/${config.evaluatorId}/status`)
+      .expect(200);
+
+    return response.body;
+  }
+
+  /**
+   * 평가자가 피평가자의 할당 데이터를 조회한다
+   */
+  async 평가자가_피평가자_할당_데이터를_조회한다(config: {
+    evaluationPeriodId: string;
+    evaluatorId: string;
+    employeeId: string;
+  }): Promise<any> {
+    const response = await this.testSuite
+      .request()
+      .get(`/admin/dashboard/${config.evaluationPeriodId}/evaluators/${config.evaluatorId}/employees/${config.employeeId}/assigned-data`)
+      .expect(200);
+
+    return response.body;
+  }
+
+  /**
+   * 평가 확인 여부를 검증한다
+   */
+  async 평가_확인_여부를_검증한다(config: {
+    evaluationPeriodId: string;
+    evaluatorId: string;
+    employeeId: string;
+    expectedSelfEvaluationViewedByPrimaryEvaluator?: boolean;
+    expectedSelfEvaluationViewedBySecondaryEvaluator?: boolean;
+    expectedPrimaryEvaluationViewedByPrimaryEvaluator?: boolean;
+    expectedSecondaryEvaluationViewedBySecondaryEvaluator?: boolean;
+  }): Promise<any> {
+    const 현황 = await this.평가대상자_현황을_조회한다({
+      evaluationPeriodId: config.evaluationPeriodId,
+      evaluatorId: config.evaluatorId,
+    });
+
+    // 피평가자 찾기
+    const target = 현황.find((t: any) => t.employeeId === config.employeeId);
+    expect(target).toBeDefined();
+
+    // 자기평가 확인 여부 검증
+    if (config.expectedSelfEvaluationViewedByPrimaryEvaluator !== undefined) {
+      expect(target.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator).toBe(
+        config.expectedSelfEvaluationViewedByPrimaryEvaluator
+      );
+    }
+
+    if (config.expectedSelfEvaluationViewedBySecondaryEvaluator !== undefined) {
+      expect(target.selfEvaluation.isSelfEvaluationViewedBySecondaryEvaluator).toBe(
+        config.expectedSelfEvaluationViewedBySecondaryEvaluator
+      );
+    }
+
+    // 1차 하향평가 확인 여부 검증
+    if (config.expectedPrimaryEvaluationViewedByPrimaryEvaluator !== undefined) {
+      expect(target.downwardEvaluation.primaryStatus?.isPrimaryEvaluationViewedByPrimaryEvaluator).toBe(
+        config.expectedPrimaryEvaluationViewedByPrimaryEvaluator
+      );
+    }
+
+    // 2차 하향평가 확인 여부 검증
+    if (config.expectedSecondaryEvaluationViewedBySecondaryEvaluator !== undefined) {
+      expect(target.downwardEvaluation.secondaryStatus?.isSecondaryEvaluationViewedBySecondaryEvaluator).toBe(
+        config.expectedSecondaryEvaluationViewedBySecondaryEvaluator
+      );
+    }
+
+    return target;
+  }
 }

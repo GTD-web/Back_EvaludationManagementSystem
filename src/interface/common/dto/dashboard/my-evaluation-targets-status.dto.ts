@@ -40,6 +40,14 @@ export class MyEvaluationStatusDetailDto {
     nullable: true,
   })
   grade: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      '2차 평가자가 1차평가 제출을 확인했는지 여부 (2차 평가자인 경우에만 제공)',
+    example: false,
+    nullable: true,
+  })
+  primaryEvaluationViewed?: boolean;
 }
 
 /**
@@ -288,6 +296,18 @@ export class MyTargetSelfEvaluationDto {
     nullable: true,
   })
   grade: string | null;
+
+  @ApiProperty({
+    description: '1차 평가자가 제출된 자기평가를 확인했는지 여부',
+    example: false,
+  })
+  viewedByPrimaryEvaluator: boolean;
+
+  @ApiProperty({
+    description: '2차 평가자가 제출된 자기평가를 확인했는지 여부',
+    example: false,
+  })
+  viewedBySecondaryEvaluator: boolean;
 }
 
 /**

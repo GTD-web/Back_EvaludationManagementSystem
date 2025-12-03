@@ -211,11 +211,15 @@ function CreateEvaluationQuestion() {
 - 질문 내용은 중복될 수 없음
 - 점수 범위 설정 가능 (최소/최대 점수)
 - groupId 제공 시 해당 그룹에 자동으로 추가
+- displayOrder 생략 시 그룹의 마지막 순서로 자동 배치
 
 **테스트 케이스:**
 - 기본 생성: 질문 내용만 지정하여 생성할 수 있어야 한다
 - 점수 범위 포함: minScore, maxScore를 포함하여 생성할 수 있어야 한다
 - 그룹 자동 추가: groupId와 displayOrder를 포함하여 생성 시 해당 그룹에 자동 추가되어야 한다
+- displayOrder 자동 설정: groupId 포함, displayOrder 생략 시 그룹의 마지막 순서로 자동 배치되어야 한다
+- displayOrder 명시: groupId와 displayOrder를 명시하면 해당 순서로 추가되어야 한다
+- 그룹 없이 생성: groupId 없이 생성 시 어떤 그룹에도 속하지 않아야 한다
 - 응답 구조 검증: 응답에 id와 message 필드가 포함되어야 한다
 - 질문 내용 중복: 동일한 질문 내용으로 생성 시 409 에러가 발생해야 한다
 - 질문 내용 누락: text 필드 누락 시 400 에러가 발생해야 한다

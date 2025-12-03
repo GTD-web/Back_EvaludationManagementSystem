@@ -14,7 +14,7 @@ exports.CreateEvaluationQuestionHandler = exports.CreateEvaluationQuestionComman
 const common_1 = require("@nestjs/common");
 const cqrs_1 = require("@nestjs/cqrs");
 const evaluation_question_service_1 = require("../../../../../domain/sub/evaluation-question/evaluation-question.service");
-const question_group_mapping_service_1 = require("../../../../../domain/sub/question-group-mapping/question-group-mapping.service");
+const add_question_to_group_handler_1 = require("../../question-group-mapping/command/add-question-to-group.handler");
 class CreateEvaluationQuestionCommand {
     data;
     createdBy;
@@ -26,11 +26,11 @@ class CreateEvaluationQuestionCommand {
 exports.CreateEvaluationQuestionCommand = CreateEvaluationQuestionCommand;
 let CreateEvaluationQuestionHandler = CreateEvaluationQuestionHandler_1 = class CreateEvaluationQuestionHandler {
     evaluationQuestionService;
-    questionGroupMappingService;
+    commandBus;
     logger = new common_1.Logger(CreateEvaluationQuestionHandler_1.name);
-    constructor(evaluationQuestionService, questionGroupMappingService) {
+    constructor(evaluationQuestionService, commandBus) {
         this.evaluationQuestionService = evaluationQuestionService;
-        this.questionGroupMappingService = questionGroupMappingService;
+        this.commandBus = commandBus;
     }
     async execute(command) {
         this.logger.log('평가 질문 생성 시작', command);
@@ -40,12 +40,12 @@ let CreateEvaluationQuestionHandler = CreateEvaluationQuestionHandler_1 = class 
         this.logger.log(`평가 질문 생성 완료 - ID: ${evaluationQuestion.id}, 질문: ${evaluationQuestion.text}`);
         if (groupId) {
             try {
-                await this.questionGroupMappingService.생성한다({
+                const mappingId = await this.commandBus.execute(new add_question_to_group_handler_1.AddQuestionToGroupCommand({
                     groupId,
                     questionId: evaluationQuestion.id,
-                    displayOrder: displayOrder ?? 0,
-                }, createdBy);
-                this.logger.log(`평가 질문이 그룹에 추가됨 - 질문 ID: ${evaluationQuestion.id}, 그룹 ID: ${groupId}`);
+                    displayOrder,
+                }, createdBy));
+                this.logger.log(`평가 질문이 그룹에 추가됨 - 질문 ID: ${evaluationQuestion.id}, 그룹 ID: ${groupId}, 매핑 ID: ${mappingId}`);
             }
             catch (error) {
                 this.logger.warn(`평가 질문은 생성되었으나 그룹 추가 실패 - 질문 ID: ${evaluationQuestion.id}, 그룹 ID: ${groupId}`, error.message);
@@ -59,6 +59,6 @@ exports.CreateEvaluationQuestionHandler = CreateEvaluationQuestionHandler = Crea
     (0, common_1.Injectable)(),
     (0, cqrs_1.CommandHandler)(CreateEvaluationQuestionCommand),
     __metadata("design:paramtypes", [evaluation_question_service_1.EvaluationQuestionService,
-        question_group_mapping_service_1.QuestionGroupMappingService])
+        cqrs_1.CommandBus])
 ], CreateEvaluationQuestionHandler);
 //# sourceMappingURL=create-evaluation-question.handler.js.map

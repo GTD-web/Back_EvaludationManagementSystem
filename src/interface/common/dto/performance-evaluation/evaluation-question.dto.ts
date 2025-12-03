@@ -140,10 +140,10 @@ export class CreateEvaluationQuestionDto {
   groupId?: string;
 
   @ApiPropertyOptional({
-    description: '표시 순서 (그룹 추가 시 사용)',
+    description:
+      '표시 순서 (그룹 추가 시 사용, 생략 시 그룹의 마지막 순서로 자동 배치)',
     example: 1,
     minimum: 0,
-    default: 0,
   })
   @IsOptional()
   @IsInt()
@@ -233,6 +233,8 @@ export class EvaluationQuestionResponseDto {
 
 /**
  * 그룹에 질문 추가 DTO
+ *
+ * Note: displayOrder를 생략하면 자동으로 그룹의 마지막 순서로 배치됩니다.
  */
 export class AddQuestionToGroupDto {
   @ApiProperty({

@@ -14,6 +14,7 @@ import { RevisionRequestContextModule } from '../../context/revision-request-con
 import { SeedDataContextModule } from '../../context/seed-data-context/seed-data-context.module';
 import { StepApprovalContextModule } from '../../context/step-approval-context/step-approval-context.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
+import { NotificationModule } from '../../domain/common/notification';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { ROLES_GUARD_OPTIONS, RolesGuard } from '../common/guards';
 import { UserAuthController } from './auth/user-auth.controller';
@@ -25,6 +26,7 @@ import { UserDeliverableManagementController } from './performance-evaluation/us
 import { UserPeerEvaluationManagementController } from './performance-evaluation/user-peer-evaluation-management.controller';
 import { UserWbsSelfEvaluationManagementController } from './performance-evaluation/user-wbs-self-evaluation-management.controller';
 import { UserRevisionRequestController } from './revision-request/user-revision-request.controller';
+import { NotificationController } from '../common/controllers/notification.controller';
 
 /**
  * 사용자 인터페이스 모듈
@@ -49,6 +51,7 @@ import { UserRevisionRequestController } from './revision-request/user-revision-
     BusinessModule, // 비즈니스 레이어 모듈 주입
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
+    NotificationModule, // 알림 모듈 주입
   ],
   controllers: [
     UserDashboardController,
@@ -60,6 +63,7 @@ import { UserRevisionRequestController } from './revision-request/user-revision-
     UserPeerEvaluationManagementController,
     UserWbsSelfEvaluationManagementController,
     UserRevisionRequestController,
+    NotificationController,
   ],
   providers: [
     {

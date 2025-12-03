@@ -21,6 +21,7 @@ const evaluation_question_management_context_module_1 = require("../../context/e
 const seed_data_context_module_1 = require("../../context/seed-data-context/seed-data-context.module");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
+const notification_1 = require("../../domain/common/notification");
 const department_module_1 = require("../../domain/common/department/department.module");
 const project_module_1 = require("../../domain/common/project/project.module");
 const employee_entity_1 = require("../../domain/common/employee/employee.entity");
@@ -50,6 +51,7 @@ const evaluation_activity_log_controller_1 = require("./evaluation-activity-log/
 const project_management_controller_1 = require("./project/project-management.controller");
 const core_1 = require("@nestjs/core");
 const guards_1 = require("../common/guards");
+const notification_controller_1 = require("../common/controllers/notification.controller");
 let AdminInterfaceModule = class AdminInterfaceModule {
 };
 exports.AdminInterfaceModule = AdminInterfaceModule;
@@ -72,6 +74,7 @@ exports.AdminInterfaceModule = AdminInterfaceModule = __decorate([
             business_module_1.BusinessModule,
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
+            notification_1.NotificationModule,
             department_module_1.DepartmentModule,
             project_module_1.ProjectModule,
         ],
@@ -97,6 +100,7 @@ exports.AdminInterfaceModule = AdminInterfaceModule = __decorate([
             revision_request_controller_1.RevisionRequestController,
             audit_log_controller_1.AuditLogController,
             evaluation_activity_log_controller_1.EvaluationActivityLogController,
+            notification_controller_1.NotificationController,
         ],
         providers: [
             {

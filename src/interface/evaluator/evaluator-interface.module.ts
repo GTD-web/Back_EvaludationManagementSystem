@@ -14,6 +14,7 @@ import { RevisionRequestContextModule } from '../../context/revision-request-con
 import { SeedDataContextModule } from '../../context/seed-data-context/seed-data-context.module';
 import { StepApprovalContextModule } from '../../context/step-approval-context/step-approval-context.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
+import { NotificationModule } from '../../domain/common/notification';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { ROLES_GUARD_OPTIONS, RolesGuard } from '../common/guards';
 import { EvaluatorAuthController } from './auth/evaluator-auth.controller';
@@ -30,6 +31,7 @@ import { EvaluatorDownwardEvaluationManagementController } from './performance-e
 import { EvaluatorPeerEvaluationManagementController } from './performance-evaluation/evaluator-peer-evaluation-management.controller';
 import { EvaluatorWbsSelfEvaluationManagementController } from './performance-evaluation/evaluator-wbs-self-evaluation-management.controller';
 import { EvaluatorRevisionRequestController } from './revision-request/evaluator-revision-request.controller';
+import { NotificationController } from '../common/controllers/notification.controller';
 
 /**
  * 평가자 인터페이스 모듈
@@ -54,6 +56,7 @@ import { EvaluatorRevisionRequestController } from './revision-request/evaluator
     BusinessModule, // 비즈니스 레이어 모듈 주입
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
+    NotificationModule, // 알림 모듈 주입
   ],
   controllers: [
     EvaluatorAuthController,
@@ -70,6 +73,7 @@ import { EvaluatorRevisionRequestController } from './revision-request/evaluator
     EvaluatorPeerEvaluationManagementController,
     EvaluatorWbsSelfEvaluationManagementController,
     EvaluatorRevisionRequestController,
+    NotificationController,
   ],
   providers: [
     {

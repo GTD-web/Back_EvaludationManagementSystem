@@ -23,6 +23,7 @@ const revision_request_context_module_1 = require("../../context/revision-reques
 const seed_data_context_module_1 = require("../../context/seed-data-context/seed-data-context.module");
 const step_approval_context_module_1 = require("../../context/step-approval-context/step-approval-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
+const notification_1 = require("../../domain/common/notification");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const guards_1 = require("../common/guards");
 const evaluator_auth_controller_1 = require("./auth/evaluator-auth.controller");
@@ -39,6 +40,7 @@ const evaluator_downward_evaluation_management_controller_1 = require("./perform
 const evaluator_peer_evaluation_management_controller_1 = require("./performance-evaluation/evaluator-peer-evaluation-management.controller");
 const evaluator_wbs_self_evaluation_management_controller_1 = require("./performance-evaluation/evaluator-wbs-self-evaluation-management.controller");
 const evaluator_revision_request_controller_1 = require("./revision-request/evaluator-revision-request.controller");
+const notification_controller_1 = require("../common/controllers/notification.controller");
 let EvaluatorInterfaceModule = class EvaluatorInterfaceModule {
 };
 exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule;
@@ -60,6 +62,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             business_module_1.BusinessModule,
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
+            notification_1.NotificationModule,
         ],
         controllers: [
             evaluator_auth_controller_1.EvaluatorAuthController,
@@ -76,6 +79,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             evaluator_peer_evaluation_management_controller_1.EvaluatorPeerEvaluationManagementController,
             evaluator_wbs_self_evaluation_management_controller_1.EvaluatorWbsSelfEvaluationManagementController,
             evaluator_revision_request_controller_1.EvaluatorRevisionRequestController,
+            notification_controller_1.NotificationController,
         ],
         providers: [
             {

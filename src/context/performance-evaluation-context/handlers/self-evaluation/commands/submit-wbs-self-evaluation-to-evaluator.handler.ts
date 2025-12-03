@@ -9,6 +9,8 @@ import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-s
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { WbsSelfEvaluationDto } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.types';
+import { NotificationHelperService } from '@domain/common/notification';
+import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 
 /**
  * WBS 자기평가 제출 커맨드 (피평가자 → 1차 평가자)
@@ -36,6 +38,8 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
     private readonly wbsSelfEvaluationService: WbsSelfEvaluationService,
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly transactionManager: TransactionManagerService,
+    private readonly notificationHelper: NotificationHelperService,
+    private readonly stepApprovalContext: StepApprovalContextService,
   ) {}
 
   async execute(
@@ -106,8 +110,70 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         submittedToEvaluator: updatedEvaluation.submittedToEvaluator,
       });
 
+      // 알림 전송 (비동기 처리, 실패해도 제출은 성공)
+      this.알림을전송한다(
+        updatedEvaluation.employeeId,
+        updatedEvaluation.periodId,
+        evaluationPeriod.name,
+      ).catch((error) => {
+        this.logger.error(
+          'WBS 자기평가 제출 알림 전송 실패 (무시됨)',
+          error.stack,
+        );
+      });
+
       return updatedEvaluation.DTO로_변환한다();
     });
+  }
+
+  /**
+   * 1차 평가자에게 알림을 전송한다
+   */
+  private async 알림을전송한다(
+    employeeId: string,
+    periodId: string,
+    periodName: string,
+  ): Promise<void> {
+    try {
+      // 1차 평가자 조회
+      const evaluatorId = await this.stepApprovalContext.일차평가자를_조회한다(
+        periodId,
+        employeeId,
+      );
+
+      if (!evaluatorId) {
+        this.logger.warn(
+          `1차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}`,
+        );
+        return;
+      }
+
+      // 알림 전송
+      await this.notificationHelper.직원에게_알림을_전송한다({
+        sender: 'system',
+        title: 'WBS 자기평가 제출 알림',
+        content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
+        employeeNumber: evaluatorId,
+        sourceSystem: 'ems',
+        linkUrl: '/evaluations/downward',
+        metadata: {
+          type: 'self-evaluation-submitted',
+          priority: 'medium',
+          employeeId,
+          periodId,
+        },
+      });
+
+      this.logger.log(
+        `WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        '알림 전송 중 오류 발생',
+        error.stack,
+      );
+      throw error;
+    }
   }
 }
 

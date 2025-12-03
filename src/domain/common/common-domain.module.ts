@@ -6,6 +6,7 @@ import { WbsItemModule } from './wbs-item/wbs-item.module';
 import { SSOModule } from './sso/sso.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { SystemSettingModule } from './system-setting/system-setting.module';
+import { NotificationModule } from './notification';
 
 /**
  * 외부 도메인 모듈
@@ -21,6 +22,7 @@ import { SystemSettingModule } from './system-setting/system-setting.module';
     SSOModule,
     AuditLogModule,
     SystemSettingModule,
+    NotificationModule,
   ],
   exports: [
     EmployeeModule,
@@ -30,6 +32,7 @@ import { SystemSettingModule } from './system-setting/system-setting.module';
     SSOModule,
     AuditLogModule,
     SystemSettingModule,
+    NotificationModule,
   ],
 })
 export class CommonDomainModule {}

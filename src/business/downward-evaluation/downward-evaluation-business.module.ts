@@ -9,6 +9,8 @@ import { StepApprovalContextModule } from '@context/step-approval-context/step-a
 import { EvaluationActivityLogContextModule } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.module';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
+import { NotificationModule } from '@domain/common/notification';
+import { CoreDomainModule } from '@domain/core/core-domain.module';
 
 /**
  * 하향평가 비즈니스 모듈
@@ -18,12 +20,14 @@ import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-ev
 @Module({
   imports: [
     TypeOrmModule.forFeature([WbsSelfEvaluation, DownwardEvaluation]),
+    CoreDomainModule,
     PerformanceEvaluationContextModule,
     EvaluationCriteriaManagementContextModule,
     EvaluationPeriodManagementContextModule,
     RevisionRequestContextModule,
     StepApprovalContextModule,
     EvaluationActivityLogContextModule,
+    NotificationModule,
   ],
   providers: [DownwardEvaluationBusinessService],
   exports: [DownwardEvaluationBusinessService],

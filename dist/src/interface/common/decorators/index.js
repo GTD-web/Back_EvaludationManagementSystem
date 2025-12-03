@@ -21,4 +21,5 @@ __exportStar(require("./public.decorator"), exports);
 __exportStar(require("./current-user.decorator"), exports);
 __exportStar(require("./roles.decorator"), exports);
 __exportStar(require("./project/project-api.decorators"), exports);
+__exportStar(require("./notification/notification-api.decorators"), exports);
 //# sourceMappingURL=index.js.map

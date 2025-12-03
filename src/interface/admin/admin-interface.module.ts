@@ -12,6 +12,7 @@ import { EvaluationQuestionManagementContextModule } from '../../context/evaluat
 import { SeedDataContextModule } from '../../context/seed-data-context/seed-data-context.module';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
+import { NotificationModule } from '../../domain/common/notification';
 import { DepartmentModule } from '../../domain/common/department/department.module';
 import { ProjectModule } from '../../domain/common/project/project.module';
 import { Employee } from '../../domain/common/employee/employee.entity';
@@ -41,6 +42,7 @@ import { EvaluationActivityLogController } from './evaluation-activity-log/evalu
 import { ProjectManagementController } from './project/project-management.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
+import { NotificationController } from '../common/controllers/notification.controller';
 
 /**
  * 관리자 인터페이스 모듈
@@ -66,6 +68,7 @@ import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
     BusinessModule, // 비즈니스 레이어 모듈 주입
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
+    NotificationModule, // 알림 모듈 주입
     DepartmentModule, // 부서 모듈 주입
     ProjectModule, // 프로젝트 모듈 주입
   ],
@@ -91,6 +94,7 @@ import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
     RevisionRequestController, // 재작성 요청 컨트롤러
     AuditLogController, // Audit 로그 컨트롤러
     EvaluationActivityLogController, // 평가 활동 내역 컨트롤러
+    NotificationController, // 알림 컨트롤러
   ],
   providers: [
     {

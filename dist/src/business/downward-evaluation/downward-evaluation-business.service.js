@@ -28,6 +28,8 @@ const evaluation_revision_request_1 = require("../../domain/sub/evaluation-revis
 const downward_evaluation_types_1 = require("../../domain/core/downward-evaluation/downward-evaluation.types");
 const wbs_self_evaluation_entity_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity");
 const downward_evaluation_entity_1 = require("../../domain/core/downward-evaluation/downward-evaluation.entity");
+const notification_1 = require("../../domain/common/notification");
+const evaluation_period_service_1 = require("../../domain/core/evaluation-period/evaluation-period.service");
 let DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = class DownwardEvaluationBusinessService {
     performanceEvaluationService;
     evaluationCriteriaManagementService;
@@ -35,16 +37,20 @@ let DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = cl
     revisionRequestContextService;
     stepApprovalContextService;
     activityLogContextService;
+    notificationHelper;
+    evaluationPeriodService;
     wbsSelfEvaluationRepository;
     downwardEvaluationRepository;
     logger = new common_1.Logger(DownwardEvaluationBusinessService_1.name);
-    constructor(performanceEvaluationService, evaluationCriteriaManagementService, evaluationPeriodManagementContextService, revisionRequestContextService, stepApprovalContextService, activityLogContextService, wbsSelfEvaluationRepository, downwardEvaluationRepository) {
+    constructor(performanceEvaluationService, evaluationCriteriaManagementService, evaluationPeriodManagementContextService, revisionRequestContextService, stepApprovalContextService, activityLogContextService, notificationHelper, evaluationPeriodService, wbsSelfEvaluationRepository, downwardEvaluationRepository) {
         this.performanceEvaluationService = performanceEvaluationService;
         this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
         this.evaluationPeriodManagementContextService = evaluationPeriodManagementContextService;
         this.revisionRequestContextService = revisionRequestContextService;
         this.stepApprovalContextService = stepApprovalContextService;
         this.activityLogContextService = activityLogContextService;
+        this.notificationHelper = notificationHelper;
+        this.evaluationPeriodService = evaluationPeriodService;
         this.wbsSelfEvaluationRepository = wbsSelfEvaluationRepository;
         this.downwardEvaluationRepository = downwardEvaluationRepository;
     }
@@ -137,7 +143,37 @@ let DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = cl
         if (approveAllBelow) {
             await this.자기평가를_자동_제출한다(evaluateeId, periodId, wbsId, submittedBy);
         }
+        this.피평가자에게_알림을_전송한다(evaluateeId, periodId).catch((error) => {
+            this.logger.error('1차 하향평가 제출 알림 전송 실패 (무시됨)', error.stack);
+        });
         this.logger.log(`1차 하향평가 제출 및 재작성 요청 완료 처리 완료 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}`);
+    }
+    async 피평가자에게_알림을_전송한다(evaluateeId, periodId) {
+        try {
+            const period = await this.evaluationPeriodService.ID로_조회한다(periodId);
+            if (!period) {
+                this.logger.warn(`평가기간을 찾을 수 없어 알림을 전송하지 않습니다. periodId=${periodId}`);
+                return;
+            }
+            await this.notificationHelper.직원에게_알림을_전송한다({
+                sender: 'system',
+                title: '1차 하향평가 제출 알림',
+                content: `${period.name} 평가기간의 1차 하향평가가 제출되었습니다.`,
+                employeeNumber: evaluateeId,
+                sourceSystem: 'ems',
+                linkUrl: '/evaluations/self',
+                metadata: {
+                    type: 'primary-downward-evaluation-submitted',
+                    priority: 'medium',
+                    periodId,
+                },
+            });
+            this.logger.log(`1차 하향평가 제출 알림 전송 완료: 피평가자=${evaluateeId}`);
+        }
+        catch (error) {
+            this.logger.error('알림 전송 중 오류 발생', error.stack);
+            throw error;
+        }
     }
     async 이차_하향평가를_제출하고_재작성요청을_완료한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy, approveAllBelow = false) {
         this.logger.log(`2차 하향평가 제출 및 재작성 요청 완료 처리 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`);
@@ -366,14 +402,16 @@ let DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = cl
 exports.DownwardEvaluationBusinessService = DownwardEvaluationBusinessService;
 exports.DownwardEvaluationBusinessService = DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __param(6, (0, typeorm_1.InjectRepository)(wbs_self_evaluation_entity_1.WbsSelfEvaluation)),
-    __param(7, (0, typeorm_1.InjectRepository)(downward_evaluation_entity_1.DownwardEvaluation)),
+    __param(8, (0, typeorm_1.InjectRepository)(wbs_self_evaluation_entity_1.WbsSelfEvaluation)),
+    __param(9, (0, typeorm_1.InjectRepository)(downward_evaluation_entity_1.DownwardEvaluation)),
     __metadata("design:paramtypes", [performance_evaluation_service_1.PerformanceEvaluationService,
         evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         evaluation_period_management_service_1.EvaluationPeriodManagementContextService,
         revision_request_context_service_1.RevisionRequestContextService,
         step_approval_context_service_1.StepApprovalContextService,
         evaluation_activity_log_context_service_1.EvaluationActivityLogContextService,
+        notification_1.NotificationHelperService,
+        evaluation_period_service_1.EvaluationPeriodService,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], DownwardEvaluationBusinessService);

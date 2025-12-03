@@ -346,7 +346,59 @@ export class StepApprovalContextService implements IStepApprovalContext {
   }
 
   /**
-   * 2차평가자들을 조회한다
+   * 2차평가자를 조회한다 (WBS별)
+   * mapping.evaluatorId가 externalId로 저장되어 있을 수 있으므로, Employee 테이블과 조인하여 실제 Employee.id를 반환합니다.
+   */
+  async 이차평가자를_조회한다(
+    evaluationPeriodId: string,
+    employeeId: string,
+    wbsItemId: string,
+  ): Promise<string | null> {
+    // EvaluationLineMapping을 사용하여 평가자 조회
+    const mapping = await this.mappingRepository.findOne({
+      where: {
+        evaluationPeriodId,
+        employeeId,
+        deletedAt: null as any,
+      },
+    });
+
+    if (!mapping) {
+      return null;
+    }
+
+    // SECONDARY 타입의 평가라인을 통해 특정 WBS의 평가자 조회
+    // Employee와 조인하여 실제 Employee.id를 반환
+    const lineMapping = await this.evaluationLineMappingRepository
+      .createQueryBuilder('mapping')
+      .leftJoin(
+        'evaluation_lines',
+        'line',
+        'line.id = mapping.evaluationLineId',
+      )
+      .leftJoin(
+        'employee',
+        'evaluator',
+        '(evaluator.id = "mapping"."evaluatorId" OR evaluator.externalId = "mapping"."evaluatorId"::text) AND evaluator.deletedAt IS NULL',
+      )
+      .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
+        evaluationPeriodId,
+      })
+      .andWhere('mapping.employeeId = :employeeId', { employeeId })
+      .andWhere('mapping.wbsItemId = :wbsItemId', { wbsItemId })
+      .andWhere('mapping.deletedAt IS NULL')
+      .andWhere('line.evaluatorType = :evaluatorType', {
+        evaluatorType: 'secondary',
+      })
+      .andWhere('line.deletedAt IS NULL')
+      .select('evaluator.id', 'evaluatorId')
+      .getRawOne();
+
+    return lineMapping?.evaluatorId || null;
+  }
+
+  /**
+   * 2차평가자들을 조회한다 (전체)
    * mapping.evaluatorId가 externalId로 저장되어 있을 수 있으므로, Employee 테이블과 조인하여 실제 Employee.id를 반환합니다.
    */
   async 이차평가자들을_조회한다(

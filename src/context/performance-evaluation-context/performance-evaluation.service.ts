@@ -677,6 +677,7 @@ export class PerformanceEvaluationService
 
   /**
    * 1차 하향평가를 제출한다
+   * 평가가 존재하지 않으면 자동으로 생성합니다.
    */
   async 일차_하향평가를_제출한다(
     evaluateeId: string,
@@ -698,10 +699,40 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
+    
+    // 평가가 없으면 자동으로 생성
     if (!result.evaluations || result.evaluations.length === 0) {
-      throw new DownwardEvaluationNotFoundException(
-        `1차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+      // Upsert 커맨드를 사용하여 생성
+      await this.하향평가를_저장한다(
+        evaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        undefined,
+        'primary',
+        undefined,
+        undefined,
+        submittedBy,
       );
+
+      // 생성 후 다시 조회
+      const newResult = await this.queryBus.execute(query);
+      if (!newResult.evaluations || newResult.evaluations.length === 0) {
+        throw new DownwardEvaluationNotFoundException(
+          `1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+        );
+      }
+      
+      const evaluation = newResult.evaluations[0];
+      
+      // 제출 커맨드 실행
+      const command = new SubmitDownwardEvaluationCommand(
+        evaluation.id,
+        submittedBy,
+      );
+
+      await this.commandBus.execute(command);
+      return;
     }
 
     const evaluation = result.evaluations[0];
@@ -717,6 +748,7 @@ export class PerformanceEvaluationService
 
   /**
    * 2차 하향평가를 제출한다
+   * 평가가 존재하지 않으면 자동으로 생성합니다.
    */
   async 이차_하향평가를_제출한다(
     evaluateeId: string,
@@ -738,10 +770,40 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
+    
+    // 평가가 없으면 자동으로 생성
     if (!result.evaluations || result.evaluations.length === 0) {
-      throw new DownwardEvaluationNotFoundException(
-        `2차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+      // Upsert 커맨드를 사용하여 생성
+      await this.하향평가를_저장한다(
+        evaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        undefined,
+        'secondary',
+        undefined,
+        undefined,
+        submittedBy,
       );
+
+      // 생성 후 다시 조회
+      const newResult = await this.queryBus.execute(query);
+      if (!newResult.evaluations || newResult.evaluations.length === 0) {
+        throw new DownwardEvaluationNotFoundException(
+          `2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+        );
+      }
+      
+      const evaluation = newResult.evaluations[0];
+      
+      // 제출 커맨드 실행
+      const command = new SubmitDownwardEvaluationCommand(
+        evaluation.id,
+        submittedBy,
+      );
+
+      await this.commandBus.execute(command);
+      return;
     }
 
     const evaluation = result.evaluations[0];

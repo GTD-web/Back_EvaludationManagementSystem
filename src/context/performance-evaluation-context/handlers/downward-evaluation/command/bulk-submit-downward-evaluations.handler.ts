@@ -74,16 +74,16 @@ export class BulkSubmitDownwardEvaluationsHandler
     });
 
     return await this.transactionManager.executeTransaction(async () => {
-      // 강제 제출 모드인 경우, 할당된 WBS에 대한 하향평가가 없으면 생성
-      if (forceSubmit) {
-        await this.할당된_WBS에_대한_하향평가를_생성한다(
-          evaluatorId,
-          evaluateeId,
-          periodId,
-          evaluationType,
-          submittedBy,
-        );
-      }
+      // 할당된 WBS에 대한 하향평가가 없으면 자동으로 생성
+      // forceSubmit이 true인 경우는 승인 처리 메시지를 포함하여 생성
+      await this.할당된_WBS에_대한_하향평가를_생성한다(
+        evaluatorId,
+        evaluateeId,
+        periodId,
+        evaluationType,
+        submittedBy,
+        forceSubmit, // 승인 처리 여부 전달
+      );
 
       // 해당 평가자가 담당하는 피평가자의 모든 하향평가 조회
       const evaluations = await this.downwardEvaluationRepository.find({
@@ -167,10 +167,11 @@ export class BulkSubmitDownwardEvaluationsHandler
   }
 
   /**
-   * 할당된 WBS에 대한 하향평가를 생성한다 (강제 제출 시 사용)
+   * 할당된 WBS에 대한 하향평가를 생성한다
    * 1차 평가자의 경우: EvaluationWbsAssignment에서 피평가자에게 할당된 전체 WBS 조회
    * 2차 평가자의 경우: EvaluationLineMapping에서 해당 평가자에게 할당된 WBS 목록 조회
    * 각 WBS에 대한 하향평가가 없으면 생성합니다.
+   * @param isApprovalMode - true일 경우 승인 처리 메시지를 포함하여 생성
    */
   private async 할당된_WBS에_대한_하향평가를_생성한다(
     evaluatorId: string,
@@ -178,17 +179,21 @@ export class BulkSubmitDownwardEvaluationsHandler
     periodId: string,
     evaluationType: DownwardEvaluationType,
     createdBy: string,
+    isApprovalMode: boolean = false,
   ): Promise<void> {
     this.logger.log(
-      `할당된 WBS에 대한 하향평가 생성 시작 - 평가자: ${evaluatorId}, 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}`,
+      `할당된 WBS에 대한 하향평가 생성 시작 - 평가자: ${evaluatorId}, 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}, 승인모드: ${isApprovalMode}`,
     );
 
-    // 승인자 정보 조회
-    const approver = await this.employeeRepository.findOne({
-      where: { id: createdBy, deletedAt: IsNull() },
-      select: ['id', 'name'],
-    });
-    const approverName = approver?.name || '관리자';
+    // 승인자 정보 조회 (승인 모드일 경우에만)
+    let approverName = '시스템';
+    if (isApprovalMode) {
+      const approver = await this.employeeRepository.findOne({
+        where: { id: createdBy, deletedAt: IsNull() },
+        select: ['id', 'name'],
+      });
+      approverName = approver?.name || '관리자';
+    }
 
     let assignedWbsIds: string[] = [];
 
@@ -266,19 +271,25 @@ export class BulkSubmitDownwardEvaluationsHandler
 
       if (!existingEvaluation) {
         try {
-          // 하향평가 생성 (승인 처리 메시지 포함)
-          const approvalMessage = `${approverName}님에 따라 하향평가가 승인 처리되었습니다.`;
-          await this.downwardEvaluationService.생성한다({
+          // 하향평가 생성
+          // 승인 모드일 경우 승인 처리 메시지를 포함하여 생성
+          const evaluationData: any = {
             employeeId: evaluateeId,
             evaluatorId,
             wbsId,
             periodId,
             evaluationType,
-            downwardEvaluationContent: approvalMessage,
             evaluationDate: new Date(),
             isCompleted: false,
             createdBy,
-          });
+          };
+
+          // 승인 모드일 경우에만 승인 메시지 추가
+          if (isApprovalMode) {
+            evaluationData.downwardEvaluationContent = `${approverName}님에 따라 하향평가가 승인 처리되었습니다.`;
+          }
+
+          await this.downwardEvaluationService.생성한다(evaluationData);
 
           this.logger.debug(
             `할당된 WBS에 대한 하향평가 생성 완료 - WBS ID: ${wbsId}, 평가유형: ${evaluationType}`,

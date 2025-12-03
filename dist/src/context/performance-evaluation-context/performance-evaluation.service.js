@@ -22,6 +22,7 @@ const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/e
 const downward_evaluation_exceptions_1 = require("../../domain/core/downward-evaluation/downward-evaluation.exceptions");
 const secondary_evaluation_step_approval_service_1 = require("../../domain/sub/secondary-evaluation-step-approval/secondary-evaluation-step-approval.service");
 const step_approval_context_service_1 = require("../step-approval-context/step-approval-context.service");
+const employee_entity_1 = require("../../domain/common/employee/employee.entity");
 const self_evaluation_1 = require("./handlers/self-evaluation");
 const evaluation_editable_status_1 = require("./handlers/evaluation-editable-status");
 const peer_evaluation_1 = require("./handlers/peer-evaluation");
@@ -33,13 +34,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
     commandBus;
     queryBus;
     mappingRepository;
+    employeeRepository;
     secondaryStepApprovalService;
     stepApprovalContextService;
     logger = new common_1.Logger(PerformanceEvaluationService_1.name);
-    constructor(commandBus, queryBus, mappingRepository, secondaryStepApprovalService, stepApprovalContextService) {
+    constructor(commandBus, queryBus, mappingRepository, employeeRepository, secondaryStepApprovalService, stepApprovalContextService) {
         this.commandBus = commandBus;
         this.queryBus = queryBus;
         this.mappingRepository = mappingRepository;
+        this.employeeRepository = employeeRepository;
         this.secondaryStepApprovalService = secondaryStepApprovalService;
         this.stepApprovalContextService = stepApprovalContextService;
     }
@@ -182,10 +185,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         if (evaluatorId !== actualPrimaryEvaluatorId) {
             this.logger.warn(`⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 1차 평가자 ID(${actualPrimaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`);
         }
+        const submitter = await this.employeeRepository.findOne({
+            where: { id: submittedBy, deletedAt: null },
+        });
+        const submitterName = submitter?.name || '관리자';
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', undefined, undefined, submittedBy);
+            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', defaultContent, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
@@ -196,6 +204,10 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             return;
         }
         const evaluation = result.evaluations[0];
+        if (!evaluation.downwardEvaluationContent?.trim()) {
+            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'primary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
+        }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
         await this.commandBus.execute(command);
     }
@@ -207,10 +219,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         if (evaluatorId !== actualSecondaryEvaluatorId) {
             this.logger.warn(`⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 2차 평가자 ID(${actualSecondaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`);
         }
+        const submitter = await this.employeeRepository.findOne({
+            where: { id: submittedBy, deletedAt: null },
+        });
+        const submitterName = submitter?.name || '관리자';
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', undefined, undefined, submittedBy);
+            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', defaultContent, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
@@ -221,6 +238,10 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             return;
         }
         const evaluation = result.evaluations[0];
+        if (!evaluation.downwardEvaluationContent?.trim()) {
+            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'secondary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
+        }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
         await this.commandBus.execute(command);
     }
@@ -456,8 +477,10 @@ exports.PerformanceEvaluationService = PerformanceEvaluationService;
 exports.PerformanceEvaluationService = PerformanceEvaluationService = PerformanceEvaluationService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(2, (0, typeorm_1.InjectRepository)(evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping)),
+    __param(3, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
         cqrs_1.QueryBus,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         secondary_evaluation_step_approval_service_1.SecondaryEvaluationStepApprovalService,
         step_approval_context_service_1.StepApprovalContextService])

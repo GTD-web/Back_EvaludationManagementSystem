@@ -205,8 +205,7 @@ export class DashboardScenario {
     employeeId: string;
     expectedSelfEvaluationViewedByPrimaryEvaluator?: boolean;
     expectedSelfEvaluationViewedBySecondaryEvaluator?: boolean;
-    expectedPrimaryEvaluationViewedByPrimaryEvaluator?: boolean;
-    expectedSecondaryEvaluationViewedBySecondaryEvaluator?: boolean;
+    expectedPrimaryEvaluationViewedBySecondaryEvaluator?: boolean;
   }): Promise<any> {
     const 현황 = await this.평가대상자_현황을_조회한다({
       evaluationPeriodId: config.evaluationPeriodId,
@@ -219,28 +218,21 @@ export class DashboardScenario {
 
     // 자기평가 확인 여부 검증
     if (config.expectedSelfEvaluationViewedByPrimaryEvaluator !== undefined) {
-      expect(target.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator).toBe(
+      expect(target.selfEvaluation.viewedByPrimaryEvaluator).toBe(
         config.expectedSelfEvaluationViewedByPrimaryEvaluator
       );
     }
 
     if (config.expectedSelfEvaluationViewedBySecondaryEvaluator !== undefined) {
-      expect(target.selfEvaluation.isSelfEvaluationViewedBySecondaryEvaluator).toBe(
+      expect(target.selfEvaluation.viewedBySecondaryEvaluator).toBe(
         config.expectedSelfEvaluationViewedBySecondaryEvaluator
       );
     }
 
-    // 1차 하향평가 확인 여부 검증
-    if (config.expectedPrimaryEvaluationViewedByPrimaryEvaluator !== undefined) {
-      expect(target.downwardEvaluation.primaryStatus?.isPrimaryEvaluationViewedByPrimaryEvaluator).toBe(
-        config.expectedPrimaryEvaluationViewedByPrimaryEvaluator
-      );
-    }
-
-    // 2차 하향평가 확인 여부 검증
-    if (config.expectedSecondaryEvaluationViewedBySecondaryEvaluator !== undefined) {
-      expect(target.downwardEvaluation.secondaryStatus?.isSecondaryEvaluationViewedBySecondaryEvaluator).toBe(
-        config.expectedSecondaryEvaluationViewedBySecondaryEvaluator
+    // 2차 평가자의 1차평가 확인 여부 검증
+    if (config.expectedPrimaryEvaluationViewedBySecondaryEvaluator !== undefined) {
+      expect(target.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed).toBe(
+        config.expectedPrimaryEvaluationViewedBySecondaryEvaluator
       );
     }
 

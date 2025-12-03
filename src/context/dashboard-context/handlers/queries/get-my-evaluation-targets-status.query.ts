@@ -305,16 +305,6 @@ export class GetMyEvaluationTargetsStatusHandler
             evaluatorTypes,
           );
 
-          // downwardEvaluation에 확인 여부 추가
-          if (downwardEvaluationStatus.primaryStatus) {
-            downwardEvaluationStatus.primaryStatus.isPrimaryEvaluationViewedByPrimaryEvaluator =
-              viewedStatus.viewedByPrimaryEvaluator;
-          }
-          if (downwardEvaluationStatus.secondaryStatus) {
-            downwardEvaluationStatus.secondaryStatus.isSecondaryEvaluationViewedBySecondaryEvaluator =
-              viewedStatus.viewedBySecondaryEvaluator;
-          }
-
           results.push({
             employeeId,
             isEvaluationTarget: !mapping.isExcluded,
@@ -353,15 +343,23 @@ export class GetMyEvaluationTargetsStatusHandler
                 selfEvaluationStatus.isSubmittedToEvaluator,
               submittedToManagerCount:
                 selfEvaluationStatus.submittedToManagerCount,
-              isSubmittedToManager:
-                selfEvaluationStatus.isSubmittedToManager,
+              isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
               totalScore: selfEvaluationStatus.totalScore,
               grade: selfEvaluationStatus.grade,
-              isSelfEvaluationViewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
-              isSelfEvaluationViewedBySecondaryEvaluator:
+              viewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
+              viewedBySecondaryEvaluator:
                 viewedStatus.viewedBySecondaryEvaluator,
             },
-            downwardEvaluation: downwardEvaluationStatus,
+            downwardEvaluation: {
+              ...downwardEvaluationStatus,
+              secondaryStatus: downwardEvaluationStatus.secondaryStatus
+                ? {
+                    ...downwardEvaluationStatus.secondaryStatus,
+                    primaryEvaluationViewed:
+                      viewedStatus.primaryEvaluationViewed,
+                  }
+                : null,
+            },
           });
         } catch (error) {
           this.logger.error(
@@ -707,7 +705,7 @@ export class GetMyEvaluationTargetsStatusHandler
 
   /**
    * 평가자의 확인 여부를 계산한다
-   * 
+   *
    * @param evaluationPeriodId 평가기간 ID
    * @param employeeId 피평가자 ID
    * @param evaluatorId 평가자 ID
@@ -725,17 +723,16 @@ export class GetMyEvaluationTargetsStatusHandler
     primaryEvaluationViewed: boolean;
   }> {
     // 1. 피평가자의 마지막 자기평가 제출 시간 조회 (1차 평가자에게 제출)
-    const lastSelfEvaluationSubmitTime =
-      await this.wbsSelfEvaluationRepository
-        .createQueryBuilder('self')
-        .where('self.periodId = :periodId', { periodId: evaluationPeriodId })
-        .andWhere('self.employeeId = :employeeId', { employeeId })
-        .andWhere('self.submittedToEvaluator = true')
-        .andWhere('self.submittedToEvaluatorAt IS NOT NULL')
-        .andWhere('self.deletedAt IS NULL')
-        .orderBy('self.submittedToEvaluatorAt', 'DESC')
-        .limit(1)
-        .getOne();
+    const lastSelfEvaluationSubmitTime = await this.wbsSelfEvaluationRepository
+      .createQueryBuilder('self')
+      .where('self.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self.employeeId = :employeeId', { employeeId })
+      .andWhere('self.submittedToEvaluator = true')
+      .andWhere('self.submittedToEvaluatorAt IS NOT NULL')
+      .andWhere('self.deletedAt IS NULL')
+      .orderBy('self.submittedToEvaluatorAt', 'DESC')
+      .limit(1)
+      .getOne();
 
     // 2. 1차 평가자의 마지막 1차평가 제출 시간 조회
     const lastPrimaryEvaluationSubmitTime =
@@ -810,5 +807,4 @@ export class GetMyEvaluationTargetsStatusHandler
       primaryEvaluationViewed,
     };
   }
-
 }

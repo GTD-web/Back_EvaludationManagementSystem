@@ -195,9 +195,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: false,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(false);
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(false);
     });
 
     it('1차 평가자가 피평가자 데이터를 조회하면 확인 여부가 true로 변경되어야 한다', async () => {
@@ -271,9 +269,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: true,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(true);
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
     });
   });
 
@@ -334,9 +330,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedBySecondaryEvaluator: false,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedBySecondaryEvaluator,
-      ).toBe(false);
+      expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBe(false);
     });
 
     it('2차 평가자가 피평가자 데이터를 조회하면 자기평가 확인 여부가 true로 변경되어야 한다', async () => {
@@ -443,9 +437,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedBySecondaryEvaluator: true,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedBySecondaryEvaluator,
-      ).toBe(true);
+      expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBe(true);
     });
   });
 
@@ -598,9 +590,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: false,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(false);
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(false);
 
       // 첫 번째 피평가자는 이미 조회했으므로 true
       const firstResult = await dashboardScenario.평가_확인_여부를_검증한다({
@@ -610,9 +600,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: true,
       });
 
-      expect(
-        firstResult.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(true);
+      expect(firstResult.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
     });
 
     it('1차 평가자가 두 번째 피평가자를 조회하면 해당 피평가자의 확인 여부만 true로 변경되어야 한다', async () => {
@@ -703,9 +691,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: true,
       });
 
-      expect(
-        result.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(true);
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
 
       // 첫 번째 피평가자도 여전히 true
       const firstResult = await dashboardScenario.평가_확인_여부를_검증한다({
@@ -715,9 +701,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: true,
       });
 
-      expect(
-        firstResult.selfEvaluation.isSelfEvaluationViewedByPrimaryEvaluator,
-      ).toBe(true);
+      expect(firstResult.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
     });
   });
 });

@@ -599,6 +599,61 @@ describe('하향평가 시나리오', () => {
       );
       expect(직원정보.downwardEvaluation.primary.status).toBe('in_progress');
     });
+
+    it('2차 평가자가 1차 하향평가를 초기화(반려)할 수 있다', async () => {
+      // Given - 1차 하향평가 저장 및 제출
+      await downwardEvaluationScenario.일차하향평가를_저장한다({
+        evaluateeId,
+        periodId: evaluationPeriodId,
+        wbsId: wbsItemIds[0],
+        evaluatorId: primaryEvaluatorId,
+        selfEvaluationId,
+        downwardEvaluationContent: '1차 하향평가 내용입니다.',
+        downwardEvaluationScore: 85,
+      });
+
+      await downwardEvaluationScenario.일차하향평가를_제출한다({
+        evaluateeId,
+        periodId: evaluationPeriodId,
+        wbsId: wbsItemIds[0],
+        evaluatorId: primaryEvaluatorId,
+      });
+
+      // When - 2차 평가자가 1차 하향평가를 초기화 (반려)
+      const 초기화응답 =
+        await downwardEvaluationScenario.일차하향평가를_초기화한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: secondaryEvaluatorId, // 2차 평가자 ID 사용
+        });
+
+      // Then - 초기화 응답 검증
+      expect(초기화응답.message).toBe(
+        '1차 하향평가가 성공적으로 미제출 상태로 변경되었습니다.',
+      );
+
+      // Then - 대시보드에서 초기화 확인
+      const 할당데이터 =
+        await downwardEvaluationScenario.직원_할당_데이터를_조회한다({
+          periodId: evaluationPeriodId,
+          employeeId: evaluateeId,
+        });
+
+      const wbsItem = 할당데이터.projects[0]?.wbsList?.[0];
+      expect(wbsItem.primaryDownwardEvaluation.isCompleted).toBe(false); // 초기화됨
+      expect(wbsItem.primaryDownwardEvaluation.evaluatorId).toBe(
+        primaryEvaluatorId,
+      ); // 1차 평가자 ID 유지
+      expect(wbsItem.primaryDownwardEvaluation.evaluationContent).toBe(
+        '1차 하향평가 내용입니다.',
+      ); // 내용은 유지
+      expect(wbsItem.primaryDownwardEvaluation.score).toBe(85); // 점수는 유지
+
+      console.log(
+        '✅ 2차 평가자가 1차 하향평가를 성공적으로 초기화(반려)했습니다.',
+      );
+    });
   });
 
   describe('시나리오 3: 2차 하향평가 저장 및 제출', () => {

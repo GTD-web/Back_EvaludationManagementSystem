@@ -511,14 +511,15 @@ function BulkSubmitDownwardEvaluations() {
 function ResetPrimaryDownwardEvaluation() {
     return (0, common_1.applyDecorators)((0, common_1.Post)('evaluatee/:evaluateeId/period/:periodId/wbs/:wbsId/primary/reset'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: '1차 하향평가 미제출 상태 변경',
-        description: `**중요**: 제출된 1차 하향평가를 미제출 상태로 되돌립니다. 평가 내용은 유지되며, isCompleted 상태만 false로 변경됩니다.
+        description: `**중요**: 제출된 1차 하향평가를 미제출 상태로 되돌립니다. 평가 내용은 유지되며, isCompleted 상태만 false로 변경됩니다. **2차 평가자도 1차 하향평가를 반려(초기화)할 수 있습니다.**
 
 **동작:**
-- 평가자, 피평가자, 평가기간, WBS로 1차 하향평가 조회
+- 피평가자, 평가기간, WBS로 1차 하향평가 조회 (평가자 조건 없이 조회)
 - 평가 상태를 미완료(isCompleted: false)로 변경
 - 수정 일시(updatedAt) 갱신
 - 평가 내용과 점수는 유지
 - 초기화 후 다시 제출 가능
+- **2차 평가자도 1차 하향평가를 반려할 수 있음**
 
 **테스트 케이스:**
 - 제출된 1차 하향평가를 미제출 상태로 변경 가능
@@ -528,6 +529,7 @@ function ResetPrimaryDownwardEvaluation() {
 - 초기화 후 다시 제출 가능
 - 초기화 후 재제출 시 단계 승인 상태는 pending으로 유지
 - 초기화 시 updatedAt이 갱신
+- **2차 평가자가 1차 하향평가를 초기화 가능**
 - 존재하지 않는 평가를 초기화하려고 하면 404 에러
 - 미제출 상태인 평가를 초기화하려고 하면 400 에러
 - 잘못된 evaluateeId UUID 형식이면 400 에러

@@ -204,7 +204,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         return await this.commandBus.execute(command);
     }
     async 일차_하향평가를_초기화한다(evaluateeId, periodId, wbsId, evaluatorId, resetBy) {
-        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(evaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
+        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(undefined, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
             throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);

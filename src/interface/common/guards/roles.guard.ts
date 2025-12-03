@@ -139,24 +139,37 @@ export class RolesGuard implements CanActivate {
     // 사용자의 역할 확인
     const userRoles = user.roles || [];
 
-    // 필요한 역할 중 하나라도 사용자가 가지고 있는지 확인
-    const hasRole = this.rolesRequiringAccessibilityCheck.some((role) =>
-      userRoles.includes(role),
-    );
+    // @Roles() 데코레이터로 지정된 필요한 역할 확인
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (!hasRole) {
-      this.logger.warn(
-        `접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
-          `필요 역할: [${this.rolesRequiringAccessibilityCheck.join(', ')}], ` +
-          `보유 역할: [${userRoles.join(', ')}]`,
+    // @Roles() 데코레이터가 있으면 역할 검증 수행
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRequiredRole = requiredRoles.some((role) =>
+        userRoles.includes(role),
       );
-      throw new ForbiddenException(
-        `이 작업을 수행할 권한이 없습니다. 필요한 역할: ${this.rolesRequiringAccessibilityCheck.join(', ')}`,
-      );
+
+      if (!hasRequiredRole) {
+        this.logger.warn(
+          `접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
+            `필요 역할: [${requiredRoles.join(', ')}], ` +
+            `보유 역할: [${userRoles.join(', ')}]`,
+        );
+        throw new ForbiddenException(
+          `이 작업을 수행할 권한이 없습니다. 필요한 역할: ${requiredRoles.join(', ')}`,
+        );
+      }
     }
 
-    // admin 이면 이중 보안 검증 수행
-    if (userRoles.includes('admin')) {
+    // 접근 가능 여부 확인이 필요한 역할인지 확인 (admin에 대한 2중 보안)
+    const needsAccessibilityCheck =
+      this.rolesRequiringAccessibilityCheck.some((role) =>
+        userRoles.includes(role),
+      );
+
+    if (needsAccessibilityCheck) {
       // 사번으로 접근 가능 여부 확인
       const isAccessible =
         await this.organizationManagementService.사번으로_접근가능한가(
@@ -166,13 +179,15 @@ export class RolesGuard implements CanActivate {
       if (!isAccessible) {
         this.logger.warn(
           `접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-            `admin 역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다.`,
+            `역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다. ` +
+            `역할: [${userRoles.join(', ')}]`,
         );
         throw new ForbiddenException(
           'EMS 시스템 접근 권한이 없습니다. EMS 관리자에게 문의하세요.',
         );
       }
     }
+
     return true;
   }
 }

@@ -47,18 +47,26 @@ let RolesGuard = RolesGuard_1 = class RolesGuard {
             throw new common_1.ForbiddenException('인증 정보가 없습니다.');
         }
         const userRoles = user.roles || [];
-        const hasRole = this.rolesRequiringAccessibilityCheck.some((role) => userRoles.includes(role));
-        if (!hasRole) {
-            this.logger.warn(`접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
-                `필요 역할: [${this.rolesRequiringAccessibilityCheck.join(', ')}], ` +
-                `보유 역할: [${userRoles.join(', ')}]`);
-            throw new common_1.ForbiddenException(`이 작업을 수행할 권한이 없습니다. 필요한 역할: ${this.rolesRequiringAccessibilityCheck.join(', ')}`);
+        const requiredRoles = this.reflector.getAllAndOverride('roles', [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (requiredRoles && requiredRoles.length > 0) {
+            const hasRequiredRole = requiredRoles.some((role) => userRoles.includes(role));
+            if (!hasRequiredRole) {
+                this.logger.warn(`접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
+                    `필요 역할: [${requiredRoles.join(', ')}], ` +
+                    `보유 역할: [${userRoles.join(', ')}]`);
+                throw new common_1.ForbiddenException(`이 작업을 수행할 권한이 없습니다. 필요한 역할: ${requiredRoles.join(', ')}`);
+            }
         }
-        if (userRoles.includes('admin')) {
+        const needsAccessibilityCheck = this.rolesRequiringAccessibilityCheck.some((role) => userRoles.includes(role));
+        if (needsAccessibilityCheck) {
             const isAccessible = await this.organizationManagementService.사번으로_접근가능한가(user.employeeNumber);
             if (!isAccessible) {
                 this.logger.warn(`접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-                    `admin 역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다.`);
+                    `역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다. ` +
+                    `역할: [${userRoles.join(', ')}]`);
                 throw new common_1.ForbiddenException('EMS 시스템 접근 권한이 없습니다. EMS 관리자에게 문의하세요.');
             }
         }

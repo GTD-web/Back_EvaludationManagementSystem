@@ -24,7 +24,7 @@ import { PublicInterfaceModule } from './public/public-interface.module';
  */
 @Module({
   imports: [
-    CommonDomainModule, // SSO 서비스 사용을 위한 도메인 모듈
+    CommonDomainModule, // SSO 서비스 및 알림 서비스 사용을 위한 도메인 모듈
     AuthContextModule, // Auth Context 모듈 (JWT 인증 가드에서 사용)
     AuditLogContextModule, // Audit 로그 컨텍스트 모듈
     OrganizationManagementContextModule, // 조직 관리 컨텍스트 모듈 (RolesGuard에서 사용)
@@ -33,7 +33,7 @@ import { PublicInterfaceModule } from './public/public-interface.module';
     EvaluatorInterfaceModule, // 평가자 인터페이스 모듈
     PublicInterfaceModule, // Public 인터페이스 모듈 (크론 작업 등)
   ],
-  controllers: [],
+  controllers: [], // 각 역할별 모듈에서 컨트롤러 관리
   providers: [
     {
       provide: APP_GUARD,

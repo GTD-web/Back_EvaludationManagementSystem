@@ -3,6 +3,8 @@ import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-s
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { WbsSelfEvaluationDto } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.types';
+import { NotificationHelperService } from '@domain/common/notification';
+import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 export declare class SubmitWbsSelfEvaluationToEvaluatorCommand {
     readonly evaluationId: string;
     readonly submittedBy: string;
@@ -12,7 +14,10 @@ export declare class SubmitWbsSelfEvaluationToEvaluatorHandler implements IComma
     private readonly wbsSelfEvaluationService;
     private readonly evaluationPeriodService;
     private readonly transactionManager;
+    private readonly notificationHelper;
+    private readonly stepApprovalContext;
     private readonly logger;
-    constructor(wbsSelfEvaluationService: WbsSelfEvaluationService, evaluationPeriodService: EvaluationPeriodService, transactionManager: TransactionManagerService);
+    constructor(wbsSelfEvaluationService: WbsSelfEvaluationService, evaluationPeriodService: EvaluationPeriodService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService);
     execute(command: SubmitWbsSelfEvaluationToEvaluatorCommand): Promise<WbsSelfEvaluationDto>;
+    private 알림을전송한다;
 }

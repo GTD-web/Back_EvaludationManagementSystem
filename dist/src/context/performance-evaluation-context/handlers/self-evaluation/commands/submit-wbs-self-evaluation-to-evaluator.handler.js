@@ -16,6 +16,8 @@ const common_1 = require("@nestjs/common");
 const wbs_self_evaluation_service_1 = require("../../../../../domain/core/wbs-self-evaluation/wbs-self-evaluation.service");
 const transaction_manager_service_1 = require("../../../../../../libs/database/transaction-manager.service");
 const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
+const notification_1 = require("../../../../../domain/common/notification");
+const step_approval_context_service_1 = require("../../../../step-approval-context/step-approval-context.service");
 class SubmitWbsSelfEvaluationToEvaluatorCommand {
     evaluationId;
     submittedBy;
@@ -29,11 +31,15 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
     wbsSelfEvaluationService;
     evaluationPeriodService;
     transactionManager;
+    notificationHelper;
+    stepApprovalContext;
     logger = new common_1.Logger(SubmitWbsSelfEvaluationToEvaluatorHandler_1.name);
-    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager) {
+    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager, notificationHelper, stepApprovalContext) {
         this.wbsSelfEvaluationService = wbsSelfEvaluationService;
         this.evaluationPeriodService = evaluationPeriodService;
         this.transactionManager = transactionManager;
+        this.notificationHelper = notificationHelper;
+        this.stepApprovalContext = stepApprovalContext;
     }
     async execute(command) {
         const { evaluationId, submittedBy } = command;
@@ -64,8 +70,39 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
                 evaluationId,
                 submittedToEvaluator: updatedEvaluation.submittedToEvaluator,
             });
+            this.알림을전송한다(updatedEvaluation.employeeId, updatedEvaluation.periodId, evaluationPeriod.name).catch((error) => {
+                this.logger.error('WBS 자기평가 제출 알림 전송 실패 (무시됨)', error.stack);
+            });
             return updatedEvaluation.DTO로_변환한다();
         });
+    }
+    async 알림을전송한다(employeeId, periodId, periodName) {
+        try {
+            const evaluatorId = await this.stepApprovalContext.일차평가자를_조회한다(periodId, employeeId);
+            if (!evaluatorId) {
+                this.logger.warn(`1차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}`);
+                return;
+            }
+            await this.notificationHelper.직원에게_알림을_전송한다({
+                sender: 'system',
+                title: 'WBS 자기평가 제출 알림',
+                content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
+                employeeNumber: evaluatorId,
+                sourceSystem: 'ems',
+                linkUrl: '/evaluations/downward',
+                metadata: {
+                    type: 'self-evaluation-submitted',
+                    priority: 'medium',
+                    employeeId,
+                    periodId,
+                },
+            });
+            this.logger.log(`WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`);
+        }
+        catch (error) {
+            this.logger.error('알림 전송 중 오류 발생', error.stack);
+            throw error;
+        }
     }
 };
 exports.SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluatorHandler;
@@ -74,6 +111,8 @@ exports.SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEva
     (0, cqrs_1.CommandHandler)(SubmitWbsSelfEvaluationToEvaluatorCommand),
     __metadata("design:paramtypes", [wbs_self_evaluation_service_1.WbsSelfEvaluationService,
         evaluation_period_service_1.EvaluationPeriodService,
-        transaction_manager_service_1.TransactionManagerService])
+        transaction_manager_service_1.TransactionManagerService,
+        notification_1.NotificationHelperService,
+        step_approval_context_service_1.StepApprovalContextService])
 ], SubmitWbsSelfEvaluationToEvaluatorHandler);
 //# sourceMappingURL=submit-wbs-self-evaluation-to-evaluator.handler.js.map

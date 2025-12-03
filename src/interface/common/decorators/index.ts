@@ -11,3 +11,4 @@ export * from './roles.decorator';
 
 // API 데코레이터
 export * from './project/project-api.decorators';
+export * from './notification/notification-api.decorators';

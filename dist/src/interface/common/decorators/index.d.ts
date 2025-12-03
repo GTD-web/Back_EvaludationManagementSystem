@@ -5,3 +5,4 @@ export * from './public.decorator';
 export * from './current-user.decorator';
 export * from './roles.decorator';
 export * from './project/project-api.decorators';
+export * from './notification/notification-api.decorators';

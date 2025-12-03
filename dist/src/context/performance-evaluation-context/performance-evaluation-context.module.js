@@ -14,6 +14,7 @@ const database_module_1 = require("../../../libs/database/database.module");
 const core_domain_module_1 = require("../../domain/core/core-domain.module");
 const common_domain_module_1 = require("../../domain/common/common-domain.module");
 const sub_domain_module_1 = require("../../domain/sub/sub-domain.module");
+const step_approval_context_module_1 = require("../step-approval-context/step-approval-context.module");
 const wbs_self_evaluation_entity_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity");
 const downward_evaluation_entity_1 = require("../../domain/core/downward-evaluation/downward-evaluation.entity");
 const peer_evaluation_entity_1 = require("../../domain/core/peer-evaluation/peer-evaluation.entity");
@@ -43,6 +44,7 @@ exports.PerformanceEvaluationContextModule = PerformanceEvaluationContextModule 
             core_domain_module_1.CoreDomainModule,
             common_domain_module_1.CommonDomainModule,
             sub_domain_module_1.SubDomainModule,
+            step_approval_context_module_1.StepApprovalContextModule,
             typeorm_1.TypeOrmModule.forFeature([
                 wbs_self_evaluation_entity_1.WbsSelfEvaluation,
                 downward_evaluation_entity_1.DownwardEvaluation,

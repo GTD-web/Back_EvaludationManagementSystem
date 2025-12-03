@@ -1069,4 +1069,261 @@ describe('평가 확인 여부 E2E 테스트', () => {
       }
     });
   });
+
+  describe('피평가자가 자기 자신의 평가자인 경우', () => {
+    let selfEvaluatingEmployeeId: string;
+
+    beforeAll(async () => {
+      // 자기 자신을 평가하는 직원 설정
+      if (employeeIds.length < 4) {
+        console.log(
+          '⚠️ 테스트를 위한 충분한 직원이 없습니다. 이 테스트를 건너뜁니다.',
+        );
+        return;
+      }
+
+      selfEvaluatingEmployeeId = employeeIds[3];
+
+      // 피평가자로 등록 (이미 등록된 경우 에러 무시)
+      const registerTargetResult = await testSuite
+        .request()
+        .post(`/admin/evaluation-periods/${evaluationPeriodId}/targets/bulk`)
+        .send({
+          employeeIds: [selfEvaluatingEmployeeId],
+        });
+      
+      // 201 (성공) 또는 기타 에러 (부분 성공 등) 허용
+      if (registerTargetResult.status !== 201 && registerTargetResult.status !== 200) {
+        console.log('⚠️ 평가 대상자 등록 응답:', registerTargetResult.status, registerTargetResult.body);
+      }
+
+      // 프로젝트 배정 (이미 배정된 경우 409 허용)
+      const projectAssignResult = await testSuite
+        .request()
+        .post(`/admin/evaluation-criteria/project-assignments`)
+        .send({
+          employeeId: selfEvaluatingEmployeeId,
+          projectId: projectIds[0],
+          periodId: evaluationPeriodId,
+        });
+      
+      // 201 (성공) 또는 409 (이미 배정됨) 모두 허용
+      expect([201, 409]).toContain(projectAssignResult.status);
+
+      // WBS 배정 (이미 배정된 경우 409 허용)
+      if (wbsItemIds.length > 1) {
+        const wbsAssignResult = await testSuite
+          .request()
+          .post(`/admin/evaluation-criteria/wbs-assignments`)
+          .send({
+            employeeId: selfEvaluatingEmployeeId,
+            wbsItemId: wbsItemIds[1],
+            projectId: projectIds[0],
+            periodId: evaluationPeriodId,
+          });
+        
+        // 201 (성공) 또는 409 (이미 배정됨) 모두 허용
+        expect([201, 409]).toContain(wbsAssignResult.status);
+
+        // 자기 자신을 2차 평가자로 지정 (이미 지정된 경우 409 허용)
+        const secondaryEvaluatorResult = await testSuite
+          .request()
+          .post(
+            `/admin/evaluation-criteria/evaluation-lines/employee/${selfEvaluatingEmployeeId}/wbs/${wbsItemIds[1]}/period/${evaluationPeriodId}/secondary-evaluator`,
+          )
+          .send({
+            evaluatorId: selfEvaluatingEmployeeId, // 자기 자신
+          });
+        
+        // 201 (성공) 또는 409 (이미 지정됨) 모두 허용
+        expect([201, 409]).toContain(secondaryEvaluatorResult.status);
+      }
+
+      // 1차 평가자 구성 (다른 사람, 이미 지정된 경우 409 허용)
+      const primaryEvaluatorResult = await testSuite
+        .request()
+        .post(
+          `/admin/evaluation-criteria/evaluation-lines/employee/${selfEvaluatingEmployeeId}/period/${evaluationPeriodId}/primary-evaluator`,
+        )
+        .send({
+          evaluatorId: primaryEvaluatorId,
+        });
+      
+      // 201 (성공) 또는 409 (이미 지정됨) 모두 허용
+      expect([201, 409]).toContain(primaryEvaluatorResult.status);
+
+      // 자기평가 작성 및 제출
+      testSuite.setCurrentUser({
+        id: selfEvaluatingEmployeeId,
+        email: 'self-eval@test.com',
+        name: '자기평가자',
+        employeeNumber: 'EMP004',
+      });
+
+      const selfEvalResponse = await testSuite
+        .request()
+        .post(
+          `/admin/performance-evaluation/wbs-self-evaluations/employee/${selfEvaluatingEmployeeId}/wbs/${wbsItemIds[1]}/period/${evaluationPeriodId}`,
+        )
+        .send({
+          selfEvaluationContent: '자기평가 내용',
+          selfEvaluationScore: 100,
+          performanceResult: '성과 결과',
+        })
+        .expect(200);
+
+      // 1차 평가자에게 자기평가 제출
+      await testSuite
+        .request()
+        .patch(
+          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvalResponse.body.id}/submit-to-evaluator`,
+        )
+        .expect(200);
+
+      // 1차 평가자가 1차 하향평가 작성 및 제출
+      testSuite.setCurrentUser({
+        id: primaryEvaluatorId,
+        email: 'primary@test.com',
+        name: '1차 평가자',
+        employeeNumber: 'EMP002',
+      });
+
+      await testSuite
+        .request()
+        .post(
+          `/admin/performance-evaluation/downward-evaluations/evaluatee/${selfEvaluatingEmployeeId}/period/${evaluationPeriodId}/wbs/${wbsItemIds[1]}/primary`,
+        )
+        .send({
+          evaluatorId: primaryEvaluatorId,
+          downwardEvaluationContent: '1차 하향평가 내용',
+          downwardEvaluationScore: 95,
+          performanceResult: '1차 평가 성과 결과',
+        })
+        .expect(200);
+
+      const submitResult = await testSuite
+        .request()
+        .post(
+          `/admin/performance-evaluation/downward-evaluations/evaluatee/${selfEvaluatingEmployeeId}/period/${evaluationPeriodId}/wbs/${wbsItemIds[1]}/primary/submit`,
+        )
+        .send({
+          evaluatorId: primaryEvaluatorId,
+        });
+
+      // 200 (성공) 또는 409 (이미 제출됨) 모두 허용
+      expect([200, 409]).toContain(submitResult.status);
+    });
+
+    it('자기 자신이 2차 평가자로 데이터를 조회하면 Activity Log가 기록되어야 한다', async () => {
+      // 충분한 직원이 없으면 테스트 건너뛰기
+      if (!selfEvaluatingEmployeeId || employeeIds.length < 4) {
+        console.log(
+          '⚠️ 테스트를 위한 충분한 직원이 없습니다. 이 테스트를 건너뜁니다.',
+        );
+        return;
+      }
+
+      // 자기 자신으로 사용자 변경 (2차 평가자 역할)
+      testSuite.setCurrentUser({
+        id: selfEvaluatingEmployeeId,
+        email: 'self-eval@test.com',
+        name: '자기평가자',
+        employeeNumber: 'EMP004',
+      });
+
+      // 조회 전 상태 확인 (viewedBy 필드가 false)
+      const beforeResult = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: selfEvaluatingEmployeeId,
+        employeeId: selfEvaluatingEmployeeId,
+        expectedSelfEvaluationViewedBySecondaryEvaluator: false,
+        expectedPrimaryEvaluationViewedBySecondaryEvaluator: false,
+      });
+
+      expect(beforeResult.selfEvaluation.viewedBySecondaryEvaluator).toBe(
+        false,
+      );
+      expect(
+        beforeResult.downwardEvaluation.secondaryStatus
+          ?.primaryEvaluationViewed,
+      ).toBe(false);
+
+      // 약간의 지연
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 2차 평가자로서 자기 자신의 할당 데이터 조회
+      await dashboardScenario.평가자가_피평가자_할당_데이터를_조회한다({
+        evaluationPeriodId,
+        evaluatorId: selfEvaluatingEmployeeId,
+        employeeId: selfEvaluatingEmployeeId,
+      });
+
+      // Activity Log 기록 확인
+      const activityLogs = await activityLogScenario.활동_내역을_조회한다({
+        periodId: evaluationPeriodId,
+        employeeId: selfEvaluatingEmployeeId,
+        limit: 10,
+      });
+
+      const viewedLog = activityLogs.items.find(
+        (log: any) =>
+          log.activityAction === 'viewed' &&
+          log.activityType === 'downward_evaluation' &&
+          log.performedBy === selfEvaluatingEmployeeId,
+      );
+
+      expect(viewedLog).toBeDefined();
+      expect(viewedLog.activityTitle).toBe('피평가자 할당 정보 조회');
+
+      // 약간의 지연 (Activity Log 커밋 대기)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 조회 후 상태 확인 (viewedBy 필드가 true로 변경)
+      const afterResult = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: selfEvaluatingEmployeeId,
+        employeeId: selfEvaluatingEmployeeId,
+        expectedSelfEvaluationViewedBySecondaryEvaluator: true,
+        expectedPrimaryEvaluationViewedBySecondaryEvaluator: true,
+      });
+
+      expect(afterResult.selfEvaluation.viewedBySecondaryEvaluator).toBe(true);
+      expect(
+        afterResult.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed,
+      ).toBe(true);
+    });
+
+    it('자기 자신이 2차 평가자인 경우 2차 평가자 전용 필드만 포함되어야 한다', async () => {
+      // 충분한 직원이 없으면 테스트 건너뛰기
+      if (!selfEvaluatingEmployeeId || employeeIds.length < 4) {
+        console.log(
+          '⚠️ 테스트를 위한 충분한 직원이 없습니다. 이 테스트를 건너뜁니다.',
+        );
+        return;
+      }
+
+      // 자기 자신으로 사용자 변경 (2차 평가자 역할)
+      testSuite.setCurrentUser({
+        id: selfEvaluatingEmployeeId,
+        email: 'self-eval@test.com',
+        name: '자기평가자',
+        employeeNumber: 'EMP004',
+      });
+
+      const result = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: selfEvaluatingEmployeeId,
+        employeeId: selfEvaluatingEmployeeId,
+      });
+
+      // 2차 평가자 전용 필드만 포함
+      expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBeDefined();
+      expect(
+        result.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed,
+      ).toBeDefined();
+
+      // 1차 평가자 전용 필드는 포함되지 않아야 함
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBeUndefined();
+    });
+  });
 });

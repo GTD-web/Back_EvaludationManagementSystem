@@ -23,6 +23,7 @@ const revision_request_context_module_1 = require("../../context/revision-reques
 const seed_data_context_module_1 = require("../../context/seed-data-context/seed-data-context.module");
 const step_approval_context_module_1 = require("../../context/step-approval-context/step-approval-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
+const notification_1 = require("../../domain/common/notification");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const guards_1 = require("../common/guards");
 const user_auth_controller_1 = require("./auth/user-auth.controller");
@@ -34,6 +35,7 @@ const user_deliverable_management_controller_1 = require("./performance-evaluati
 const user_peer_evaluation_management_controller_1 = require("./performance-evaluation/user-peer-evaluation-management.controller");
 const user_wbs_self_evaluation_management_controller_1 = require("./performance-evaluation/user-wbs-self-evaluation-management.controller");
 const user_revision_request_controller_1 = require("./revision-request/user-revision-request.controller");
+const notification_controller_1 = require("../common/controllers/notification.controller");
 let UserInterfaceModule = class UserInterfaceModule {
 };
 exports.UserInterfaceModule = UserInterfaceModule;
@@ -55,6 +57,7 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             business_module_1.BusinessModule,
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
+            notification_1.NotificationModule,
         ],
         controllers: [
             user_dashboard_controller_1.UserDashboardController,
@@ -66,6 +69,7 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             user_peer_evaluation_management_controller_1.UserPeerEvaluationManagementController,
             user_wbs_self_evaluation_management_controller_1.UserWbsSelfEvaluationManagementController,
             user_revision_request_controller_1.UserRevisionRequestController,
+            notification_controller_1.NotificationController,
         ],
         providers: [
             {

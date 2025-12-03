@@ -30,7 +30,8 @@ export type EvaluationActivityAction =
   | 'approved'
   | 'rejected'
   | 'revision_requested'
-  | 'revision_completed';
+  | 'revision_completed'
+  | 'viewed';
 
 /**
  * 평가 활동 내역 DTO

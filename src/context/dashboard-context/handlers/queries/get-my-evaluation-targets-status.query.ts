@@ -11,6 +11,7 @@ import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-period.entity';
+import { EvaluationActivityLog } from '@domain/core/evaluation-activity-log/evaluation-activity-log.entity';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
 import {
   MyEvaluationTargetStatusDto,
@@ -77,6 +78,8 @@ export class GetMyEvaluationTargetsStatusHandler
     private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
+    @InjectRepository(EvaluationActivityLog)
+    private readonly activityLogRepository: Repository<EvaluationActivityLog>,
     private readonly stepApprovalService: EmployeeEvaluationStepApprovalService,
   ) {}
 
@@ -294,6 +297,24 @@ export class GetMyEvaluationTargetsStatusHandler
             mapping.isCriteriaSubmitted || false,
           );
 
+          // 평가자 확인 여부 계산
+          const viewedStatus = await this.평가자_확인여부를_계산한다(
+            evaluationPeriodId,
+            employeeId,
+            evaluatorId,
+            evaluatorTypes,
+          );
+
+          // downwardEvaluation에 확인 여부 추가
+          if (downwardEvaluationStatus.primaryStatus) {
+            downwardEvaluationStatus.primaryStatus.isPrimaryEvaluationViewedByPrimaryEvaluator =
+              viewedStatus.viewedByPrimaryEvaluator;
+          }
+          if (downwardEvaluationStatus.secondaryStatus) {
+            downwardEvaluationStatus.secondaryStatus.isSecondaryEvaluationViewedBySecondaryEvaluator =
+              viewedStatus.viewedBySecondaryEvaluator;
+          }
+
           results.push({
             employeeId,
             isEvaluationTarget: !mapping.isExcluded,
@@ -336,6 +357,9 @@ export class GetMyEvaluationTargetsStatusHandler
                 selfEvaluationStatus.isSubmittedToManager,
               totalScore: selfEvaluationStatus.totalScore,
               grade: selfEvaluationStatus.grade,
+              isSelfEvaluationViewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
+              isSelfEvaluationViewedBySecondaryEvaluator:
+                viewedStatus.viewedBySecondaryEvaluator,
             },
             downwardEvaluation: downwardEvaluationStatus,
           });
@@ -679,6 +703,112 @@ export class GetMyEvaluationTargetsStatusHandler
     } else {
       return 'in_progress';
     }
+  }
+
+  /**
+   * 평가자의 확인 여부를 계산한다
+   * 
+   * @param evaluationPeriodId 평가기간 ID
+   * @param employeeId 피평가자 ID
+   * @param evaluatorId 평가자 ID
+   * @param evaluatorTypes 평가자 유형 배열 (PRIMARY, SECONDARY 등)
+   * @returns 확인 여부 정보
+   */
+  private async 평가자_확인여부를_계산한다(
+    evaluationPeriodId: string,
+    employeeId: string,
+    evaluatorId: string,
+    evaluatorTypes: string[],
+  ): Promise<{
+    viewedByPrimaryEvaluator: boolean;
+    viewedBySecondaryEvaluator: boolean;
+    primaryEvaluationViewed: boolean;
+  }> {
+    // 1. 피평가자의 마지막 자기평가 제출 시간 조회 (1차 평가자에게 제출)
+    const lastSelfEvaluationSubmitTime =
+      await this.wbsSelfEvaluationRepository
+        .createQueryBuilder('self')
+        .where('self.periodId = :periodId', { periodId: evaluationPeriodId })
+        .andWhere('self.employeeId = :employeeId', { employeeId })
+        .andWhere('self.submittedToEvaluator = true')
+        .andWhere('self.submittedToEvaluatorAt IS NOT NULL')
+        .andWhere('self.deletedAt IS NULL')
+        .orderBy('self.submittedToEvaluatorAt', 'DESC')
+        .limit(1)
+        .getOne();
+
+    // 2. 1차 평가자의 마지막 1차평가 제출 시간 조회
+    const lastPrimaryEvaluationSubmitTime =
+      await this.downwardEvaluationRepository
+        .createQueryBuilder('de')
+        .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+        .andWhere('de.employeeId = :employeeId', { employeeId })
+        .andWhere('de.evaluationType = :type', { type: 'primary' })
+        .andWhere('de.isCompleted = true')
+        .andWhere('de.completedAt IS NOT NULL')
+        .andWhere('de.deletedAt IS NULL')
+        .orderBy('de.completedAt', 'DESC')
+        .limit(1)
+        .getOne();
+
+    // 3. 평가자의 마지막 'viewed' 활동 시간 조회
+    const lastViewedActivity = await this.activityLogRepository
+      .createQueryBuilder('log')
+      .where('log.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('log.employeeId = :employeeId', { employeeId })
+      .andWhere('log.performedBy = :evaluatorId', { evaluatorId })
+      .andWhere('log.activityAction = :action', { action: 'viewed' })
+      .andWhere('log.activityType = :activityType', {
+        activityType: 'downward_evaluation',
+      })
+      .andWhere('log.deletedAt IS NULL')
+      .orderBy('log.activityDate', 'DESC')
+      .limit(1)
+      .getOne();
+
+    const lastViewedTime = lastViewedActivity?.activityDate;
+
+    // 4. 확인 여부 계산
+    let viewedByPrimaryEvaluator = false;
+    let viewedBySecondaryEvaluator = false;
+    let primaryEvaluationViewed = false;
+
+    if (lastViewedTime) {
+      // 1차 평가자인 경우: 자기평가 제출 확인
+      if (evaluatorTypes.includes('primary')) {
+        if (
+          lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
+          lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
+        ) {
+          viewedByPrimaryEvaluator = true;
+        }
+      }
+
+      // 2차 평가자인 경우: 자기평가 + 1차평가 제출 확인
+      if (evaluatorTypes.includes('secondary')) {
+        // 자기평가 확인
+        if (
+          lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
+          lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
+        ) {
+          viewedBySecondaryEvaluator = true;
+        }
+
+        // 1차평가 확인
+        if (
+          lastPrimaryEvaluationSubmitTime?.completedAt &&
+          lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt
+        ) {
+          primaryEvaluationViewed = true;
+        }
+      }
+    }
+
+    return {
+      viewedByPrimaryEvaluator,
+      viewedBySecondaryEvaluator,
+      primaryEvaluationViewed,
+    };
   }
 
 }

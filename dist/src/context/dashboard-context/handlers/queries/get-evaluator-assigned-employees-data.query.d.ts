@@ -4,7 +4,9 @@ import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-peri
 import { Employee } from '@domain/common/employee/employee.entity';
 import { Department } from '@domain/common/department/department.entity';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
+import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
+import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { GetEmployeeAssignedDataHandler, EmployeeAssignedDataResult, EvaluationPeriodInfo, EmployeeInfo } from './get-employee-assigned-data';
 export declare class GetEvaluatorAssignedEmployeesDataQuery {
     readonly evaluationPeriodId: string;
@@ -22,9 +24,11 @@ export declare class GetEvaluatorAssignedEmployeesDataHandler implements IQueryH
     private readonly employeeRepository;
     private readonly departmentRepository;
     private readonly lineMappingRepository;
+    private readonly evaluationLineRepository;
     private readonly periodEmployeeMappingRepository;
     private readonly employeeAssignedDataHandler;
+    private readonly activityLogContextService;
     private readonly logger;
-    constructor(evaluationPeriodRepository: Repository<EvaluationPeriod>, employeeRepository: Repository<Employee>, departmentRepository: Repository<Department>, lineMappingRepository: Repository<EvaluationLineMapping>, periodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>, employeeAssignedDataHandler: GetEmployeeAssignedDataHandler);
+    constructor(evaluationPeriodRepository: Repository<EvaluationPeriod>, employeeRepository: Repository<Employee>, departmentRepository: Repository<Department>, lineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, periodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>, employeeAssignedDataHandler: GetEmployeeAssignedDataHandler, activityLogContextService: EvaluationActivityLogContextService);
     execute(query: GetEvaluatorAssignedEmployeesDataQuery): Promise<EvaluatorAssignedEmployeesDataResult>;
 }

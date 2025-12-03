@@ -4,6 +4,7 @@ export declare class MyEvaluationStatusDetailDto {
     completedEvaluationCount: number;
     totalScore: number | null;
     grade: string | null;
+    primaryEvaluationViewed?: boolean;
 }
 export declare class MyDownwardEvaluationStatusDto {
     isPrimary: boolean;
@@ -50,6 +51,8 @@ export declare class MyTargetSelfEvaluationDto {
     isSubmittedToManager: boolean;
     totalScore: number | null;
     grade: string | null;
+    viewedByPrimaryEvaluator: boolean;
+    viewedBySecondaryEvaluator: boolean;
 }
 export declare class MyEvaluationTargetStatusResponseDto {
     employeeId: string;

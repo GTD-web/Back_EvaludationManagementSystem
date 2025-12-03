@@ -185,6 +185,7 @@ export interface MyDownwardEvaluationStatus {
         completedEvaluationCount: number;
         totalScore: number | null;
         grade: string | null;
+        primaryEvaluationViewed: boolean;
     } | null;
 }
 export interface MyEvaluationTargetStatusDto {
@@ -229,6 +230,8 @@ export interface MyEvaluationTargetStatusDto {
         isSubmittedToManager: boolean;
         totalScore: number | null;
         grade: string | null;
+        viewedByPrimaryEvaluator: boolean;
+        viewedBySecondaryEvaluator: boolean;
     };
     downwardEvaluation: MyDownwardEvaluationStatus;
 }

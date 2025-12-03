@@ -27,6 +27,7 @@ const evaluation_wbs_assignment_entity_1 = require("../../../../domain/core/eval
 const wbs_evaluation_criteria_entity_1 = require("../../../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity");
 const wbs_self_evaluation_entity_1 = require("../../../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity");
 const evaluation_period_entity_1 = require("../../../../domain/core/evaluation-period/evaluation-period.entity");
+const evaluation_activity_log_entity_1 = require("../../../../domain/core/evaluation-activity-log/evaluation-activity-log.entity");
 const evaluation_line_types_1 = require("../../../../domain/core/evaluation-line/evaluation-line.types");
 const downward_evaluation_score_utils_1 = require("../queries/get-employee-evaluation-period-status/downward-evaluation-score.utils");
 const self_evaluation_utils_1 = require("../queries/get-employee-evaluation-period-status/self-evaluation.utils");
@@ -52,9 +53,10 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
     wbsCriteriaRepository;
     wbsSelfEvaluationRepository;
     evaluationPeriodRepository;
+    activityLogRepository;
     stepApprovalService;
     logger = new common_1.Logger(GetMyEvaluationTargetsStatusHandler_1.name);
-    constructor(lineMappingRepository, lineRepository, mappingRepository, downwardEvaluationRepository, projectAssignmentRepository, wbsAssignmentRepository, wbsCriteriaRepository, wbsSelfEvaluationRepository, evaluationPeriodRepository, stepApprovalService) {
+    constructor(lineMappingRepository, lineRepository, mappingRepository, downwardEvaluationRepository, projectAssignmentRepository, wbsAssignmentRepository, wbsCriteriaRepository, wbsSelfEvaluationRepository, evaluationPeriodRepository, activityLogRepository, stepApprovalService) {
         this.lineMappingRepository = lineMappingRepository;
         this.lineRepository = lineRepository;
         this.mappingRepository = mappingRepository;
@@ -64,6 +66,7 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
         this.wbsCriteriaRepository = wbsCriteriaRepository;
         this.wbsSelfEvaluationRepository = wbsSelfEvaluationRepository;
         this.evaluationPeriodRepository = evaluationPeriodRepository;
+        this.activityLogRepository = activityLogRepository;
         this.stepApprovalService = stepApprovalService;
     }
     async execute(query) {
@@ -166,6 +169,15 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     const downwardEvaluationStatus = await this.내가_담당하는_하향평가_현황을_조회한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
                     const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
                     const setupStatus = (0, evaluation_criteria_utils_1.평가기준설정_상태를_계산한다)(evaluationCriteriaStatus, wbsCriteriaStatus, stepApproval?.criteriaSettingStatus ?? null, mapping.isCriteriaSubmitted || false);
+                    const viewedStatus = await this.평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
+                    if (downwardEvaluationStatus.primaryStatus) {
+                        downwardEvaluationStatus.primaryStatus.isPrimaryEvaluationViewedByPrimaryEvaluator =
+                            viewedStatus.viewedByPrimaryEvaluator;
+                    }
+                    if (downwardEvaluationStatus.secondaryStatus) {
+                        downwardEvaluationStatus.secondaryStatus.isSecondaryEvaluationViewedBySecondaryEvaluator =
+                            viewedStatus.viewedBySecondaryEvaluator;
+                    }
                     results.push({
                         employeeId,
                         isEvaluationTarget: !mapping.isExcluded,
@@ -204,6 +216,8 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                             isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
                             totalScore: selfEvaluationStatus.totalScore,
                             grade: selfEvaluationStatus.grade,
+                            isSelfEvaluationViewedByPrimaryEvaluator: viewedStatus.viewedByPrimaryEvaluator,
+                            isSelfEvaluationViewedBySecondaryEvaluator: viewedStatus.viewedBySecondaryEvaluator,
                         },
                         downwardEvaluation: downwardEvaluationStatus,
                     });
@@ -401,6 +415,69 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
             return 'in_progress';
         }
     }
+    async 평가자_확인여부를_계산한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes) {
+        const lastSelfEvaluationSubmitTime = await this.wbsSelfEvaluationRepository
+            .createQueryBuilder('self')
+            .where('self.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('self.employeeId = :employeeId', { employeeId })
+            .andWhere('self.submittedToEvaluator = true')
+            .andWhere('self.submittedToEvaluatorAt IS NOT NULL')
+            .andWhere('self.deletedAt IS NULL')
+            .orderBy('self.submittedToEvaluatorAt', 'DESC')
+            .limit(1)
+            .getOne();
+        const lastPrimaryEvaluationSubmitTime = await this.downwardEvaluationRepository
+            .createQueryBuilder('de')
+            .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('de.employeeId = :employeeId', { employeeId })
+            .andWhere('de.evaluationType = :type', { type: 'primary' })
+            .andWhere('de.isCompleted = true')
+            .andWhere('de.completedAt IS NOT NULL')
+            .andWhere('de.deletedAt IS NULL')
+            .orderBy('de.completedAt', 'DESC')
+            .limit(1)
+            .getOne();
+        const lastViewedActivity = await this.activityLogRepository
+            .createQueryBuilder('log')
+            .where('log.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('log.employeeId = :employeeId', { employeeId })
+            .andWhere('log.performedBy = :evaluatorId', { evaluatorId })
+            .andWhere('log.activityAction = :action', { action: 'viewed' })
+            .andWhere('log.activityType = :activityType', {
+            activityType: 'downward_evaluation',
+        })
+            .andWhere('log.deletedAt IS NULL')
+            .orderBy('log.activityDate', 'DESC')
+            .limit(1)
+            .getOne();
+        const lastViewedTime = lastViewedActivity?.activityDate;
+        let viewedByPrimaryEvaluator = false;
+        let viewedBySecondaryEvaluator = false;
+        let primaryEvaluationViewed = false;
+        if (lastViewedTime) {
+            if (evaluatorTypes.includes('primary')) {
+                if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
+                    lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
+                    viewedByPrimaryEvaluator = true;
+                }
+            }
+            if (evaluatorTypes.includes('secondary')) {
+                if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
+                    lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
+                    viewedBySecondaryEvaluator = true;
+                }
+                if (lastPrimaryEvaluationSubmitTime?.completedAt &&
+                    lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
+                    primaryEvaluationViewed = true;
+                }
+            }
+        }
+        return {
+            viewedByPrimaryEvaluator,
+            viewedBySecondaryEvaluator,
+            primaryEvaluationViewed,
+        };
+    }
 };
 exports.GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler;
 exports.GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 = __decorate([
@@ -414,7 +491,9 @@ exports.GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandle
     __param(6, (0, typeorm_1.InjectRepository)(wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria)),
     __param(7, (0, typeorm_1.InjectRepository)(wbs_self_evaluation_entity_1.WbsSelfEvaluation)),
     __param(8, (0, typeorm_1.InjectRepository)(evaluation_period_entity_1.EvaluationPeriod)),
+    __param(9, (0, typeorm_1.InjectRepository)(evaluation_activity_log_entity_1.EvaluationActivityLog)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

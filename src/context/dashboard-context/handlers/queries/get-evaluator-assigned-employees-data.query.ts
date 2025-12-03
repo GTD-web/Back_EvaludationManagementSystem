@@ -6,7 +6,9 @@ import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-peri
 import { Employee } from '@domain/common/employee/employee.entity';
 import { Department } from '@domain/common/department/department.entity';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
+import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
+import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import {
   GetEmployeeAssignedDataHandler,
   EmployeeAssignedDataResult,
@@ -62,9 +64,12 @@ export class GetEvaluatorAssignedEmployeesDataHandler
     private readonly departmentRepository: Repository<Department>,
     @InjectRepository(EvaluationLineMapping)
     private readonly lineMappingRepository: Repository<EvaluationLineMapping>,
+    @InjectRepository(EvaluationLine)
+    private readonly evaluationLineRepository: Repository<EvaluationLine>,
     @InjectRepository(EvaluationPeriodEmployeeMapping)
     private readonly periodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
     private readonly employeeAssignedDataHandler: GetEmployeeAssignedDataHandler,
+    private readonly activityLogContextService: EvaluationActivityLogContextService,
   ) {}
 
   async execute(
@@ -132,24 +137,33 @@ export class GetEvaluatorAssignedEmployeesDataHandler
     }
 
     // 5. 평가자-피평가자 관계 확인 (EvaluationLineMapping에서 조회)
-    const hasEvaluationRelation = await this.lineMappingRepository
+    const evaluationMappings = await this.lineMappingRepository
       .createQueryBuilder('mapping')
-      .where('mapping.evaluationPeriodId = :evaluationPeriodId', { evaluationPeriodId })
+      .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
+        evaluationPeriodId,
+      })
       .andWhere('mapping.evaluatorId = :evaluatorId', { evaluatorId })
       .andWhere('mapping.employeeId = :employeeId', { employeeId })
       .andWhere('mapping.deletedAt IS NULL')
-      .getCount();
+      .getMany();
 
-    if (hasEvaluationRelation === 0) {
+    if (evaluationMappings.length === 0) {
       throw new NotFoundException(
         `평가자가 해당 피평가자를 담당하지 않습니다. (evaluatorId: ${evaluatorId}, employeeId: ${employeeId})`,
       );
     }
 
+    // 평가자 유형 조회 (PRIMARY/SECONDARY)
+    const evaluationLineIds = evaluationMappings.map((m) => m.evaluationLineId);
+    const evaluationLines =
+      await this.evaluationLineRepository.findByIds(evaluationLineIds);
+    const evaluatorTypes = evaluationLines.map((line) => line.evaluatorType);
+
     this.logger.log('평가자-피평가자 관계 확인 완료', {
       evaluatorId,
       employeeId,
-      mappingCount: hasEvaluationRelation,
+      mappingCount: evaluationMappings.length,
+      evaluatorTypes,
     });
 
     // 6. 피평가자의 할당 정보 조회 (일반 사용자 조회 핸들러 재사용)
@@ -157,6 +171,29 @@ export class GetEvaluatorAssignedEmployeesDataHandler
       evaluationPeriodId,
       employeeId,
     });
+
+    // 7. 평가 활동 로그 기록 (평가자가 피평가자 데이터를 조회했음을 기록)
+    try {
+      await this.activityLogContextService.활동내역을_기록한다({
+        periodId: evaluationPeriodId,
+        employeeId,
+        activityType: 'downward_evaluation',
+        activityAction: 'viewed',
+        activityTitle: '피평가자 할당 정보 조회',
+        performedBy: evaluatorId,
+        activityDate: new Date(), // 명시적으로 현재 시간 설정
+        activityMetadata: {
+          evaluatorTypes,
+        },
+      });
+    } catch (error) {
+      // 활동 로그 기록 실패 시에도 데이터 조회는 정상 처리
+      this.logger.warn('활동 내역 기록 실패', {
+        evaluatorId,
+        employeeId,
+        error: error.message,
+      });
+    }
 
     // evaluationPeriod 제거 (최상위에 이미 존재하므로 중복 방지)
     const { evaluationPeriod: _, ...evaluateeWithoutPeriod } = evaluateeData;

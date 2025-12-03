@@ -28,7 +28,7 @@ let EvaluatorDashboardController = class EvaluatorDashboardController {
         return await this.dashboardService.내가_담당하는_평가대상자_현황을_조회한다(evaluationPeriodId, evaluatorId);
     }
     async getEmployeeEvaluationPeriodStatus(evaluationPeriodId, employeeId, user) {
-        const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(evaluationPeriodId, employeeId, user.id);
+        const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(evaluationPeriodId, employeeId);
         if (!result) {
             return null;
         }

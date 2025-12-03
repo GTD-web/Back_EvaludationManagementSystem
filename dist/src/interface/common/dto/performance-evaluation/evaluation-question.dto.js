@@ -158,10 +158,9 @@ __decorate([
 ], CreateEvaluationQuestionDto.prototype, "groupId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '표시 순서 (그룹 추가 시 사용)',
+        description: '표시 순서 (그룹 추가 시 사용, 생략 시 그룹의 마지막 순서로 자동 배치)',
         example: 1,
         minimum: 0,
-        default: 0,
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),

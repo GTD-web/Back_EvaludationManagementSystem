@@ -56,7 +56,6 @@ export class EvaluatorDashboardController {
     const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(
       evaluationPeriodId,
       employeeId,
-      user.id, // 조회하는 사람의 ID 전달
     );
 
     if (!result) {

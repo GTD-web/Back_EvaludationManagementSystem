@@ -189,6 +189,35 @@ let StepApprovalContextService = StepApprovalContextService_1 = class StepApprov
             .getRawOne();
         return lineMapping?.evaluatorId || null;
     }
+    async 이차평가자를_조회한다(evaluationPeriodId, employeeId, wbsItemId) {
+        const mapping = await this.mappingRepository.findOne({
+            where: {
+                evaluationPeriodId,
+                employeeId,
+                deletedAt: null,
+            },
+        });
+        if (!mapping) {
+            return null;
+        }
+        const lineMapping = await this.evaluationLineMappingRepository
+            .createQueryBuilder('mapping')
+            .leftJoin('evaluation_lines', 'line', 'line.id = mapping.evaluationLineId')
+            .leftJoin('employee', 'evaluator', '(evaluator.id = "mapping"."evaluatorId" OR evaluator.externalId = "mapping"."evaluatorId"::text) AND evaluator.deletedAt IS NULL')
+            .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
+            evaluationPeriodId,
+        })
+            .andWhere('mapping.employeeId = :employeeId', { employeeId })
+            .andWhere('mapping.wbsItemId = :wbsItemId', { wbsItemId })
+            .andWhere('mapping.deletedAt IS NULL')
+            .andWhere('line.evaluatorType = :evaluatorType', {
+            evaluatorType: 'secondary',
+        })
+            .andWhere('line.deletedAt IS NULL')
+            .select('evaluator.id', 'evaluatorId')
+            .getRawOne();
+        return lineMapping?.evaluatorId || null;
+    }
     async 이차평가자들을_조회한다(evaluationPeriodId, employeeId) {
         const mapping = await this.mappingRepository.findOne({
             where: {

@@ -21,6 +21,7 @@ const typeorm_2 = require("typeorm");
 const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
 const downward_evaluation_exceptions_1 = require("../../domain/core/downward-evaluation/downward-evaluation.exceptions");
 const secondary_evaluation_step_approval_service_1 = require("../../domain/sub/secondary-evaluation-step-approval/secondary-evaluation-step-approval.service");
+const step_approval_context_service_1 = require("../step-approval-context/step-approval-context.service");
 const self_evaluation_1 = require("./handlers/self-evaluation");
 const evaluation_editable_status_1 = require("./handlers/evaluation-editable-status");
 const peer_evaluation_1 = require("./handlers/peer-evaluation");
@@ -33,12 +34,14 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
     queryBus;
     mappingRepository;
     secondaryStepApprovalService;
+    stepApprovalContextService;
     logger = new common_1.Logger(PerformanceEvaluationService_1.name);
-    constructor(commandBus, queryBus, mappingRepository, secondaryStepApprovalService) {
+    constructor(commandBus, queryBus, mappingRepository, secondaryStepApprovalService, stepApprovalContextService) {
         this.commandBus = commandBus;
         this.queryBus = queryBus;
         this.mappingRepository = mappingRepository;
         this.secondaryStepApprovalService = secondaryStepApprovalService;
+        this.stepApprovalContextService = stepApprovalContextService;
     }
     async WBS자기평가를_생성한다(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, createdBy) {
         const command = new self_evaluation_1.CreateWbsSelfEvaluationCommand(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, createdBy || '시스템');
@@ -172,10 +175,17 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         return result;
     }
     async 일차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy) {
-        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(evaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
+        const actualPrimaryEvaluatorId = await this.stepApprovalContextService.일차평가자를_조회한다(periodId, evaluateeId);
+        if (!actualPrimaryEvaluatorId) {
+            throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId})`);
+        }
+        if (evaluatorId !== actualPrimaryEvaluatorId) {
+            this.logger.warn(`⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 1차 평가자 ID(${actualPrimaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`);
+        }
+        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            await this.하향평가를_저장한다(evaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', undefined, undefined, submittedBy);
+            await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', undefined, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
@@ -190,10 +200,17 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         await this.commandBus.execute(command);
     }
     async 이차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy) {
-        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(evaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
+        const actualSecondaryEvaluatorId = await this.stepApprovalContextService.이차평가자를_조회한다(periodId, evaluateeId, wbsId);
+        if (!actualSecondaryEvaluatorId) {
+            throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
+        }
+        if (evaluatorId !== actualSecondaryEvaluatorId) {
+            this.logger.warn(`⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 2차 평가자 ID(${actualSecondaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`);
+        }
+        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            await this.하향평가를_저장한다(evaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', undefined, undefined, submittedBy);
+            await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', undefined, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
@@ -442,6 +459,7 @@ exports.PerformanceEvaluationService = PerformanceEvaluationService = Performanc
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
         cqrs_1.QueryBus,
         typeorm_2.Repository,
-        secondary_evaluation_step_approval_service_1.SecondaryEvaluationStepApprovalService])
+        secondary_evaluation_step_approval_service_1.SecondaryEvaluationStepApprovalService,
+        step_approval_context_service_1.StepApprovalContextService])
 ], PerformanceEvaluationService);
 //# sourceMappingURL=performance-evaluation.service.js.map

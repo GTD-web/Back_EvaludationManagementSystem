@@ -4,6 +4,7 @@ import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-
 import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
 import { SecondaryEvaluationStepApprovalService } from '@domain/sub/secondary-evaluation-step-approval/secondary-evaluation-step-approval.service';
 import { StepApprovalContextService } from '../step-approval-context/step-approval-context.service';
+import { Employee } from '@domain/common/employee/employee.entity';
 import { GetEmployeeSelfEvaluationsQuery, GetWbsSelfEvaluationDetailQuery } from './handlers/self-evaluation';
 import type { SubmitAllWbsSelfEvaluationsResponse, SubmitAllWbsSelfEvaluationsToEvaluatorResponse, SubmitAllWbsSelfEvaluationsForApprovalResponse, ResetAllWbsSelfEvaluationsResponse, SubmitWbsSelfEvaluationsByProjectResponse, SubmitWbsSelfEvaluationsToEvaluatorByProjectResponse, ResetWbsSelfEvaluationsByProjectResponse, ResetAllWbsSelfEvaluationsToEvaluatorResponse, ResetWbsSelfEvaluationsToEvaluatorByProjectResponse, ClearAllWbsSelfEvaluationsResponse, ClearWbsSelfEvaluationsByProjectResponse } from './handlers/self-evaluation';
 import { GetPeerEvaluationDetailQuery, GetPeerEvaluationListQuery, GetEvaluatorAssignedEvaluateesQuery, type PeerEvaluationQuestionDetail } from './handlers/peer-evaluation';
@@ -19,10 +20,11 @@ export declare class PerformanceEvaluationService implements IPerformanceEvaluat
     private readonly commandBus;
     private readonly queryBus;
     private readonly mappingRepository;
+    private readonly employeeRepository;
     private readonly secondaryStepApprovalService;
     private readonly stepApprovalContextService;
     private readonly logger;
-    constructor(commandBus: CommandBus, queryBus: QueryBus, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, secondaryStepApprovalService: SecondaryEvaluationStepApprovalService, stepApprovalContextService: StepApprovalContextService);
+    constructor(commandBus: CommandBus, queryBus: QueryBus, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, employeeRepository: Repository<Employee>, secondaryStepApprovalService: SecondaryEvaluationStepApprovalService, stepApprovalContextService: StepApprovalContextService);
     WBS자기평가를_생성한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent: string, selfEvaluationScore: number, performanceResult?: string, createdBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     WBS자기평가를_수정한다(evaluationId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, updatedBy?: string): Promise<WbsSelfEvaluationBasicDto>;
     WBS자기평가를_저장한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, actionBy?: string): Promise<WbsSelfEvaluationResponseDto>;

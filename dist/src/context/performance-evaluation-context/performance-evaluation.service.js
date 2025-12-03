@@ -175,7 +175,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(evaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
+            await this.하향평가를_저장한다(evaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', undefined, undefined, submittedBy);
+            const newResult = await this.queryBus.execute(query);
+            if (!newResult.evaluations || newResult.evaluations.length === 0) {
+                throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
+            }
+            const evaluation = newResult.evaluations[0];
+            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+            await this.commandBus.execute(command);
+            return;
         }
         const evaluation = result.evaluations[0];
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
@@ -185,7 +193,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(evaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
+            await this.하향평가를_저장한다(evaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', undefined, undefined, submittedBy);
+            const newResult = await this.queryBus.execute(query);
+            if (!newResult.evaluations || newResult.evaluations.length === 0) {
+                throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
+            }
+            const evaluation = newResult.evaluations[0];
+            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+            await this.commandBus.execute(command);
+            return;
         }
         const evaluation = result.evaluations[0];
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);

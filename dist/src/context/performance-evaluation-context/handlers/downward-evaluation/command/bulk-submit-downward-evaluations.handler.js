@@ -72,9 +72,7 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
             forceSubmit,
         });
         return await this.transactionManager.executeTransaction(async () => {
-            if (forceSubmit) {
-                await this.할당된_WBS에_대한_하향평가를_생성한다(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy);
-            }
+            await this.할당된_WBS에_대한_하향평가를_생성한다(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit);
             const evaluations = await this.downwardEvaluationRepository.find({
                 where: {
                     evaluatorId,
@@ -132,13 +130,16 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
             return result;
         });
     }
-    async 할당된_WBS에_대한_하향평가를_생성한다(evaluatorId, evaluateeId, periodId, evaluationType, createdBy) {
-        this.logger.log(`할당된 WBS에 대한 하향평가 생성 시작 - 평가자: ${evaluatorId}, 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}`);
-        const approver = await this.employeeRepository.findOne({
-            where: { id: createdBy, deletedAt: (0, typeorm_2.IsNull)() },
-            select: ['id', 'name'],
-        });
-        const approverName = approver?.name || '관리자';
+    async 할당된_WBS에_대한_하향평가를_생성한다(evaluatorId, evaluateeId, periodId, evaluationType, createdBy, isApprovalMode = false) {
+        this.logger.log(`할당된 WBS에 대한 하향평가 생성 시작 - 평가자: ${evaluatorId}, 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}, 승인모드: ${isApprovalMode}`);
+        let approverName = '시스템';
+        if (isApprovalMode) {
+            const approver = await this.employeeRepository.findOne({
+                where: { id: createdBy, deletedAt: (0, typeorm_2.IsNull)() },
+                select: ['id', 'name'],
+            });
+            approverName = approver?.name || '관리자';
+        }
         let assignedWbsIds = [];
         if (evaluationType === downward_evaluation_types_1.DownwardEvaluationType.SECONDARY) {
             const secondaryLine = await this.evaluationLineRepository.findOne({
@@ -200,18 +201,20 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
             });
             if (!existingEvaluation) {
                 try {
-                    const approvalMessage = `${approverName}님에 따라 하향평가가 승인 처리되었습니다.`;
-                    await this.downwardEvaluationService.생성한다({
+                    const evaluationData = {
                         employeeId: evaluateeId,
                         evaluatorId,
                         wbsId,
                         periodId,
                         evaluationType,
-                        downwardEvaluationContent: approvalMessage,
                         evaluationDate: new Date(),
                         isCompleted: false,
                         createdBy,
-                    });
+                    };
+                    if (isApprovalMode) {
+                        evaluationData.downwardEvaluationContent = `${approverName}님에 따라 하향평가가 승인 처리되었습니다.`;
+                    }
+                    await this.downwardEvaluationService.생성한다(evaluationData);
                     this.logger.debug(`할당된 WBS에 대한 하향평가 생성 완료 - WBS ID: ${wbsId}, 평가유형: ${evaluationType}`);
                 }
                 catch (error) {

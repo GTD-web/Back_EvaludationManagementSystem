@@ -186,10 +186,11 @@ function UpdateDownwardEvaluation() {
 function SubmitPrimaryDownwardEvaluation() {
     return (0, common_1.applyDecorators)((0, common_1.Post)('evaluatee/:evaluateeId/period/:periodId/wbs/:wbsId/primary/submit'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: '1차 하향평가 제출',
-        description: `**중요**: 1차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다.
+        description: `**중요**: 1차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **동작:**
 - 평가자, 피평가자, 평가기간, WBS로 1차 하향평가 조회
+- 평가가 없으면 자동으로 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 제출 후 평가 내용은 변경 불가
@@ -198,6 +199,7 @@ function SubmitPrimaryDownwardEvaluation() {
 
 **테스트 케이스:**
 - 저장된 1차 하향평가를 제출할 수 있어야 함
+- 평가가 없어도 자동 생성 후 제출 가능
 - 제출 시 isCompleted가 true로 변경
 - 제출 시 단계 승인 상태(primaryEvaluationStatus)가 pending으로 변경
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 pending으로 변경됨
@@ -205,7 +207,6 @@ function SubmitPrimaryDownwardEvaluation() {
 - approveAllBelow=true일 경우 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 자기평가는 제출되지 않음
 - content와 score가 없어도 제출 가능
-- 존재하지 않는 평가를 제출하면 404 에러
 - 이미 제출된 평가를 재제출하면 409 에러
 - 잘못된 형식의 evaluateeId로 요청 시 400 에러
 - 잘못된 형식의 periodId로 요청 시 400 에러
@@ -260,10 +261,11 @@ function SubmitPrimaryDownwardEvaluation() {
 function SubmitSecondaryDownwardEvaluation() {
     return (0, common_1.applyDecorators)((0, common_1.Post)('evaluatee/:evaluateeId/period/:periodId/wbs/:wbsId/secondary/submit'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: '2차 하향평가 제출',
-        description: `**중요**: 2차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. 1차 하향평가와 독립적으로 제출됩니다.
+        description: `**중요**: 2차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. 1차 하향평가와 독립적으로 제출됩니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **동작:**
 - 평가자, 피평가자, 평가기간, WBS로 2차 하향평가 조회
+- 평가가 없으면 자동으로 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 1차 하향평가와 독립적으로 제출
@@ -273,13 +275,13 @@ function SubmitSecondaryDownwardEvaluation() {
 
 **테스트 케이스:**
 - 저장된 2차 하향평가를 제출할 수 있어야 함
+- 평가가 없어도 자동 생성 후 제출 가능
 - 제출 시 단계 승인 상태(secondaryEvaluationStatus)가 pending으로 변경
 - 1차와 2차 하향평가를 독립적으로 제출 가능
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 pending으로 변경됨
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 1차 하향평가와 자기평가는 제출되지 않음
 - content와 score가 없어도 제출 가능
-- 존재하지 않는 2차 평가를 제출하면 404 에러
 - 이미 제출된 2차 평가를 재제출하면 409 에러`,
     }), (0, swagger_1.ApiParam)({
         name: 'evaluateeId',
@@ -383,7 +385,7 @@ function SubmitDownwardEvaluation() {
 function BulkSubmitDownwardEvaluations() {
     return (0, common_1.applyDecorators)((0, common_1.Post)('evaluatee/:evaluateeId/period/:periodId/bulk-submit'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: '피평가자의 모든 하향평가 일괄 제출',
-        description: `**중요**: 평가자가 담당하는 특정 피평가자의 모든 하향평가를 한 번에 제출합니다. 평가 유형(1차/2차)별로 일괄 제출할 수 있습니다.
+        description: `**중요**: 평가자가 담당하는 특정 피평가자의 모든 하향평가를 한 번에 제출합니다. 평가 유형(1차/2차)별로 일괄 제출할 수 있습니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **특징:**
 - **평가자별 제출**: 요청한 평가자(evaluatorId)가 담당하는 평가만 제출됩니다.
@@ -391,6 +393,7 @@ function BulkSubmitDownwardEvaluations() {
 - **1차 평가**: 1차 평가는 일반적으로 1명의 평가자만 존재하므로, 해당 평가자의 모든 평가를 일괄 제출합니다.
 
 **동작:**
+- 할당된 WBS에 대한 하향평가가 없으면 자동으로 생성
 - 요청한 평가자(evaluatorId)가 담당하는 피평가자의 모든 하향평가 조회
 - 평가 유형(primary/secondary)으로 필터링
 - 각 평가에 대해 제출 처리 (이미 완료된 평가는 건너뜀)
@@ -407,6 +410,7 @@ function BulkSubmitDownwardEvaluations() {
 - 평가자가 담당하는 피평가자의 모든 1차 하향평가 일괄 제출
 - 평가자가 담당하는 피평가자의 모든 2차 하향평가 일괄 제출 (2차 평가자별로 독립적으로 제출 가능)
 - 여러 2차 평가자가 동일 피평가자의 평가를 각각 독립적으로 일괄 제출 가능
+- 평가가 없어도 자동 생성 후 제출 가능
 - 이미 완료된 평가는 건너뛰고 제출되지 않은 평가만 제출
 - content와 score가 없어도 제출 가능
 - 제출 결과에 제출된 평가 수, 건너뛴 평가 수, 실패한 평가 수 포함

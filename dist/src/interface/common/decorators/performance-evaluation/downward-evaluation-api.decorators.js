@@ -194,6 +194,7 @@ function SubmitPrimaryDownwardEvaluation() {
 - 제출 일시(completedAt) 기록
 - 제출 후 평가 내용은 변경 불가
 - approveAllBelow=true일 경우 자기평가도 함께 제출
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 1차 하향평가를 제출할 수 있어야 함
@@ -203,6 +204,7 @@ function SubmitPrimaryDownwardEvaluation() {
 - submittedBy 없이도 제출 가능
 - approveAllBelow=true일 경우 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 자기평가는 제출되지 않음
+- content와 score가 없어도 제출 가능
 - 존재하지 않는 평가를 제출하면 404 에러
 - 이미 제출된 평가를 재제출하면 409 에러
 - 잘못된 형식의 evaluateeId로 요청 시 400 에러
@@ -267,6 +269,7 @@ function SubmitSecondaryDownwardEvaluation() {
 - 1차 하향평가와 독립적으로 제출
 - 제출 후 평가 내용은 변경 불가
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 2차 하향평가를 제출할 수 있어야 함
@@ -275,6 +278,7 @@ function SubmitSecondaryDownwardEvaluation() {
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 pending으로 변경됨
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 1차 하향평가와 자기평가는 제출되지 않음
+- content와 score가 없어도 제출 가능
 - 존재하지 않는 2차 평가를 제출하면 404 에러
 - 이미 제출된 2차 평가를 재제출하면 409 에러`,
     }), (0, swagger_1.ApiParam)({
@@ -335,12 +339,14 @@ function SubmitDownwardEvaluation() {
 - 제출 일시(completedAt) 기록
 - 1차/2차 구분 없이 제출 가능
 - 제출 후 평가 내용은 변경 불가
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 1차 하향평가 ID로 직접 제출 가능
 - 2차 하향평가 ID로 직접 제출 가능
 - 평가 타입에 관계없이 ID만으로 제출 가능
 - 제출 시 평가 타입에 따라 단계 승인 상태가 pending으로 변경
+- content와 score가 없어도 제출 가능
 - 존재하지 않는 ID로 제출 시 404 에러
 - 잘못된 UUID 형식으로 제출 시 400 에러
 - 이미 제출된 평가를 ID로 재제출 시 409 에러
@@ -390,6 +396,7 @@ function BulkSubmitDownwardEvaluations() {
 - 각 평가에 대해 제출 처리 (이미 완료된 평가는 건너뜀)
 - 제출 실패한 평가는 결과에 포함하여 반환
 - 모든 평가 제출을 하나의 트랜잭션으로 처리
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **사용 예시:**
 - 1차 평가자 A가 피평가자 X의 모든 1차 하향평가를 일괄 제출
@@ -401,7 +408,7 @@ function BulkSubmitDownwardEvaluations() {
 - 평가자가 담당하는 피평가자의 모든 2차 하향평가 일괄 제출 (2차 평가자별로 독립적으로 제출 가능)
 - 여러 2차 평가자가 동일 피평가자의 평가를 각각 독립적으로 일괄 제출 가능
 - 이미 완료된 평가는 건너뛰고 제출되지 않은 평가만 제출
-- 필수 항목(내용, 점수)이 없는 평가는 제출 실패 처리
+- content와 score가 없어도 제출 가능
 - 제출 결과에 제출된 평가 수, 건너뛴 평가 수, 실패한 평가 수 포함
 - 제출된 평가 ID 목록 반환
 - 실패한 평가의 오류 메시지 반환

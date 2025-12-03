@@ -51,8 +51,8 @@ export declare class MyTargetSelfEvaluationDto {
     isSubmittedToManager: boolean;
     totalScore: number | null;
     grade: string | null;
-    viewedByPrimaryEvaluator: boolean;
-    viewedBySecondaryEvaluator: boolean;
+    viewedByPrimaryEvaluator?: boolean;
+    viewedBySecondaryEvaluator?: boolean;
 }
 export declare class MyEvaluationTargetStatusResponseDto {
     employeeId: string;

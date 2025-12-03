@@ -16,6 +16,7 @@ import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.ent
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
 import { ExcludedEvaluationTargetAccessException } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.exceptions';
+import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { EmployeeAssignedDataResult } from './types';
 import { getProjectsWithWbs } from './project-wbs.utils';
 import {
@@ -23,6 +24,7 @@ import {
   calculatePrimaryDownwardEvaluationScore,
   calculateSecondaryDownwardEvaluationScore,
 } from './summary-calculation.utils';
+import { IsNull, In } from 'typeorm';
 
 /**
  * 사용자 할당 정보 조회 쿼리
@@ -31,6 +33,7 @@ export class GetEmployeeAssignedDataQuery {
   constructor(
     public readonly evaluationPeriodId: string,
     public readonly employeeId: string,
+    public readonly viewerId?: string, // 조회하는 사람의 ID (평가자 확인용)
   ) {}
 }
 
@@ -72,16 +75,18 @@ export class GetEmployeeAssignedDataHandler
     private readonly evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(Deliverable)
     private readonly deliverableRepository: Repository<Deliverable>,
+    private readonly activityLogContextService: EvaluationActivityLogContextService,
   ) {}
 
   async execute(
     query: GetEmployeeAssignedDataQuery,
   ): Promise<EmployeeAssignedDataResult> {
-    const { evaluationPeriodId, employeeId } = query;
+    const { evaluationPeriodId, employeeId, viewerId } = query;
 
     this.logger.log('사용자 할당 정보 조회 시작', {
       evaluationPeriodId,
       employeeId,
+      viewerId,
     });
 
     // 1. 평가기간 조회
@@ -267,6 +272,73 @@ export class GetEmployeeAssignedDataHandler
         submittedBy: mapping.criteriaSubmittedBy || null,
       },
     };
+
+    // 평가자가 피평가자의 데이터를 조회한 경우 Activity Log 기록
+    // viewerId가 있고, viewerId가 employeeId와 다르면 다른 사람(평가자)이 조회한 것
+    if (viewerId && viewerId !== employeeId) {
+      try {
+        // 평가자-피평가자 관계 확인
+        const evaluationMappings = await this.evaluationLineMappingRepository.find(
+          {
+            where: {
+              evaluationPeriodId,
+              evaluatorId: viewerId,
+              employeeId,
+              deletedAt: IsNull(),
+            },
+          },
+        );
+
+        // 평가자인 경우에만 Activity Log 기록
+        if (evaluationMappings.length > 0) {
+          // EvaluationLineMapping에서 evaluationLine을 통해 evaluatorType 추출
+          const evaluationLineIds = [
+            ...new Set(evaluationMappings.map((m) => m.evaluationLineId)),
+          ];
+          const evaluationLines = await this.evaluationLineRepository.find({
+            where: {
+              id: In(evaluationLineIds),
+              deletedAt: IsNull(),
+            },
+          });
+          const evaluatorTypes = evaluationLines.map(
+            (line) => line.evaluatorType,
+          );
+
+          await this.activityLogContextService.활동내역을_기록한다({
+            periodId: evaluationPeriodId,
+            employeeId,
+            activityType: 'downward_evaluation',
+            activityAction: 'viewed',
+            activityTitle: '피평가자 할당 정보 조회',
+            performedBy: viewerId,
+            activityDate: new Date(),
+            activityMetadata: {
+              evaluatorTypes,
+            },
+          });
+
+          this.logger.log('평가자 활동 로그 기록 완료', {
+            evaluatorId: viewerId,
+            employeeId,
+            evaluatorTypes,
+          });
+        } else {
+          this.logger.log('평가자-피평가자 관계 없음 - Activity Log 기록 생략', {
+            viewerId,
+            employeeId,
+          });
+        }
+      } catch (error) {
+        // 활동 로그 기록 실패 시에도 데이터 조회는 정상 처리
+        this.logger.warn('활동 내역 기록 실패', {
+          viewerId,
+          employeeId,
+          error: error.message,
+          stack: error.stack,
+        });
+      }
+    }
 
     return {
       evaluationPeriod: {

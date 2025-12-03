@@ -14,12 +14,18 @@ import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { DownwardEvaluationModule } from '@domain/core/downward-evaluation/downward-evaluation.module';
 import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
+import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
+import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-period.entity';
+import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
 import { EvaluationPeriodModule } from '@domain/core/evaluation-period/evaluation-period.module';
 import {
   EvaluationPeriodPhase,
   EvaluationPeriodStatus,
 } from '@domain/core/evaluation-period/evaluation-period.types';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
+import { EmployeeEvaluationStepApproval } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.entity';
+import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.module';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.module';
 import { DatabaseModule } from '@libs/database/database.module';
@@ -81,14 +87,20 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
         DownwardEvaluationModule,
         EvaluationPeriodModule,
         WbsSelfEvaluationModule,
+        EmployeeEvaluationStepApprovalModule,
         TypeOrmModule.forFeature([
           EvaluationPeriod,
+          EvaluationPeriodEmployeeMapping,
           Employee,
           Department,
           DownwardEvaluation,
           WbsSelfEvaluation,
           Project,
           WbsItem,
+          EvaluationLineMapping,
+          EvaluationLine,
+          EvaluationWbsAssignment,
+          EmployeeEvaluationStepApproval,
         ]),
       ],
       providers: [
@@ -506,7 +518,7 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
       expect(evaluationsAfter.every((e) => e.isCompleted)).toBe(true);
     });
 
-    it('필수 항목(내용, 점수)이 없는 평가는 제출 실패 처리해야 한다', async () => {
+    it('필수 항목(내용, 점수)이 없어도 제출할 수 있어야 한다', async () => {
       // Given
       await 기본_테스트데이터를_생성한다();
 
@@ -531,14 +543,12 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
 
       // Then
       expect(result).toBeDefined();
-      expect(result.submittedCount).toBe(2); // 1번, 3번만 제출
+      expect(result.submittedCount).toBe(3); // 모든 평가 제출 가능
       expect(result.skippedCount).toBe(0);
-      expect(result.failedCount).toBe(1); // 2번은 실패
-      expect(result.failedItems.length).toBe(1);
-      expect(result.failedItems[0].evaluationId).toBe(primaryEvaluationId2);
-      expect(result.failedItems[0].error).toContain('필수 입력 항목');
+      expect(result.failedCount).toBe(0); // 필수 항목 없어도 제출 가능
+      expect(result.failedItems.length).toBe(0);
 
-      // 제출된 평가만 완료 상태인지 확인
+      // 모든 평가가 완료 상태인지 확인
       const evaluation1 = await downwardEvaluationRepository.findOne({
         where: { id: primaryEvaluationId1 },
       });
@@ -550,7 +560,7 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
       });
 
       expect(evaluation1?.isCompleted).toBe(true);
-      expect(evaluation2?.isCompleted).toBe(false); // 실패했으므로 미완료
+      expect(evaluation2?.isCompleted).toBe(true); // content와 score 없어도 제출 성공
       expect(evaluation3?.isCompleted).toBe(true);
     });
 
@@ -779,7 +789,7 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
       expect(secondaryEvaluations.every((e) => e.isCompleted)).toBe(true);
     });
 
-    it('일부 평가가 실패해도 성공한 평가는 제출되어야 한다', async () => {
+    it('내용과 점수가 없어도 2차 하향평가를 일괄 제출할 수 있어야 한다', async () => {
       // Given
       await 기본_테스트데이터를_생성한다();
 
@@ -809,24 +819,16 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
       );
       const result = await bulkSubmitHandler.execute(command);
 
-      // Then
+      // Then - 모든 평가가 제출 가능
       expect(result).toBeDefined();
-      expect(result.submittedCount).toBe(1); // 1번만 제출
-      expect(result.failedCount).toBe(2); // 2번, 3번은 실패
-      expect(result.failedItems.length).toBe(2);
+      expect(result.submittedCount).toBe(3); // 모두 제출 가능
+      expect(result.failedCount).toBe(0); // 필수 항목 없어도 제출 가능
+      expect(result.failedItems.length).toBe(0);
       expect(result.submittedIds).toContain(secondaryEvaluationId1);
-      expect(
-        result.failedItems.some(
-          (item) => item.evaluationId === secondaryEvaluationId2,
-        ),
-      ).toBe(true);
-      expect(
-        result.failedItems.some(
-          (item) => item.evaluationId === secondaryEvaluationId3,
-        ),
-      ).toBe(true);
+      expect(result.submittedIds).toContain(secondaryEvaluationId2);
+      expect(result.submittedIds).toContain(secondaryEvaluationId3);
 
-      // 1번만 완료 상태 확인
+      // 모든 평가가 완료 상태 확인
       const evaluation1 = await downwardEvaluationRepository.findOne({
         where: { id: secondaryEvaluationId1 },
       });
@@ -838,8 +840,8 @@ describe('Performance Evaluation Context - Bulk Submit Downward Evaluations', ()
       });
 
       expect(evaluation1?.isCompleted).toBe(true);
-      expect(evaluation2?.isCompleted).toBe(false);
-      expect(evaluation3?.isCompleted).toBe(false);
+      expect(evaluation2?.isCompleted).toBe(true); // content 없어도 제출 성공
+      expect(evaluation3?.isCompleted).toBe(true); // score 없어도 제출 성공
     });
   });
 

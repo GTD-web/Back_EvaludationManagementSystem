@@ -24,7 +24,7 @@ let UserDashboardController = class UserDashboardController {
         this.dashboardService = dashboardService;
     }
     async getMyAssignedData(evaluationPeriodId, user) {
-        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id);
+        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id, user.id);
         return this.이차_하향평가_정보를_제거한다(data);
     }
     이차_하향평가_정보를_제거한다(data) {

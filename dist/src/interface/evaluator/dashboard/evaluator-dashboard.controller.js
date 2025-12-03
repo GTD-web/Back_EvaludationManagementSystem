@@ -27,8 +27,8 @@ let EvaluatorDashboardController = class EvaluatorDashboardController {
     async getMyEvaluationTargetsStatus(evaluationPeriodId, evaluatorId) {
         return await this.dashboardService.내가_담당하는_평가대상자_현황을_조회한다(evaluationPeriodId, evaluatorId);
     }
-    async getEmployeeEvaluationPeriodStatus(evaluationPeriodId, employeeId) {
-        const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(evaluationPeriodId, employeeId);
+    async getEmployeeEvaluationPeriodStatus(evaluationPeriodId, employeeId, user) {
+        const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(evaluationPeriodId, employeeId, user.id);
         if (!result) {
             return null;
         }
@@ -36,7 +36,7 @@ let EvaluatorDashboardController = class EvaluatorDashboardController {
         return rest;
     }
     async getMyAssignedData(evaluationPeriodId, user) {
-        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id);
+        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id, user.id);
         return this.이차_하향평가_정보를_제거한다(data);
     }
     이차_하향평가_정보를_제거한다(data) {
@@ -85,8 +85,9 @@ __decorate([
     (0, dashboard_api_decorators_1.GetEmployeeEvaluationPeriodStatus)(),
     __param(0, (0, decorators_1.ParseUUID)('evaluationPeriodId')),
     __param(1, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluatorDashboardController.prototype, "getEmployeeEvaluationPeriodStatus", null);
 __decorate([

@@ -105,20 +105,6 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                         this.logger.debug(`이미 완료된 평가는 건너뜀: ${evaluation.id}`);
                         continue;
                     }
-                    if (!forceSubmit) {
-                        if (!evaluation.downwardEvaluationContent ||
-                            !evaluation.downwardEvaluationScore) {
-                            failedItems.push({
-                                evaluationId: evaluation.id,
-                                error: '평가 내용과 점수는 필수 입력 항목입니다.',
-                            });
-                            this.logger.warn(`필수 항목 누락으로 제출 실패: ${evaluation.id}`);
-                            continue;
-                        }
-                    }
-                    else {
-                        this.logger.debug(`강제 제출 모드: 필수 항목 검증 건너뛰고 제출 처리: ${evaluation.id}`);
-                    }
                     await this.downwardEvaluationService.수정한다(evaluation.id, { isCompleted: true }, submittedBy);
                     submittedIds.push(evaluation.id);
                     this.logger.debug(`하향평가 제출 완료: ${evaluation.id}`);

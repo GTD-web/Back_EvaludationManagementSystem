@@ -7,7 +7,7 @@ export declare class DashboardService implements IDashboardContext {
     직원의_평가기간_현황을_조회한다(evaluationPeriodId: string, employeeId: string): Promise<EmployeeEvaluationPeriodStatusDto | null>;
     평가기간의_모든_피평가자_현황을_조회한다(evaluationPeriodId: string, includeUnregistered?: boolean): Promise<EmployeeEvaluationPeriodStatusDto[]>;
     내가_담당하는_평가대상자_현황을_조회한다(evaluationPeriodId: string, evaluatorId: string): Promise<MyEvaluationTargetStatusDto[]>;
-    사용자_할당_정보를_조회한다(evaluationPeriodId: string, employeeId: string): Promise<EmployeeAssignedDataResult>;
+    사용자_할당_정보를_조회한다(evaluationPeriodId: string, employeeId: string, viewerId?: string): Promise<EmployeeAssignedDataResult>;
     담당자의_피평가자_할당_정보를_조회한다(evaluationPeriodId: string, evaluatorId: string, employeeId: string): Promise<EvaluatorAssignedEmployeesDataResult>;
     평가기간별_최종평가_목록을_조회한다(evaluationPeriodId: string): Promise<FinalEvaluationByPeriodResult[]>;
     직원별_최종평가_목록을_조회한다(employeeId: string, startDate?: Date, endDate?: Date): Promise<FinalEvaluationByEmployeeResult[]>;

@@ -147,6 +147,27 @@ describe('평가 확인 여부 E2E 테스트', () => {
   });
 
   describe('1차 평가자 자기평가 확인 여부', () => {
+    it('피평가자가 자기평가를 제출하지 않으면 viewedBy 필드가 포함되지 않아야 한다', async () => {
+      // 현재 사용자를 1차 평가자로 설정
+      testSuite.setCurrentUser({
+        id: primaryEvaluatorId,
+        email: 'primary@test.com',
+        name: '1차 평가자',
+        employeeNumber: 'EMP002',
+      });
+
+      // 1차 평가자가 평가 대상자 현황 조회
+      const result = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: primaryEvaluatorId,
+        employeeId: evaluateeId,
+      });
+
+      // 자기평가를 제출하지 않았으므로 viewedBy 필드가 없어야 함
+      expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBeUndefined();
+      expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBeUndefined();
+    });
+
     it('피평가자가 자기평가를 제출하면 1차 평가자 확인 여부가 false여야 한다', async () => {
       // 현재 사용자를 피평가자로 설정
       testSuite.setCurrentUser({
@@ -171,11 +192,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
 
       const selfEvaluationId = selfEvaluationResponse.body.id;
 
-      // 자기평가 제출
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationId}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationId}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -195,6 +216,7 @@ describe('평가 확인 여부 E2E 테스트', () => {
         expectedSelfEvaluationViewedByPrimaryEvaluator: false,
       });
 
+      // 자기평가 제출 시 viewedBy 필드 포함
       expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(false);
     });
 
@@ -219,10 +241,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -276,6 +299,28 @@ describe('평가 확인 여부 E2E 테스트', () => {
   describe('2차 평가자 자기평가 및 1차평가 확인 여부', () => {
     let primaryDownwardEvaluationId: string;
 
+    it('1차 평가가 제출되지 않으면 primaryEvaluationViewed 필드가 포함되지 않아야 한다', async () => {
+      // 현재 사용자를 2차 평가자로 설정
+      testSuite.setCurrentUser({
+        id: secondaryEvaluatorId,
+        email: 'secondary@test.com',
+        name: '2차 평가자',
+        employeeNumber: 'EMP003',
+      });
+
+      // 2차 평가자가 평가 대상자 현황 조회
+      const result = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: secondaryEvaluatorId,
+        employeeId: evaluateeId,
+      });
+
+      // 1차 평가를 제출하지 않았으므로 primaryEvaluationViewed 필드가 없어야 함
+      expect(
+        result.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed,
+      ).toBeUndefined();
+    });
+
     it('피평가자가 자기평가를 제출하고 1차 평가자가 1차평가를 제출하면 2차 평가자 확인 여부가 false여야 한다', async () => {
       // 현재 사용자를 1차 평가자로 설정
       testSuite.setCurrentUser({
@@ -328,12 +373,17 @@ describe('평가 확인 여부 E2E 테스트', () => {
         evaluatorId: secondaryEvaluatorId,
         employeeId: evaluateeId,
         expectedSelfEvaluationViewedBySecondaryEvaluator: false,
+        expectedPrimaryEvaluationViewedBySecondaryEvaluator: false,
       });
 
       expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBe(false);
+      // 1차 평가 제출 시 primaryEvaluationViewed 필드 포함
+      expect(
+        result.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed,
+      ).toBe(false);
     });
 
-    it('2차 평가자가 피평가자 데이터를 조회하면 자기평가 확인 여부가 true로 변경되어야 한다', async () => {
+    it('2차 평가자가 피평가자 데이터를 조회하면 자기평가 및 1차평가 확인 여부가 true로 변경되어야 한다', async () => {
       // 먼저 자기평가 및 1차 하향평가 제출 (선행 조건)
       testSuite.setCurrentUser({
         id: evaluateeId,
@@ -354,10 +404,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -435,9 +486,13 @@ describe('평가 확인 여부 E2E 테스트', () => {
         evaluatorId: secondaryEvaluatorId,
         employeeId: evaluateeId,
         expectedSelfEvaluationViewedBySecondaryEvaluator: true,
+        expectedPrimaryEvaluationViewedBySecondaryEvaluator: true,
       });
 
       expect(result.selfEvaluation.viewedBySecondaryEvaluator).toBe(true);
+      expect(
+        result.downwardEvaluation.secondaryStatus?.primaryEvaluationViewed,
+      ).toBe(true);
     });
   });
 
@@ -530,10 +585,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${firstSelfEvalResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${firstSelfEvalResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -557,10 +613,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${selfEvaluationResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -632,10 +689,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${firstSelfEvalResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${firstSelfEvalResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -658,10 +716,11 @@ describe('평가 확인 여부 E2E 테스트', () => {
         })
         .expect(200);
 
+      // 1차 평가자에게 자기평가 제출
       await testSuite
         .request()
         .patch(
-          `/admin/performance-evaluation/wbs-self-evaluations/${secondSelfEvalResponse.body.id}/submit`,
+          `/admin/performance-evaluation/wbs-self-evaluations/${secondSelfEvalResponse.body.id}/submit-to-evaluator`,
         )
         .expect(200);
 
@@ -676,12 +735,35 @@ describe('평가 확인 여부 E2E 테스트', () => {
         employeeNumber: 'EMP002',
       });
 
+      // 1차 평가자가 첫 번째 피평가자의 할당 데이터 조회
+      await dashboardScenario.평가자가_피평가자_할당_데이터를_조회한다({
+        evaluationPeriodId,
+        evaluatorId: primaryEvaluatorId,
+        employeeId: evaluateeId,
+      });
+
+      // 약간의 지연 (Activity Log 커밋 대기)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 첫 번째 피평가자의 확인 여부 검증 (조회 후이므로 true)
+      const firstResult = await dashboardScenario.평가_확인_여부를_검증한다({
+        evaluationPeriodId,
+        evaluatorId: primaryEvaluatorId,
+        employeeId: evaluateeId,
+        expectedSelfEvaluationViewedByPrimaryEvaluator: true,
+      });
+
+      expect(firstResult.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
+
       // 1차 평가자가 두 번째 피평가자의 할당 데이터 조회
       await dashboardScenario.평가자가_피평가자_할당_데이터를_조회한다({
         evaluationPeriodId,
         evaluatorId: primaryEvaluatorId,
         employeeId: secondEvaluateeId,
       });
+
+      // 약간의 지연 (Activity Log 커밋 대기)
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // 두 번째 피평가자의 확인 여부 검증 (조회 후이므로 true)
       const result = await dashboardScenario.평가_확인_여부를_검증한다({
@@ -694,14 +776,17 @@ describe('평가 확인 여부 E2E 테스트', () => {
       expect(result.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
 
       // 첫 번째 피평가자도 여전히 true
-      const firstResult = await dashboardScenario.평가_확인_여부를_검증한다({
-        evaluationPeriodId,
-        evaluatorId: primaryEvaluatorId,
-        employeeId: evaluateeId,
-        expectedSelfEvaluationViewedByPrimaryEvaluator: true,
-      });
+      const firstResultAfter =
+        await dashboardScenario.평가_확인_여부를_검증한다({
+          evaluationPeriodId,
+          evaluatorId: primaryEvaluatorId,
+          employeeId: evaluateeId,
+          expectedSelfEvaluationViewedByPrimaryEvaluator: true,
+        });
 
-      expect(firstResult.selfEvaluation.viewedByPrimaryEvaluator).toBe(true);
+      expect(firstResultAfter.selfEvaluation.viewedByPrimaryEvaluator).toBe(
+        true,
+      );
     });
   });
 });

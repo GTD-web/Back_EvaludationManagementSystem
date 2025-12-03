@@ -45,15 +45,18 @@ export class EvaluatorDashboardController {
 
   /**
    * 직원의 평가기간 현황을 조회합니다.
+   * (평가자가 사용)
    */
   @GetEmployeeEvaluationPeriodStatus()
   async getEmployeeEvaluationPeriodStatus(
     @ParseUUID('evaluationPeriodId') evaluationPeriodId: string,
     @ParseUUID('employeeId') employeeId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<EmployeeEvaluationPeriodStatusResponseDto | null> {
     const result = await this.dashboardService.직원의_평가기간_현황을_조회한다(
       evaluationPeriodId,
       employeeId,
+      user.id, // 조회하는 사람의 ID 전달
     );
 
     if (!result) {
@@ -78,6 +81,7 @@ export class EvaluatorDashboardController {
     const data = await this.dashboardService.사용자_할당_정보를_조회한다(
       evaluationPeriodId,
       user.id, // JWT에서 추출한 현재 로그인 사용자의 ID
+      user.id, // viewerId (본인이 조회하므로 Activity Log 기록하지 않음)
     );
 
     // 피평가자는 2차 평가자의 하향평가를 볼 수 없음 (1차 하향평가는 제공)

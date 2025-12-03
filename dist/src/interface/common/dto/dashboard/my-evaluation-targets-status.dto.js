@@ -61,9 +61,8 @@ __decorate([
 ], MyEvaluationStatusDetailDto.prototype, "grade", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '2차 평가자가 1차평가 제출을 확인했는지 여부 (2차 평가자인 경우에만 제공)',
+        description: '2차 평가자가 1차평가 제출을 확인했는지 여부 (1차 평가 제출 시에만 제공)',
         example: false,
-        nullable: true,
     }),
     __metadata("design:type", Boolean)
 ], MyEvaluationStatusDetailDto.prototype, "primaryEvaluationViewed", void 0);
@@ -354,15 +353,15 @@ __decorate([
     __metadata("design:type", Object)
 ], MyTargetSelfEvaluationDto.prototype, "grade", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({
-        description: '1차 평가자가 제출된 자기평가를 확인했는지 여부',
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
         example: false,
     }),
     __metadata("design:type", Boolean)
 ], MyTargetSelfEvaluationDto.prototype, "viewedByPrimaryEvaluator", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({
-        description: '2차 평가자가 제출된 자기평가를 확인했는지 여부',
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '2차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
         example: false,
     }),
     __metadata("design:type", Boolean)

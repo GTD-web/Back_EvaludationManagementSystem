@@ -172,7 +172,11 @@ export function GetMyEvaluationTargetsStatus() {
 - 내가 PRIMARY 또는 SECONDARY 평가자로 지정된 피평가자 목록 반환
 - 각 피평가자에 대한 내 평가자 유형 제공 (PRIMARY/SECONDARY)
 - 피평가자가 1차 평가자에게 자기평가를 제출했는지 여부 제공 (전체 자기평가 수, 제출된 수, 제출 완료 여부)
+- **자기평가 제출 시**: viewedByPrimaryEvaluator, viewedBySecondaryEvaluator 필드 추가 제공
+- **자기평가 미제출 시**: viewedBy 필드는 응답에 포함되지 않음
 - 내가 담당하는 하향평가 현황 제공 (평가 대상 WBS 수, 완료 수, 평균 점수, 수정 가능 여부)
+- **1차 평가 제출 시**: secondaryStatus.primaryEvaluationViewed 필드 추가 제공
+- **1차 평가 미제출 시**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
   * **평가 대상 WBS 수는 취소된 프로젝트 할당(소프트 딜리트)의 WBS 제외**
   * **취소된 프로젝트 할당에 속한 WBS의 하향평가는 카운트에서 제외됨**
 - 피평가자별 평가 대상 여부, 평가항목 설정 상태, WBS 평가기준 설정 상태, 평가라인 지정 상태, 성과 입력 상태 포함
@@ -195,6 +199,12 @@ export function GetMyEvaluationTargetsStatus() {
 - 기능 테스트: 담당하는 평가 대상자가 없으면 빈 배열을 반환해야 한다
 - 기능 테스트: 여러 피평가자를 담당하는 경우 모두 조회되어야 한다
 - 기능 테스트: 성과 입력 상태가 정확해야 한다
+- 기능 테스트: 자기평가 미제출 시 viewedBy 필드가 포함되지 않아야 한다
+- 기능 테스트: 자기평가 제출 시 viewedBy 필드가 포함되어야 한다
+- 기능 테스트: 평가자가 피평가자 데이터를 조회하면 viewedBy가 true로 변경되어야 한다
+- 기능 테스트: 1차 평가 미제출 시 primaryEvaluationViewed 필드가 포함되지 않아야 한다
+- 기능 테스트: 1차 평가 제출 시 primaryEvaluationViewed 필드가 포함되어야 한다
+- 기능 테스트: 2차 평가자가 피평가자 데이터를 조회하면 primaryEvaluationViewed가 true로 변경되어야 한다
 - 실패 케이스: 존재하지 않는 평가기간 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 존재하지 않는 평가자 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 잘못된 평가기간 UUID 형식으로 요청 시 에러가 발생해야 한다
@@ -243,6 +253,8 @@ export function GetEmployeeAssignedData() {
       summary: '사용자 할당 정보 조회',
       description: `특정 직원의 평가기간 내 할당된 모든 정보를 조회합니다.
 
+**중요: 평가자가 다른 직원의 데이터를 조회하면 Activity Log에 'viewed' 활동이 자동으로 기록됩니다.**
+
 **동작:**
 - 평가기간 정보 반환 (평가기간명, 시작/종료일, 상태, 설정 허용 여부)
   * maxSelfEvaluationRate: 자기평가 달성률 최대값 (%) - 자기평가 입력 시 사용
@@ -255,7 +267,11 @@ export function GetEmployeeAssignedData() {
   * **summary의 평가자별 assignedWbsCount는 취소된 프로젝트 할당의 WBS 제외**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
 - 등록되지 않은 직원이나 존재하지 않는 평가기간 조회 시 404 에러 반환
+- **평가자가 조회 시**: JWT 토큰의 사용자 ID가 조회 대상 직원 ID와 다르면 Activity Log 기록
 
+**Activity Log 기록 조건:**
+- 조회하는 사람(viewerId)이 조회 대상 직원(employeeId)과 다른 경우
+- 조회하는 사람이 해당 직원의 평가자(PRIMARY/SECONDARY)인 경우
 
 **테스트 케이스:**
 - 유효한 평가기간과 직원ID로 할당 정보를 조회할 수 있어야 한다
@@ -268,6 +284,7 @@ export function GetEmployeeAssignedData() {
 - WBS별 평가기준이 올바르게 반환되어야 한다
 - 프로젝트별로 WBS가 올바르게 그룹화되어야 한다
 - 여러 직원의 할당 정보를 조회해도 데이터가 섞이지 않아야 한다
+- 평가자가 피평가자 정보 조회 시 Activity Log에 viewed 활동 기록
 - 등록되지 않은 직원 조회 시 404 에러가 발생해야 한다
 - 존재하지 않는 평가기간 조회 시 404 에러가 발생해야 한다
 - 잘못된 평가기간 UUID 형식으로 요청 시 400 에러가 발생해야 한다

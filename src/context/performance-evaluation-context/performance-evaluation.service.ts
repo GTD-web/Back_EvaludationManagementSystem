@@ -690,8 +690,11 @@ export class PerformanceEvaluationService
     submittedBy: string,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 1차 평가자 ID 조회
-    const actualPrimaryEvaluatorId = 
-      await this.stepApprovalContextService.일차평가자를_조회한다(periodId, evaluateeId);
+    const actualPrimaryEvaluatorId =
+      await this.stepApprovalContextService.일차평가자를_조회한다(
+        periodId,
+        evaluateeId,
+      );
 
     if (!actualPrimaryEvaluatorId) {
       throw new DownwardEvaluationNotFoundException(
@@ -719,7 +722,7 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
-    
+
     // 평가가 없으면 자동으로 생성
     if (!result.evaluations || result.evaluations.length === 0) {
       // 실제 평가자 ID로 생성
@@ -742,9 +745,9 @@ export class PerformanceEvaluationService
           `1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
         );
       }
-      
+
       const evaluation = newResult.evaluations[0];
-      
+
       // 제출 커맨드 실행
       const command = new SubmitDownwardEvaluationCommand(
         evaluation.id,
@@ -779,8 +782,12 @@ export class PerformanceEvaluationService
     submittedBy: string,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 2차 평가자 ID 조회 (WBS별)
-    const actualSecondaryEvaluatorId = 
-      await this.stepApprovalContextService.이차평가자를_조회한다(periodId, evaluateeId, wbsId);
+    const actualSecondaryEvaluatorId =
+      await this.stepApprovalContextService.이차평가자를_조회한다(
+        periodId,
+        evaluateeId,
+        wbsId,
+      );
 
     if (!actualSecondaryEvaluatorId) {
       throw new DownwardEvaluationNotFoundException(
@@ -808,7 +815,7 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
-    
+
     // 평가가 없으면 자동으로 생성
     if (!result.evaluations || result.evaluations.length === 0) {
       // 실제 평가자 ID로 생성
@@ -831,9 +838,9 @@ export class PerformanceEvaluationService
           `2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
         );
       }
-      
+
       const evaluation = newResult.evaluations[0];
-      
+
       // 제출 커맨드 실행
       const command = new SubmitDownwardEvaluationCommand(
         evaluation.id,

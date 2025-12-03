@@ -832,6 +832,8 @@ export class PerformanceEvaluationService
 
   /**
    * 1차 하향평가를 초기화한다 (미제출 상태로 변경)
+   * 2차 평가자도 1차 하향평가를 초기화(반려)할 수 있도록 evaluatorId 조건을 제거하고
+   * evaluateeId, periodId, wbsId, evaluationType만으로 조회합니다.
    */
   async 일차_하향평가를_초기화한다(
     evaluateeId: string,
@@ -840,9 +842,9 @@ export class PerformanceEvaluationService
     evaluatorId: string,
     resetBy: string,
   ): Promise<void> {
-    // 1차 하향평가를 조회
+    // 1차 하향평가를 조회 (evaluatorId 조건 없이 조회하여 2차 평가자도 초기화 가능)
     const query = new GetDownwardEvaluationListQuery(
-      evaluatorId,
+      undefined, // evaluatorId를 undefined로 설정하여 모든 평가자의 평가 조회
       evaluateeId,
       periodId,
       wbsId,

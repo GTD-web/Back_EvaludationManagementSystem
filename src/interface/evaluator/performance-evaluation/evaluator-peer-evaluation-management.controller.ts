@@ -8,12 +8,15 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   GetEvaluatorAssignedEvaluatees,
   GetPeerEvaluationDetail,
+  GetPeerEvaluations,
   SubmitPeerEvaluation,
   UpsertPeerEvaluationAnswers,
 } from '@interface/common/decorators/performance-evaluation/peer-evaluation-api.decorators';
 import {
   AssignedEvaluateeDto,
   GetEvaluatorAssignedEvaluateesQueryDto,
+  PeerEvaluationFilterDto,
+  PeerEvaluationListResponseDto,
   UpsertPeerEvaluationAnswersDto,
   UpsertPeerEvaluationAnswersResponseDto,
 } from '@interface/common/dto/performance-evaluation/peer-evaluation.dto';
@@ -30,6 +33,25 @@ export class EvaluatorPeerEvaluationManagementController {
   constructor(
     private readonly peerEvaluationBusinessService: PeerEvaluationBusinessService,
   ) {}
+
+  /**
+   * 동료평가 목록 조회 (통합 엔드포인트)
+   * evaluatorId와 evaluateeId를 모두 query parameter로 받아 필터링합니다.
+   */
+  @GetPeerEvaluations()
+  async getPeerEvaluations(
+    @Query() filter: PeerEvaluationFilterDto,
+  ): Promise<PeerEvaluationListResponseDto> {
+    return await this.peerEvaluationBusinessService.동료평가_목록을_조회한다({
+      evaluatorId: filter.evaluatorId,
+      evaluateeId: filter.evaluateeId,
+      periodId: filter.periodId,
+      status: filter.status,
+      page: filter.page || 1,
+      limit: filter.limit || 10,
+    });
+  }
+
   /**
    * 평가자에게 할당된 피평가자 목록 조회
    */

@@ -6,6 +6,7 @@ import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-
 import { EmployeeEvaluationStepApprovalService } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service';
 import { NotificationHelperService } from '@domain/common/notification';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
+import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 export declare class SubmitDownwardEvaluationCommand {
     readonly evaluationId: string;
     readonly submittedBy: string;
@@ -18,8 +19,9 @@ export declare class SubmitDownwardEvaluationHandler implements ICommandHandler<
     private readonly stepApprovalService;
     private readonly notificationHelper;
     private readonly evaluationPeriodService;
+    private readonly stepApprovalContext;
     private readonly logger;
-    constructor(downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, stepApprovalService: EmployeeEvaluationStepApprovalService, notificationHelper: NotificationHelperService, evaluationPeriodService: EvaluationPeriodService);
+    constructor(downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, stepApprovalService: EmployeeEvaluationStepApprovalService, notificationHelper: NotificationHelperService, evaluationPeriodService: EvaluationPeriodService, stepApprovalContext: StepApprovalContextService);
     execute(command: SubmitDownwardEvaluationCommand): Promise<void>;
-    private Portal사용자에게_알림을전송한다;
+    private 이차평가자에게_알림을전송한다;
 }

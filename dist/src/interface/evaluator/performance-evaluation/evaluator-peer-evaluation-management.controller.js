@@ -25,6 +25,16 @@ let EvaluatorPeerEvaluationManagementController = class EvaluatorPeerEvaluationM
     constructor(peerEvaluationBusinessService) {
         this.peerEvaluationBusinessService = peerEvaluationBusinessService;
     }
+    async getPeerEvaluations(filter) {
+        return await this.peerEvaluationBusinessService.동료평가_목록을_조회한다({
+            evaluatorId: filter.evaluatorId,
+            evaluateeId: filter.evaluateeId,
+            periodId: filter.periodId,
+            status: filter.status,
+            page: filter.page || 1,
+            limit: filter.limit || 10,
+        });
+    }
     async getEvaluatorAssignedEvaluatees(evaluatorId, query) {
         return await this.peerEvaluationBusinessService.평가자에게_할당된_피평가자_목록을_조회한다({
             evaluatorId,
@@ -62,6 +72,13 @@ let EvaluatorPeerEvaluationManagementController = class EvaluatorPeerEvaluationM
     }
 };
 exports.EvaluatorPeerEvaluationManagementController = EvaluatorPeerEvaluationManagementController;
+__decorate([
+    (0, peer_evaluation_api_decorators_1.GetPeerEvaluations)(),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [peer_evaluation_dto_1.PeerEvaluationFilterDto]),
+    __metadata("design:returntype", Promise)
+], EvaluatorPeerEvaluationManagementController.prototype, "getPeerEvaluations", null);
 __decorate([
     (0, peer_evaluation_api_decorators_1.GetEvaluatorAssignedEvaluatees)(),
     __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluatorId')),

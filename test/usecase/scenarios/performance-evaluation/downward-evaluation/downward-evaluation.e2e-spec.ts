@@ -1587,4 +1587,215 @@ describe('하향평가 시나리오', () => {
       });
     });
   });
+
+  describe('시나리오 7: 빈 값 제출 및 평가자 유지 검증', () => {
+    describe('7-1. 빈 값으로 1차 하향평가 제출 시 기본 메시지 생성', () => {
+      it('content가 없는 상태로 제출하면 기본 메시지가 생성된다', async () => {
+        // Given - 빈 값으로 1차 하향평가 제출 (content 없이)
+        console.log('\n🧪 빈 값 제출 테스트 시작...');
+        console.log(`피평가자: ${evaluateeId}`);
+        console.log(`1차 평가자: ${primaryEvaluatorId}`);
+
+        // When - content 없이 제출
+        await downwardEvaluationScenario.일차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: primaryEvaluatorId,
+        });
+
+        // Then - 평가 상세 조회하여 기본 메시지 확인
+        const 평가목록 =
+          await downwardEvaluationScenario.평가자의_하향평가_목록을_조회한다({
+            evaluatorId: primaryEvaluatorId,
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[0],
+            evaluationType: 'primary',
+          });
+
+        expect(평가목록.evaluations).toBeDefined();
+        expect(평가목록.evaluations.length).toBeGreaterThan(0);
+
+        const 평가 = 평가목록.evaluations[0];
+        console.log(`\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`);
+
+        // 기본 메시지 검증: "XXX님에 의해 제출되었습니다"
+        expect(평가.downwardEvaluationContent).toBeDefined();
+        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.isCompleted).toBe(true);
+
+        console.log('✅ 기본 메시지가 정상적으로 생성되었습니다!');
+      });
+
+      it('이미 저장된 평가를 content 없이 제출하면 기본 메시지로 업데이트된다', async () => {
+        // Given - content 없이 평가 저장
+        console.log('\n🧪 저장 후 빈 값 제출 테스트 시작...');
+
+        const 저장결과 =
+          await downwardEvaluationScenario.일차하향평가를_저장한다({
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[1],
+            evaluatorId: primaryEvaluatorId,
+            // content와 score 없이 저장
+          });
+
+        console.log(`저장된 평가 ID: ${저장결과.id}`);
+        console.log(`저장 시 content: "${저장결과.downwardEvaluationContent || '(없음)'}"`);
+
+        // When - 제출
+        await downwardEvaluationScenario.일차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[1],
+          evaluatorId: primaryEvaluatorId,
+        });
+
+        // Then - 기본 메시지가 추가되었는지 확인
+        const 평가목록 =
+          await downwardEvaluationScenario.평가자의_하향평가_목록을_조회한다({
+            evaluatorId: primaryEvaluatorId,
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[1],
+            evaluationType: 'primary',
+          });
+
+        const 평가 = 평가목록.evaluations[0];
+        console.log(`\n📝 제출 후 content: "${평가.downwardEvaluationContent}"`);
+
+        expect(평가.downwardEvaluationContent).toBeDefined();
+        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.isCompleted).toBe(true);
+
+        console.log('✅ 빈 값 저장 후 제출 시 기본 메시지가 정상적으로 생성되었습니다!');
+      });
+    });
+
+    describe('7-2. 빈 값으로 2차 하향평가 제출 시 기본 메시지 생성', () => {
+      it('content가 없는 상태로 2차 평가를 제출하면 기본 메시지가 생성된다', async () => {
+        // Given - 빈 값으로 2차 하향평가 제출
+        console.log('\n🧪 2차 평가 빈 값 제출 테스트 시작...');
+        console.log(`피평가자: ${evaluateeId}`);
+        console.log(`2차 평가자: ${secondaryEvaluatorId}`);
+
+        // When - content 없이 제출
+        await downwardEvaluationScenario.이차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: secondaryEvaluatorId,
+        });
+
+        // Then - 평가 상세 조회하여 기본 메시지 확인
+        const 평가목록 =
+          await downwardEvaluationScenario.평가자의_하향평가_목록을_조회한다({
+            evaluatorId: secondaryEvaluatorId,
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[0],
+            evaluationType: 'secondary',
+          });
+
+        expect(평가목록.evaluations).toBeDefined();
+        expect(평가목록.evaluations.length).toBeGreaterThan(0);
+
+        const 평가 = 평가목록.evaluations[0];
+        console.log(`\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`);
+
+        expect(평가.downwardEvaluationContent).toBeDefined();
+        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.isCompleted).toBe(true);
+
+        console.log('✅ 2차 평가 기본 메시지가 정상적으로 생성되었습니다!');
+      });
+    });
+
+    describe('7-3. 제출 시 평가자 ID 유지 검증', () => {
+      it('1차 하향평가 제출 시 평가라인 매핑의 평가자 ID가 유지된다', async () => {
+        // Given - 평가라인 매핑에서 1차 평가자 확인
+        console.log('\n🧪 1차 평가자 ID 유지 테스트 시작...');
+        console.log(`원래 1차 평가자: ${primaryEvaluatorId}`);
+
+        // 다른 직원 ID로 제출 시도 (평가라인 매핑의 평가자와 다른 ID)
+        const 다른직원ID = employeeIds[3]; // 평가자가 아닌 다른 직원
+        console.log(`제출 시 전달한 evaluatorId: ${다른직원ID}`);
+
+        // When - 다른 직원 ID로 제출
+        await downwardEvaluationScenario.일차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[2],
+          evaluatorId: 다른직원ID, // 실제 평가자가 아닌 ID 전달
+        });
+
+        // Then - 평가 조회하여 실제 평가자 ID 확인
+        const 평가목록 =
+          await downwardEvaluationScenario.평가자의_하향평가_목록을_조회한다({
+            evaluatorId: primaryEvaluatorId, // 실제 평가자 ID로 조회
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[2],
+            evaluationType: 'primary',
+          });
+
+        expect(평가목록.evaluations).toBeDefined();
+        expect(평가목록.evaluations.length).toBeGreaterThan(0);
+
+        const 평가 = 평가목록.evaluations[0];
+        console.log(`\n✅ 실제 저장된 평가자 ID: ${평가.evaluatorId}`);
+        console.log(`📋 평가 내용: "${평가.downwardEvaluationContent}"`);
+
+        // 평가자 ID가 평가라인 매핑의 평가자로 유지되어야 함
+        expect(평가.evaluatorId).toBe(primaryEvaluatorId);
+        expect(평가.evaluatorId).not.toBe(다른직원ID);
+        expect(평가.isCompleted).toBe(true);
+
+        console.log('✅ 1차 평가자 ID가 정상적으로 유지되었습니다!');
+      });
+
+      it('2차 하향평가 제출 시 평가라인 매핑의 평가자 ID가 유지된다', async () => {
+        // Given - 평가라인 매핑에서 2차 평가자 확인
+        console.log('\n🧪 2차 평가자 ID 유지 테스트 시작...');
+        console.log(`원래 2차 평가자: ${secondaryEvaluatorId}`);
+
+        // 다른 직원 ID로 제출 시도
+        const 다른직원ID = employeeIds[4]; // 평가자가 아닌 다른 직원
+        console.log(`제출 시 전달한 evaluatorId: ${다른직원ID}`);
+
+        // When - 다른 직원 ID로 제출
+        await downwardEvaluationScenario.이차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[1],
+          evaluatorId: 다른직원ID, // 실제 평가자가 아닌 ID 전달
+        });
+
+        // Then - 평가 조회하여 실제 평가자 ID 확인
+        const 평가목록 =
+          await downwardEvaluationScenario.평가자의_하향평가_목록을_조회한다({
+            evaluatorId: secondaryEvaluatorId, // 실제 평가자 ID로 조회
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[1],
+            evaluationType: 'secondary',
+          });
+
+        expect(평가목록.evaluations).toBeDefined();
+        expect(평가목록.evaluations.length).toBeGreaterThan(0);
+
+        const 평가 = 평가목록.evaluations[0];
+        console.log(`\n✅ 실제 저장된 평가자 ID: ${평가.evaluatorId}`);
+        console.log(`📋 평가 내용: "${평가.downwardEvaluationContent}"`);
+
+        // 평가자 ID가 평가라인 매핑의 평가자로 유지되어야 함
+        expect(평가.evaluatorId).toBe(secondaryEvaluatorId);
+        expect(평가.evaluatorId).not.toBe(다른직원ID);
+        expect(평가.isCompleted).toBe(true);
+
+        console.log('✅ 2차 평가자 ID가 정상적으로 유지되었습니다!');
+      });
+    });
+  });
 });

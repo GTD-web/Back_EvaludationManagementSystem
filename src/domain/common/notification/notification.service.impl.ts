@@ -171,11 +171,11 @@ export class NotificationServiceImpl
       );
 
       this.logger.log(
-        `알림 서버 응답: 알림 수=${response.data.notifications?.length || 0}, 전체=${response.data.total || 0}`,
+        `알림 서버 응답: 알림 수=${response.data.notifications?.length || 0}, 전체=${response.data.total || 0}, 미읽음=${response.data.unreadCount || 0}`,
       );
 
       // 알림 서버 응답을 EMS 형식으로 변환
-      let notifications: NotificationInfo[] = (
+      const notifications: NotificationInfo[] = (
         response.data.notifications || []
       ).map((notification: any) => ({
         id: notification.id,
@@ -191,35 +191,20 @@ export class NotificationServiceImpl
         readAt: notification.readAt ? new Date(notification.readAt) : undefined,
       }));
 
-      const originalCount = notifications.length;
-
-      // isRead 필터 적용 (알림 서버가 필터를 제대로 처리하지 못하므로 EMS에서 필터링)
-      if (params.isRead !== undefined) {
-        notifications = notifications.filter((n) => n.isRead === params.isRead);
-        this.logger.log(
-          `📌 isRead=${params.isRead} 필터 적용: ${originalCount}개 → ${notifications.length}개`,
-        );
-      }
-
-      // 전체 미읽음 알림 개수 계산 (필터링 전 기준)
-      const allNotifications = (response.data.notifications || []).map(
-        (notification: any) => ({
-          isRead: notification.isRead,
-        }),
-      );
-      const unreadCount = allNotifications.filter((n: any) => !n.isRead).length;
+      // unreadCount: 현재 가져온 notifications 배열에서 읽지 않은 알림 개수
+      const unreadCount = notifications.filter((n) => !n.isRead).length;
 
       this.logger.log(
         `알림 목록 조회 완료: 조회=${notifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`,
       );
 
+      // total은 메일 서버에서 받은 값 사용 (필터 조건에 맞는 전체 개수)
+      // take 값에 상관없이 필터 조건(isRead)에 해당하는 총 알림 개수를 반환
+      // unreadCount는 현재 페이지(notifications)에서 읽지 않은 알림 개수
       return {
         notifications,
-        total:
-          params.isRead !== undefined
-            ? notifications.length
-            : response.data.total || originalCount,
-        unreadCount: response.data.unreadCount || unreadCount,
+        total: response.data.total || notifications.length,
+        unreadCount,
       };
     } catch (error) {
       this.logger.error('알림 목록 조회 실패', error);

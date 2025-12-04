@@ -81,10 +81,10 @@ export class GetNotificationsResponseDto {
   @ApiProperty({ description: '알림 목록', type: [NotificationDto] })
   notifications: NotificationDto[];
 
-  @ApiProperty({ description: '전체 개수' })
+  @ApiProperty({ description: '필터 조건에 맞는 전체 알림 개수' })
   total: number;
 
-  @ApiProperty({ description: '읽지 않은 개수' })
+  @ApiProperty({ description: '현재 페이지에서 읽지 않은 알림 개수' })
   unreadCount: number;
 }
 

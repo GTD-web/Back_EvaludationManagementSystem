@@ -101,8 +101,8 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
             }
             this.logger.debug(`알림 서버로 전송할 쿼리 파라미터: ${JSON.stringify(queryParams)}`);
             const response = await this.httpClient.get(`/api/portal/notifications/${params.recipientId}`, { params: queryParams });
-            this.logger.log(`알림 서버 응답: 알림 수=${response.data.notifications?.length || 0}, 전체=${response.data.total || 0}`);
-            let notifications = (response.data.notifications || []).map((notification) => ({
+            this.logger.log(`알림 서버 응답: 알림 수=${response.data.notifications?.length || 0}, 전체=${response.data.total || 0}, 미읽음=${response.data.unreadCount || 0}`);
+            const notifications = (response.data.notifications || []).map((notification) => ({
                 id: notification.id,
                 sender: notification.sender || 'system',
                 recipientId: notification.recipient,
@@ -115,22 +115,12 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
                 createdAt: new Date(notification.createdAt),
                 readAt: notification.readAt ? new Date(notification.readAt) : undefined,
             }));
-            const originalCount = notifications.length;
-            if (params.isRead !== undefined) {
-                notifications = notifications.filter((n) => n.isRead === params.isRead);
-                this.logger.log(`📌 isRead=${params.isRead} 필터 적용: ${originalCount}개 → ${notifications.length}개`);
-            }
-            const allNotifications = (response.data.notifications || []).map((notification) => ({
-                isRead: notification.isRead,
-            }));
-            const unreadCount = allNotifications.filter((n) => !n.isRead).length;
+            const unreadCount = notifications.filter((n) => !n.isRead).length;
             this.logger.log(`알림 목록 조회 완료: 조회=${notifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`);
             return {
                 notifications,
-                total: params.isRead !== undefined
-                    ? notifications.length
-                    : response.data.total || originalCount,
-                unreadCount: response.data.unreadCount || unreadCount,
+                total: response.data.total || notifications.length,
+                unreadCount,
             };
         }
         catch (error) {

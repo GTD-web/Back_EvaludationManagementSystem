@@ -120,11 +120,11 @@ __decorate([
     __metadata("design:type", Array)
 ], GetNotificationsResponseDto.prototype, "notifications", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '전체 개수' }),
+    (0, swagger_1.ApiProperty)({ description: '필터 조건에 맞는 전체 알림 개수' }),
     __metadata("design:type", Number)
 ], GetNotificationsResponseDto.prototype, "total", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '읽지 않은 개수' }),
+    (0, swagger_1.ApiProperty)({ description: '현재 페이지에서 읽지 않은 알림 개수' }),
     __metadata("design:type", Number)
 ], GetNotificationsResponseDto.prototype, "unreadCount", void 0);
 class MarkNotificationAsReadResponseDto {

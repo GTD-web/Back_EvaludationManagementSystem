@@ -155,6 +155,24 @@ export class DownwardEvaluationScenario {
     return response.body;
   }
 
+  // ==================== 조회 API ====================
+
+  /**
+   * 평가자의 하향평가 목록을 조회한다
+   */
+  async 평가자의_하향평가_목록을_조회한다(config: {
+    evaluatorId: string;
+    evaluateeId?: string;
+    periodId?: string;
+    wbsId?: string;
+    evaluationType?: 'primary' | 'secondary';
+    isCompleted?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<any> {
+    return await this.apiClient.getByEvaluator(config);
+  }
+
   // ==================== 대시보드 API ====================
 
   /**

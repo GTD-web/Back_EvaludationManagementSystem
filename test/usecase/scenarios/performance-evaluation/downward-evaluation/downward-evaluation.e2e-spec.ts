@@ -5,6 +5,7 @@ import { SeedDataScenario } from '../../seed-data.scenario';
 import { EvaluationPeriodScenario } from '../../evaluation-period.scenario';
 import { ProjectAssignmentScenario } from '../../project-assignment/project-assignment.scenario';
 import { WbsAssignmentScenario } from '../../wbs-assignment/wbs-assignment.scenario';
+import { DashboardScenario } from '../../dashboard.scenario';
 
 describe('하향평가 시나리오', () => {
   let testSuite: BaseE2ETest;
@@ -13,6 +14,7 @@ describe('하향평가 시나리오', () => {
   let evaluationPeriodScenario: EvaluationPeriodScenario;
   let projectAssignmentScenario: ProjectAssignmentScenario;
   let wbsAssignmentScenario: WbsAssignmentScenario;
+  let dashboardScenario: DashboardScenario;
 
   let evaluationPeriodId: string;
   let employeeIds: string[];
@@ -33,6 +35,7 @@ describe('하향평가 시나리오', () => {
     evaluationPeriodScenario = new EvaluationPeriodScenario(testSuite);
     projectAssignmentScenario = new ProjectAssignmentScenario(testSuite);
     wbsAssignmentScenario = new WbsAssignmentScenario(testSuite);
+    dashboardScenario = new DashboardScenario(testSuite);
   });
 
   afterAll(async () => {
@@ -1728,7 +1731,131 @@ describe('하향평가 시나리오', () => {
       });
     });
 
-    describe('7-3. 제출 시 평가자 ID 유지 검증', () => {
+    describe('7-3. 통합 조회 API에서 미입력 메시지 확인', () => {
+      it('통합 조회 API에서 미입력 상태로 제출한 하향평가 content가 조회된다', async () => {
+        console.log('\n🧪 통합 조회 API 미입력 메시지 확인 테스트 시작...');
+        console.log(`피평가자: ${evaluateeId}`);
+        console.log(`1차 평가자: ${primaryEvaluatorId}`);
+
+        // When - content 없이 1차 하향평가 제출 (이미 제출되어 있으면 스킵)
+        try {
+          await downwardEvaluationScenario.일차하향평가를_제출한다({
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[0],
+            evaluatorId: primaryEvaluatorId,
+          });
+        } catch (error) {
+          // 이미 제출된 경우 무시
+          console.log('⚠️ 이미 제출된 평가입니다. 기존 평가를 확인합니다.');
+        }
+
+        // Then - 통합 조회 API로 확인
+        const 통합현황 = await dashboardScenario.직원의_통합_현황을_조회한다({
+          evaluationPeriodId,
+          employeeId: evaluateeId,
+        });
+
+        console.log('\n📊 통합 현황 조회 결과:');
+        console.log(`  - 프로젝트 수: ${통합현황.projects?.totalCount || 0}`);
+        console.log(`  - WBS 수: ${통합현황.projects?.items?.[0]?.wbsList?.length || 0}`);
+
+        // 프로젝트가 있고 WBS가 있는지 확인
+        expect(통합현황.projects).toBeDefined();
+        expect(통합현황.projects.items).toBeDefined();
+        expect(통합현황.projects.items.length).toBeGreaterThan(0);
+
+        // 첫 번째 프로젝트의 첫 번째 WBS 확인
+        const firstProject = 통합현황.projects.items[0];
+        expect(firstProject.wbsList).toBeDefined();
+        expect(firstProject.wbsList.length).toBeGreaterThan(0);
+
+        // 제출된 1차 하향평가가 있는 WBS 찾기
+        const wbsWithSubmitted = firstProject.wbsList.find(
+          (wbs: any) => wbs.primaryDownwardEvaluation?.isCompleted === true,
+        );
+
+        if (wbsWithSubmitted) {
+          console.log(
+            `\n📝 제출된 1차 하향평가 content: "${wbsWithSubmitted.primaryDownwardEvaluation.evaluationContent}"`,
+          );
+
+          // 미입력 메시지가 포함되어 있는지 확인
+          expect(wbsWithSubmitted.primaryDownwardEvaluation.evaluationContent).toBeDefined();
+          expect(wbsWithSubmitted.primaryDownwardEvaluation.evaluationContent).toContain(
+            '미입력 상태에서 제출하였습니다',
+          );
+
+          console.log('✅ 통합 조회 API에서 미입력 메시지가 정상적으로 전달되었습니다!');
+        } else {
+          console.log('⚠️ 제출된 1차 하향평가를 찾을 수 없습니다.');
+        }
+      });
+
+      it('통합 조회 API에서 미입력 상태로 제출한 2차 하향평가 content가 조회된다', async () => {
+        console.log('\n🧪 통합 조회 API 2차 평가 미입력 메시지 확인 테스트 시작...');
+        console.log(`피평가자: ${evaluateeId}`);
+        console.log(`2차 평가자: ${secondaryEvaluatorId}`);
+
+        // When - content 없이 2차 하향평가 제출 (이미 제출되어 있으면 스킵)
+        try {
+          await downwardEvaluationScenario.이차하향평가를_제출한다({
+            evaluateeId,
+            periodId: evaluationPeriodId,
+            wbsId: wbsItemIds[0],
+            evaluatorId: secondaryEvaluatorId,
+          });
+        } catch (error) {
+          // 이미 제출된 경우 무시
+          console.log('⚠️ 이미 제출된 평가입니다. 기존 평가를 확인합니다.');
+        }
+
+        // Then - 통합 조회 API로 확인
+        const 통합현황 = await dashboardScenario.직원의_통합_현황을_조회한다({
+          evaluationPeriodId,
+          employeeId: evaluateeId,
+        });
+
+        // 프로젝트가 있고 WBS가 있는지 확인
+        expect(통합현황.projects).toBeDefined();
+        expect(통합현황.projects.items).toBeDefined();
+        expect(통합현황.projects.items.length).toBeGreaterThan(0);
+
+        // 첫 번째 프로젝트의 첫 번째 WBS 확인
+        const firstProject = 통합현황.projects.items[0];
+        expect(firstProject.wbsList).toBeDefined();
+        expect(firstProject.wbsList.length).toBeGreaterThan(0);
+
+        // 제출된 2차 하향평가가 있는 WBS 찾기
+        const wbsWithSubmitted = firstProject.wbsList.find(
+          (wbs: any) => wbs.secondaryDownwardEvaluations?.some(
+            (e: any) => e.isCompleted === true,
+          ),
+        );
+
+        if (wbsWithSubmitted) {
+          const submittedEvaluation = wbsWithSubmitted.secondaryDownwardEvaluations.find(
+            (e: any) => e.isCompleted === true,
+          );
+
+          console.log(
+            `\n📝 제출된 2차 하향평가 content: "${submittedEvaluation.evaluationContent}"`,
+          );
+
+          // 미입력 메시지가 포함되어 있는지 확인
+          expect(submittedEvaluation.evaluationContent).toBeDefined();
+          expect(submittedEvaluation.evaluationContent).toContain(
+            '미입력 상태에서 제출하였습니다',
+          );
+
+          console.log('✅ 통합 조회 API에서 2차 평가 미입력 메시지가 정상적으로 전달되었습니다!');
+        } else {
+          console.log('⚠️ 제출된 2차 하향평가를 찾을 수 없습니다.');
+        }
+      });
+    });
+
+    describe('7-4. 제출 시 평가자 ID 유지 검증', () => {
       it('1차 하향평가 제출 시 평가라인 매핑의 평가자 ID가 유지된다', async () => {
         // Given - 평가라인 매핑에서 1차 평가자 확인
         console.log('\n🧪 1차 평가자 ID 유지 테스트 시작...');

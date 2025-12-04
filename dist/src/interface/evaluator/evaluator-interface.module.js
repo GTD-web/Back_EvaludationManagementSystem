@@ -24,6 +24,7 @@ const seed_data_context_module_1 = require("../../context/seed-data-context/seed
 const step_approval_context_module_1 = require("../../context/step-approval-context/step-approval-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
 const notification_1 = require("../../domain/common/notification");
+const system_setting_module_1 = require("../../domain/common/system-setting/system-setting.module");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const guards_1 = require("../common/guards");
 const evaluator_auth_controller_1 = require("./auth/evaluator-auth.controller");
@@ -63,6 +64,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
             notification_1.NotificationModule,
+            system_setting_module_1.SystemSettingModule,
         ],
         controllers: [
             evaluator_auth_controller_1.EvaluatorAuthController,

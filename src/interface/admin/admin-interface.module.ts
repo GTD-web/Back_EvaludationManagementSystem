@@ -15,6 +15,7 @@ import { EmployeeModule } from '../../domain/common/employee/employee.module';
 import { NotificationModule } from '../../domain/common/notification';
 import { DepartmentModule } from '../../domain/common/department/department.module';
 import { ProjectModule } from '../../domain/common/project/project.module';
+import { SystemSettingModule } from '../../domain/common/system-setting/system-setting.module';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { AuthController } from './auth/auth.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -71,6 +72,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     NotificationModule, // 알림 모듈 주입
     DepartmentModule, // 부서 모듈 주입
     ProjectModule, // 프로젝트 모듈 주입
+    SystemSettingModule, // 시스템 설정 모듈 주입
   ],
   controllers: [
     AuthController, // 인증 컨트롤러

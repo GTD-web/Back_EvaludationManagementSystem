@@ -15,6 +15,7 @@ import { SeedDataContextModule } from '../../context/seed-data-context/seed-data
 import { StepApprovalContextModule } from '../../context/step-approval-context/step-approval-context.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
 import { NotificationModule } from '../../domain/common/notification';
+import { SystemSettingModule } from '../../domain/common/system-setting/system-setting.module';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { ROLES_GUARD_OPTIONS, RolesGuard } from '../common/guards';
 import { EvaluatorAuthController } from './auth/evaluator-auth.controller';
@@ -57,6 +58,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
     NotificationModule, // 알림 모듈 주입
+    SystemSettingModule, // 시스템 설정 모듈 주입
   ],
   controllers: [
     EvaluatorAuthController,

@@ -2,7 +2,10 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotificationServiceFactory } from './notification.service.factory';
 import { NotificationClientConfig, INotificationService } from './interfaces';
-import { NotificationHelperService, NOTIFICATION_SERVICE_TOKEN } from './notification-helper.service';
+import {
+  NotificationHelperService,
+  NOTIFICATION_SERVICE_TOKEN,
+} from './notification-helper.service';
 import { SSOModule } from '../sso';
 
 /**
@@ -23,11 +26,13 @@ export const NotificationService = NOTIFICATION_SERVICE_TOKEN;
       useFactory: (configService: ConfigService): NotificationClientConfig => {
         const config: NotificationClientConfig = {
           baseUrl:
-            configService.get<string>('MAIL_SERVER_URL') ||
+            configService.get<string>('MAIL_NOTIFICATION_SERVER_URL') ||
             'http://localhost:3001',
-          timeoutMs: configService.get<number>('NOTIFICATION_TIMEOUT_MS') || 30000,
+          timeoutMs:
+            configService.get<number>('NOTIFICATION_TIMEOUT_MS') || 30000,
           retries: configService.get<number>('NOTIFICATION_RETRIES') || 2,
-          retryDelay: configService.get<number>('NOTIFICATION_RETRY_DELAY') || 1000,
+          retryDelay:
+            configService.get<number>('NOTIFICATION_RETRY_DELAY') || 1000,
           enableLogging: false,
         };
 
@@ -37,7 +42,9 @@ export const NotificationService = NOTIFICATION_SERVICE_TOKEN;
           configService.get<string>('NODE_ENV') === 'test';
 
         if (!useMockService && !config.baseUrl) {
-          throw new Error('MAIL_SERVER_URL 환경 변수가 필요합니다.');
+          throw new Error(
+            'MAIL_NOTIFICATION_SERVER_URL 환경 변수가 필요합니다.',
+          );
         }
 
         return config;
@@ -47,7 +54,9 @@ export const NotificationService = NOTIFICATION_SERVICE_TOKEN;
     NotificationServiceFactory,
     {
       provide: NOTIFICATION_SERVICE_TOKEN,
-      useFactory: (factory: NotificationServiceFactory): INotificationService => {
+      useFactory: (
+        factory: NotificationServiceFactory,
+      ): INotificationService => {
         return factory.create();
       },
       inject: [NotificationServiceFactory],
@@ -68,4 +77,3 @@ export class NotificationModule implements OnModuleInit {
     await this.factory.initialize();
   }
 }
-

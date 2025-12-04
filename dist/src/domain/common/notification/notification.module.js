@@ -34,7 +34,7 @@ exports.NotificationModule = NotificationModule = __decorate([
                 provide: 'NOTIFICATION_CONFIG',
                 useFactory: (configService) => {
                     const config = {
-                        baseUrl: configService.get('MAIL_SERVER_URL') ||
+                        baseUrl: configService.get('MAIL_NOTIFICATION_SERVER_URL') ||
                             'http://localhost:3001',
                         timeoutMs: configService.get('NOTIFICATION_TIMEOUT_MS') || 30000,
                         retries: configService.get('NOTIFICATION_RETRIES') || 2,
@@ -44,7 +44,7 @@ exports.NotificationModule = NotificationModule = __decorate([
                     const useMockService = configService.get('NOTIFICATION_USE_MOCK') === 'true' ||
                         configService.get('NODE_ENV') === 'test';
                     if (!useMockService && !config.baseUrl) {
-                        throw new Error('MAIL_SERVER_URL 환경 변수가 필요합니다.');
+                        throw new Error('MAIL_NOTIFICATION_SERVER_URL 환경 변수가 필요합니다.');
                     }
                     return config;
                 },

@@ -110,26 +110,14 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         submittedToEvaluator: updatedEvaluation.submittedToEvaluator,
       });
 
-      // 알림 전송 (비동기 처리, 실패해도 제출은 성공)
-      this.알림을전송한다(
+      // 1차 평가자에게 알림 전송 (비동기 처리, 실패해도 제출은 성공)
+      this.일차평가자에게_알림을전송한다(
         updatedEvaluation.employeeId,
         updatedEvaluation.periodId,
         evaluationPeriod.name,
       ).catch((error) => {
         this.logger.error(
-          'WBS 자기평가 제출 알림 전송 실패 (무시됨)',
-          error.stack,
-        );
-      });
-
-      // Portal 사용자에게 알림 전송 (비동기 처리, 실패해도 제출은 성공)
-      this.Portal사용자에게_알림을전송한다(
-        updatedEvaluation.employeeId,
-        updatedEvaluation.periodId,
-        evaluationPeriod.name,
-      ).catch((error) => {
-        this.logger.error(
-          'Portal 사용자 알림 전송 실패 (무시됨)',
+          '1차 평가자 알림 전송 실패 (무시됨)',
           error.stack,
         );
       });
@@ -141,7 +129,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
   /**
    * 1차 평가자에게 알림을 전송한다
    */
-  private async 알림을전송한다(
+  private async 일차평가자에게_알림을전송한다(
     employeeId: string,
     periodId: string,
     periodName: string,
@@ -177,47 +165,11 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
       });
 
       this.logger.log(
-        `WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`,
+        `1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`,
       );
     } catch (error) {
       this.logger.error(
-        '알림 전송 중 오류 발생',
-        error.stack,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Portal 사용자(인사담당자)에게 알림을 전송한다
-   */
-  private async Portal사용자에게_알림을전송한다(
-    employeeId: string,
-    periodId: string,
-    periodName: string,
-  ): Promise<void> {
-    try {
-      // Portal 사용자에게 알림 전송
-      await this.notificationHelper.Portal사용자에게_알림을_전송한다({
-        sender: 'system',
-        title: 'WBS 자기평가 제출 알림',
-        content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
-        sourceSystem: 'EMS',
-        linkUrl: '/evaluations/self',
-        metadata: {
-          type: 'self-evaluation-submitted',
-          priority: 'medium',
-          employeeId,
-          periodId,
-        },
-      });
-
-      this.logger.log(
-        `Portal 사용자에게 WBS 자기평가 제출 알림 전송 완료`,
-      );
-    } catch (error) {
-      this.logger.error(
-        'Portal 사용자 알림 전송 중 오류 발생',
+        '1차 평가자 알림 전송 중 오류 발생',
         error.stack,
       );
       throw error;

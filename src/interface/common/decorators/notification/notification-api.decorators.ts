@@ -32,13 +32,56 @@ export function GetNotifications() {
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: '알림 목록 조회',
-      description: `**중요**: 특정 수신자의 알림 목록을 조회합니다. 읽음 여부 필터링 및 페이지네이션을 지원합니다.
+      description: `**중요**: 특정 수신자의 알림 목록을 조회합니다. 읽음 여부 필터링 및 페이지네이션을 지원하며, 무한 스크롤 구현에 필요한 전체 개수 정보를 제공합니다.
 
 **동작:**
 - 수신자 ID로 알림 목록 조회
 - 읽음 여부 필터링 가능 (isRead 파라미터)
 - 페이지네이션 지원 (skip, take 파라미터)
-- 전체 개수 및 읽지 않은 개수 반환
+- 필터 조건에 맞는 전체 알림 개수(total) 반환
+- 읽지 않은 알림 개수(unreadCount) 반환
+- 현재 페이지의 알림 목록(notifications) 반환
+
+**응답 구조 (무한 스크롤 구현용):**
+- notifications: 현재 페이지의 알림 목록 (skip, take에 따라 결정)
+- total: 필터 조건(isRead)에 해당하는 전체 알림 개수 (take 값과 무관)
+  - isRead 미지정 시: 전체 알림 개수
+  - isRead=false 시: 읽지 않은 알림 전체 개수
+  - isRead=true 시: 읽은 알림 전체 개수
+  - 💡 무한 스크롤 구현 시: notifications.length < total이면 더 불러올 데이터가 있음
+- unreadCount: 현재 페이지(notifications)에서 읽지 않은 알림 개수
+
+**total 계산 예시:**
+\`\`\`
+전체 알림: 100개 (읽은 알림 40개 + 읽지 않은 알림 60개)
+
+// isRead=true&take=10 요청
+→ total: 40 (읽은 알림 전체 개수)
+→ notifications: 10개 (take만큼만 반환)
+
+// isRead=false&take=20 요청
+→ total: 60 (읽지 않은 알림 전체 개수)
+→ notifications: 20개 (take만큼만 반환)
+
+// isRead 미지정&take=30 요청
+→ total: 100 (전체 알림 개수)
+→ notifications: 30개 (take만큼만 반환)
+\`\`\`
+
+**무한 스크롤 구현 예시:**
+\`\`\`
+// 1차 요청: skip=0, take=20
+{ notifications: [...20개], total: 50, unreadCount: 30 }
+// → 더 불러올 데이터 있음 (20 < 50)
+
+// 2차 요청: skip=20, take=20
+{ notifications: [...20개], total: 50, unreadCount: 30 }
+// → 더 불러올 데이터 있음 (40 < 50)
+
+// 3차 요청: skip=40, take=20
+{ notifications: [...10개], total: 50, unreadCount: 30 }
+// → 마지막 페이지 (50 = 50)
+\`\`\`
 
 **테스트 케이스:**
 - 기본 조회: 수신자의 알림 목록을 조회할 수 있어야 한다
@@ -47,6 +90,8 @@ export function GetNotifications() {
 - 페이지네이션: skip, take 파라미터로 페이지네이션 가능
 - 빈 결과: 알림이 없는 경우 빈 배열 반환
 - 필드 검증: id, sender, recipientId, title, content, isRead, createdAt 등 포함
+- 개수 검증: total과 unreadCount가 응답에 포함되어야 함
+- total 정확성: 필터 조건에 맞는 전체 개수가 정확해야 함
 - UUID 검증: 잘못된 UUID 형식의 recipientId로 요청 시 400 에러`,
     }),
     ApiParam({

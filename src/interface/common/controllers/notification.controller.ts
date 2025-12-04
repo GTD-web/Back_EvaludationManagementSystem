@@ -1,4 +1,4 @@
-import { Controller, Inject, Param, Query } from '@nestjs/common';
+import { Controller, Inject, Logger, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { INotificationService } from '@domain/common/notification';
 import { NOTIFICATION_SERVICE_TOKEN } from '@domain/common/notification/notification-helper.service';
@@ -22,6 +22,8 @@ import {
 @ApiBearerAuth('Bearer')
 @Controller('notifications')
 export class NotificationController {
+  private readonly logger = new Logger(NotificationController.name);
+
   constructor(
     @Inject(NOTIFICATION_SERVICE_TOKEN)
     private readonly notificationService: INotificationService,
@@ -35,12 +37,31 @@ export class NotificationController {
     @Param('recipientId') recipientId: string,
     @Query() query: GetNotificationsQueryDto,
   ): Promise<GetNotificationsResponseDto> {
+    // isRead를 string에서 boolean으로 수동 변환
+    let isRead: boolean | undefined = undefined;
+    if (query.isRead !== undefined) {
+      const lowerValue = query.isRead.toLowerCase().trim();
+      if (lowerValue === 'true' || lowerValue === '1') {
+        isRead = true;
+      } else if (lowerValue === 'false' || lowerValue === '0') {
+        isRead = false;
+      }
+    }
+
+    this.logger.debug(
+      `🔔 알림 목록 조회 API 호출 - recipientId: ${recipientId}, isRead: ${isRead} (원본: "${query.isRead}", type: ${typeof isRead}), skip: ${query.skip}, take: ${query.take}`,
+    );
+
     const result = await this.notificationService.알림목록을조회한다({
       recipientId,
-      isRead: query.isRead,
+      isRead: isRead,
       skip: query.skip,
       take: query.take,
     });
+
+    this.logger.debug(
+      `🔔 알림 목록 조회 응답 - 조회: ${result.notifications.length}개, 전체: ${result.total}개, 미읽음: ${result.unreadCount}개`,
+    );
 
     return result;
   }

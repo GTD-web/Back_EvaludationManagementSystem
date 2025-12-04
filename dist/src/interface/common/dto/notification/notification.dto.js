@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MarkAllAsReadResponseDto = exports.MarkNotificationAsReadResponseDto = exports.GetNotificationsResponseDto = exports.GetNotificationsQueryDto = exports.NotificationDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
-const decorators_1 = require("../../decorators");
 const class_transformer_1 = require("class-transformer");
 class NotificationDto {
     id;
@@ -85,9 +84,8 @@ __decorate([
         example: 'false',
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, decorators_1.ToBoolean)(undefined),
-    (0, class_validator_1.IsBoolean)(),
-    __metadata("design:type", Boolean)
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], GetNotificationsQueryDto.prototype, "isRead", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({

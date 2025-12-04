@@ -18,7 +18,6 @@ import {
   Body,
   Controller,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
@@ -43,8 +42,6 @@ export class EvaluatorRevisionRequestController {
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', ParseBoolPipe) isRead: boolean,
-    @Query('isCompleted', ParseBoolPipe) isCompleted: boolean,
     @CurrentUser('id') recipientId: string,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
@@ -53,8 +50,8 @@ export class EvaluatorRevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: isRead,
-          isCompleted: isCompleted,
+          isRead: query.isRead ?? false,
+          isCompleted: query.isCompleted ?? false,
           step: query.step as any,
         },
       );

@@ -30,13 +30,13 @@ let RevisionRequestController = class RevisionRequestController {
         this.revisionRequestBusinessService = revisionRequestBusinessService;
         this.revisionRequestContextService = revisionRequestContextService;
     }
-    async getRevisionRequests(query, isRead, isCompleted) {
+    async getRevisionRequests(query) {
         const requests = await this.revisionRequestContextService.전체_재작성요청목록을_조회한다({
             evaluationPeriodId: query.evaluationPeriodId,
             employeeId: query.employeeId,
             requestedBy: query.requestedBy,
-            isRead: isRead,
-            isCompleted: isCompleted,
+            isRead: query.isRead ?? false,
+            isCompleted: query.isCompleted ?? false,
             step: query.step,
         });
         return requests.map((req) => ({
@@ -57,12 +57,12 @@ let RevisionRequestController = class RevisionRequestController {
             approvalStatus: req.approvalStatus,
         }));
     }
-    async getMyRevisionRequests(query, isRead, isCompleted, recipientId) {
+    async getMyRevisionRequests(query, recipientId) {
         const requests = await this.revisionRequestContextService.내_재작성요청목록을_조회한다(recipientId, {
             evaluationPeriodId: query.evaluationPeriodId,
             employeeId: query.employeeId,
-            isRead: isRead,
-            isCompleted: isCompleted,
+            isRead: query.isRead ?? false,
+            isCompleted: query.isCompleted ?? false,
             step: query.step,
         });
         return requests.map((req) => ({
@@ -101,20 +101,16 @@ exports.RevisionRequestController = RevisionRequestController;
 __decorate([
     (0, revision_request_api_decorators_1.GetRevisionRequests)(),
     __param(0, (0, common_1.Query)()),
-    __param(1, (0, common_1.Query)('isRead', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
-    __param(2, (0, common_1.Query)('isCompleted', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto, Boolean, Boolean]),
+    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto]),
     __metadata("design:returntype", Promise)
 ], RevisionRequestController.prototype, "getRevisionRequests", null);
 __decorate([
     (0, revision_request_api_decorators_1.GetMyRevisionRequests)(),
     __param(0, (0, common_1.Query)()),
-    __param(1, (0, common_1.Query)('isRead', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
-    __param(2, (0, common_1.Query)('isCompleted', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
-    __param(3, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto, Boolean, Boolean, String]),
+    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto, String]),
     __metadata("design:returntype", Promise)
 ], RevisionRequestController.prototype, "getMyRevisionRequests", null);
 __decorate([

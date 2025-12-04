@@ -24,4 +24,12 @@ export declare class NotificationHelperService {
         linkUrl?: string;
         metadata?: Record<string, any>;
     }): Promise<SendNotificationResult>;
+    Portal사용자에게_알림을_전송한다(params: {
+        sender: string;
+        title: string;
+        content: string;
+        sourceSystem: string;
+        linkUrl?: string;
+        metadata?: Record<string, any>;
+    }): Promise<SendNotificationResult>;
 }

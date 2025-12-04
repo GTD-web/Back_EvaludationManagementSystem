@@ -4,8 +4,10 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Post,
 } from '@nestjs/common';
 import {
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -15,6 +17,10 @@ import {
   GetNotificationsResponseDto,
   MarkNotificationAsReadResponseDto,
   MarkAllAsReadResponseDto,
+  SendNotificationResponseDto,
+  SendNotificationRequestDto,
+  SendSimpleNotificationQueryDto,
+  SendSimpleNotificationBodyDto,
 } from '../../dto/notification/notification.dto';
 
 /**
@@ -180,3 +186,127 @@ export function MarkAllNotificationsAsRead() {
   );
 }
 
+/**
+ * 알림 전송 API 데코레이터
+ */
+export function SendNotification() {
+  return applyDecorators(
+    Post('send'),
+    HttpCode(HttpStatus.CREATED),
+    ApiOperation({
+      summary: '알림 전송',
+      description: `**중요**: 지정된 수신자들에게 알림을 전송합니다. FCM 토큰을 사용하여 푸시 알림을 발송하고 알림 서버에 저장합니다.
+
+**동작:**
+- 수신자 목록에 알림 전송
+- FCM 토큰을 통한 푸시 알림 발송
+- 알림 서버에 알림 저장
+- 성공/실패 결과 반환
+
+**테스트 케이스:**
+- 기본 알림 전송: 제목, 내용, 수신자 정보로 알림 전송
+- 링크 URL 포함: 링크 URL이 있는 알림 전송
+- 메타데이터 포함: 추가 메타데이터가 있는 알림 전송
+- 여러 수신자: 여러 수신자에게 동시 전송
+- 필수 필드 누락: sender, title, content 누락 시 400 에러
+- 빈 수신자 목록: 수신자가 없는 경우 400 에러`,
+    }),
+    ApiBody({
+      type: SendNotificationRequestDto,
+      description: '알림 전송 정보',
+    }),
+    ApiResponse({
+      status: HttpStatus.CREATED,
+      description: '알림이 성공적으로 전송되었습니다.',
+      type: SendNotificationResponseDto,
+    }),
+    ApiResponse({
+      status: HttpStatus.BAD_REQUEST,
+      description: '잘못된 요청 데이터입니다.',
+    }),
+    ApiResponse({
+      status: HttpStatus.UNAUTHORIZED,
+      description: '인증이 필요합니다.',
+    }),
+    ApiResponse({
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      description: '알림 전송 중 오류가 발생했습니다.',
+    }),
+  );
+}
+
+/**
+ * 간편 알림 전송 API 데코레이터 (Portal 사용자용)
+ */
+export function SendSimpleNotification() {
+  return applyDecorators(
+    Post('send-simple'),
+    HttpCode(HttpStatus.CREATED),
+    ApiOperation({
+      summary: '간편 알림 전송 (Portal 사용자용)',
+      description: `**중요**: Portal 사용자(인사담당자)에게 간편하게 알림을 전송합니다. FCM 토큰은 백엔드에서 자동으로 조회하며, sender와 sourceSystem은 자동으로 설정됩니다.
+
+**동작:**
+- \`MAIL_NOTIFICATION_SSO\` 환경변수에서 수신자 사번 조회
+- SSO에서 FCM 토큰 자동 조회
+- deviceType에 'portal'이 포함된 토큰만 필터링
+- 알림 서버로 전송
+
+**자동 설정 값:**
+- sender: 'system'
+- sourceSystem: 'EMS'
+- recipients: 환경변수 및 SSO에서 자동 조회
+
+**테스트 케이스:**
+- 기본 알림 전송: title, content만으로 알림 전송
+- 링크 URL 포함: linkUrl 쿼리 파라미터 포함
+- 메타데이터 포함: body에 metadata 포함
+- 필수 필드 누락: title 또는 content 누락 시 400 에러
+- 환경변수 미설정: MAIL_NOTIFICATION_SSO가 없으면 실패
+- Portal 토큰 없음: Portal FCM 토큰이 없으면 실패`,
+    }),
+    ApiQuery({
+      name: 'title',
+      required: true,
+      description: '알림 제목',
+      type: String,
+      example: '자기평가가 제출되었습니다',
+    }),
+    ApiQuery({
+      name: 'content',
+      required: true,
+      description: '알림 내용',
+      type: String,
+      example: '홍길동님이 자기평가를 제출했습니다.',
+    }),
+    ApiQuery({
+      name: 'linkUrl',
+      required: false,
+      description: '링크 URL',
+      type: String,
+      example: '/evaluations/12345',
+    }),
+    ApiBody({
+      type: SendSimpleNotificationBodyDto,
+      description: '알림 메타데이터 (선택사항)',
+      required: false,
+    }),
+    ApiResponse({
+      status: HttpStatus.CREATED,
+      description: '알림이 성공적으로 전송되었습니다.',
+      type: SendNotificationResponseDto,
+    }),
+    ApiResponse({
+      status: HttpStatus.BAD_REQUEST,
+      description: '잘못된 요청 데이터입니다.',
+    }),
+    ApiResponse({
+      status: HttpStatus.UNAUTHORIZED,
+      description: '인증이 필요합니다.',
+    }),
+    ApiResponse({
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      description: '알림 전송 중 오류가 발생했습니다.',
+    }),
+  );
+}

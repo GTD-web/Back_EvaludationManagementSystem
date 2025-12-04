@@ -30,3 +30,30 @@ export declare class MarkAllAsReadResponseDto {
     message: string;
     updatedCount: number;
 }
+export declare class NotificationRecipientDto {
+    employeeNumber: string;
+    tokens: string[];
+}
+export declare class SendNotificationRequestDto {
+    sender: string;
+    title: string;
+    content: string;
+    recipients: NotificationRecipientDto[];
+    sourceSystem: string;
+    linkUrl?: string;
+    metadata?: Record<string, any>;
+}
+export declare class SendSimpleNotificationQueryDto {
+    title: string;
+    content: string;
+    linkUrl?: string;
+}
+export declare class SendSimpleNotificationBodyDto {
+    metadata?: Record<string, any>;
+}
+export declare class SendNotificationResponseDto {
+    success: boolean;
+    message: string;
+    notificationId?: string;
+    error?: string;
+}

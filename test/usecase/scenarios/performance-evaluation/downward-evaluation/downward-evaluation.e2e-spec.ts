@@ -1618,11 +1618,15 @@ describe('하향평가 시나리오', () => {
         expect(평가목록.evaluations.length).toBeGreaterThan(0);
 
         const 평가 = 평가목록.evaluations[0];
-        console.log(`\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`);
+        console.log(
+          `\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`,
+        );
 
         // 기본 메시지 검증: "XXX님에 의해 제출되었습니다"
         expect(평가.downwardEvaluationContent).toBeDefined();
-        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.downwardEvaluationContent).toContain(
+          '에 의해 제출되었습니다',
+        );
         expect(평가.isCompleted).toBe(true);
 
         console.log('✅ 기본 메시지가 정상적으로 생성되었습니다!');
@@ -1642,7 +1646,9 @@ describe('하향평가 시나리오', () => {
           });
 
         console.log(`저장된 평가 ID: ${저장결과.id}`);
-        console.log(`저장 시 content: "${저장결과.downwardEvaluationContent || '(없음)'}"`);
+        console.log(
+          `저장 시 content: "${저장결과.downwardEvaluationContent || '(없음)'}"`,
+        );
 
         // When - 제출
         await downwardEvaluationScenario.일차하향평가를_제출한다({
@@ -1663,13 +1669,19 @@ describe('하향평가 시나리오', () => {
           });
 
         const 평가 = 평가목록.evaluations[0];
-        console.log(`\n📝 제출 후 content: "${평가.downwardEvaluationContent}"`);
+        console.log(
+          `\n📝 제출 후 content: "${평가.downwardEvaluationContent}"`,
+        );
 
         expect(평가.downwardEvaluationContent).toBeDefined();
-        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.downwardEvaluationContent).toContain(
+          '에 의해 제출되었습니다',
+        );
         expect(평가.isCompleted).toBe(true);
 
-        console.log('✅ 빈 값 저장 후 제출 시 기본 메시지가 정상적으로 생성되었습니다!');
+        console.log(
+          '✅ 빈 값 저장 후 제출 시 기본 메시지가 정상적으로 생성되었습니다!',
+        );
       });
     });
 
@@ -1702,10 +1714,14 @@ describe('하향평가 시나리오', () => {
         expect(평가목록.evaluations.length).toBeGreaterThan(0);
 
         const 평가 = 평가목록.evaluations[0];
-        console.log(`\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`);
+        console.log(
+          `\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`,
+        );
 
         expect(평가.downwardEvaluationContent).toBeDefined();
-        expect(평가.downwardEvaluationContent).toContain('에 의해 제출되었습니다');
+        expect(평가.downwardEvaluationContent).toContain(
+          '에 의해 제출되었습니다',
+        );
         expect(평가.isCompleted).toBe(true);
 
         console.log('✅ 2차 평가 기본 메시지가 정상적으로 생성되었습니다!');

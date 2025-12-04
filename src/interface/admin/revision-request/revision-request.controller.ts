@@ -21,9 +21,7 @@ import { StepApprovalStatusEnum } from '@interface/common/dto/step-approval/upda
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
@@ -48,18 +46,14 @@ export class RevisionRequestController {
   @GetRevisionRequests()
   async getRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', new DefaultValuePipe(false), ParseBoolPipe)
-    isRead: boolean,
-    @Query('isCompleted', new DefaultValuePipe(false), ParseBoolPipe)
-    isCompleted: boolean,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
       await this.revisionRequestContextService.전체_재작성요청목록을_조회한다({
         evaluationPeriodId: query.evaluationPeriodId,
         employeeId: query.employeeId,
         requestedBy: query.requestedBy,
-        isRead: isRead,
-        isCompleted: isCompleted,
+        isRead: query.isRead ?? false,
+        isCompleted: query.isCompleted ?? false,
         step: query.step as any,
       });
 
@@ -88,10 +82,6 @@ export class RevisionRequestController {
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', new DefaultValuePipe(false), ParseBoolPipe)
-    isRead: boolean,
-    @Query('isCompleted', new DefaultValuePipe(false), ParseBoolPipe)
-    isCompleted: boolean,
     @CurrentUser('id') recipientId: string,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
@@ -100,8 +90,8 @@ export class RevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: isRead,
-          isCompleted: isCompleted,
+          isRead: query.isRead ?? false,
+          isCompleted: query.isCompleted ?? false,
           step: query.step as any,
         },
       );

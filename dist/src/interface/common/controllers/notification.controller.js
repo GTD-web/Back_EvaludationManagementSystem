@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var NotificationController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationController = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,18 +19,31 @@ const swagger_1 = require("@nestjs/swagger");
 const notification_helper_service_1 = require("../../../domain/common/notification/notification-helper.service");
 const notification_api_decorators_1 = require("../decorators/notification/notification-api.decorators");
 const notification_dto_1 = require("../dto/notification/notification.dto");
-let NotificationController = class NotificationController {
+let NotificationController = NotificationController_1 = class NotificationController {
     notificationService;
+    logger = new common_1.Logger(NotificationController_1.name);
     constructor(notificationService) {
         this.notificationService = notificationService;
     }
     async getNotifications(recipientId, query) {
+        let isRead = undefined;
+        if (query.isRead !== undefined) {
+            const lowerValue = query.isRead.toLowerCase().trim();
+            if (lowerValue === 'true' || lowerValue === '1') {
+                isRead = true;
+            }
+            else if (lowerValue === 'false' || lowerValue === '0') {
+                isRead = false;
+            }
+        }
+        this.logger.debug(`🔔 알림 목록 조회 API 호출 - recipientId: ${recipientId}, isRead: ${isRead} (원본: "${query.isRead}", type: ${typeof isRead}), skip: ${query.skip}, take: ${query.take}`);
         const result = await this.notificationService.알림목록을조회한다({
             recipientId,
-            isRead: query.isRead,
+            isRead: isRead,
             skip: query.skip,
             take: query.take,
         });
+        this.logger.debug(`🔔 알림 목록 조회 응답 - 조회: ${result.notifications.length}개, 전체: ${result.total}개, 미읽음: ${result.unreadCount}개`);
         return result;
     }
     async markAsRead(notificationId) {
@@ -68,7 +82,7 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], NotificationController.prototype, "markAllAsRead", null);
-exports.NotificationController = NotificationController = __decorate([
+exports.NotificationController = NotificationController = NotificationController_1 = __decorate([
     (0, swagger_1.ApiTags)('공통 - 알림'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, common_1.Controller)('notifications'),

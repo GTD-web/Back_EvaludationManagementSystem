@@ -12,7 +12,7 @@ export declare class NotificationDto {
     readAt?: Date;
 }
 export declare class GetNotificationsQueryDto {
-    isRead?: boolean;
+    isRead?: string;
     skip?: number;
     take?: number;
 }

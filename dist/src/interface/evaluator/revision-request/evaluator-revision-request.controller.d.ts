@@ -7,7 +7,7 @@ export declare class EvaluatorRevisionRequestController {
     private readonly revisionRequestBusinessService;
     private readonly revisionRequestContextService;
     constructor(revisionRequestBusinessService: RevisionRequestBusinessService, revisionRequestContextService: RevisionRequestContextService);
-    getMyRevisionRequests(query: GetRevisionRequestsQueryDto, isRead: boolean, isCompleted: boolean, recipientId: string): Promise<RevisionRequestResponseDto[]>;
+    getMyRevisionRequests(query: GetRevisionRequestsQueryDto, recipientId: string): Promise<RevisionRequestResponseDto[]>;
     getMyUnreadCount(recipientId: string): Promise<UnreadCountResponseDto>;
     markAsRead(requestId: string, recipientId: string): Promise<void>;
     completeRevisionRequest(requestId: string, dto: CompleteRevisionRequestDto, recipientId: string): Promise<void>;

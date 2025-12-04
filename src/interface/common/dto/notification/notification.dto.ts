@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ToBoolean } from '@interface/common/decorators';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -51,9 +50,8 @@ export class GetNotificationsQueryDto {
     example: 'false',
   })
   @IsOptional()
-  @ToBoolean(undefined)
-  @IsBoolean()
-  isRead?: boolean;
+  @IsString()
+  isRead?: string;  // string으로 받아서 컨트롤러에서 변환
 
   @ApiPropertyOptional({
     description: '건너뛸 개수',

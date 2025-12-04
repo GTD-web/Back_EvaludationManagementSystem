@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GetNotifications = GetNotifications;
 exports.MarkNotificationAsRead = MarkNotificationAsRead;
 exports.MarkAllNotificationsAsRead = MarkAllNotificationsAsRead;
+exports.SendNotification = SendNotification;
+exports.SendSimpleNotification = SendSimpleNotification;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const notification_dto_1 = require("../../dto/notification/notification.dto");
@@ -127,6 +129,102 @@ function MarkAllNotificationsAsRead() {
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.UNAUTHORIZED,
         description: '인증이 필요합니다.',
+    }));
+}
+function SendNotification() {
+    return (0, common_1.applyDecorators)((0, common_1.Post)('send'), (0, common_1.HttpCode)(common_1.HttpStatus.CREATED), (0, swagger_1.ApiOperation)({
+        summary: '알림 전송',
+        description: `**중요**: 지정된 수신자들에게 알림을 전송합니다. FCM 토큰을 사용하여 푸시 알림을 발송하고 알림 서버에 저장합니다.
+
+**동작:**
+- 수신자 목록에 알림 전송
+- FCM 토큰을 통한 푸시 알림 발송
+- 알림 서버에 알림 저장
+- 성공/실패 결과 반환
+
+**테스트 케이스:**
+- 기본 알림 전송: 제목, 내용, 수신자 정보로 알림 전송
+- 링크 URL 포함: 링크 URL이 있는 알림 전송
+- 메타데이터 포함: 추가 메타데이터가 있는 알림 전송
+- 여러 수신자: 여러 수신자에게 동시 전송
+- 필수 필드 누락: sender, title, content 누락 시 400 에러
+- 빈 수신자 목록: 수신자가 없는 경우 400 에러`,
+    }), (0, swagger_1.ApiBody)({
+        type: notification_dto_1.SendNotificationRequestDto,
+        description: '알림 전송 정보',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.CREATED,
+        description: '알림이 성공적으로 전송되었습니다.',
+        type: notification_dto_1.SendNotificationResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.BAD_REQUEST,
+        description: '잘못된 요청 데이터입니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.UNAUTHORIZED,
+        description: '인증이 필요합니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.INTERNAL_SERVER_ERROR,
+        description: '알림 전송 중 오류가 발생했습니다.',
+    }));
+}
+function SendSimpleNotification() {
+    return (0, common_1.applyDecorators)((0, common_1.Post)('send-simple'), (0, common_1.HttpCode)(common_1.HttpStatus.CREATED), (0, swagger_1.ApiOperation)({
+        summary: '간편 알림 전송 (Portal 사용자용)',
+        description: `**중요**: Portal 사용자(인사담당자)에게 간편하게 알림을 전송합니다. FCM 토큰은 백엔드에서 자동으로 조회하며, sender와 sourceSystem은 자동으로 설정됩니다.
+
+**동작:**
+- \`MAIL_NOTIFICATION_SSO\` 환경변수에서 수신자 사번 조회
+- SSO에서 FCM 토큰 자동 조회
+- deviceType에 'portal'이 포함된 토큰만 필터링
+- 알림 서버로 전송
+
+**자동 설정 값:**
+- sender: 'system'
+- sourceSystem: 'EMS'
+- recipients: 환경변수 및 SSO에서 자동 조회
+
+**테스트 케이스:**
+- 기본 알림 전송: title, content만으로 알림 전송
+- 링크 URL 포함: linkUrl 쿼리 파라미터 포함
+- 메타데이터 포함: body에 metadata 포함
+- 필수 필드 누락: title 또는 content 누락 시 400 에러
+- 환경변수 미설정: MAIL_NOTIFICATION_SSO가 없으면 실패
+- Portal 토큰 없음: Portal FCM 토큰이 없으면 실패`,
+    }), (0, swagger_1.ApiQuery)({
+        name: 'title',
+        required: true,
+        description: '알림 제목',
+        type: String,
+        example: '자기평가가 제출되었습니다',
+    }), (0, swagger_1.ApiQuery)({
+        name: 'content',
+        required: true,
+        description: '알림 내용',
+        type: String,
+        example: '홍길동님이 자기평가를 제출했습니다.',
+    }), (0, swagger_1.ApiQuery)({
+        name: 'linkUrl',
+        required: false,
+        description: '링크 URL',
+        type: String,
+        example: '/evaluations/12345',
+    }), (0, swagger_1.ApiBody)({
+        type: notification_dto_1.SendSimpleNotificationBodyDto,
+        description: '알림 메타데이터 (선택사항)',
+        required: false,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.CREATED,
+        description: '알림이 성공적으로 전송되었습니다.',
+        type: notification_dto_1.SendNotificationResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.BAD_REQUEST,
+        description: '잘못된 요청 데이터입니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.UNAUTHORIZED,
+        description: '인증이 필요합니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.INTERNAL_SERVER_ERROR,
+        description: '알림 전송 중 오류가 발생했습니다.',
     }));
 }
 //# sourceMappingURL=notification-api.decorators.js.map

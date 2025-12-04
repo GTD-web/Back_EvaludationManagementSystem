@@ -192,7 +192,7 @@ function SubmitPrimaryDownwardEvaluation() {
 - 평가라인 매핑에서 실제 할당된 1차 평가자 ID를 조회하여 사용
 - 평가자, 피평가자, 평가기간, WBS로 1차 하향평가 조회
 - 평가가 없으면 자동으로 생성
-- content가 비어있으면 "[제출자명]님에 의해 제출되었습니다" 기본 메시지 생성
+- content가 비어있으면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 제출 후 평가 내용은 변경 불가
@@ -269,7 +269,7 @@ function SubmitSecondaryDownwardEvaluation() {
 - 평가라인 매핑에서 실제 할당된 2차 평가자 ID를 조회하여 사용 (WBS별)
 - 평가자, 피평가자, 평가기간, WBS로 2차 하향평가 조회
 - 평가가 없으면 자동으로 생성
-- content가 비어있으면 "[제출자명]님에 의해 제출되었습니다" 기본 메시지 생성
+- content가 비어있으면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 1차 하향평가와 독립적으로 제출

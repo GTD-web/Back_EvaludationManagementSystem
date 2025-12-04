@@ -113,3 +113,122 @@ export class MarkAllAsReadResponseDto {
   updatedCount: number;
 }
 
+/**
+ * 알림 수신자 정보 DTO
+ */
+export class NotificationRecipientDto {
+  @ApiProperty({ description: '직원 번호 (사번)', example: 'emp001' })
+  @IsString()
+  employeeNumber: string;
+
+  @ApiProperty({
+    description: 'FCM 토큰 목록',
+    type: [String],
+    example: ['fcm-token-1', 'fcm-token-2'],
+  })
+  @IsString({ each: true })
+  tokens: string[];
+}
+
+/**
+ * 알림 전송 요청 DTO
+ */
+export class SendNotificationRequestDto {
+  @ApiProperty({ description: '발신자 ID', example: 'system' })
+  @IsString()
+  sender: string;
+
+  @ApiProperty({ description: '알림 제목', example: '자기평가가 제출되었습니다' })
+  @IsString()
+  title: string;
+
+  @ApiProperty({
+    description: '알림 내용',
+    example: '홍길동님이 자기평가를 제출했습니다.',
+  })
+  @IsString()
+  content: string;
+
+  @ApiProperty({
+    description: '수신자 목록',
+    type: [NotificationRecipientDto],
+  })
+  @Type(() => NotificationRecipientDto)
+  recipients: NotificationRecipientDto[];
+
+  @ApiProperty({ description: '출처 시스템', example: 'EMS' })
+  @IsString()
+  sourceSystem: string;
+
+  @ApiPropertyOptional({
+    description: '링크 URL',
+    example: '/evaluations/12345',
+  })
+  @IsOptional()
+  @IsString()
+  linkUrl?: string;
+
+  @ApiPropertyOptional({
+    description: '메타데이터',
+    example: { type: 'self-evaluation', priority: 'high' },
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+}
+
+/**
+ * 간편 알림 전송 Query DTO (Portal 사용자용)
+ */
+export class SendSimpleNotificationQueryDto {
+  @ApiProperty({
+    description: '알림 제목',
+    example: '자기평가가 제출되었습니다',
+  })
+  @IsString()
+  title: string;
+
+  @ApiProperty({
+    description: '알림 내용',
+    example: '홍길동님이 자기평가를 제출했습니다.',
+  })
+  @IsString()
+  content: string;
+
+  @ApiPropertyOptional({
+    description: '링크 URL',
+    example: '/evaluations/12345',
+  })
+  @IsOptional()
+  @IsString()
+  linkUrl?: string;
+}
+
+/**
+ * 간편 알림 전송 Body DTO (메타데이터용)
+ */
+export class SendSimpleNotificationBodyDto {
+  @ApiPropertyOptional({
+    description: '메타데이터',
+    example: { type: 'self-evaluation', priority: 'high' },
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
+}
+
+/**
+ * 알림 전송 응답 DTO
+ */
+export class SendNotificationResponseDto {
+  @ApiProperty({ description: '성공 여부' })
+  success: boolean;
+
+  @ApiProperty({ description: '메시지' })
+  message: string;
+
+  @ApiPropertyOptional({ description: '알림 ID' })
+  notificationId?: string;
+
+  @ApiPropertyOptional({ description: '에러 메시지' })
+  error?: string;
+}
+

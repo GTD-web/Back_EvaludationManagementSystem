@@ -26,7 +26,7 @@ let NotificationHelperService = NotificationHelperService_1 = class Notification
         this.notificationService = notificationService;
     }
     async 직원들에게_알림을_전송한다(params) {
-        const { employeeNumbers, sender, title, content, sourceSystem, linkUrl, metadata } = params;
+        const { employeeNumbers, sender, title, content, sourceSystem, linkUrl, metadata, } = params;
         this.logger.log(`알림 전송 시작: 제목="${title}", 수신자 수=${employeeNumbers.length}`);
         try {
             this.logger.debug(`FCM 토큰 조회 중: ${employeeNumbers.join(', ')}`);
@@ -79,6 +79,65 @@ let NotificationHelperService = NotificationHelperService_1 = class Notification
             ...params,
             employeeNumbers: [params.employeeNumber],
         });
+    }
+    async Portal사용자에게_알림을_전송한다(params) {
+        const { sender, title, content, sourceSystem, linkUrl, metadata } = params;
+        this.logger.log(`Portal 알림 전송 시작: 제목="${title}"`);
+        try {
+            const employeeNumber = process.env.MAIL_NOTIFICATION_SSO;
+            if (!employeeNumber) {
+                this.logger.warn('MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.');
+                return {
+                    success: false,
+                    message: 'MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.',
+                };
+            }
+            this.logger.debug(`알림 수신 대상 사번: ${employeeNumber}`);
+            const fcmTokenInfo = await this.ssoService.FCM토큰을조회한다({
+                employeeNumber,
+            });
+            const portalTokens = fcmTokenInfo.tokens
+                .filter((token) => token.deviceType.toLowerCase().includes('portal'))
+                .map((token) => token.fcmToken);
+            if (portalTokens.length === 0) {
+                this.logger.warn(`Portal FCM 토큰이 없습니다. 직원번호: ${employeeNumber}`);
+                return {
+                    success: false,
+                    message: 'Portal FCM 토큰이 없습니다.',
+                };
+            }
+            this.logger.debug(`Portal FCM 토큰 조회 완료: ${portalTokens.length}개 토큰`);
+            const notificationParams = {
+                sender,
+                title,
+                content,
+                recipients: [
+                    {
+                        employeeNumber,
+                        tokens: portalTokens,
+                    },
+                ],
+                sourceSystem,
+                linkUrl,
+                metadata,
+            };
+            const result = await this.notificationService.알림을전송한다(notificationParams);
+            if (result.success) {
+                this.logger.log(`Portal 알림 전송 성공: notificationId=${result.notificationId}, 토큰=${portalTokens.length}개`);
+            }
+            else {
+                this.logger.error(`Portal 알림 전송 실패: ${result.error || result.message}`);
+            }
+            return result;
+        }
+        catch (error) {
+            this.logger.error(`Portal 알림 전송 중 오류 발생: ${error.message}`, error.stack);
+            return {
+                success: false,
+                message: 'Portal 알림 전송 중 오류가 발생했습니다.',
+                error: error.message,
+            };
+        }
     }
 };
 exports.NotificationHelperService = NotificationHelperService;

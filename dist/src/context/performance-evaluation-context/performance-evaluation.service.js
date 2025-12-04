@@ -192,7 +192,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'primary', defaultContent, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
@@ -205,7 +205,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         }
         const evaluation = result.evaluations[0];
         if (!evaluation.downwardEvaluationContent?.trim()) {
-            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'primary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
@@ -226,7 +226,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
-            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, undefined, 'secondary', defaultContent, undefined, submittedBy);
             const newResult = await this.queryBus.execute(query);
             if (!newResult.evaluations || newResult.evaluations.length === 0) {
@@ -239,7 +239,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         }
         const evaluation = result.evaluations[0];
         if (!evaluation.downwardEvaluationContent?.trim()) {
-            const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'secondary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);

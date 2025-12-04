@@ -24,6 +24,8 @@ const transaction_manager_service_1 = require("../../../../../../libs/database/t
 const evaluation_period_employee_mapping_entity_1 = require("../../../../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
 const employee_evaluation_step_approval_service_1 = require("../../../../../domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service");
 const employee_evaluation_step_approval_types_1 = require("../../../../../domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.types");
+const notification_1 = require("../../../../../domain/common/notification");
+const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
 class SubmitDownwardEvaluationCommand {
     evaluationId;
     submittedBy;
@@ -38,12 +40,16 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
     transactionManager;
     mappingRepository;
     stepApprovalService;
+    notificationHelper;
+    evaluationPeriodService;
     logger = new common_1.Logger(SubmitDownwardEvaluationHandler_1.name);
-    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService) {
+    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService, notificationHelper, evaluationPeriodService) {
         this.downwardEvaluationService = downwardEvaluationService;
         this.transactionManager = transactionManager;
         this.mappingRepository = mappingRepository;
         this.stepApprovalService = stepApprovalService;
+        this.notificationHelper = notificationHelper;
+        this.evaluationPeriodService = evaluationPeriodService;
     }
     async execute(command) {
         const { evaluationId, submittedBy } = command;
@@ -83,8 +89,42 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
                 await this.stepApprovalService.저장한다(stepApproval);
                 this.logger.debug(`단계 승인 상태를 pending으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`);
             }
+            if (evaluation.evaluationType === 'primary') {
+                this.Portal사용자에게_알림을전송한다(evaluation.employeeId, evaluation.periodId, evaluation.wbsId).catch((error) => {
+                    this.logger.error('Portal 사용자 알림 전송 실패 (무시됨)', error.stack);
+                });
+            }
             this.logger.log('하향평가 제출 완료', { evaluationId });
         });
+    }
+    async Portal사용자에게_알림을전송한다(employeeId, periodId, wbsId) {
+        try {
+            const evaluationPeriod = await this.evaluationPeriodService.ID로_조회한다(periodId);
+            if (!evaluationPeriod) {
+                this.logger.warn(`평가기간을 찾을 수 없어 알림을 전송하지 않습니다. periodId=${periodId}`);
+                return;
+            }
+            await this.notificationHelper.Portal사용자에게_알림을_전송한다({
+                sender: 'system',
+                title: '1차 하향평가 제출 알림',
+                content: `${evaluationPeriod.name} 평가기간의 1차 하향평가가 제출되었습니다.`,
+                sourceSystem: 'EMS',
+                linkUrl: '/evaluations/downward',
+                metadata: {
+                    type: 'downward-evaluation-submitted',
+                    evaluationType: 'primary',
+                    priority: 'medium',
+                    employeeId,
+                    periodId,
+                    wbsId,
+                },
+            });
+            this.logger.log(`Portal 사용자에게 1차 하향평가 제출 알림 전송 완료`);
+        }
+        catch (error) {
+            this.logger.error('Portal 사용자 알림 전송 중 오류 발생', error.stack);
+            throw error;
+        }
     }
 };
 exports.SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler;
@@ -95,6 +135,8 @@ exports.SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler = Subm
     __metadata("design:paramtypes", [downward_evaluation_service_1.DownwardEvaluationService,
         transaction_manager_service_1.TransactionManagerService,
         typeorm_2.Repository,
-        employee_evaluation_step_approval_service_1.EmployeeEvaluationStepApprovalService])
+        employee_evaluation_step_approval_service_1.EmployeeEvaluationStepApprovalService,
+        notification_1.NotificationHelperService,
+        evaluation_period_service_1.EvaluationPeriodService])
 ], SubmitDownwardEvaluationHandler);
 //# sourceMappingURL=submit-downward-evaluation.handler.js.map

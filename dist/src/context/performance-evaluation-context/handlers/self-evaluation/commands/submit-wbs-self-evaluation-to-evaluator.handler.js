@@ -73,6 +73,9 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
             this.알림을전송한다(updatedEvaluation.employeeId, updatedEvaluation.periodId, evaluationPeriod.name).catch((error) => {
                 this.logger.error('WBS 자기평가 제출 알림 전송 실패 (무시됨)', error.stack);
             });
+            this.Portal사용자에게_알림을전송한다(updatedEvaluation.employeeId, updatedEvaluation.periodId, evaluationPeriod.name).catch((error) => {
+                this.logger.error('Portal 사용자 알림 전송 실패 (무시됨)', error.stack);
+            });
             return updatedEvaluation.DTO로_변환한다();
         });
     }
@@ -88,7 +91,7 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
                 title: 'WBS 자기평가 제출 알림',
                 content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
                 employeeNumber: evaluatorId,
-                sourceSystem: 'ems',
+                sourceSystem: 'EMS',
                 linkUrl: '/evaluations/downward',
                 metadata: {
                     type: 'self-evaluation-submitted',
@@ -101,6 +104,28 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
         }
         catch (error) {
             this.logger.error('알림 전송 중 오류 발생', error.stack);
+            throw error;
+        }
+    }
+    async Portal사용자에게_알림을전송한다(employeeId, periodId, periodName) {
+        try {
+            await this.notificationHelper.Portal사용자에게_알림을_전송한다({
+                sender: 'system',
+                title: 'WBS 자기평가 제출 알림',
+                content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
+                sourceSystem: 'EMS',
+                linkUrl: '/evaluations/self',
+                metadata: {
+                    type: 'self-evaluation-submitted',
+                    priority: 'medium',
+                    employeeId,
+                    periodId,
+                },
+            });
+            this.logger.log(`Portal 사용자에게 WBS 자기평가 제출 알림 전송 완료`);
+        }
+        catch (error) {
+            this.logger.error('Portal 사용자 알림 전송 중 오류 발생', error.stack);
             throw error;
         }
     }

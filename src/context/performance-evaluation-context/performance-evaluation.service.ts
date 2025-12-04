@@ -735,7 +735,7 @@ export class PerformanceEvaluationService
 
     // 평가가 없으면 자동으로 생성 (기본 메시지 포함)
     if (!result.evaluations || result.evaluations.length === 0) {
-      const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
 
       // 실제 평가자 ID로 생성
       await this.하향평가를_저장한다(
@@ -774,7 +774,7 @@ export class PerformanceEvaluationService
 
     // 평가가 있지만 content가 비어있으면 기본 메시지 추가
     if (!evaluation.downwardEvaluationContent?.trim()) {
-      const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
       await this.하향평가를_저장한다(
         actualPrimaryEvaluatorId,
         evaluateeId,
@@ -853,7 +853,7 @@ export class PerformanceEvaluationService
 
     // 평가가 없으면 자동으로 생성 (기본 메시지 포함)
     if (!result.evaluations || result.evaluations.length === 0) {
-      const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
 
       // 실제 평가자 ID로 생성
       await this.하향평가를_저장한다(
@@ -892,7 +892,7 @@ export class PerformanceEvaluationService
 
     // 평가가 있지만 content가 비어있으면 기본 메시지 추가
     if (!evaluation.downwardEvaluationContent?.trim()) {
-      const defaultContent = `${submitterName}님에 의해 제출되었습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
       await this.하향평가를_저장한다(
         actualSecondaryEvaluatorId,
         evaluateeId,

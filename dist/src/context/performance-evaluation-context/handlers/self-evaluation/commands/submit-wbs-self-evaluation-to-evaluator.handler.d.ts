@@ -20,4 +20,5 @@ export declare class SubmitWbsSelfEvaluationToEvaluatorHandler implements IComma
     constructor(wbsSelfEvaluationService: WbsSelfEvaluationService, evaluationPeriodService: EvaluationPeriodService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService);
     execute(command: SubmitWbsSelfEvaluationToEvaluatorCommand): Promise<WbsSelfEvaluationDto>;
     private 알림을전송한다;
+    private Portal사용자에게_알림을전송한다;
 }

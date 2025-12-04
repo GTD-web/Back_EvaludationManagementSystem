@@ -1622,10 +1622,10 @@ describe('하향평가 시나리오', () => {
           `\n📝 생성된 기본 메시지: "${평가.downwardEvaluationContent}"`,
         );
 
-        // 기본 메시지 검증: "XXX님에 의해 제출되었습니다"
+        // 기본 메시지 검증: "XXX님이 미입력 상태에서 제출하였습니다"
         expect(평가.downwardEvaluationContent).toBeDefined();
         expect(평가.downwardEvaluationContent).toContain(
-          '에 의해 제출되었습니다',
+          '미입력 상태에서 제출하였습니다',
         );
         expect(평가.isCompleted).toBe(true);
 
@@ -1675,7 +1675,7 @@ describe('하향평가 시나리오', () => {
 
         expect(평가.downwardEvaluationContent).toBeDefined();
         expect(평가.downwardEvaluationContent).toContain(
-          '에 의해 제출되었습니다',
+          '미입력 상태에서 제출하였습니다',
         );
         expect(평가.isCompleted).toBe(true);
 
@@ -1720,7 +1720,7 @@ describe('하향평가 시나리오', () => {
 
         expect(평가.downwardEvaluationContent).toBeDefined();
         expect(평가.downwardEvaluationContent).toContain(
-          '에 의해 제출되었습니다',
+          '미입력 상태에서 제출하였습니다',
         );
         expect(평가.isCompleted).toBe(true);
 

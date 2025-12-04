@@ -22,17 +22,20 @@ const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decor
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
-const grade_ranges_store_1 = require("../../common/dto/evaluation-period/grade-ranges.store");
+const system_setting_service_1 = require("../../../domain/common/system-setting/system-setting.service");
 let EvaluationPeriodManagementController = EvaluationPeriodManagementController_1 = class EvaluationPeriodManagementController {
     evaluationPeriodBusinessService;
     evaluationPeriodManagementService;
+    systemSettingService;
     logger = new common_1.Logger(EvaluationPeriodManagementController_1.name);
-    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService) {
+    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService, systemSettingService) {
         this.evaluationPeriodBusinessService = evaluationPeriodBusinessService;
         this.evaluationPeriodManagementService = evaluationPeriodManagementService;
+        this.systemSettingService = systemSettingService;
     }
     async getDefaultGradeRanges() {
-        return (0, grade_ranges_store_1.getDefaultGradeRanges)();
+        const gradeRanges = await this.systemSettingService.기본등급구간_조회한다();
+        return gradeRanges;
     }
     async updateDefaultGradeRanges(updateData) {
         const gradeRanges = updateData.gradeRanges.map((range) => ({
@@ -64,8 +67,8 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
                 throw new common_1.BadRequestException('등급 구간이 겹칩니다.');
             }
         }
-        (0, grade_ranges_store_1.setDefaultGradeRanges)(gradeRanges);
-        return (0, grade_ranges_store_1.getDefaultGradeRanges)();
+        const updatedRanges = await this.systemSettingService.기본등급구간_변경한다(gradeRanges);
+        return updatedRanges;
     }
     async getActiveEvaluationPeriods() {
         return await this.evaluationPeriodManagementService.활성평가기간_조회한다();
@@ -427,6 +430,7 @@ exports.EvaluationPeriodManagementController = EvaluationPeriodManagementControl
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, common_1.Controller)('admin/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_business_service_1.EvaluationPeriodBusinessService,
-        evaluation_period_management_service_1.EvaluationPeriodManagementContextService])
+        evaluation_period_management_service_1.EvaluationPeriodManagementContextService,
+        system_setting_service_1.SystemSettingService])
 ], EvaluationPeriodManagementController);
 //# sourceMappingURL=evaluation-period-management.controller.js.map

@@ -4,11 +4,13 @@ import type { EvaluationPeriodDto } from '../../../domain/core/evaluation-period
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { ChangeEvaluationPeriodPhaseApiDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
+import { SystemSettingService } from '@domain/common/system-setting/system-setting.service';
 export declare class EvaluationPeriodManagementController {
     private readonly evaluationPeriodBusinessService;
     private readonly evaluationPeriodManagementService;
+    private readonly systemSettingService;
     private readonly logger;
-    constructor(evaluationPeriodBusinessService: EvaluationPeriodBusinessService, evaluationPeriodManagementService: EvaluationPeriodManagementContextService);
+    constructor(evaluationPeriodBusinessService: EvaluationPeriodBusinessService, evaluationPeriodManagementService: EvaluationPeriodManagementContextService, systemSettingService: SystemSettingService);
     getDefaultGradeRanges(): Promise<GradeRangeResponseDto[]>;
     updateDefaultGradeRanges(updateData: UpdateDefaultGradeRangesApiDto): Promise<GradeRangeResponseDto[]>;
     getActiveEvaluationPeriods(): Promise<EvaluationPeriodDto[]>;

@@ -24,6 +24,7 @@ const employee_module_1 = require("../../domain/common/employee/employee.module"
 const notification_1 = require("../../domain/common/notification");
 const department_module_1 = require("../../domain/common/department/department.module");
 const project_module_1 = require("../../domain/common/project/project.module");
+const system_setting_module_1 = require("../../domain/common/system-setting/system-setting.module");
 const employee_entity_1 = require("../../domain/common/employee/employee.entity");
 const auth_controller_1 = require("./auth/auth.controller");
 const dashboard_controller_1 = require("./dashboard/dashboard.controller");
@@ -77,6 +78,7 @@ exports.AdminInterfaceModule = AdminInterfaceModule = __decorate([
             notification_1.NotificationModule,
             department_module_1.DepartmentModule,
             project_module_1.ProjectModule,
+            system_setting_module_1.SystemSettingModule,
         ],
         controllers: [
             auth_controller_1.AuthController,

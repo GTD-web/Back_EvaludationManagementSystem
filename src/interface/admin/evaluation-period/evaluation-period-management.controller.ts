@@ -72,11 +72,8 @@ import {
   UpdatePerformanceDeadlineApiDto,
   UpdateSelfEvaluationDeadlineApiDto,
 } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
-import {
-  getDefaultGradeRanges,
-  setDefaultGradeRanges,
-} from '@interface/common/dto/evaluation-period/grade-ranges.store';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
+import { SystemSettingService } from '@domain/common/system-setting/system-setting.service';
 
 /**
  * 관리자용 평가 관리 컨트롤러
@@ -95,6 +92,7 @@ export class EvaluationPeriodManagementController {
   constructor(
     private readonly evaluationPeriodBusinessService: EvaluationPeriodBusinessService,
     private readonly evaluationPeriodManagementService: EvaluationPeriodManagementContextService, // 조회용
+    private readonly systemSettingService: SystemSettingService,
   ) {}
 
   // ==================== GET: 조회 ====================
@@ -104,7 +102,8 @@ export class EvaluationPeriodManagementController {
    */
   @GetDefaultGradeRanges()
   async getDefaultGradeRanges(): Promise<GradeRangeResponseDto[]> {
-    return getDefaultGradeRanges() as unknown as GradeRangeResponseDto[];
+    const gradeRanges = await this.systemSettingService.기본등급구간_조회한다();
+    return gradeRanges as unknown as GradeRangeResponseDto[];
   }
 
   /**
@@ -155,10 +154,12 @@ export class EvaluationPeriodManagementController {
       }
     }
 
-    // 기본 등급 구간 업데이트
-    setDefaultGradeRanges(gradeRanges);
+    // 기본 등급 구간 업데이트 (DB에 저장)
+    const updatedRanges = await this.systemSettingService.기본등급구간_변경한다(
+      gradeRanges,
+    );
 
-    return getDefaultGradeRanges() as unknown as GradeRangeResponseDto[];
+    return updatedRanges as unknown as GradeRangeResponseDto[];
   }
 
   /**

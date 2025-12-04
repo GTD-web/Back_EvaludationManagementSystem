@@ -96,6 +96,11 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
             const submittedIds = [];
             const skippedIds = [];
             const failedItems = [];
+            const submitter = await this.employeeRepository.findOne({
+                where: { id: submittedBy, deletedAt: (0, typeorm_2.IsNull)() },
+                select: ['id', 'name'],
+            });
+            const submitterName = submitter?.name || '평가자';
             for (const evaluation of evaluations) {
                 try {
                     if (evaluation.완료되었는가()) {
@@ -103,7 +108,12 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                         this.logger.debug(`이미 완료된 평가는 건너뜀: ${evaluation.id}`);
                         continue;
                     }
-                    await this.downwardEvaluationService.수정한다(evaluation.id, { isCompleted: true }, submittedBy);
+                    const updateData = { isCompleted: true };
+                    if (!evaluation.downwardEvaluationContent?.trim()) {
+                        updateData.downwardEvaluationContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+                        this.logger.debug(`빈 content로 인한 기본 메시지 생성: ${evaluation.id}`);
+                    }
+                    await this.downwardEvaluationService.수정한다(evaluation.id, updateData, submittedBy);
                     submittedIds.push(evaluation.id);
                     this.logger.debug(`하향평가 제출 완료: ${evaluation.id}`);
                 }

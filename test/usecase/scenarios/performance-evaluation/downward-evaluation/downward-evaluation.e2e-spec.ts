@@ -1532,6 +1532,93 @@ describe('하향평가 시나리오', () => {
           ).toBeGreaterThan(0);
         }
       });
+
+      it('일괄 제출 시 content가 없는 평가는 기본 메시지가 생성된다', async () => {
+        // Given - content가 있는 평가와 없는 평가 저장
+        console.log('\n🧪 일괄 제출 시 기본 메시지 생성 테스트...');
+        
+        // content가 있는 평가 저장
+        await downwardEvaluationScenario.일차하향평가를_저장한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: primaryEvaluatorId,
+          selfEvaluationId,
+          downwardEvaluationContent: '내용이 있는 평가입니다.',
+          downwardEvaluationScore: 85,
+        });
+
+        // content가 없는 평가 저장 (빈 문자열) - wbsItemIds[1] 사용
+        await downwardEvaluationScenario.일차하향평가를_저장한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[1],
+          evaluatorId: primaryEvaluatorId,
+          selfEvaluationId,
+          downwardEvaluationContent: '',
+          downwardEvaluationScore: 80,
+        });
+
+        // When - 일괄 제출
+        const 일괄제출결과 =
+          await downwardEvaluationScenario.피평가자의_모든_하향평가를_일괄_제출한다(
+            {
+              evaluateeId,
+              periodId: evaluationPeriodId,
+              evaluatorId: primaryEvaluatorId,
+              evaluationType: 'primary',
+            },
+          );
+
+        console.log(`제출 결과: ${JSON.stringify(일괄제출결과)}`);
+        expect(일괄제출결과.submittedCount).toBeGreaterThan(0);
+
+        // Then - 통합 조회 API에서 기본 메시지 확인
+        const 통합현황 = await dashboardScenario.직원의_통합_현황을_조회한다({
+          evaluationPeriodId,
+          employeeId: evaluateeId,
+        });
+
+        // 전체 WBS 목록 로깅
+        const allWbs = 통합현황.projects.items.flatMap(p => p.wbsList);
+        console.log(`전체 WBS 개수: ${allWbs.length}`);
+        console.log(`WBS IDs: ${allWbs.map(w => w.wbsItemId).join(', ')}`);
+
+        // 제출된 1차 하향평가가 있는 WBS들 필터링
+        const submittedPrimaryEvaluations = allWbs.filter(
+          wbs => wbs.primaryDownwardEvaluation?.isCompleted === true
+        );
+        
+        console.log(`제출된 1차 하향평가 개수: ${submittedPrimaryEvaluations.length}`);
+        
+        // "미입력 상태에서 제출하였습니다" 메시지가 있는 평가 확인
+        const evaluationsWithDefaultMessage = submittedPrimaryEvaluations.filter(
+          wbs => wbs.primaryDownwardEvaluation.evaluationContent?.includes('미입력 상태에서 제출하였습니다')
+        );
+
+        console.log(`기본 메시지가 있는 평가 개수: ${evaluationsWithDefaultMessage.length}`);
+        
+        // 최소 1개 이상의 평가가 기본 메시지를 가져야 함
+        expect(evaluationsWithDefaultMessage.length).toBeGreaterThan(0);
+        
+        // 기본 메시지 내용 검증
+        evaluationsWithDefaultMessage.forEach(wbs => {
+          expect(wbs.primaryDownwardEvaluation.evaluationContent).toContain('미입력 상태에서 제출하였습니다');
+          console.log(`✅ WBS ${wbs.wbsItemId}: ${wbs.primaryDownwardEvaluation.evaluationContent}`);
+        });
+
+        // content가 있었던 WBS는 원래 내용 유지
+        const wbsWithContent = allWbs.find(wbs => wbs.wbsItemId === wbsItemIds[0]);
+        
+        if (wbsWithContent) {
+          expect(wbsWithContent.primaryDownwardEvaluation.evaluationContent).toBe(
+            '내용이 있는 평가입니다.',
+          );
+          console.log(`✅ 내용이 있는 평가 유지 확인: ${wbsWithContent.primaryDownwardEvaluation.evaluationContent}`);
+        }
+
+        console.log('✅ 일괄 제출 시 기본 메시지 생성 테스트 통과');
+      });
     });
 
     describe('6-2. 피평가자의 모든 하향평가 일괄 초기화', () => {
@@ -1775,9 +1862,21 @@ describe('하향평가 시나리오', () => {
           (wbs: any) => wbs.primaryDownwardEvaluation?.isCompleted === true,
         );
 
+        console.log('\n🔍 전체 WBS 목록:');
+        firstProject.wbsList.forEach((wbs: any, index: number) => {
+          console.log(`  WBS[${index}]:`, {
+            wbsName: wbs.wbsName,
+            hasPrimary: !!wbs.primaryDownwardEvaluation,
+            isCompleted: wbs.primaryDownwardEvaluation?.isCompleted,
+            hasContent: !!wbs.primaryDownwardEvaluation?.evaluationContent,
+            content: wbs.primaryDownwardEvaluation?.evaluationContent,
+          });
+        });
+
         if (wbsWithSubmitted) {
           console.log(
-            `\n📝 제출된 1차 하향평가 content: "${wbsWithSubmitted.primaryDownwardEvaluation.evaluationContent}"`,
+            `\n📝 제출된 1차 하향평가:`,
+            JSON.stringify(wbsWithSubmitted.primaryDownwardEvaluation, null, 2),
           );
 
           // 미입력 메시지가 포함되어 있는지 확인

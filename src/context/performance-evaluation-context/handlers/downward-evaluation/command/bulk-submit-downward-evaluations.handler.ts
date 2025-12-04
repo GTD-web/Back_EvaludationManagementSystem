@@ -115,6 +115,13 @@ export class BulkSubmitDownwardEvaluationsHandler
       const skippedIds: string[] = [];
       const failedItems: Array<{ evaluationId: string; error: string }> = [];
 
+      // 제출자 이름 조회 (기본 메시지 생성용)
+      const submitter = await this.employeeRepository.findOne({
+        where: { id: submittedBy, deletedAt: IsNull() },
+        select: ['id', 'name'],
+      });
+      const submitterName = submitter?.name || '평가자';
+
       // 각 평가를 순회하며 제출 처리
       for (const evaluation of evaluations) {
         try {
@@ -127,10 +134,19 @@ export class BulkSubmitDownwardEvaluationsHandler
             continue;
           }
 
+          // content가 비어있으면 기본 메시지 생성
+          const updateData: any = { isCompleted: true };
+          if (!evaluation.downwardEvaluationContent?.trim()) {
+            updateData.downwardEvaluationContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+            this.logger.debug(
+              `빈 content로 인한 기본 메시지 생성: ${evaluation.id}`,
+            );
+          }
+
           // 하향평가 완료 처리
           await this.downwardEvaluationService.수정한다(
             evaluation.id,
-            { isCompleted: true },
+            updateData,
             submittedBy,
           );
 

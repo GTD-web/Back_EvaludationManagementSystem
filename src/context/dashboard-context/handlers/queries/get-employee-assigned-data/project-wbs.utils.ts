@@ -442,12 +442,21 @@ export async function getProjectsWithWbs(
       const secondaryEvaluator = secondaryEvaluatorMap.get(wbsId);
 
       // evaluationContent는 문자열이어야 함 (JSON일 경우 문자열로 변환)
-      const evaluationContent =
+      let evaluationContent =
         typeof row.downward_evaluation_content === 'string'
           ? row.downward_evaluation_content
           : row.downward_evaluation_content
             ? JSON.stringify(row.downward_evaluation_content)
             : undefined;
+
+      // 제출된 하향평가인데 content가 없으면 기본 메시지 생성
+      if (row.downward_is_completed && !evaluationContent?.trim()) {
+        const actualEvaluatorId = row.downward_evaluator_id;
+        const actualEvaluatorName = actualEvaluatorId
+          ? evaluatorNameMap.get(actualEvaluatorId) || '평가자'
+          : '평가자';
+        evaluationContent = `${actualEvaluatorName}님이 미입력 상태에서 제출하였습니다.`;
+      }
 
       // score는 숫자여야 함
       const score =

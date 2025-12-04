@@ -304,11 +304,18 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             const evalData = downwardEvaluationMap.get(wbsId);
             const primaryEvaluator = primaryEvaluatorMap.get(wbsId);
             const secondaryEvaluator = secondaryEvaluatorMap.get(wbsId);
-            const evaluationContent = typeof row.downward_evaluation_content === 'string'
+            let evaluationContent = typeof row.downward_evaluation_content === 'string'
                 ? row.downward_evaluation_content
                 : row.downward_evaluation_content
                     ? JSON.stringify(row.downward_evaluation_content)
                     : undefined;
+            if (row.downward_is_completed && !evaluationContent?.trim()) {
+                const actualEvaluatorId = row.downward_evaluator_id;
+                const actualEvaluatorName = actualEvaluatorId
+                    ? evaluatorNameMap.get(actualEvaluatorId) || '평가자'
+                    : '평가자';
+                evaluationContent = `${actualEvaluatorName}님이 미입력 상태에서 제출하였습니다.`;
+            }
             const score = typeof row.downward_score === 'number'
                 ? row.downward_score
                 : row.downward_score !== null && row.downward_score !== undefined

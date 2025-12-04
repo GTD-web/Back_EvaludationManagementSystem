@@ -32,10 +32,9 @@ let FinalEvaluationManagementController = class FinalEvaluationManagementControl
     async upsertFinalEvaluation(employeeId, periodId, dto, user) {
         const actionBy = user.id;
         const evaluationId = await this.finalEvaluationBusinessService.최종평가를_저장한다(employeeId, periodId, dto.evaluationGrade, dto.jobGrade, dto.jobDetailedGrade, dto.finalComments, actionBy);
-        await this.performanceEvaluationService.최종평가를_확정한다(evaluationId, actionBy);
         return {
             id: evaluationId,
-            message: '최종평가가 성공적으로 저장 및 확정되었습니다.',
+            message: '최종평가가 성공적으로 저장되었습니다.',
         };
     }
     async confirmFinalEvaluation(id, user) {

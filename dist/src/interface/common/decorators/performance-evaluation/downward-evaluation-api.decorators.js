@@ -209,6 +209,9 @@ function SubmitPrimaryDownwardEvaluation() {
 - approveAllBelow=true일 경우 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 자기평가는 제출되지 않음
 - content와 score가 없어도 제출 가능
+- content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
+- 이미 저장된 평가를 content 없이 제출하면 기본 메시지로 업데이트
+- 통합 조회 API에서 미입력 메시지가 정상적으로 조회됨
 - 이미 제출된 평가를 재제출하면 409 에러
 - 잘못된 형식의 evaluateeId로 요청 시 400 에러
 - 잘못된 형식의 periodId로 요청 시 400 에러
@@ -286,6 +289,8 @@ function SubmitSecondaryDownwardEvaluation() {
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 1차 하향평가와 자기평가는 제출되지 않음
 - content와 score가 없어도 제출 가능
+- content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
+- 통합 조회 API에서 2차 평가 미입력 메시지가 정상적으로 조회됨
 - 이미 제출된 2차 평가를 재제출하면 409 에러`,
     }), (0, swagger_1.ApiParam)({
         name: 'evaluateeId',

@@ -730,6 +730,8 @@ export function GetEmployeeCompleteStatus() {
 - 프로젝트 카운트: totalCount와 items 배열 길이 일치
 - 점수/등급 통합: 각 평가 항목에 점수와 등급이 포함됨
 - 중복 제거 확인: summary, editableStatus 필드가 없음
+- 미입력 제출 메시지 확인: content 없이 제출한 1차 하향평가의 "미입력 상태에서 제출하였습니다" 메시지 조회
+- 미입력 제출 메시지 확인: content 없이 제출한 2차 하향평가의 "미입력 상태에서 제출하였습니다" 메시지 조회
 - 404 에러: 존재하지 않는 평가기간/직원 조회
 - 400 에러: 잘못된 UUID 형식`,
     }),

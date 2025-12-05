@@ -238,6 +238,7 @@ __decorate([
 class SendSimpleNotificationQueryDto {
     title;
     content;
+    employeeNumber;
     linkUrl;
 }
 exports.SendSimpleNotificationQueryDto = SendSimpleNotificationQueryDto;
@@ -257,6 +258,14 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SendSimpleNotificationQueryDto.prototype, "content", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '수신자 직원 번호 (필수)',
+        example: '25030',
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SendSimpleNotificationQueryDto.prototype, "employeeNumber", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: '링크 URL',

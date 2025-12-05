@@ -60,13 +60,15 @@ export class NotificationHelperService {
         employeeNumbers,
       });
 
-      // 2. FCM 토큰이 있는 직원만 필터링
+      // 2. deviceType에 'portal'이 포함된 FCM 토큰만 필터링
       const recipients = fcmTokensInfo.byEmployee
-        .filter((emp) => emp.tokens.length > 0)
         .map((emp) => ({
           employeeNumber: emp.employeeNumber,
-          tokens: emp.tokens.map((t) => t.fcmToken),
-        }));
+          tokens: emp.tokens
+            .filter((token) => token.deviceType.toLowerCase().includes('portal'))
+            .map((t) => t.fcmToken),
+        }))
+        .filter((emp) => emp.tokens.length > 0); // portal 토큰이 있는 직원만
 
       if (recipients.length === 0) {
         this.logger.warn(
@@ -78,9 +80,22 @@ export class NotificationHelperService {
         };
       }
 
+      // 토큰 상세 정보 로깅 (portal 토큰만)
+      const totalPortalTokens = recipients.reduce((sum, r) => sum + r.tokens.length, 0);
       this.logger.debug(
-        `FCM 토큰 조회 완료: ${recipients.length}명의 수신자, 총 ${fcmTokensInfo.totalTokens}개 토큰`,
+        `Portal FCM 토큰 조회 완료: ${recipients.length}명의 수신자, 총 ${totalPortalTokens}개 토큰 (전체 ${fcmTokensInfo.totalTokens}개 중)`,
       );
+      recipients.forEach((recipient) => {
+        const portalTokens = fcmTokensInfo.byEmployee
+          .find((emp) => emp.employeeNumber === recipient.employeeNumber)
+          ?.tokens.filter((t) => t.deviceType.toLowerCase().includes('portal')) || [];
+        
+        if (portalTokens.length > 0) {
+          this.logger.debug(
+            `직원 ${recipient.employeeNumber}: ${portalTokens.length}개 Portal 토큰 - ${portalTokens.map((t) => `${t.deviceType}(${t.fcmToken.substring(0, 20)}...)`).join(', ')}`,
+          );
+        }
+      });
 
       // 3. 알림 전송
       const notificationParams: SendNotificationParams = {
@@ -96,12 +111,31 @@ export class NotificationHelperService {
       const result =
         await this.notificationService.알림을전송한다(notificationParams);
 
-      if (result.success) {
+      // 알림 전송 결과 로깅
+      // successCount가 있으면 부분 성공도 성공으로 처리
+      const isSuccess = result.success || (result.successCount && result.successCount > 0) || false;
+      
+      if (isSuccess) {
         this.logger.log(
           `알림 전송 성공: notificationId=${result.notificationId}, 수신자=${recipients.length}명`,
         );
+        
+        // 부분 성공/실패 정보가 있으면 표시
+        if (result.successCount !== undefined) {
+          this.logger.log(
+            `알림 전송 상세: 성공 ${result.successCount}건, 실패 ${result.failureCount || 0}건`,
+          );
+        }
       } else {
         this.logger.error(`알림 전송 실패: ${result.error || result.message}`);
+      }
+
+      // 일부 성공도 성공으로 반환
+      if (!result.success && result.successCount && result.successCount > 0) {
+        return {
+          ...result,
+          success: true,
+        };
       }
 
       return result;
@@ -139,8 +173,19 @@ export class NotificationHelperService {
 
   /**
    * Portal 사용자(직원 번호)에게 알림을 전송한다
-   * process.env.MAIL_NOTIFICATION_SSO에서 사번을 가져와 FCM 토큰 조회
-   * deviceType에 'portal'이 포함된 토큰만 필터링하여 전송
+   * 
+   * @deprecated 이 메서드는 더 이상 사용되지 않습니다. 
+   * 대신 직원에게_알림을_전송한다() 메서드를 사용하여 특정 직원에게 직접 알림을 전송하세요.
+   * 
+   * @example
+   * // 기존 방식 (deprecated)
+   * await notificationHelper.Portal사용자에게_알림을_전송한다({ ... });
+   * 
+   * // 새로운 방식
+   * await notificationHelper.직원에게_알림을_전송한다({
+   *   employeeNumber: '25030', // 수신자 직원 번호를 명시적으로 지정
+   *   ...
+   * });
    */
   async Portal사용자에게_알림을_전송한다(params: {
     sender: string;
@@ -149,92 +194,35 @@ export class NotificationHelperService {
     sourceSystem: string;
     linkUrl?: string;
     metadata?: Record<string, any>;
+    employeeNumber?: string; // 선택적 파라미터로 변경
   }): Promise<SendNotificationResult> {
-    const { sender, title, content, sourceSystem, linkUrl, metadata } = params;
+    const { sender, title, content, sourceSystem, linkUrl, metadata, employeeNumber } = params;
 
-    this.logger.log(`Portal 알림 전송 시작: 제목="${title}"`);
+    this.logger.warn(
+      `[DEPRECATED] Portal사용자에게_알림을_전송한다() 메서드는 deprecated되었습니다. ` +
+      `직원에게_알림을_전송한다() 메서드를 사용하세요.`
+    );
 
-    try {
-      // 1. 환경변수에서 사번 가져오기
-      const employeeNumber = process.env.MAIL_NOTIFICATION_SSO;
-
-      if (!employeeNumber) {
-        this.logger.warn(
-          'MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.',
-        );
-        return {
-          success: false,
-          message: 'MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.',
-        };
-      }
-
-      this.logger.debug(`알림 수신 대상 사번: ${employeeNumber}`);
-
-      // 2. SSO에서 FCM 토큰 조회
-      const fcmTokenInfo = await this.ssoService.FCM토큰을조회한다({
-        employeeNumber,
-      });
-
-      // 3. deviceType에 'portal'이 포함된 토큰만 필터링
-      const portalTokens = fcmTokenInfo.tokens
-        .filter((token) => token.deviceType.toLowerCase().includes('portal'))
-        .map((token) => token.fcmToken);
-
-      if (portalTokens.length === 0) {
-        this.logger.warn(
-          `Portal FCM 토큰이 없습니다. 직원번호: ${employeeNumber}`,
-        );
-        return {
-          success: false,
-          message: 'Portal FCM 토큰이 없습니다.',
-        };
-      }
-
-      this.logger.debug(
-        `Portal FCM 토큰 조회 완료: ${portalTokens.length}개 토큰`,
-      );
-
-      // 4. 알림 전송
-      const notificationParams: SendNotificationParams = {
-        sender,
-        title,
-        content,
-        recipients: [
-          {
-            employeeNumber,
-            tokens: portalTokens,
-          },
-        ],
-        sourceSystem,
-        linkUrl,
-        metadata,
-      };
-
-      const result =
-        await this.notificationService.알림을전송한다(notificationParams);
-
-      if (result.success) {
-        this.logger.log(
-          `Portal 알림 전송 성공: notificationId=${result.notificationId}, 토큰=${portalTokens.length}개`,
-        );
-      } else {
-        this.logger.error(
-          `Portal 알림 전송 실패: ${result.error || result.message}`,
-        );
-      }
-
-      return result;
-    } catch (error) {
+    // 직원 번호가 파라미터로 전달되지 않은 경우 에러 반환
+    if (!employeeNumber) {
       this.logger.error(
-        `Portal 알림 전송 중 오류 발생: ${error.message}`,
-        error.stack,
+        'employeeNumber 파라미터가 필요합니다. Portal 알림은 더 이상 환경변수를 사용하지 않습니다.',
       );
-
       return {
         success: false,
-        message: 'Portal 알림 전송 중 오류가 발생했습니다.',
-        error: error.message,
+        message: 'employeeNumber 파라미터가 필요합니다.',
       };
     }
+
+    // 직원에게_알림을_전송한다 메서드로 위임
+    return this.직원에게_알림을_전송한다({
+      sender,
+      title,
+      content,
+      employeeNumber,
+      sourceSystem,
+      linkUrl,
+      metadata,
+    });
   }
 }

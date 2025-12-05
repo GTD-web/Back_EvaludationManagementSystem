@@ -155,7 +155,6 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
         return await this.queryBus.execute(query);
     }
     async 평가_점수를_검증한다(periodId, score) {
-        this.logger.debug('평가 점수 검증 시작', { periodId, score });
         const period = await this.평가기간상세_조회한다(periodId);
         if (!period) {
             this.logger.error('평가기간을 찾을 수 없습니다', { periodId });
@@ -171,7 +170,6 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             });
             throw new downward_evaluation_exceptions_1.InvalidDownwardEvaluationScoreException(score, 1, maxRate);
         }
-        this.logger.debug('평가 점수 검증 완료', { periodId, score, maxRate });
     }
     async 평가기간을_대상자와_함께_생성한다(createData, createdBy) {
         return await this.commandBus.execute(new handlers_1.CreateEvaluationPeriodWithAutoTargetsCommand(createData, createdBy));

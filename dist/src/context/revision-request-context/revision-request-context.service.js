@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var RevisionRequestContextService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RevisionRequestContextService = void 0;
 const common_1 = require("@nestjs/common");
@@ -23,14 +22,14 @@ const secondary_evaluation_step_approval_1 = require("../../domain/sub/secondary
 const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
 const employee_entity_1 = require("../../domain/common/employee/employee.entity");
 const evaluation_period_entity_1 = require("../../domain/core/evaluation-period/evaluation-period.entity");
-let RevisionRequestContextService = RevisionRequestContextService_1 = class RevisionRequestContextService {
+let RevisionRequestContextService = class RevisionRequestContextService {
     revisionRequestService;
     stepApprovalService;
     secondaryStepApprovalService;
     employeeRepository;
     evaluationPeriodRepository;
     mappingRepository;
-    logger = new common_1.Logger(RevisionRequestContextService_1.name);
+    logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
     constructor(revisionRequestService, stepApprovalService, secondaryStepApprovalService, employeeRepository, evaluationPeriodRepository, mappingRepository) {
         this.revisionRequestService = revisionRequestService;
         this.stepApprovalService = stepApprovalService;
@@ -515,7 +514,7 @@ let RevisionRequestContextService = RevisionRequestContextService_1 = class Revi
     }
 };
 exports.RevisionRequestContextService = RevisionRequestContextService;
-exports.RevisionRequestContextService = RevisionRequestContextService = RevisionRequestContextService_1 = __decorate([
+exports.RevisionRequestContextService = RevisionRequestContextService = __decorate([
     (0, common_1.Injectable)(),
     __param(3, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
     __param(4, (0, typeorm_1.InjectRepository)(evaluation_period_entity_1.EvaluationPeriod)),

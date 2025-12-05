@@ -115,16 +115,35 @@ export class NotificationServiceImpl
         `알림 전송 요청: 제목=${params.title}, 수신자 수=${params.recipients.length}`,
       );
 
-      const response = await this.httpClient.post<SendNotificationResult>(
+      const response = await this.httpClient.post<any>(
         '/api/portal/notifications/send',
         params,
       );
 
-      this.logger.log(
-        `알림 전송 성공: notificationId=${response.data.notificationId}`,
-      );
+      // 알림 서버 응답 정규화
+      // 서버가 notificationIds (배열)로 반환하면 첫 번째 값을 notificationId로 변환
+      const responseData = response.data;
+      const notificationId =
+        responseData.notificationId ||
+        (responseData.notificationIds && responseData.notificationIds[0]) ||
+        undefined;
 
-      return response.data;
+      // 응답 데이터 상세 로깅
+      this.logger.log(`알림 전송 성공: notificationId=${notificationId}`);
+      this.logger.debug(`알림 서버 응답 상세: ${JSON.stringify(responseData)}`);
+
+      // 정규화된 응답 반환
+      return {
+        success: responseData.success,
+        message: responseData.message,
+        notificationId: notificationId,
+        error: responseData.error,
+        // 추가 정보 보존
+        ...(responseData.successCount !== undefined && {
+          successCount: responseData.successCount,
+          failureCount: responseData.failureCount,
+        }),
+      } as SendNotificationResult;
     } catch (error) {
       this.logger.error('알림 전송 실패', error);
 

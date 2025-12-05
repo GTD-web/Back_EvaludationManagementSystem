@@ -31,5 +31,6 @@ export declare class NotificationHelperService {
         sourceSystem: string;
         linkUrl?: string;
         metadata?: Record<string, any>;
+        employeeNumber?: string;
     }): Promise<SendNotificationResult>;
 }

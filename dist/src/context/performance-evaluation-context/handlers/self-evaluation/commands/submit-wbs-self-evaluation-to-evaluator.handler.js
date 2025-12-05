@@ -18,6 +18,7 @@ const transaction_manager_service_1 = require("../../../../../../libs/database/t
 const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
 const notification_1 = require("../../../../../domain/common/notification");
 const step_approval_context_service_1 = require("../../../../step-approval-context/step-approval-context.service");
+const employee_service_1 = require("../../../../../domain/common/employee/employee.service");
 class SubmitWbsSelfEvaluationToEvaluatorCommand {
     evaluationId;
     submittedBy;
@@ -33,13 +34,15 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
     transactionManager;
     notificationHelper;
     stepApprovalContext;
+    employeeService;
     logger = new common_1.Logger(SubmitWbsSelfEvaluationToEvaluatorHandler_1.name);
-    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager, notificationHelper, stepApprovalContext) {
+    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager, notificationHelper, stepApprovalContext, employeeService) {
         this.wbsSelfEvaluationService = wbsSelfEvaluationService;
         this.evaluationPeriodService = evaluationPeriodService;
         this.transactionManager = transactionManager;
         this.notificationHelper = notificationHelper;
         this.stepApprovalContext = stepApprovalContext;
+        this.employeeService = employeeService;
     }
     async execute(command) {
         const { evaluationId, submittedBy } = command;
@@ -78,16 +81,26 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
     }
     async 일차평가자에게_알림을전송한다(employeeId, periodId, periodName) {
         try {
+            const employee = await this.employeeService.findById(employeeId);
+            if (!employee) {
+                this.logger.warn(`피평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}`);
+                return;
+            }
             const evaluatorId = await this.stepApprovalContext.일차평가자를_조회한다(periodId, employeeId);
             if (!evaluatorId) {
                 this.logger.warn(`1차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}`);
                 return;
             }
+            const evaluator = await this.employeeService.findById(evaluatorId);
+            if (!evaluator) {
+                this.logger.warn(`1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. evaluatorId=${evaluatorId}`);
+                return;
+            }
             await this.notificationHelper.직원에게_알림을_전송한다({
                 sender: 'system',
                 title: 'WBS 자기평가 제출 알림',
-                content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
-                employeeNumber: evaluatorId,
+                content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
+                employeeNumber: evaluator.employeeNumber,
                 sourceSystem: 'EMS',
                 linkUrl: '/evaluations/downward',
                 metadata: {
@@ -95,9 +108,10 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
                     priority: 'medium',
                     employeeId,
                     periodId,
+                    employeeName: employee.name,
                 },
             });
-            this.logger.log(`1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`);
+            this.logger.log(`1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 피평가자=${employee.name}, 평가자=${evaluatorId}, 직원번호=${evaluator.employeeNumber}`);
         }
         catch (error) {
             this.logger.error('1차 평가자 알림 전송 중 오류 발생', error.stack);
@@ -113,6 +127,7 @@ exports.SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEva
         evaluation_period_service_1.EvaluationPeriodService,
         transaction_manager_service_1.TransactionManagerService,
         notification_1.NotificationHelperService,
-        step_approval_context_service_1.StepApprovalContextService])
+        step_approval_context_service_1.StepApprovalContextService,
+        employee_service_1.EmployeeService])
 ], SubmitWbsSelfEvaluationToEvaluatorHandler);
 //# sourceMappingURL=submit-wbs-self-evaluation-to-evaluator.handler.js.map

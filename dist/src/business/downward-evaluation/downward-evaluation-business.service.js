@@ -55,11 +55,6 @@ let DownwardEvaluationBusinessService = DownwardEvaluationBusinessService_1 = cl
         this.downwardEvaluationRepository = downwardEvaluationRepository;
     }
     async 일차_하향평가를_저장한다(params) {
-        this.logger.log('1차 하향평가 저장 비즈니스 로직 시작', {
-            evaluatorId: params.evaluatorId,
-            evaluateeId: params.evaluateeId,
-            wbsId: params.wbsId,
-        });
         if (params.downwardEvaluationScore !== undefined &&
             params.downwardEvaluationScore !== null) {
             await this.evaluationPeriodManagementContextService.평가_점수를_검증한다(params.periodId, params.downwardEvaluationScore);

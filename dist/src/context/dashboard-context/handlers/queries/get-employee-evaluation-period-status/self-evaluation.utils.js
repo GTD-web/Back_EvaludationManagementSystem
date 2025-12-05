@@ -5,12 +5,16 @@ exports.자기평가_상태를_계산한다 = 자기평가_상태를_계산한�
 exports.자기평가_통합_상태를_계산한다 = 자기평가_통합_상태를_계산한다;
 exports.가중치_기반_자기평가_점수를_계산한다 = 가중치_기반_자기평가_점수를_계산한다;
 exports.자기평가_등급을_조회한다 = 자기평가_등급을_조회한다;
-const common_1 = require("@nestjs/common");
 const typeorm_1 = require("typeorm");
 const evaluation_project_assignment_entity_1 = require("../../../../../domain/core/evaluation-project-assignment/evaluation-project-assignment.entity");
 const wbs_item_entity_1 = require("../../../../../domain/common/wbs-item/wbs-item.entity");
 const project_entity_1 = require("../../../../../domain/common/project/project.entity");
-const logger = new common_1.Logger('SelfEvaluationUtils');
+const logger = {
+    log: () => { },
+    warn: () => { },
+    error: () => { },
+    debug: () => { },
+};
 async function 자기평가_진행_상태를_조회한다(evaluationPeriodId, employeeId, wbsSelfEvaluationRepository, wbsAssignmentRepository, periodRepository) {
     const totalMappingCount = await wbsSelfEvaluationRepository
         .createQueryBuilder('evaluation')
@@ -30,7 +34,9 @@ async function 자기평가_진행_상태를_조회한다(evaluationPeriodId, em
         .leftJoin(evaluation_project_assignment_entity_1.EvaluationProjectAssignment, 'projectAssignment', 'projectAssignment.projectId = wbs.projectId AND projectAssignment.periodId = evaluation.periodId AND projectAssignment.employeeId = evaluation.employeeId AND projectAssignment.deletedAt IS NULL')
         .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
         .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-        .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+        .andWhere('evaluation.submittedToManager = :submittedToManager', {
+        submittedToManager: true,
+    })
         .andWhere('evaluation.deletedAt IS NULL')
         .andWhere('project.id IS NOT NULL')
         .andWhere('projectAssignment.id IS NOT NULL')
@@ -42,7 +48,9 @@ async function 자기평가_진행_상태를_조회한다(evaluationPeriodId, em
         .leftJoin(evaluation_project_assignment_entity_1.EvaluationProjectAssignment, 'projectAssignment', 'projectAssignment.projectId = wbs.projectId AND projectAssignment.periodId = evaluation.periodId AND projectAssignment.employeeId = evaluation.employeeId AND projectAssignment.deletedAt IS NULL')
         .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
         .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-        .andWhere('evaluation.submittedToEvaluator = :submittedToEvaluator', { submittedToEvaluator: true })
+        .andWhere('evaluation.submittedToEvaluator = :submittedToEvaluator', {
+        submittedToEvaluator: true,
+    })
         .andWhere('evaluation.deletedAt IS NULL')
         .andWhere('project.id IS NOT NULL')
         .andWhere('projectAssignment.id IS NOT NULL')
@@ -55,7 +63,9 @@ async function 자기평가_진행_상태를_조회한다(evaluationPeriodId, em
         .leftJoin(evaluation_project_assignment_entity_1.EvaluationProjectAssignment, 'projectAssignment', 'projectAssignment.projectId = wbs.projectId AND projectAssignment.periodId = evaluation.periodId AND projectAssignment.employeeId = evaluation.employeeId AND projectAssignment.deletedAt IS NULL')
         .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
         .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-        .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+        .andWhere('evaluation.submittedToManager = :submittedToManager', {
+        submittedToManager: true,
+    })
         .andWhere('evaluation.deletedAt IS NULL')
         .andWhere('project.id IS NOT NULL')
         .andWhere('projectAssignment.id IS NOT NULL')
@@ -127,9 +137,13 @@ async function 가중치_기반_자기평가_점수를_계산한다(evaluationPe
             .leftJoin(wbs_item_entity_1.WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
             .leftJoin(project_entity_1.Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
             .leftJoin(evaluation_project_assignment_entity_1.EvaluationProjectAssignment, 'projectAssignment', 'projectAssignment.projectId = wbs.projectId AND projectAssignment.periodId = evaluation.periodId AND projectAssignment.employeeId = evaluation.employeeId AND projectAssignment.deletedAt IS NULL')
-            .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
+            .where('evaluation.periodId = :periodId', {
+            periodId: evaluationPeriodId,
+        })
             .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-            .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+            .andWhere('evaluation.submittedToManager = :submittedToManager', {
+            submittedToManager: true,
+        })
             .andWhere('evaluation.deletedAt IS NULL')
             .andWhere('project.id IS NOT NULL')
             .andWhere('projectAssignment.id IS NOT NULL')

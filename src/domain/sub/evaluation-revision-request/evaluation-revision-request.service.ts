@@ -23,7 +23,9 @@ import type { IEvaluationRevisionRequestService } from './interfaces/evaluation-
 export class EvaluationRevisionRequestService
   implements IEvaluationRevisionRequestService
 {
-  private readonly logger = new Logger(EvaluationRevisionRequestService.name);
+  // 임시로 로거 비활성화 (디버깅용)
+  // private readonly logger = new Logger(EvaluationRevisionRequestService.name);
+  private readonly logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
   constructor(
     @InjectRepository(EvaluationRevisionRequest)

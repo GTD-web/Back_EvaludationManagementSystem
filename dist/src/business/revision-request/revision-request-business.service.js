@@ -44,7 +44,6 @@ let RevisionRequestBusinessService = RevisionRequestBusinessService_1 = class Re
                 responseComment,
                 allCompleted,
             });
-            this.logger.log('재작성 완료 활동 내역 기록 완료');
         }
         catch (error) {
             this.logger.warn('재작성 완료 활동 내역 기록 실패', {
@@ -77,7 +76,6 @@ let RevisionRequestBusinessService = RevisionRequestBusinessService_1 = class Re
                 responseComment,
                 allCompleted,
             });
-            this.logger.log('재작성 완료 활동 내역 기록 완료');
         }
         catch (error) {
             this.logger.warn('재작성 완료 활동 내역 기록 실패', {

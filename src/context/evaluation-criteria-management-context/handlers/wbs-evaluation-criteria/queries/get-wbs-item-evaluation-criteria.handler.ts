@@ -30,20 +30,12 @@ export class GetWbsItemEvaluationCriteriaHandler
   async execute(query: GetWbsItemEvaluationCriteriaQuery) {
     const { wbsItemId } = query;
 
-    this.logger.debug(
-      `WBS 항목별 평가기준 조회 시작 - WBS 항목 ID: ${wbsItemId}`,
-    );
-
     try {
       const criteriaList = await this.wbsEvaluationCriteriaRepository.find({
         where: { wbsItemId },
         order: { createdAt: 'DESC' },
       });
       const result = criteriaList.map((criteria) => criteria.DTO로_변환한다());
-
-      this.logger.debug(
-        `WBS 항목별 평가기준 조회 완료 - WBS 항목 ID: ${wbsItemId}, 조회된 개수: ${criteriaList.length}`,
-      );
 
       return result;
     } catch (error) {

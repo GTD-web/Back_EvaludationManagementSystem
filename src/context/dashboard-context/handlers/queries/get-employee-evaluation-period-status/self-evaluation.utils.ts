@@ -8,7 +8,14 @@ import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
 import { Project } from '@domain/common/project/project.entity';
 import { SelfEvaluationStatus } from '../../../interfaces/dashboard-context.interface';
 
-const logger = new Logger('SelfEvaluationUtils');
+// 임시로 로거 비활성화 (디버깅용)
+// const logger = new Logger('SelfEvaluationUtils');
+const logger = {
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+} as any;
 
 /**
  * 자기평가 진행 상태를 조회한다
@@ -33,8 +40,16 @@ export async function 자기평가_진행_상태를_조회한다(
   // 전체 WBS 자기평가 수 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
   const totalMappingCount = await wbsSelfEvaluationRepository
     .createQueryBuilder('evaluation')
-    .leftJoin(WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
-    .leftJoin(Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
+    .leftJoin(
+      WbsItem,
+      'wbs',
+      'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL',
+    )
+    .leftJoin(
+      Project,
+      'project',
+      'project.id = wbs.projectId AND project.deletedAt IS NULL',
+    )
     .leftJoin(
       EvaluationProjectAssignment,
       'projectAssignment',
@@ -50,8 +65,16 @@ export async function 자기평가_진행_상태를_조회한다(
   // 관리자에게 제출된 WBS 자기평가 수 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
   const completedMappingCount = await wbsSelfEvaluationRepository
     .createQueryBuilder('evaluation')
-    .leftJoin(WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
-    .leftJoin(Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
+    .leftJoin(
+      WbsItem,
+      'wbs',
+      'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL',
+    )
+    .leftJoin(
+      Project,
+      'project',
+      'project.id = wbs.projectId AND project.deletedAt IS NULL',
+    )
     .leftJoin(
       EvaluationProjectAssignment,
       'projectAssignment',
@@ -59,7 +82,9 @@ export async function 자기평가_진행_상태를_조회한다(
     )
     .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
     .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-    .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+    .andWhere('evaluation.submittedToManager = :submittedToManager', {
+      submittedToManager: true,
+    })
     .andWhere('evaluation.deletedAt IS NULL')
     .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 카운트
     .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 카운트
@@ -68,8 +93,16 @@ export async function 자기평가_진행_상태를_조회한다(
   // 1차 평가자에게 제출된 WBS 자기평가 수 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
   const submittedToEvaluatorCount = await wbsSelfEvaluationRepository
     .createQueryBuilder('evaluation')
-    .leftJoin(WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
-    .leftJoin(Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
+    .leftJoin(
+      WbsItem,
+      'wbs',
+      'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL',
+    )
+    .leftJoin(
+      Project,
+      'project',
+      'project.id = wbs.projectId AND project.deletedAt IS NULL',
+    )
     .leftJoin(
       EvaluationProjectAssignment,
       'projectAssignment',
@@ -77,7 +110,9 @@ export async function 자기평가_진행_상태를_조회한다(
     )
     .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
     .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-    .andWhere('evaluation.submittedToEvaluator = :submittedToEvaluator', { submittedToEvaluator: true })
+    .andWhere('evaluation.submittedToEvaluator = :submittedToEvaluator', {
+      submittedToEvaluator: true,
+    })
     .andWhere('evaluation.deletedAt IS NULL')
     .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 카운트
     .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 카운트
@@ -90,8 +125,16 @@ export async function 자기평가_진행_상태를_조회한다(
   // 관리자에게 제출된 WBS 자기평가 수 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
   const submittedToManagerCount = await wbsSelfEvaluationRepository
     .createQueryBuilder('evaluation')
-    .leftJoin(WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
-    .leftJoin(Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
+    .leftJoin(
+      WbsItem,
+      'wbs',
+      'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL',
+    )
+    .leftJoin(
+      Project,
+      'project',
+      'project.id = wbs.projectId AND project.deletedAt IS NULL',
+    )
     .leftJoin(
       EvaluationProjectAssignment,
       'projectAssignment',
@@ -99,7 +142,9 @@ export async function 자기평가_진행_상태를_조회한다(
     )
     .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
     .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-    .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+    .andWhere('evaluation.submittedToManager = :submittedToManager', {
+      submittedToManager: true,
+    })
     .andWhere('evaluation.deletedAt IS NULL')
     .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 카운트
     .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 카운트
@@ -254,16 +299,28 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
     // 관리자에게 제출된 WBS 자기평가 목록 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const selfEvaluations = await wbsSelfEvaluationRepository
       .createQueryBuilder('evaluation')
-      .leftJoin(WbsItem, 'wbs', 'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL')
-      .leftJoin(Project, 'project', 'project.id = wbs.projectId AND project.deletedAt IS NULL')
+      .leftJoin(
+        WbsItem,
+        'wbs',
+        'wbs.id = evaluation.wbsItemId AND wbs.deletedAt IS NULL',
+      )
+      .leftJoin(
+        Project,
+        'project',
+        'project.id = wbs.projectId AND project.deletedAt IS NULL',
+      )
       .leftJoin(
         EvaluationProjectAssignment,
         'projectAssignment',
         'projectAssignment.projectId = wbs.projectId AND projectAssignment.periodId = evaluation.periodId AND projectAssignment.employeeId = evaluation.employeeId AND projectAssignment.deletedAt IS NULL',
       )
-      .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
+      .where('evaluation.periodId = :periodId', {
+        periodId: evaluationPeriodId,
+      })
       .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-      .andWhere('evaluation.submittedToManager = :submittedToManager', { submittedToManager: true })
+      .andWhere('evaluation.submittedToManager = :submittedToManager', {
+        submittedToManager: true,
+      })
       .andWhere('evaluation.deletedAt IS NULL')
       .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 조회
       .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회

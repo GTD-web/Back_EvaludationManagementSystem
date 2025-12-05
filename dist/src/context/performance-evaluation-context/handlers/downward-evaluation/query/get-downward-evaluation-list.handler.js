@@ -48,16 +48,6 @@ let GetDownwardEvaluationListHandler = GetDownwardEvaluationListHandler_1 = clas
     }
     async execute(query) {
         const { evaluatorId, evaluateeId, periodId, wbsId, evaluationType, isCompleted, page, limit, } = query;
-        this.logger.log('하향평가 목록 조회 핸들러 실행', {
-            evaluatorId,
-            evaluateeId,
-            periodId,
-            wbsId,
-            evaluationType,
-            isCompleted,
-            page,
-            limit,
-        });
         const queryBuilder = this.downwardEvaluationRepository
             .createQueryBuilder('evaluation')
             .where('evaluation.deletedAt IS NULL');
@@ -99,10 +89,6 @@ let GetDownwardEvaluationListHandler = GetDownwardEvaluationListHandler_1 = clas
             page,
             limit,
         };
-        this.logger.log('하향평가 목록 조회 완료', {
-            total: result.total,
-            count: result.evaluations.length,
-        });
         return result;
     }
 };

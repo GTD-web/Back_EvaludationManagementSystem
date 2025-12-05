@@ -67,8 +67,6 @@ export class RevisionRequestBusinessService {
         responseComment,
         allCompleted,
       });
-
-      this.logger.log('재작성 완료 활동 내역 기록 완료');
     } catch (error) {
       // 활동 내역 기록 실패 시에도 재작성 완료는 정상 처리
       this.logger.warn('재작성 완료 활동 내역 기록 실패', {
@@ -133,8 +131,6 @@ export class RevisionRequestBusinessService {
         responseComment,
         allCompleted,
       });
-
-      this.logger.log('재작성 완료 활동 내역 기록 완료');
     } catch (error) {
       // 활동 내역 기록 실패 시에도 재작성 완료는 정상 처리
       this.logger.warn('재작성 완료 활동 내역 기록 실패', {

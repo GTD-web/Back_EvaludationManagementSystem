@@ -27,13 +27,11 @@ let SecondaryEvaluationStepApprovalService = SecondaryEvaluationStepApprovalServ
         this.secondaryStepApprovalRepository = secondaryStepApprovalRepository;
     }
     async ID로_조회한다(id) {
-        this.logger.log(`2차 평가자별 단계 승인 조회 - ID: ${id}`);
         return await this.secondaryStepApprovalRepository.findOne({
             where: { id, deletedAt: (0, typeorm_2.IsNull)() },
         });
     }
     async 맵핑ID와_평가자ID로_조회한다(mappingId, evaluatorId) {
-        this.logger.log(`2차 평가자별 단계 승인 조회 - 맵핑 ID: ${mappingId}, 평가자 ID: ${evaluatorId}`);
         return await this.secondaryStepApprovalRepository.findOne({
             where: {
                 evaluationPeriodEmployeeMappingId: mappingId,
@@ -52,7 +50,6 @@ let SecondaryEvaluationStepApprovalService = SecondaryEvaluationStepApprovalServ
         });
     }
     async 평가자ID로_조회한다(evaluatorId) {
-        this.logger.log(`2차 평가자별 단계 승인 조회 - 평가자 ID: ${evaluatorId}`);
         return await this.secondaryStepApprovalRepository.find({
             where: {
                 evaluatorId: evaluatorId,

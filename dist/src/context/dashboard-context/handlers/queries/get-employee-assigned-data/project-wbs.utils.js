@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProjectsWithWbs = getProjectsWithWbs;
-const common_1 = require("@nestjs/common");
 const project_entity_1 = require("../../../../../domain/common/project/project.entity");
 const employee_entity_1 = require("../../../../../domain/common/employee/employee.entity");
 const wbs_item_entity_1 = require("../../../../../domain/common/wbs-item/wbs-item.entity");
-const logger = new common_1.Logger('ProjectWbsUtils');
+const logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
 async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, projectAssignmentRepository, wbsAssignmentRepository, wbsItemRepository, criteriaRepository, selfEvaluationRepository, downwardEvaluationRepository, evaluationLineMappingRepository, deliverableRepository, employeeRepository) {
     const projectAssignments = await projectAssignmentRepository
         .createQueryBuilder('assignment')

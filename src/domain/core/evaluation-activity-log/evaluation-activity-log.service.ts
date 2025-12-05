@@ -27,16 +27,8 @@ export class EvaluationActivityLogService {
   async 생성한다(
     data: CreateEvaluationActivityLogData,
   ): Promise<EvaluationActivityLogDto> {
-    this.logger.log('활동 내역 생성 시작', {
-      periodId: data.periodId,
-      employeeId: data.employeeId,
-      activityType: data.activityType,
-    });
-
     const activityLog = new EvaluationActivityLog(data);
     const saved = await this.activityLogRepository.save(activityLog);
-
-    this.logger.log('활동 내역 생성 완료', { id: saved.id });
 
     return saved.DTO로_변환한다();
   }
@@ -66,7 +58,9 @@ export class EvaluationActivityLogService {
     const queryBuilder = this.activityLogRepository
       .createQueryBuilder('log')
       .where('log.periodId = :periodId', { periodId: params.periodId })
-      .andWhere('log.employeeId = :employeeId', { employeeId: params.employeeId })
+      .andWhere('log.employeeId = :employeeId', {
+        employeeId: params.employeeId,
+      })
       .andWhere('log.deletedAt IS NULL');
 
     if (params.activityType) {
@@ -114,4 +108,3 @@ export class EvaluationActivityLogService {
     };
   }
 }
-

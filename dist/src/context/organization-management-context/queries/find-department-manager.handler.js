@@ -39,7 +39,6 @@ let FindDepartmentManagerHandler = FindDepartmentManagerHandler_1 = class FindDe
                 this.logger.warn(`직원을 찾을 수 없습니다: ${employeeId}`);
                 return null;
             }
-            this.logger.debug(`직원 정보 - ID: ${employee.id}, 부서ID: ${employee.departmentId}`);
             if (!employee.departmentId) {
                 this.logger.warn(`직원의 부서가 설정되지 않았습니다: ${employeeId}`);
                 return null;
@@ -49,7 +48,6 @@ let FindDepartmentManagerHandler = FindDepartmentManagerHandler_1 = class FindDe
                 this.logger.warn(`부서를 찾을 수 없습니다: ${employee.departmentId}`);
                 return null;
             }
-            this.logger.debug(`부서 정보 - ID: ${department.id}, 부서장ID: ${department.managerId}, 상위부서ID: ${department.parentDepartmentId}`);
             const managerId = await this.부서장을_찾는다(employeeId, department, 0);
             if (managerId) {
                 this.logger.log(`부서장 찾기 성공 - 직원: ${employeeId}, 부서장: ${managerId}`);

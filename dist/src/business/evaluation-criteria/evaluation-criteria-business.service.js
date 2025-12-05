@@ -27,7 +27,6 @@ let EvaluationCriteriaBusinessService = EvaluationCriteriaBusinessService_1 = cl
         this.activityLogContextService = activityLogContextService;
     }
     async 평가기준을_제출하고_재작성요청을_완료한다(evaluationPeriodId, employeeId, submittedBy) {
-        this.logger.log(`평가기준 제출 및 재작성 요청 완료 처리 시작 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
         const result = await this.evaluationCriteriaManagementService.평가기준을_제출한다(evaluationPeriodId, employeeId, submittedBy);
         try {
             await this.revisionRequestContextService.제출자에게_요청된_재작성요청을_완료처리한다(evaluationPeriodId, employeeId, 'criteria', employeeId, evaluation_revision_request_1.RecipientType.EVALUATEE, '평가기준 제출로 인한 재작성 완료 처리');
@@ -52,7 +51,6 @@ let EvaluationCriteriaBusinessService = EvaluationCriteriaBusinessService_1 = cl
                 error: error.message,
             });
         }
-        this.logger.log(`평가기준 제출 및 재작성 요청 완료 처리 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
         return result;
     }
 };

@@ -33,19 +33,16 @@ let WbsSelfEvaluationService = WbsSelfEvaluationService_1 = class WbsSelfEvaluat
     }
     async 생성한다(createData, manager) {
         return this.executeSafeDomainOperation(async () => {
-            this.logger.log(`WBS 자가평가 생성 시작`);
             this.유효성을_검사한다(createData);
             const repository = this.transactionManager.getRepository(wbs_self_evaluation_entity_1.WbsSelfEvaluation, this.wbsSelfEvaluationRepository, manager);
             await this.중복_검사를_수행한다(createData.periodId, createData.employeeId, createData.wbsItemId, repository);
             const wbsSelfEvaluation = new wbs_self_evaluation_entity_1.WbsSelfEvaluation(createData);
             const saved = await repository.save(wbsSelfEvaluation);
-            this.logger.log(`WBS 자가평가 생성 완료 - ID: ${saved.id}`);
             return saved;
         }, '생성한다');
     }
     async 수정한다(id, updateData, updatedBy, manager) {
         return this.executeSafeDomainOperation(async () => {
-            this.logger.log(`WBS 자가평가 수정 시작 - ID: ${id}`);
             const repository = this.transactionManager.getRepository(wbs_self_evaluation_entity_1.WbsSelfEvaluation, this.wbsSelfEvaluationRepository, manager);
             const wbsSelfEvaluation = await repository.findOne({ where: { id } });
             if (!wbsSelfEvaluation) {
@@ -85,7 +82,6 @@ let WbsSelfEvaluationService = WbsSelfEvaluationService_1 = class WbsSelfEvaluat
                 wbsSelfEvaluation.자가평가를_수정한다(updateData.selfEvaluationContent, updateData.selfEvaluationScore, updateData.performanceResult, updatedBy);
             }
             const saved = await repository.save(wbsSelfEvaluation);
-            this.logger.log(`WBS 자가평가 수정 완료 - ID: ${id}`);
             return saved;
         }, '수정한다');
     }
@@ -145,7 +141,6 @@ let WbsSelfEvaluationService = WbsSelfEvaluationService_1 = class WbsSelfEvaluat
     }
     async 조회한다(id, manager) {
         return this.executeSafeDomainOperation(async () => {
-            this.logger.debug(`WBS 자가평가 조회 - ID: ${id}`);
             const repository = this.transactionManager.getRepository(wbs_self_evaluation_entity_1.WbsSelfEvaluation, this.wbsSelfEvaluationRepository, manager);
             return await repository.findOne({ where: { id } });
         }, '조회한다');

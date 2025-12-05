@@ -872,22 +872,16 @@ export class GetMyEvaluationTargetsStatusHandler
         }
       }
 
-      // 2차 평가자인 경우: 자기평가 + 1차평가 제출 확인
+      // 2차 평가자인 경우: 1차평가 제출 후에만 확인 가능
       if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
-        // 자기평가 확인
-        if (
-          lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
-          lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
-        ) {
-          viewedBySecondaryEvaluator = true;
-        }
-
-        // 1차평가 확인
-        if (
-          lastPrimaryEvaluationSubmitTime?.completedAt &&
-          lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt
-        ) {
-          primaryEvaluationViewed = true;
+        // 1차평가가 제출되었는지 먼저 확인
+        if (lastPrimaryEvaluationSubmitTime?.completedAt) {
+          // 1차평가가 제출된 경우에만 viewed 확인
+          // (2차 평가자는 1차평가 제출 후에만 피평가자 데이터를 볼 수 있음)
+          if (lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
+            viewedBySecondaryEvaluator = true;
+            primaryEvaluationViewed = true;
+          }
         }
       }
     }

@@ -493,13 +493,11 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                 }
             }
             if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
-                if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
-                    lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
-                    viewedBySecondaryEvaluator = true;
-                }
-                if (lastPrimaryEvaluationSubmitTime?.completedAt &&
-                    lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
-                    primaryEvaluationViewed = true;
+                if (lastPrimaryEvaluationSubmitTime?.completedAt) {
+                    if (lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
+                        viewedBySecondaryEvaluator = true;
+                        primaryEvaluationViewed = true;
+                    }
                 }
             }
         }

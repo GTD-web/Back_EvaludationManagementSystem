@@ -16,6 +16,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BulkSubmitDownwardEvaluationsHandler = exports.BulkSubmitDownwardEvaluationsCommand = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const downward_evaluation_entity_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.entity");
@@ -60,8 +61,9 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
     stepApprovalContext;
     evaluationPeriodService;
     employeeService;
+    configService;
     logger = new common_1.Logger(BulkSubmitDownwardEvaluationsHandler_1.name);
-    constructor(downwardEvaluationRepository, evaluationLineMappingRepository, evaluationLineRepository, wbsAssignmentRepository, employeeRepository, downwardEvaluationService, transactionManager, notificationHelper, stepApprovalContext, evaluationPeriodService, employeeService) {
+    constructor(downwardEvaluationRepository, evaluationLineMappingRepository, evaluationLineRepository, wbsAssignmentRepository, employeeRepository, downwardEvaluationService, transactionManager, notificationHelper, stepApprovalContext, evaluationPeriodService, employeeService, configService) {
         this.downwardEvaluationRepository = downwardEvaluationRepository;
         this.evaluationLineMappingRepository = evaluationLineMappingRepository;
         this.evaluationLineRepository = evaluationLineRepository;
@@ -73,6 +75,7 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
         this.stepApprovalContext = stepApprovalContext;
         this.evaluationPeriodService = evaluationPeriodService;
         this.employeeService = employeeService;
+        this.configService = configService;
     }
     async execute(command) {
         const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit } = command;
@@ -290,7 +293,7 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                 content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
                 employeeNumber: secondaryEvaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+                linkUrl: `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
                 metadata: {
                     type: 'downward-evaluation-submitted',
                     evaluationType: 'primary',
@@ -328,6 +331,7 @@ exports.BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHand
         notification_helper_service_1.NotificationHelperService,
         step_approval_context_service_1.StepApprovalContextService,
         evaluation_period_service_1.EvaluationPeriodService,
-        employee_service_1.EmployeeService])
+        employee_service_1.EmployeeService,
+        config_1.ConfigService])
 ], BulkSubmitDownwardEvaluationsHandler);
 //# sourceMappingURL=bulk-submit-downward-evaluations.handler.js.map

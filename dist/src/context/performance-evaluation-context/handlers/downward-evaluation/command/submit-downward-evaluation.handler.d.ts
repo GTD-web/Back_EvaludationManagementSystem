@@ -1,4 +1,5 @@
 import { ICommandHandler } from '@nestjs/cqrs';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { DownwardEvaluationService } from '@domain/core/downward-evaluation/downward-evaluation.service';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
@@ -22,8 +23,9 @@ export declare class SubmitDownwardEvaluationHandler implements ICommandHandler<
     private readonly evaluationPeriodService;
     private readonly stepApprovalContext;
     private readonly employeeService;
+    private readonly configService;
     private readonly logger;
-    constructor(downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, stepApprovalService: EmployeeEvaluationStepApprovalService, notificationHelper: NotificationHelperService, evaluationPeriodService: EvaluationPeriodService, stepApprovalContext: StepApprovalContextService, employeeService: EmployeeService);
+    constructor(downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, stepApprovalService: EmployeeEvaluationStepApprovalService, notificationHelper: NotificationHelperService, evaluationPeriodService: EvaluationPeriodService, stepApprovalContext: StepApprovalContextService, employeeService: EmployeeService, configService: ConfigService);
     execute(command: SubmitDownwardEvaluationCommand): Promise<void>;
     private 이차평가자에게_알림을전송한다;
 }

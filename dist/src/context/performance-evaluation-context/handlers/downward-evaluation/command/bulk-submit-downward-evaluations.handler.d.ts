@@ -1,4 +1,5 @@
 import { ICommandHandler } from '@nestjs/cqrs';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { DownwardEvaluationService } from '@domain/core/downward-evaluation/downward-evaluation.service';
@@ -33,8 +34,9 @@ export declare class BulkSubmitDownwardEvaluationsHandler implements ICommandHan
     private readonly stepApprovalContext;
     private readonly evaluationPeriodService;
     private readonly employeeService;
+    private readonly configService;
     private readonly logger;
-    constructor(downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, employeeRepository: Repository<Employee>, downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService, evaluationPeriodService: EvaluationPeriodService, employeeService: EmployeeService);
+    constructor(downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, employeeRepository: Repository<Employee>, downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService, evaluationPeriodService: EvaluationPeriodService, employeeService: EmployeeService, configService: ConfigService);
     execute(command: BulkSubmitDownwardEvaluationsCommand): Promise<{
         submittedCount: number;
         skippedCount: number;

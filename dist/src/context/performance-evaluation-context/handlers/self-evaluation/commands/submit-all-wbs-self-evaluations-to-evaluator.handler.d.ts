@@ -1,4 +1,5 @@
 import { ICommandHandler } from '@nestjs/cqrs';
+import { ConfigService } from '@nestjs/config';
 import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
@@ -40,8 +41,9 @@ export declare class SubmitAllWbsSelfEvaluationsToEvaluatorHandler implements IC
     private readonly notificationHelper;
     private readonly stepApprovalContext;
     private readonly employeeService;
+    private readonly configService;
     private readonly logger;
-    constructor(wbsSelfEvaluationService: WbsSelfEvaluationService, evaluationPeriodService: EvaluationPeriodService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService, employeeService: EmployeeService);
+    constructor(wbsSelfEvaluationService: WbsSelfEvaluationService, evaluationPeriodService: EvaluationPeriodService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService, employeeService: EmployeeService, configService: ConfigService);
     execute(command: SubmitAllWbsSelfEvaluationsToEvaluatorCommand): Promise<SubmitAllWbsSelfEvaluationsToEvaluatorResponse>;
     private 일차평가자에게_알림을전송한다;
 }

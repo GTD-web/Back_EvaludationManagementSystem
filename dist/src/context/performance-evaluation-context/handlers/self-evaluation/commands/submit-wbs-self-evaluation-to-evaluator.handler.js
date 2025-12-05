@@ -102,7 +102,7 @@ let SubmitWbsSelfEvaluationToEvaluatorHandler = SubmitWbsSelfEvaluationToEvaluat
                 content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
                 employeeNumber: evaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: '/evaluations/downward',
+                linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
                 metadata: {
                     type: 'self-evaluation-submitted',
                     priority: 'medium',

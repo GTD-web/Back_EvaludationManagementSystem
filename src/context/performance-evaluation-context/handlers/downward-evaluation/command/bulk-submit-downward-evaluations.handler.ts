@@ -425,7 +425,7 @@ export class BulkSubmitDownwardEvaluationsHandler
         content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
         employeeNumber: secondaryEvaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
-        linkUrl: '/evaluations/downward',
+        linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
         metadata: {
           type: 'downward-evaluation-submitted',
           evaluationType: 'primary',

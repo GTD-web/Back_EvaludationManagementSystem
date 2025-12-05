@@ -3,6 +3,7 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
   CreateProject,
+  CreateProjectsBulk,
   GetProjectList,
   GetProjectDetail,
   UpdateProject,
@@ -11,6 +12,7 @@ import {
 } from '@interface/common/decorators/project/project-api.decorators';
 import {
   CreateProjectDto,
+  CreateProjectsBulkDto,
   UpdateProjectDto,
   GetProjectListQueryDto,
   GetProjectManagersQueryDto,
@@ -18,6 +20,7 @@ import {
   ProjectListResponseDto,
   ProjectManagerListResponseDto,
   ProjectManagerDto,
+  ProjectsBulkCreateResponseDto,
 } from '@interface/common/dto/project/project.dto';
 import {
   Body,
@@ -83,6 +86,47 @@ export class ProjectManagementController {
       isActive: project.isActive,
       isCompleted: project.isCompleted,
       isCancelled: project.isCancelled,
+    };
+  }
+
+  /**
+   * 프로젝트 일괄 생성
+   * 여러 프로젝트를 한 번에 생성하며, 각 프로젝트별 PM을 개별 설정할 수 있습니다.
+   * 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다.
+   */
+  @CreateProjectsBulk()
+  async createProjectsBulk(
+    @Body() bulkDto: CreateProjectsBulkDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectsBulkCreateResponseDto> {
+    const createdBy = user.id;
+
+    const result = await this.projectService.일괄_생성한다(
+      bulkDto.projects,
+      createdBy,
+    );
+
+    return {
+      success: result.success.map((project) => ({
+        id: project.id,
+        name: project.name,
+        projectCode: project.projectCode,
+        status: project.status,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        managerId: project.managerId,
+        manager: project.manager,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        deletedAt: project.deletedAt,
+        isActive: project.isActive,
+        isCompleted: project.isCompleted,
+        isCancelled: project.isCancelled,
+      })),
+      failed: result.failed,
+      successCount: result.success.length,
+      failedCount: result.failed.length,
+      totalCount: bulkDto.projects.length,
     };
   }
 

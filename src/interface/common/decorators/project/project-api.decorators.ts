@@ -9,10 +9,12 @@ import {
 } from '@nestjs/swagger';
 import {
   CreateProjectDto,
+  CreateProjectsBulkDto,
   UpdateProjectDto,
   ProjectResponseDto,
   ProjectListResponseDto,
   ProjectManagerListResponseDto,
+  ProjectsBulkCreateResponseDto,
 } from '@interface/common/dto/project/project.dto';
 
 /**
@@ -47,6 +49,47 @@ export function CreateProject() {
       status: HttpStatus.CREATED,
       description: '프로젝트가 성공적으로 생성되었습니다.',
       type: ProjectResponseDto,
+    }),
+    ApiResponse({
+      status: HttpStatus.BAD_REQUEST,
+      description: '잘못된 요청 데이터입니다.',
+    }),
+  );
+}
+
+/**
+ * 프로젝트 일괄 생성 API 데코레이터
+ */
+export function CreateProjectsBulk() {
+  return applyDecorators(
+    Post('bulk'),
+    HttpCode(HttpStatus.CREATED),
+    ApiOperation({
+      summary: '프로젝트 일괄 생성',
+      description: `여러 프로젝트를 한 번에 생성합니다.
+
+**동작:**
+- 여러 프로젝트를 배열로 받아 일괄 생성합니다
+- 각 프로젝트별로 PM을 개별 설정할 수 있습니다
+- 프로젝트 코드 중복을 사전 검사합니다
+- 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다
+- 성공/실패 항목을 구분하여 응답합니다
+- 생성자 정보를 자동으로 기록합니다
+
+**테스트 케이스:**
+- 전체 성공: 모든 프로젝트가 정상적으로 생성됨
+- 부분 성공: 일부 프로젝트만 생성 성공하고 나머지는 실패
+- PM 포함 생성: 각 프로젝트별로 다른 PM 지정
+- 프로젝트 코드 중복: 중복된 코드가 있는 프로젝트는 실패 처리
+- 빈 배열: 프로젝트 배열이 비어있는 경우
+- 필수 필드 누락: 일부 프로젝트의 필수 필드 누락 시 해당 항목만 실패
+- 잘못된 데이터: 유효하지 않은 데이터가 있는 경우 해당 항목만 실패`,
+    }),
+    ApiBody({ type: CreateProjectsBulkDto }),
+    ApiResponse({
+      status: HttpStatus.CREATED,
+      description: '프로젝트 일괄 생성 완료 (일부 실패 가능)',
+      type: ProjectsBulkCreateResponseDto,
     }),
     ApiResponse({
       status: HttpStatus.BAD_REQUEST,

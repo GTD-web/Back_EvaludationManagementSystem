@@ -44,6 +44,56 @@ let ProjectService = class ProjectService {
         }
         return result;
     }
+    async 일괄_생성한다(dataList, createdBy) {
+        const success = [];
+        const failed = [];
+        const projectCodes = dataList
+            .map((data) => data.projectCode)
+            .filter((code) => !!code);
+        if (projectCodes.length > 0) {
+            const existingProjects = await this.projectRepository.find({
+                where: projectCodes.map((code) => ({
+                    projectCode: code,
+                    deletedAt: (0, typeorm_2.IsNull)(),
+                })),
+            });
+            const existingCodes = new Set(existingProjects.map((p) => p.projectCode));
+            for (let i = 0; i < dataList.length; i++) {
+                if (dataList[i].projectCode &&
+                    existingCodes.has(dataList[i].projectCode)) {
+                    failed.push({
+                        index: i,
+                        data: dataList[i],
+                        error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
+                    });
+                }
+            }
+        }
+        const failedIndices = new Set(failed.map((f) => f.index));
+        for (let i = 0; i < dataList.length; i++) {
+            if (failedIndices.has(i)) {
+                continue;
+            }
+            try {
+                const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
+                const savedProject = await this.projectRepository.save(project);
+                const result = await this.ID로_조회한다(savedProject.id);
+                if (result) {
+                    success.push(result);
+                }
+            }
+            catch (error) {
+                failed.push({
+                    index: i,
+                    data: dataList[i],
+                    error: error instanceof Error
+                        ? error.message
+                        : '프로젝트 생성 중 오류가 발생했습니다.',
+                });
+            }
+        }
+        return { success, failed };
+    }
     async 수정한다(id, data, updatedBy) {
         const project = await this.projectRepository.findOne({
             where: { id, deletedAt: (0, typeorm_2.IsNull)() },

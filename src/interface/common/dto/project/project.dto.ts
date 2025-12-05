@@ -10,6 +10,7 @@ import {
   Matches,
   IsArray,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { DateToUTC, OptionalDateToUTC } from '@interface/common/decorators';
@@ -36,8 +37,9 @@ export class CreateProjectDto {
   projectCode?: string;
 
   @ApiProperty({
-    description: '프로젝트 상태',
+    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
     enum: ProjectStatus,
+    enumName: 'ProjectStatus',
     example: ProjectStatus.ACTIVE,
   })
   @IsNotEmpty()
@@ -74,6 +76,38 @@ export class CreateProjectDto {
 }
 
 /**
+ * 프로젝트 일괄 생성 DTO
+ */
+export class CreateProjectsBulkDto {
+  @ApiProperty({
+    description: '생성할 프로젝트 목록',
+    type: [CreateProjectDto],
+    example: [
+      {
+        name: 'EMS 프로젝트',
+        projectCode: 'EMS-2024',
+        status: 'ACTIVE',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        managerId: '550e8400-e29b-41d4-a716-446655440000',
+      },
+      {
+        name: 'HRM 프로젝트',
+        projectCode: 'HRM-2024',
+        status: 'COMPLETED',
+        startDate: '2024-02-01',
+        endDate: '2024-11-30',
+        managerId: '550e8400-e29b-41d4-a716-446655440001',
+      },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProjectDto)
+  projects: CreateProjectDto[];
+}
+
+/**
  * 프로젝트 수정 DTO
  */
 export class UpdateProjectDto {
@@ -94,8 +128,9 @@ export class UpdateProjectDto {
   projectCode?: string;
 
   @ApiPropertyOptional({
-    description: '프로젝트 상태',
+    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
     enum: ProjectStatus,
+    enumName: 'ProjectStatus',
     example: ProjectStatus.ACTIVE,
   })
   @IsOptional()
@@ -180,8 +215,9 @@ export class GetProjectListQueryDto {
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 
   @ApiPropertyOptional({
-    description: '프로젝트 상태 필터',
+    description: '프로젝트 상태 필터 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
     enum: ProjectStatus,
+    enumName: 'ProjectStatus',
     example: ProjectStatus.ACTIVE,
   })
   @IsOptional()
@@ -299,8 +335,9 @@ export class ProjectResponseDto {
   projectCode?: string;
 
   @ApiProperty({
-    description: '프로젝트 상태',
+    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
     enum: ProjectStatus,
+    enumName: 'ProjectStatus',
     example: ProjectStatus.ACTIVE,
   })
   status: ProjectStatus;
@@ -504,4 +541,62 @@ export class ProjectManagerListResponseDto {
     example: 15,
   })
   total: number;
+}
+
+/**
+ * 프로젝트 일괄 생성 실패 항목 DTO
+ */
+export class BulkCreateFailedItemDto {
+  @ApiProperty({
+    description: '실패한 항목의 인덱스 (0부터 시작)',
+    example: 0,
+  })
+  index: number;
+
+  @ApiProperty({
+    description: '실패한 프로젝트 데이터',
+    type: CreateProjectDto,
+  })
+  data: CreateProjectDto;
+
+  @ApiProperty({
+    description: '실패 사유',
+    example: '프로젝트 코드 EMS-2024는 이미 사용 중입니다.',
+  })
+  error: string;
+}
+
+/**
+ * 프로젝트 일괄 생성 응답 DTO
+ */
+export class ProjectsBulkCreateResponseDto {
+  @ApiProperty({
+    description: '성공적으로 생성된 프로젝트 목록',
+    type: [ProjectResponseDto],
+  })
+  success: ProjectResponseDto[];
+
+  @ApiProperty({
+    description: '생성에 실패한 프로젝트 목록',
+    type: [BulkCreateFailedItemDto],
+  })
+  failed: BulkCreateFailedItemDto[];
+
+  @ApiProperty({
+    description: '성공한 항목 수',
+    example: 5,
+  })
+  successCount: number;
+
+  @ApiProperty({
+    description: '실패한 항목 수',
+    example: 2,
+  })
+  failedCount: number;
+
+  @ApiProperty({
+    description: '전체 항목 수',
+    example: 7,
+  })
+  totalCount: number;
 }

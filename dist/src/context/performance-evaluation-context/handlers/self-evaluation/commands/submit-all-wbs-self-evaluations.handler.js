@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = exports.SubmitAllWbsSelfEvaluationsByEmployeePeriodCommand = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const wbs_self_evaluation_service_1 = require("../../../../../domain/core/wbs-self-evaluation/wbs-self-evaluation.service");
 const transaction_manager_service_1 = require("../../../../../../libs/database/transaction-manager.service");
 const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
@@ -37,14 +38,16 @@ let SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = SubmitAllWbsSelfEvaluat
     notificationHelper;
     stepApprovalContext;
     employeeService;
+    configService;
     logger = new common_1.Logger(SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler_1.name);
-    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager, notificationHelper, stepApprovalContext, employeeService) {
+    constructor(wbsSelfEvaluationService, evaluationPeriodService, transactionManager, notificationHelper, stepApprovalContext, employeeService, configService) {
         this.wbsSelfEvaluationService = wbsSelfEvaluationService;
         this.evaluationPeriodService = evaluationPeriodService;
         this.transactionManager = transactionManager;
         this.notificationHelper = notificationHelper;
         this.stepApprovalContext = stepApprovalContext;
         this.employeeService = employeeService;
+        this.configService = configService;
     }
     async execute(command) {
         const { employeeId, periodId, submittedBy } = command;
@@ -168,7 +171,7 @@ let SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = SubmitAllWbsSelfEvaluat
                 content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
                 employeeNumber: evaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+                linkUrl: `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
                 metadata: {
                     type: 'self-evaluation-submitted',
                     priority: 'medium',
@@ -194,6 +197,7 @@ exports.SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = SubmitAllWbsSelfEva
         transaction_manager_service_1.TransactionManagerService,
         notification_helper_service_1.NotificationHelperService,
         step_approval_context_service_1.StepApprovalContextService,
-        employee_service_1.EmployeeService])
+        employee_service_1.EmployeeService,
+        config_1.ConfigService])
 ], SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler);
 //# sourceMappingURL=submit-all-wbs-self-evaluations.handler.js.map

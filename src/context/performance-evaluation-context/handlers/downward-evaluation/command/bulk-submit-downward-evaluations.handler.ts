@@ -1,5 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
@@ -58,6 +59,7 @@ export class BulkSubmitDownwardEvaluationsHandler
     private readonly stepApprovalContext: StepApprovalContextService,
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly employeeService: EmployeeService,
+    private readonly configService: ConfigService,
   ) {}
 
   async execute(
@@ -425,7 +427,7 @@ export class BulkSubmitDownwardEvaluationsHandler
         content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
         employeeNumber: secondaryEvaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
-        linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+        linkUrl: `${this.configService.get<string>('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
         metadata: {
           type: 'downward-evaluation-submitted',
           evaluationType: 'primary',

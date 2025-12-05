@@ -16,6 +16,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmitDownwardEvaluationHandler = exports.SubmitDownwardEvaluationCommand = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const downward_evaluation_service_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.service");
@@ -46,8 +47,9 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
     evaluationPeriodService;
     stepApprovalContext;
     employeeService;
+    configService;
     logger = new common_1.Logger(SubmitDownwardEvaluationHandler_1.name);
-    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService, notificationHelper, evaluationPeriodService, stepApprovalContext, employeeService) {
+    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService, notificationHelper, evaluationPeriodService, stepApprovalContext, employeeService, configService) {
         this.downwardEvaluationService = downwardEvaluationService;
         this.transactionManager = transactionManager;
         this.mappingRepository = mappingRepository;
@@ -56,6 +58,7 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
         this.evaluationPeriodService = evaluationPeriodService;
         this.stepApprovalContext = stepApprovalContext;
         this.employeeService = employeeService;
+        this.configService = configService;
     }
     async execute(command) {
         const { evaluationId, submittedBy } = command;
@@ -131,7 +134,7 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
                 content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
                 employeeNumber: secondaryEvaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+                linkUrl: `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
                 metadata: {
                     type: 'downward-evaluation-submitted',
                     evaluationType: 'primary',
@@ -162,6 +165,7 @@ exports.SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler = Subm
         notification_1.NotificationHelperService,
         evaluation_period_service_1.EvaluationPeriodService,
         step_approval_context_service_1.StepApprovalContextService,
-        employee_service_1.EmployeeService])
+        employee_service_1.EmployeeService,
+        config_1.ConfigService])
 ], SubmitDownwardEvaluationHandler);
 //# sourceMappingURL=submit-downward-evaluation.handler.js.map

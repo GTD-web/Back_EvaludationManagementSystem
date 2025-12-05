@@ -1,5 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
@@ -77,6 +78,7 @@ export class SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler
     private readonly notificationHelper: NotificationHelperService,
     private readonly stepApprovalContext: StepApprovalContextService,
     private readonly employeeService: EmployeeService,
+    private readonly configService: ConfigService,
   ) {}
 
   async execute(
@@ -281,7 +283,7 @@ export class SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler
         content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
         employeeNumber: evaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
-        linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+        linkUrl: `${this.configService.get<string>('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
         metadata: {
           type: 'self-evaluation-submitted',
           priority: 'medium',

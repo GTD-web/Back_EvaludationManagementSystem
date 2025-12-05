@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
@@ -42,6 +43,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
     private readonly notificationHelper: NotificationHelperService,
     private readonly stepApprovalContext: StepApprovalContextService,
     private readonly employeeService: EmployeeService,
+    private readonly configService: ConfigService,
   ) {}
 
   async execute(
@@ -49,10 +51,9 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
   ): Promise<WbsSelfEvaluationDto> {
     const { evaluationId, submittedBy } = command;
 
-    this.logger.log(
-      'WBS 자기평가 제출 핸들러 실행 (피평가자 → 1차 평가자)',
-      { evaluationId },
-    );
+    this.logger.log('WBS 자기평가 제출 핸들러 실행 (피평가자 → 1차 평가자)', {
+      evaluationId,
+    });
 
     return await this.transactionManager.executeTransaction(async () => {
       // 자기평가 조회
@@ -75,8 +76,9 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
       }
 
       // 평가기간 조회 및 점수 범위 확인
-      const evaluationPeriod =
-        await this.evaluationPeriodService.ID로_조회한다(evaluation.periodId);
+      const evaluationPeriod = await this.evaluationPeriodService.ID로_조회한다(
+        evaluation.periodId,
+      );
       if (!evaluationPeriod) {
         throw new BadRequestException(
           `평가기간을 찾을 수 없습니다. (periodId: ${evaluation.periodId})`,
@@ -118,10 +120,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         updatedEvaluation.periodId,
         evaluationPeriod.name,
       ).catch((error) => {
-        this.logger.error(
-          '1차 평가자 알림 전송 실패 (무시됨)',
-          error.stack,
-        );
+        this.logger.error('1차 평가자 알림 전송 실패 (무시됨)', error.stack);
       });
 
       return updatedEvaluation.DTO로_변환한다();
@@ -161,7 +160,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
 
       // 1차 평가자의 직원 번호 조회
       const evaluator = await this.employeeService.findById(evaluatorId);
-      
+
       if (!evaluator) {
         this.logger.warn(
           `1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. evaluatorId=${evaluatorId}`,
@@ -176,7 +175,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
         employeeNumber: evaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
-        linkUrl: `/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+        linkUrl: `${this.configService.get<string>('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
         metadata: {
           type: 'self-evaluation-submitted',
           priority: 'medium',
@@ -190,19 +189,8 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         `1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 피평가자=${employee.name}, 평가자=${evaluatorId}, 직원번호=${evaluator.employeeNumber}`,
       );
     } catch (error) {
-      this.logger.error(
-        '1차 평가자 알림 전송 중 오류 발생',
-        error.stack,
-      );
+      this.logger.error('1차 평가자 알림 전송 중 오류 발생', error.stack);
       throw error;
     }
   }
 }
-
-
-
-
-
-
-
-

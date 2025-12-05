@@ -149,28 +149,29 @@ describe('알림 흐름 통합 테스트 (e2e)', () => {
     });
   });
 
-  describe('Portal 알림 전송 시 deviceType 필터링', () => {
-    it('[STEP 5] Portal 알림 전송 시 deviceType에 portal이 포함된 토큰만 사용되어야 한다', async () => {
-      // Given: Portal 사용자 정보 (환경변수 MAIL_NOTIFICATION_SSO에서 가져옴)
-      const portalEmployeeNumber = process.env.MAIL_NOTIFICATION_SSO || 'E999999';
+  describe('알림 전송 시 deviceType 필터링', () => {
+    it('[STEP 5] 알림 전송 시 deviceType에 portal이 포함된 토큰만 사용되어야 한다', async () => {
+      // Given: 테스트용 직원 번호
+      const testEmployeeNumber = 'E999999';
       
-      console.log('📧 Portal 사용자 사번:', portalEmployeeNumber);
+      console.log('📧 테스트 직원 번호:', testEmployeeNumber);
       console.log('🔍 FCM 토큰 조회 테스트 시작...');
+      console.log('ℹ️  MAIL_NOTIFICATION_SSO 환경변수는 더 이상 사용되지 않습니다.');
 
       // When: SSO에서 FCM 토큰 조회 (직접 호출 테스트)
-      // 실제 API를 통해 Portal 알림 전송을 트리거
+      // 실제 API를 통해 알림 전송을 트리거
       const evaluationId = 'test-evaluation-id';
       
-      console.log('🔔 자기평가 제출하여 Portal 알림 전송 트리거...');
+      console.log('🔔 자기평가 제출하여 알림 전송 트리거...');
       await request(app.getHttpServer())
         .patch(`/api/wbs-self-evaluations/${evaluationId}/submit-to-evaluator`)
         .send({})
         .expect((res) => {
-          console.log('📥 Portal 알림 전송 응답:', res.status);
+          console.log('📥 알림 전송 응답:', res.status);
         });
 
       // Then: 로그를 확인하여 deviceType 필터링이 올바르게 작동하는지 검증
-      console.log('✅ Portal 알림 전송 완료');
+      console.log('✅ 알림 전송 완료');
       console.log('📝 로그에서 다음을 확인하세요:');
       console.log('   1. SSO에서 FCM 토큰 조회');
       console.log('   2. deviceType에 "portal"이 포함된 토큰만 필터링');

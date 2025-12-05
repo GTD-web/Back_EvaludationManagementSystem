@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var EvaluationRevisionRequestService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluationRevisionRequestService = void 0;
 const common_1 = require("@nestjs/common");
@@ -20,10 +19,10 @@ const typeorm_2 = require("typeorm");
 const evaluation_revision_request_entity_1 = require("./evaluation-revision-request.entity");
 const evaluation_revision_request_recipient_entity_1 = require("./evaluation-revision-request-recipient.entity");
 const evaluation_revision_request_exceptions_1 = require("./evaluation-revision-request.exceptions");
-let EvaluationRevisionRequestService = EvaluationRevisionRequestService_1 = class EvaluationRevisionRequestService {
+let EvaluationRevisionRequestService = class EvaluationRevisionRequestService {
     revisionRequestRepository;
     recipientRepository;
-    logger = new common_1.Logger(EvaluationRevisionRequestService_1.name);
+    logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
     constructor(revisionRequestRepository, recipientRepository) {
         this.revisionRequestRepository = revisionRequestRepository;
         this.recipientRepository = recipientRepository;
@@ -160,7 +159,7 @@ let EvaluationRevisionRequestService = EvaluationRevisionRequestService_1 = clas
     }
 };
 exports.EvaluationRevisionRequestService = EvaluationRevisionRequestService;
-exports.EvaluationRevisionRequestService = EvaluationRevisionRequestService = EvaluationRevisionRequestService_1 = __decorate([
+exports.EvaluationRevisionRequestService = EvaluationRevisionRequestService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(evaluation_revision_request_entity_1.EvaluationRevisionRequest)),
     __param(1, (0, typeorm_1.InjectRepository)(evaluation_revision_request_recipient_entity_1.EvaluationRevisionRequestRecipient)),

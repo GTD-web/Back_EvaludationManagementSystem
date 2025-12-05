@@ -56,17 +56,6 @@ export class GetDownwardEvaluationListHandler
       limit,
     } = query;
 
-    this.logger.log('하향평가 목록 조회 핸들러 실행', {
-      evaluatorId,
-      evaluateeId,
-      periodId,
-      wbsId,
-      evaluationType,
-      isCompleted,
-      page,
-      limit,
-    });
-
     // 하향평가 목록 조회
     const queryBuilder = this.downwardEvaluationRepository
       .createQueryBuilder('evaluation')
@@ -121,11 +110,6 @@ export class GetDownwardEvaluationListHandler
       page,
       limit,
     };
-
-    this.logger.log('하향평가 목록 조회 완료', {
-      total: result.total,
-      count: result.evaluations.length,
-    });
 
     return result;
   }

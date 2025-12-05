@@ -128,14 +128,16 @@ export class WbsSelfEvaluationBusinessService {
 
     // 3. 활동 내역 기록
     try {
-      await this.activityLogContextService.단계승인_상태변경_활동내역을_기록한다({
-        evaluationPeriodId,
-        employeeId,
-        step: 'self',
-        status: 'revision_requested' as StepApprovalStatus,
-        revisionComment,
-        updatedBy: requestedBy,
-      });
+      await this.activityLogContextService.단계승인_상태변경_활동내역을_기록한다(
+        {
+          evaluationPeriodId,
+          employeeId,
+          step: 'self',
+          status: 'revision_requested' as StepApprovalStatus,
+          revisionComment,
+          updatedBy: requestedBy,
+        },
+      );
     } catch (error) {
       // 활동 내역 기록 실패 시에도 단계 승인은 정상 처리
       this.logger.warn('단계 승인 상태 변경 활동 내역 기록 실패', {
@@ -157,10 +159,6 @@ export class WbsSelfEvaluationBusinessService {
     periodId: string,
     submittedBy: string,
   ): Promise<SubmitAllWbsSelfEvaluationsToEvaluatorResponse> {
-    this.logger.log(
-      `직원의 전체 WBS 자기평가를 1차 평가자에게 제출 시작 - 직원: ${employeeId}, 평가기간: ${periodId}`,
-    );
-
     // 1. 자기평가 제출
     const result =
       await this.performanceEvaluationService.직원의_전체_자기평가를_1차평가자에게_제출한다(
@@ -189,10 +187,6 @@ export class WbsSelfEvaluationBusinessService {
       });
     }
 
-    this.logger.log(
-      `직원의 전체 WBS 자기평가를 1차 평가자에게 제출 완료 - 직원: ${employeeId}, 평가기간: ${periodId}`,
-    );
-
     return result;
   }
 
@@ -205,10 +199,6 @@ export class WbsSelfEvaluationBusinessService {
     periodId: string,
     resetBy: string,
   ): Promise<ResetAllWbsSelfEvaluationsToEvaluatorResponse> {
-    this.logger.log(
-      `직원의 전체 WBS 자기평가를 1차 평가자 제출 취소 시작 - 직원: ${employeeId}, 평가기간: ${periodId}`,
-    );
-
     // 1. 자기평가 제출 취소
     const result =
       await this.performanceEvaluationService.직원의_전체_자기평가를_1차평가자_제출_취소한다(
@@ -236,10 +226,6 @@ export class WbsSelfEvaluationBusinessService {
         error: error.message,
       });
     }
-
-    this.logger.log(
-      `직원의 전체 WBS 자기평가를 1차 평가자 제출 취소 완료 - 직원: ${employeeId}, 평가기간: ${periodId}`,
-    );
 
     return result;
   }

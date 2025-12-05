@@ -27,6 +27,10 @@ const evaluation_line_entity_1 = require("../../../../../domain/core/evaluation-
 const evaluation_line_types_1 = require("../../../../../domain/core/evaluation-line/evaluation-line.types");
 const evaluation_wbs_assignment_entity_1 = require("../../../../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity");
 const employee_entity_1 = require("../../../../../domain/common/employee/employee.entity");
+const notification_helper_service_1 = require("../../../../../domain/common/notification/notification-helper.service");
+const step_approval_context_service_1 = require("../../../../step-approval-context/step-approval-context.service");
+const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
+const employee_service_1 = require("../../../../../domain/common/employee/employee.service");
 class BulkSubmitDownwardEvaluationsCommand {
     evaluatorId;
     evaluateeId;
@@ -52,8 +56,12 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
     employeeRepository;
     downwardEvaluationService;
     transactionManager;
+    notificationHelper;
+    stepApprovalContext;
+    evaluationPeriodService;
+    employeeService;
     logger = new common_1.Logger(BulkSubmitDownwardEvaluationsHandler_1.name);
-    constructor(downwardEvaluationRepository, evaluationLineMappingRepository, evaluationLineRepository, wbsAssignmentRepository, employeeRepository, downwardEvaluationService, transactionManager) {
+    constructor(downwardEvaluationRepository, evaluationLineMappingRepository, evaluationLineRepository, wbsAssignmentRepository, employeeRepository, downwardEvaluationService, transactionManager, notificationHelper, stepApprovalContext, evaluationPeriodService, employeeService) {
         this.downwardEvaluationRepository = downwardEvaluationRepository;
         this.evaluationLineMappingRepository = evaluationLineMappingRepository;
         this.evaluationLineRepository = evaluationLineRepository;
@@ -61,6 +69,10 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
         this.employeeRepository = employeeRepository;
         this.downwardEvaluationService = downwardEvaluationService;
         this.transactionManager = transactionManager;
+        this.notificationHelper = notificationHelper;
+        this.stepApprovalContext = stepApprovalContext;
+        this.evaluationPeriodService = evaluationPeriodService;
+        this.employeeService = employeeService;
     }
     async execute(command) {
         const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit } = command;
@@ -137,6 +149,11 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                 totalCount: evaluations.length,
                 ...result,
             });
+            if (evaluationType === 'primary' && submittedIds.length > 0) {
+                this.이차평가자에게_알림을전송한다(evaluateeId, periodId, submittedIds, evaluatorId).catch((error) => {
+                    this.logger.error('1차 하향평가 일괄 제출 알림 전송 실패 (무시됨)', error.stack);
+                });
+            }
             return result;
         });
     }
@@ -234,6 +251,63 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
         }
         this.logger.log(`할당된 WBS에 대한 하향평가 생성 완료 - 평가자: ${evaluatorId}, 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}`);
     }
+    async 이차평가자에게_알림을전송한다(employeeId, periodId, submittedEvaluationIds, primaryEvaluatorId) {
+        try {
+            const evaluationPeriod = await this.evaluationPeriodService.ID로_조회한다(periodId);
+            if (!evaluationPeriod) {
+                this.logger.warn(`평가기간을 찾을 수 없어 알림을 전송하지 않습니다. periodId=${periodId}`);
+                return;
+            }
+            const primaryEvaluator = await this.employeeService.findById(primaryEvaluatorId);
+            if (!primaryEvaluator) {
+                this.logger.warn(`1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. primaryEvaluatorId=${primaryEvaluatorId}`);
+                return;
+            }
+            if (submittedEvaluationIds.length === 0) {
+                this.logger.warn('제출된 평가가 없어 알림을 전송하지 않습니다.');
+                return;
+            }
+            const firstEvaluation = await this.downwardEvaluationRepository.findOne({
+                where: { id: submittedEvaluationIds[0], deletedAt: (0, typeorm_2.IsNull)() },
+            });
+            if (!firstEvaluation) {
+                this.logger.warn(`평가를 찾을 수 없어 알림을 전송하지 않습니다. evaluationId=${submittedEvaluationIds[0]}`);
+                return;
+            }
+            const secondaryEvaluatorId = await this.stepApprovalContext.이차평가자를_조회한다(periodId, employeeId, firstEvaluation.wbsId);
+            if (!secondaryEvaluatorId) {
+                this.logger.warn(`2차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}, wbsId=${firstEvaluation.wbsId}`);
+                return;
+            }
+            const secondaryEvaluator = await this.employeeService.findById(secondaryEvaluatorId);
+            if (!secondaryEvaluator) {
+                this.logger.warn(`2차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. secondaryEvaluatorId=${secondaryEvaluatorId}`);
+                return;
+            }
+            await this.notificationHelper.직원에게_알림을_전송한다({
+                sender: 'system',
+                title: '1차 하향평가 제출 알림',
+                content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
+                employeeNumber: secondaryEvaluator.employeeNumber,
+                sourceSystem: 'EMS',
+                linkUrl: '/evaluations/downward',
+                metadata: {
+                    type: 'downward-evaluation-submitted',
+                    evaluationType: 'primary',
+                    priority: 'medium',
+                    employeeId,
+                    periodId,
+                    submittedCount: submittedEvaluationIds.length,
+                    primaryEvaluatorName: primaryEvaluator.name,
+                },
+            });
+            this.logger.log(`2차 평가자에게 1차 하향평가 일괄 제출 알림 전송 완료: 1차 평가자=${primaryEvaluator.name}, 2차 평가자=${secondaryEvaluatorId}, 직원번호=${secondaryEvaluator.employeeNumber}, 제출된 평가 수=${submittedEvaluationIds.length}`);
+        }
+        catch (error) {
+            this.logger.error('2차 평가자 알림 전송 중 오류 발생', error.stack);
+            throw error;
+        }
+    }
 };
 exports.BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler;
 exports.BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_1 = __decorate([
@@ -250,6 +324,10 @@ exports.BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHand
         typeorm_2.Repository,
         typeorm_2.Repository,
         downward_evaluation_service_1.DownwardEvaluationService,
-        transaction_manager_service_1.TransactionManagerService])
+        transaction_manager_service_1.TransactionManagerService,
+        notification_helper_service_1.NotificationHelperService,
+        step_approval_context_service_1.StepApprovalContextService,
+        evaluation_period_service_1.EvaluationPeriodService,
+        employee_service_1.EmployeeService])
 ], BulkSubmitDownwardEvaluationsHandler);
 //# sourceMappingURL=bulk-submit-downward-evaluations.handler.js.map

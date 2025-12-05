@@ -46,7 +46,9 @@ export class GetEmployeeAssignedDataHandler
   implements
     IQueryHandler<GetEmployeeAssignedDataQuery, EmployeeAssignedDataResult>
 {
-  private readonly logger = new Logger(GetEmployeeAssignedDataHandler.name);
+  // 임시로 로거 비활성화 (디버깅용)
+  // private readonly logger = new Logger(GetEmployeeAssignedDataHandler.name);
+  private readonly logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
   constructor(
     @InjectRepository(EvaluationPeriod)

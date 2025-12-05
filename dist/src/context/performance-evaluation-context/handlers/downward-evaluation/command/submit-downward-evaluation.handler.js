@@ -27,6 +27,7 @@ const employee_evaluation_step_approval_types_1 = require("../../../../../domain
 const notification_1 = require("../../../../../domain/common/notification");
 const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
 const step_approval_context_service_1 = require("../../../../step-approval-context/step-approval-context.service");
+const employee_service_1 = require("../../../../../domain/common/employee/employee.service");
 class SubmitDownwardEvaluationCommand {
     evaluationId;
     submittedBy;
@@ -44,8 +45,9 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
     notificationHelper;
     evaluationPeriodService;
     stepApprovalContext;
+    employeeService;
     logger = new common_1.Logger(SubmitDownwardEvaluationHandler_1.name);
-    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService, notificationHelper, evaluationPeriodService, stepApprovalContext) {
+    constructor(downwardEvaluationService, transactionManager, mappingRepository, stepApprovalService, notificationHelper, evaluationPeriodService, stepApprovalContext, employeeService) {
         this.downwardEvaluationService = downwardEvaluationService;
         this.transactionManager = transactionManager;
         this.mappingRepository = mappingRepository;
@@ -53,6 +55,7 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
         this.notificationHelper = notificationHelper;
         this.evaluationPeriodService = evaluationPeriodService;
         this.stepApprovalContext = stepApprovalContext;
+        this.employeeService = employeeService;
     }
     async execute(command) {
         const { evaluationId, submittedBy } = command;
@@ -93,30 +96,40 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
                 this.logger.debug(`단계 승인 상태를 pending으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`);
             }
             if (evaluation.evaluationType === 'primary') {
-                this.이차평가자에게_알림을전송한다(evaluation.employeeId, evaluation.periodId, evaluation.wbsId).catch((error) => {
+                this.이차평가자에게_알림을전송한다(evaluation.employeeId, evaluation.periodId, evaluation.wbsId, evaluation.evaluatorId).catch((error) => {
                     this.logger.error('2차 평가자 알림 전송 실패 (무시됨)', error.stack);
                 });
             }
             this.logger.log('하향평가 제출 완료', { evaluationId });
         });
     }
-    async 이차평가자에게_알림을전송한다(employeeId, periodId, wbsId) {
+    async 이차평가자에게_알림을전송한다(employeeId, periodId, wbsId, primaryEvaluatorId) {
         try {
             const evaluationPeriod = await this.evaluationPeriodService.ID로_조회한다(periodId);
             if (!evaluationPeriod) {
                 this.logger.warn(`평가기간을 찾을 수 없어 알림을 전송하지 않습니다. periodId=${periodId}`);
                 return;
             }
-            const evaluatorId = await this.stepApprovalContext.이차평가자를_조회한다(periodId, employeeId, wbsId);
-            if (!evaluatorId) {
+            const primaryEvaluator = await this.employeeService.findById(primaryEvaluatorId);
+            if (!primaryEvaluator) {
+                this.logger.warn(`1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. primaryEvaluatorId=${primaryEvaluatorId}`);
+                return;
+            }
+            const secondaryEvaluatorId = await this.stepApprovalContext.이차평가자를_조회한다(periodId, employeeId, wbsId);
+            if (!secondaryEvaluatorId) {
                 this.logger.warn(`2차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}, wbsId=${wbsId}`);
+                return;
+            }
+            const secondaryEvaluator = await this.employeeService.findById(secondaryEvaluatorId);
+            if (!secondaryEvaluator) {
+                this.logger.warn(`2차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. secondaryEvaluatorId=${secondaryEvaluatorId}`);
                 return;
             }
             await this.notificationHelper.직원에게_알림을_전송한다({
                 sender: 'system',
                 title: '1차 하향평가 제출 알림',
-                content: `${evaluationPeriod.name} 평가기간의 1차 하향평가가 제출되었습니다.`,
-                employeeNumber: evaluatorId,
+                content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
+                employeeNumber: secondaryEvaluator.employeeNumber,
                 sourceSystem: 'EMS',
                 linkUrl: '/evaluations/downward',
                 metadata: {
@@ -126,9 +139,10 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
                     employeeId,
                     periodId,
                     wbsId,
+                    primaryEvaluatorName: primaryEvaluator.name,
                 },
             });
-            this.logger.log(`2차 평가자에게 1차 하향평가 제출 알림 전송 완료: 평가자=${evaluatorId}`);
+            this.logger.log(`2차 평가자에게 1차 하향평가 제출 알림 전송 완료: 1차 평가자=${primaryEvaluator.name}, 2차 평가자=${secondaryEvaluatorId}, 직원번호=${secondaryEvaluator.employeeNumber}`);
         }
         catch (error) {
             this.logger.error('2차 평가자 알림 전송 중 오류 발생', error.stack);
@@ -147,6 +161,7 @@ exports.SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler = Subm
         employee_evaluation_step_approval_service_1.EmployeeEvaluationStepApprovalService,
         notification_1.NotificationHelperService,
         evaluation_period_service_1.EvaluationPeriodService,
-        step_approval_context_service_1.StepApprovalContextService])
+        step_approval_context_service_1.StepApprovalContextService,
+        employee_service_1.EmployeeService])
 ], SubmitDownwardEvaluationHandler);
 //# sourceMappingURL=submit-downward-evaluation.handler.js.map

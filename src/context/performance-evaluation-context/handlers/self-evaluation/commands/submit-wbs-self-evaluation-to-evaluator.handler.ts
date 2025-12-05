@@ -11,6 +11,7 @@ import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluati
 import { WbsSelfEvaluationDto } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.types';
 import { NotificationHelperService } from '@domain/common/notification';
 import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
+import { EmployeeService } from '@domain/common/employee/employee.service';
 
 /**
  * WBS 자기평가 제출 커맨드 (피평가자 → 1차 평가자)
@@ -40,6 +41,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
     private readonly transactionManager: TransactionManagerService,
     private readonly notificationHelper: NotificationHelperService,
     private readonly stepApprovalContext: StepApprovalContextService,
+    private readonly employeeService: EmployeeService,
   ) {}
 
   async execute(
@@ -135,7 +137,16 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
     periodName: string,
   ): Promise<void> {
     try {
-      // 1차 평가자 조회
+      // 피평가자(제출자) 정보 조회
+      const employee = await this.employeeService.findById(employeeId);
+      if (!employee) {
+        this.logger.warn(
+          `피평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}`,
+        );
+        return;
+      }
+
+      // 1차 평가자 조회 (UUID)
       const evaluatorId = await this.stepApprovalContext.일차평가자를_조회한다(
         periodId,
         employeeId,
@@ -148,12 +159,22 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         return;
       }
 
-      // 알림 전송
+      // 1차 평가자의 직원 번호 조회
+      const evaluator = await this.employeeService.findById(evaluatorId);
+      
+      if (!evaluator) {
+        this.logger.warn(
+          `1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. evaluatorId=${evaluatorId}`,
+        );
+        return;
+      }
+
+      // 알림 전송 (employeeNumber 사용)
       await this.notificationHelper.직원에게_알림을_전송한다({
         sender: 'system',
         title: 'WBS 자기평가 제출 알림',
-        content: `${periodName} 평가기간의 WBS 자기평가가 제출되었습니다.`,
-        employeeNumber: evaluatorId,
+        content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
+        employeeNumber: evaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
         linkUrl: '/evaluations/downward',
         metadata: {
@@ -161,11 +182,12 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
           priority: 'medium',
           employeeId,
           periodId,
+          employeeName: employee.name,
         },
       });
 
       this.logger.log(
-        `1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 평가자=${evaluatorId}`,
+        `1차 평가자에게 WBS 자기평가 제출 알림 전송 완료: 피평가자=${employee.name}, 평가자=${evaluatorId}, 직원번호=${evaluator.employeeNumber}`,
       );
     } catch (error) {
       this.logger.error(

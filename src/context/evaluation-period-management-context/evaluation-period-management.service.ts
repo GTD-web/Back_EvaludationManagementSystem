@@ -528,8 +528,6 @@ export class EvaluationPeriodManagementContextService
    * @throws InvalidDownwardEvaluationScoreException 점수가 유효 범위를 벗어난 경우
    */
   async 평가_점수를_검증한다(periodId: string, score: number): Promise<void> {
-    this.logger.debug('평가 점수 검증 시작', { periodId, score });
-
     // 1. 평가기간 조회
     const period = await this.평가기간상세_조회한다(periodId);
 
@@ -556,8 +554,6 @@ export class EvaluationPeriodManagementContextService
       });
       throw new InvalidDownwardEvaluationScoreException(score, 1, maxRate);
     }
-
-    this.logger.debug('평가 점수 검증 완료', { periodId, score, maxRate });
   }
 
   /**

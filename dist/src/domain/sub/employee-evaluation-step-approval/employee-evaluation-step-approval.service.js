@@ -27,13 +27,11 @@ let EmployeeEvaluationStepApprovalService = EmployeeEvaluationStepApprovalServic
         this.stepApprovalRepository = stepApprovalRepository;
     }
     async ID로_조회한다(id) {
-        this.logger.log(`단계 승인 조회 - ID: ${id}`);
         return await this.stepApprovalRepository.findOne({
             where: { id, deletedAt: (0, typeorm_2.IsNull)() },
         });
     }
     async 맵핑ID로_조회한다(mappingId) {
-        this.logger.log(`단계 승인 조회 - 맵핑 ID: ${mappingId}`);
         return await this.stepApprovalRepository.findOne({
             where: {
                 evaluationPeriodEmployeeMappingId: mappingId,

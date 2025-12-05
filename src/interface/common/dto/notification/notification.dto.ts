@@ -194,6 +194,13 @@ export class SendSimpleNotificationQueryDto {
   @IsString()
   content: string;
 
+  @ApiProperty({
+    description: '수신자 직원 번호 (필수)',
+    example: '25030',
+  })
+  @IsString()
+  employeeNumber: string;
+
   @ApiPropertyOptional({
     description: '링크 URL',
     example: '/evaluations/12345',

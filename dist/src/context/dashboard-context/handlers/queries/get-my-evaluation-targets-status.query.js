@@ -71,7 +71,6 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
     }
     async execute(query) {
         const { evaluationPeriodId, evaluatorId } = query;
-        this.logger.debug(`내가 담당하는 평가 대상자 현황 조회 시작 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}`);
         try {
             const myTargetMappings = await this.lineMappingRepository
                 .createQueryBuilder('mapping')
@@ -238,7 +237,6 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     continue;
                 }
             }
-            this.logger.debug(`내가 담당하는 평가 대상자 현황 조회 완료 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}, 대상자 수: ${results.length}`);
             return results;
         }
         catch (error) {
@@ -441,7 +439,9 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
     }
     이차평가_상태에_일차평가확인여부를_추가한다(secondaryStatus, viewedStatus, primaryEvaluationSubmitted, evaluatorTypes) {
         const result = { ...secondaryStatus };
-        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY) && viewedStatus && primaryEvaluationSubmitted) {
+        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY) &&
+            viewedStatus &&
+            primaryEvaluationSubmitted) {
             result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
         }
         return result;

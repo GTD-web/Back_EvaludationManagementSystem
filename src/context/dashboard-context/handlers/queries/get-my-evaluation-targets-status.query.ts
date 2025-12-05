@@ -88,10 +88,6 @@ export class GetMyEvaluationTargetsStatusHandler
   ): Promise<MyEvaluationTargetStatusDto[]> {
     const { evaluationPeriodId, evaluatorId } = query;
 
-    this.logger.debug(
-      `내가 담당하는 평가 대상자 현황 조회 시작 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}`,
-    );
-
     try {
       // 1. 내가 평가자로 지정된 매핑 조회 (평가라인 정보 포함)
       // 평가기간별로 필터링하여 해당 평가기간의 평가라인만 조회
@@ -346,7 +342,7 @@ export class GetMyEvaluationTargetsStatusHandler
               selfEvaluationResult.viewedByPrimaryEvaluator =
                 viewedStatus.viewedByPrimaryEvaluator;
             }
-            
+
             // 2차 평가자인 경우: viewedBySecondaryEvaluator만 추가
             if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
               selfEvaluationResult.viewedBySecondaryEvaluator =
@@ -402,10 +398,6 @@ export class GetMyEvaluationTargetsStatusHandler
           continue;
         }
       }
-
-      this.logger.debug(
-        `내가 담당하는 평가 대상자 현황 조회 완료 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}, 대상자 수: ${results.length}`,
-      );
 
       return results;
     } catch (error) {
@@ -791,7 +783,11 @@ export class GetMyEvaluationTargetsStatusHandler
     const result: any = { ...secondaryStatus };
 
     // 2차 평가자이고, viewedStatus가 있고, 1차 평가가 제출된 경우에만 primaryEvaluationViewed 포함
-    if (evaluatorTypes.includes(EvaluatorType.SECONDARY) && viewedStatus && primaryEvaluationSubmitted) {
+    if (
+      evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+      viewedStatus &&
+      primaryEvaluationSubmitted
+    ) {
       result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
     }
 

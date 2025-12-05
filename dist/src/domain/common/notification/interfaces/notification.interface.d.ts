@@ -21,6 +21,8 @@ export interface SendNotificationResult {
     message: string;
     notificationId?: string;
     error?: string;
+    successCount?: number;
+    failureCount?: number;
 }
 export interface GetNotificationsParams {
     recipientId: string;

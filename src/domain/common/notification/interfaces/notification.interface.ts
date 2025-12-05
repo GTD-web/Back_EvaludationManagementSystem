@@ -96,6 +96,16 @@ export interface SendNotificationResult {
    * 에러 메시지
    */
   error?: string;
+
+  /**
+   * 성공한 토큰 수 (부분 성공 시)
+   */
+  successCount?: number;
+
+  /**
+   * 실패한 토큰 수 (부분 성공 시)
+   */
+  failureCount?: number;
 }
 
 /**

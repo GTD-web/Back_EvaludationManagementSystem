@@ -46,6 +46,7 @@ export declare class SendNotificationRequestDto {
 export declare class SendSimpleNotificationQueryDto {
     title: string;
     content: string;
+    employeeNumber: string;
     linkUrl?: string;
 }
 export declare class SendSimpleNotificationBodyDto {

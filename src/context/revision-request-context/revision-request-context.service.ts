@@ -33,7 +33,9 @@ import type {
  */
 @Injectable()
 export class RevisionRequestContextService implements IRevisionRequestContext {
-  private readonly logger = new Logger(RevisionRequestContextService.name);
+  // 임시로 로거 비활성화 (디버깅용)
+  // private readonly logger = new Logger(RevisionRequestContextService.name);
+  private readonly logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
   constructor(
     private readonly revisionRequestService: EvaluationRevisionRequestService,

@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var GetEmployeeAssignedDataHandler_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GetEmployeeAssignedDataHandler = exports.GetEmployeeAssignedDataQuery = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
@@ -47,7 +46,7 @@ class GetEmployeeAssignedDataQuery {
     }
 }
 exports.GetEmployeeAssignedDataQuery = GetEmployeeAssignedDataQuery;
-let GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = class GetEmployeeAssignedDataHandler {
+let GetEmployeeAssignedDataHandler = class GetEmployeeAssignedDataHandler {
     evaluationPeriodRepository;
     employeeRepository;
     departmentRepository;
@@ -62,7 +61,7 @@ let GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = class Ge
     evaluationLineMappingRepository;
     deliverableRepository;
     activityLogContextService;
-    logger = new common_1.Logger(GetEmployeeAssignedDataHandler_1.name);
+    logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
     constructor(evaluationPeriodRepository, employeeRepository, departmentRepository, mappingRepository, projectAssignmentRepository, wbsAssignmentRepository, wbsItemRepository, criteriaRepository, selfEvaluationRepository, downwardEvaluationRepository, evaluationLineRepository, evaluationLineMappingRepository, deliverableRepository, activityLogContextService) {
         this.evaluationPeriodRepository = evaluationPeriodRepository;
         this.employeeRepository = employeeRepository;
@@ -266,7 +265,7 @@ let GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = class Ge
     }
 };
 exports.GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler;
-exports.GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler_1 = __decorate([
+exports.GetEmployeeAssignedDataHandler = GetEmployeeAssignedDataHandler = __decorate([
     (0, common_1.Injectable)(),
     (0, cqrs_1.QueryHandler)(GetEmployeeAssignedDataQuery),
     __param(0, (0, typeorm_1.InjectRepository)(evaluation_period_entity_1.EvaluationPeriod)),

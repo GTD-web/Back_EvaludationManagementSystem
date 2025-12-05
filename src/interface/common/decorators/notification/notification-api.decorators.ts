@@ -281,34 +281,54 @@ export function SendNotification() {
 }
 
 /**
- * 간편 알림 전송 API 데코레이터 (Portal 사용자용)
+ * 간편 알림 전송 API 데코레이터
+ *
+ * @deprecated 이 API는 더 이상 권장되지 않습니다.
+ * 대신 /api/notifications/send API를 사용하여 명시적으로 수신자를 지정하세요.
  */
 export function SendSimpleNotification() {
   return applyDecorators(
     Post('send-simple'),
     HttpCode(HttpStatus.CREATED),
     ApiOperation({
-      summary: '간편 알림 전송 (Portal 사용자용)',
-      description: `**중요**: Portal 사용자(인사담당자)에게 간편하게 알림을 전송합니다. FCM 토큰은 백엔드에서 자동으로 조회하며, sender와 sourceSystem은 자동으로 설정됩니다.
+      summary: '[Deprecated] 간편 알림 전송',
+      description: `**⚠️ DEPRECATED**: 이 API는 더 이상 권장되지 않습니다. \`/api/notifications/send\` API를 사용하세요.
 
-**동작:**
-- \`MAIL_NOTIFICATION_SSO\` 환경변수에서 수신자 사번 조회
+**변경 이유:**
+- 환경변수(\`MAIL_NOTIFICATION_SSO\`)에 의존하는 방식은 유연성이 떨어짐
+- 수신자를 명시적으로 지정하는 것이 더 명확하고 안전함
+- Portal 알림이 필요한 경우 직접 수신자를 지정하여 전송 가능
+
+**대안:**
+\`\`\`typescript
+// 기존 방식 (deprecated)
+POST /api/notifications/send-simple?title=제목&content=내용
+
+// 새로운 방식 (권장)
+POST /api/notifications/send
+{
+  "sender": "system",
+  "title": "제목",
+  "content": "내용",
+  "recipients": [
+    {
+      "employeeNumber": "25030",
+      "tokens": [] // FCM 토큰은 백엔드에서 자동 조회
+    }
+  ],
+  "sourceSystem": "EMS"
+}
+\`\`\`
+
+**동작 (레거시):**
+- 수신자 직원 번호를 파라미터로 받아야 함 (employeeNumber 필수)
 - SSO에서 FCM 토큰 자동 조회
 - deviceType에 'portal'이 포함된 토큰만 필터링
 - 알림 서버로 전송
 
 **자동 설정 값:**
 - sender: 'system'
-- sourceSystem: 'EMS'
-- recipients: 환경변수 및 SSO에서 자동 조회
-
-**테스트 케이스:**
-- 기본 알림 전송: title, content만으로 알림 전송
-- 링크 URL 포함: linkUrl 쿼리 파라미터 포함
-- 메타데이터 포함: body에 metadata 포함
-- 필수 필드 누락: title 또는 content 누락 시 400 에러
-- 환경변수 미설정: MAIL_NOTIFICATION_SSO가 없으면 실패
-- Portal 토큰 없음: Portal FCM 토큰이 없으면 실패`,
+- sourceSystem: 'EMS'`,
     }),
     ApiQuery({
       name: 'title',
@@ -323,6 +343,13 @@ export function SendSimpleNotification() {
       description: '알림 내용',
       type: String,
       example: '홍길동님이 자기평가를 제출했습니다.',
+    }),
+    ApiQuery({
+      name: 'employeeNumber',
+      required: true,
+      description: '수신자 직원 번호 (필수)',
+      type: String,
+      example: '25030',
     }),
     ApiQuery({
       name: 'linkUrl',
@@ -343,7 +370,7 @@ export function SendSimpleNotification() {
     }),
     ApiResponse({
       status: HttpStatus.BAD_REQUEST,
-      description: '잘못된 요청 데이터입니다.',
+      description: '잘못된 요청 데이터입니다. employeeNumber가 필요합니다.',
     }),
     ApiResponse({
       status: HttpStatus.UNAUTHORIZED,

@@ -14,6 +14,7 @@ import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approva
 import { NotificationHelperService } from '@domain/common/notification';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
+import { EmployeeService } from '@domain/common/employee/employee.service';
 
 /**
  * ?�향?��? ?�출 커맨??
@@ -44,6 +45,7 @@ export class SubmitDownwardEvaluationHandler
     private readonly notificationHelper: NotificationHelperService,
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly stepApprovalContext: StepApprovalContextService,
+    private readonly employeeService: EmployeeService,
   ) {}
 
   async execute(command: SubmitDownwardEvaluationCommand): Promise<void> {
@@ -131,6 +133,7 @@ export class SubmitDownwardEvaluationHandler
           evaluation.employeeId,
           evaluation.periodId,
           evaluation.wbsId,
+          evaluation.evaluatorId, // 1차 평가자 ID 추가
         ).catch((error) => {
           this.logger.error('2차 평가자 알림 전송 실패 (무시됨)', error.stack);
         });
@@ -147,6 +150,7 @@ export class SubmitDownwardEvaluationHandler
     employeeId: string,
     periodId: string,
     wbsId: string,
+    primaryEvaluatorId: string, // 1차 평가자 ID 추가
   ): Promise<void> {
     try {
       // 평가기간 조회
@@ -159,26 +163,48 @@ export class SubmitDownwardEvaluationHandler
         return;
       }
 
-      // 2차 평가자 조회
-      const evaluatorId = await this.stepApprovalContext.이차평가자를_조회한다(
-        periodId,
-        employeeId,
-        wbsId,
-      );
+      // 1차 평가자(제출자) 정보 조회
+      const primaryEvaluator =
+        await this.employeeService.findById(primaryEvaluatorId);
+      if (!primaryEvaluator) {
+        this.logger.warn(
+          `1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. primaryEvaluatorId=${primaryEvaluatorId}`,
+        );
+        return;
+      }
 
-      if (!evaluatorId) {
+      // 2차 평가자 조회 (UUID)
+      const secondaryEvaluatorId =
+        await this.stepApprovalContext.이차평가자를_조회한다(
+          periodId,
+          employeeId,
+          wbsId,
+        );
+
+      if (!secondaryEvaluatorId) {
         this.logger.warn(
           `2차 평가자를 찾을 수 없어 알림을 전송하지 않습니다. employeeId=${employeeId}, periodId=${periodId}, wbsId=${wbsId}`,
         );
         return;
       }
 
-      // 알림 전송
+      // 2차 평가자의 직원 번호 조회
+      const secondaryEvaluator =
+        await this.employeeService.findById(secondaryEvaluatorId);
+
+      if (!secondaryEvaluator) {
+        this.logger.warn(
+          `2차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. secondaryEvaluatorId=${secondaryEvaluatorId}`,
+        );
+        return;
+      }
+
+      // 알림 전송 (employeeNumber 사용)
       await this.notificationHelper.직원에게_알림을_전송한다({
         sender: 'system',
         title: '1차 하향평가 제출 알림',
-        content: `${evaluationPeriod.name} 평가기간의 1차 하향평가가 제출되었습니다.`,
-        employeeNumber: evaluatorId,
+        content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
+        employeeNumber: secondaryEvaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
         linkUrl: '/evaluations/downward',
         metadata: {
@@ -188,11 +214,12 @@ export class SubmitDownwardEvaluationHandler
           employeeId,
           periodId,
           wbsId,
+          primaryEvaluatorName: primaryEvaluator.name,
         },
       });
 
       this.logger.log(
-        `2차 평가자에게 1차 하향평가 제출 알림 전송 완료: 평가자=${evaluatorId}`,
+        `2차 평가자에게 1차 하향평가 제출 알림 전송 완료: 1차 평가자=${primaryEvaluator.name}, 2차 평가자=${secondaryEvaluatorId}, 직원번호=${secondaryEvaluator.employeeNumber}`,
       );
     } catch (error) {
       this.logger.error('2차 평가자 알림 전송 중 오류 발생', error.stack);

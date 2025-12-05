@@ -20,7 +20,9 @@ import {
 } from './types';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 
-const logger = new Logger('ProjectWbsUtils');
+// 임시로 로거 비활성화 (디버깅용)
+// const logger = new Logger('ProjectWbsUtils');
+const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
 /**
  * 프로젝트별 할당 정보 조회 (WBS 목록 포함)

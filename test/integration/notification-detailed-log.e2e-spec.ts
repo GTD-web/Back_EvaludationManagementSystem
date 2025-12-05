@@ -113,21 +113,17 @@ describe('알림 전송 상세 로그 테스트', () => {
     });
 
     it('[TEST 3] Portal 사용자 FCM 토큰 조회 및 필터링을 테스트해야 한다', async () => {
-      // Given: 환경변수에서 Portal 사용자 번호 가져오기
-      const portalEmployeeNumber = process.env.MAIL_NOTIFICATION_SSO;
-
-      if (!portalEmployeeNumber) {
-        console.warn('⚠️ MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.');
-        return;
-      }
+      // Given: 테스트용 직원 번호 (실제 직원 번호로 변경 필요)
+      const testEmployeeNumber = 'E999999';
 
       console.log('🔍 [TEST 3] Portal FCM 토큰 필터링 테스트 시작');
-      console.log('📝 Portal 사용자 번호:', portalEmployeeNumber);
+      console.log('📝 테스트 직원 번호:', testEmployeeNumber);
+      console.log('ℹ️  MAIL_NOTIFICATION_SSO 환경변수는 더 이상 사용되지 않습니다.');
 
       try {
         // When: FCM 토큰 조회
         const result = await ssoService.FCM토큰을조회한다({ 
-          employeeNumber: portalEmployeeNumber 
+          employeeNumber: testEmployeeNumber 
         });
 
         // Then: Portal 토큰만 필터링
@@ -201,49 +197,46 @@ describe('알림 전송 상세 로그 테스트', () => {
       }
     });
 
-    it('[TEST 5] Portal 사용자에게 알림을 전송하는 전체 플로우를 테스트해야 한다', async () => {
-      console.log('🔍 [TEST 5] Portal 알림 전송 전체 플로우 테스트 시작');
+    it('[TEST 5] 특정 직원에게 알림을 전송하는 전체 플로우를 테스트해야 한다 (employeeNumber 명시)', async () => {
+      console.log('🔍 [TEST 5] 특정 직원 알림 전송 전체 플로우 테스트 시작');
+      console.log('ℹ️  Portal사용자에게_알림을_전송한다() 메서드는 deprecated되었습니다.');
 
-      const portalEmployeeNumber = process.env.MAIL_NOTIFICATION_SSO;
-      console.log('📝 Portal 사용자 번호:', portalEmployeeNumber);
-
-      if (!portalEmployeeNumber) {
-        console.warn('⚠️ MAIL_NOTIFICATION_SSO 환경변수가 설정되지 않았습니다.');
-        return;
-      }
+      const testEmployeeNumber = 'E999999';
+      console.log('📝 테스트 직원 번호:', testEmployeeNumber);
 
       try {
-        // When: Portal 알림 전송
-        console.log('📤 Portal 알림 전송 시작...');
-        const result = await notificationHelper.Portal사용자에게_알림을_전송한다({
+        // When: 직원에게 알림 전송 (권장 방식)
+        console.log('📤 직원 알림 전송 시작...');
+        const result = await notificationHelper.직원에게_알림을_전송한다({
           sender: 'system',
-          title: 'Portal 테스트 알림',
-          content: 'Portal 알림 전송 테스트입니다.',
+          title: '테스트 알림',
+          content: '직원 알림 전송 테스트입니다.',
+          employeeNumber: testEmployeeNumber,
           sourceSystem: 'EMS',
           linkUrl: '/test',
           metadata: {
-            type: 'test-portal-notification',
+            type: 'test-notification',
             priority: 'low',
           },
         });
 
         // Then: 결과 로깅
-        console.log('📦 Portal 알림 전송 결과:', JSON.stringify(result, null, 2));
+        console.log('📦 알림 전송 결과:', JSON.stringify(result, null, 2));
 
         if (result.success) {
-          console.log('✅ Portal 알림 전송 성공');
+          console.log('✅ 알림 전송 성공');
           console.log(`   - notificationId: ${result.notificationId}`);
           console.log('📝 다음을 확인하세요:');
           console.log('   1. SSO에서 FCM 토큰을 조회했는지');
           console.log('   2. deviceType에 "portal"이 포함된 토큰만 필터링했는지');
           console.log('   3. 필터링된 토큰으로 알림을 전송했는지');
         } else {
-          console.log('❌ Portal 알림 전송 실패');
+          console.log('❌ 알림 전송 실패');
           console.log(`   - message: ${result.message}`);
           console.log(`   - error: ${result.error}`);
         }
       } catch (error) {
-        console.error('❌ Portal 알림 전송 중 예외 발생:', error.message);
+        console.error('❌ 알림 전송 중 예외 발생:', error.message);
         console.error('📋 에러 상세:', error);
       }
     });
@@ -267,12 +260,12 @@ describe('알림 전송 상세 로그 테스트', () => {
       console.log('   4. "알림 전송 시작" 로그 확인 (수정 후)');
       console.log('   5. "2차 평가자에게 1차 하향평가 제출 알림 전송 완료" 로그 확인 (수정 후)');
       console.log('');
-      console.log('📝 Portal 알림 전송 시:');
-      console.log('   1. "Portal 알림 전송 시작" 로그 확인');
-      console.log('   2. "알림 수신 대상 사번" 로그 확인');
+      console.log('📝 직원 알림 전송 시:');
+      console.log('   1. "알림 전송 시작" 로그 확인');
+      console.log('   2. "FCM 토큰 조회 중: [직원번호]" 로그 확인');
       console.log('   3. "Portal FCM 토큰 조회 완료: N개 토큰" 로그 확인');
       console.log('   4. deviceType에 "portal"이 포함된 토큰만 필터링되었는지 확인');
-      console.log('   5. "Portal 알림 전송 성공" 로그 확인');
+      console.log('   5. "알림 전송 성공" 로그 확인');
       console.log('');
       console.log('✅ 모든 로그를 확인하여 알림 전송 플로우가 올바르게 작동하는지 검증하세요.');
     });

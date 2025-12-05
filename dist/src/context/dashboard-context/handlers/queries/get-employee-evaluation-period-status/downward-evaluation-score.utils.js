@@ -3,12 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.가중치_기반_1차_하향평가_점수를_계산한다 = 가중치_기반_1차_하향평가_점수를_계산한다;
 exports.가중치_기반_2차_하향평가_점수를_계산한다 = 가중치_기반_2차_하향평가_점수를_계산한다;
 exports.하향평가_등급을_조회한다 = 하향평가_등급을_조회한다;
-const common_1 = require("@nestjs/common");
 const typeorm_1 = require("typeorm");
 const downward_evaluation_types_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.types");
 const evaluation_project_assignment_entity_1 = require("../../../../../domain/core/evaluation-project-assignment/evaluation-project-assignment.entity");
 const project_entity_1 = require("../../../../../domain/common/project/project.entity");
-const logger = new common_1.Logger('DownwardEvaluationScoreUtils');
+const logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
 async function 가중치_기반_1차_하향평가_점수를_계산한다(evaluationPeriodId, employeeId, evaluatorIds, downwardEvaluationRepository, wbsAssignmentRepository, evaluationPeriodRepository) {
     try {
         if (!evaluatorIds || evaluatorIds.length === 0) {

@@ -58,12 +58,6 @@ export class DownwardEvaluationBusinessService {
     downwardEvaluationScore?: number;
     actionBy: string;
   }): Promise<string> {
-    this.logger.log('1차 하향평가 저장 비즈니스 로직 시작', {
-      evaluatorId: params.evaluatorId,
-      evaluateeId: params.evaluateeId,
-      wbsId: params.wbsId,
-    });
-
     // 1. 평가라인 검증: 1차 평가자 권한 확인
     // TODO: 테스트를 위해 임시 주석 처리
     // await this.evaluationCriteriaManagementService.평가라인을_검증한다(

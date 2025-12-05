@@ -7,7 +7,9 @@ import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downwar
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { Project } from '@domain/common/project/project.entity';
 
-const logger = new Logger('DownwardEvaluationScoreUtils');
+// 임시로 로거 비활성화 (디버깅용)
+// const logger = new Logger('DownwardEvaluationScoreUtils');
+const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
 /**
  * 가중치 기반 1차 하향평가 점수를 계산한다

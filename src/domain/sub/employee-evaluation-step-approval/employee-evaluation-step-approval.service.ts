@@ -38,7 +38,6 @@ export class EmployeeEvaluationStepApprovalService
   async ID로_조회한다(
     id: string,
   ): Promise<EmployeeEvaluationStepApproval | null> {
-    this.logger.log(`단계 승인 조회 - ID: ${id}`);
     return await this.stepApprovalRepository.findOne({
       where: { id, deletedAt: IsNull() },
     });
@@ -50,7 +49,6 @@ export class EmployeeEvaluationStepApprovalService
   async 맵핑ID로_조회한다(
     mappingId: string,
   ): Promise<EmployeeEvaluationStepApproval | null> {
-    this.logger.log(`단계 승인 조회 - 맵핑 ID: ${mappingId}`);
     return await this.stepApprovalRepository.findOne({
       where: {
         evaluationPeriodEmployeeMappingId: mappingId,
@@ -65,7 +63,9 @@ export class EmployeeEvaluationStepApprovalService
   async 생성한다(
     data: CreateEmployeeEvaluationStepApprovalData,
   ): Promise<EmployeeEvaluationStepApproval> {
-    this.logger.log(`단계 승인 생성 - 맵핑 ID: ${data.evaluationPeriodEmployeeMappingId}`);
+    this.logger.log(
+      `단계 승인 생성 - 맵핑 ID: ${data.evaluationPeriodEmployeeMappingId}`,
+    );
 
     try {
       const stepApproval = new EmployeeEvaluationStepApproval(data);
@@ -258,5 +258,3 @@ export class EmployeeEvaluationStepApprovalService
     }
   }
 }
-
-

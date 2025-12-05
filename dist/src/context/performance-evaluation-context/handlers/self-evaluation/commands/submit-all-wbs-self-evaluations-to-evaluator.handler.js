@@ -176,13 +176,15 @@ let SubmitAllWbsSelfEvaluationsToEvaluatorHandler = SubmitAllWbsSelfEvaluationsT
                 this.logger.warn(`1차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. evaluatorId=${evaluatorId}`);
                 return;
             }
+            const linkUrl = `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`;
+            this.logger.log(`알림 linkUrl 생성: ${linkUrl}`);
             await this.notificationHelper.직원에게_알림을_전송한다({
                 sender: 'system',
                 title: 'WBS 자기평가 제출 알림',
                 content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
                 employeeNumber: evaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+                linkUrl,
                 metadata: {
                     type: 'self-evaluation-submitted',
                     priority: 'medium',

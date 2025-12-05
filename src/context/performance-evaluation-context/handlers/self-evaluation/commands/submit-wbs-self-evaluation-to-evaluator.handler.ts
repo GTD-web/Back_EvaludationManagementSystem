@@ -168,6 +168,13 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         return;
       }
 
+      // linkUrl 생성
+      const linkUrl = `${this.configService.get<string>('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`;
+      
+      this.logger.log(
+        `알림 linkUrl 생성: ${linkUrl}`,
+      );
+
       // 알림 전송 (employeeNumber 사용)
       await this.notificationHelper.직원에게_알림을_전송한다({
         sender: 'system',
@@ -175,7 +182,7 @@ export class SubmitWbsSelfEvaluationToEvaluatorHandler
         content: `${periodName} 평가기간의 ${employee.name} 피평가자가 WBS 자기평가를 제출했습니다.`,
         employeeNumber: evaluator.employeeNumber, // UUID 대신 employeeNumber 사용
         sourceSystem: 'EMS',
-        linkUrl: `${this.configService.get<string>('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+        linkUrl,
         metadata: {
           type: 'self-evaluation-submitted',
           priority: 'medium',

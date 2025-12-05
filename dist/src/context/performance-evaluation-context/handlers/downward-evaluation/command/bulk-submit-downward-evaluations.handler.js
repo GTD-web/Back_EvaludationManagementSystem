@@ -287,13 +287,15 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                 this.logger.warn(`2차 평가자 정보를 찾을 수 없어 알림을 전송하지 않습니다. secondaryEvaluatorId=${secondaryEvaluatorId}`);
                 return;
             }
+            const linkUrl = `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`;
+            this.logger.log(`알림 linkUrl 생성: ${linkUrl}`);
             await this.notificationHelper.직원에게_알림을_전송한다({
                 sender: 'system',
                 title: '1차 하향평가 제출 알림',
                 content: `${evaluationPeriod.name} 평가기간의 ${primaryEvaluator.name} 1차 평가자가 1차 하향평가를 제출했습니다.`,
                 employeeNumber: secondaryEvaluator.employeeNumber,
                 sourceSystem: 'EMS',
-                linkUrl: `${this.configService.get('PORTAL_URL')}/current/user/employee-evaluation?periodId=${periodId}&employeeId=${employeeId}`,
+                linkUrl,
                 metadata: {
                     type: 'downward-evaluation-submitted',
                     evaluationType: 'primary',

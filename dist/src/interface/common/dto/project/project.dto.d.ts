@@ -7,6 +7,9 @@ export declare class CreateProjectDto {
     endDate?: Date;
     managerId?: string;
 }
+export declare class CreateProjectsBulkDto {
+    projects: CreateProjectDto[];
+}
 export declare class UpdateProjectDto {
     name?: string;
     projectCode?: string;
@@ -77,4 +80,16 @@ export declare class ProjectManagerDto {
 export declare class ProjectManagerListResponseDto {
     managers: ProjectManagerDto[];
     total: number;
+}
+export declare class BulkCreateFailedItemDto {
+    index: number;
+    data: CreateProjectDto;
+    error: string;
+}
+export declare class ProjectsBulkCreateResponseDto {
+    success: ProjectResponseDto[];
+    failed: BulkCreateFailedItemDto[];
+    successCount: number;
+    failedCount: number;
+    totalCount: number;
 }

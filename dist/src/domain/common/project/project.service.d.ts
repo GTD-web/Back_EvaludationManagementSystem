@@ -7,6 +7,14 @@ export declare class ProjectService {
     private readonly evaluationProjectAssignmentRepository;
     constructor(projectRepository: Repository<Project>, evaluationProjectAssignmentRepository: Repository<EvaluationProjectAssignment>);
     생성한다(data: CreateProjectDto, createdBy: string): Promise<ProjectDto>;
+    일괄_생성한다(dataList: CreateProjectDto[], createdBy: string): Promise<{
+        success: ProjectDto[];
+        failed: Array<{
+            index: number;
+            data: CreateProjectDto;
+            error: string;
+        }>;
+    }>;
     수정한다(id: string, data: UpdateProjectDto, updatedBy: string): Promise<ProjectDto>;
     삭제한다(id: string, deletedBy: string): Promise<void>;
     ID로_조회한다(id: string): Promise<ProjectDto | null>;

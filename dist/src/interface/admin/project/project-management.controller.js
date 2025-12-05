@@ -53,6 +53,32 @@ let ProjectManagementController = class ProjectManagementController {
             isCancelled: project.isCancelled,
         };
     }
+    async createProjectsBulk(bulkDto, user) {
+        const createdBy = user.id;
+        const result = await this.projectService.일괄_생성한다(bulkDto.projects, createdBy);
+        return {
+            success: result.success.map((project) => ({
+                id: project.id,
+                name: project.name,
+                projectCode: project.projectCode,
+                status: project.status,
+                startDate: project.startDate,
+                endDate: project.endDate,
+                managerId: project.managerId,
+                manager: project.manager,
+                createdAt: project.createdAt,
+                updatedAt: project.updatedAt,
+                deletedAt: project.deletedAt,
+                isActive: project.isActive,
+                isCompleted: project.isCompleted,
+                isCancelled: project.isCancelled,
+            })),
+            failed: result.failed,
+            successCount: result.success.length,
+            failedCount: result.failed.length,
+            totalCount: bulkDto.projects.length,
+        };
+    }
     async getProjectList(query) {
         const result = await this.projectService.목록_조회한다({
             page: query.page,
@@ -185,6 +211,14 @@ __decorate([
     __metadata("design:paramtypes", [project_dto_1.CreateProjectDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProjectManagementController.prototype, "createProject", null);
+__decorate([
+    (0, project_api_decorators_1.CreateProjectsBulk)(),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [project_dto_1.CreateProjectsBulkDto, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "createProjectsBulk", null);
 __decorate([
     (0, project_api_decorators_1.GetProjectList)(),
     __param(0, (0, common_1.Query)()),

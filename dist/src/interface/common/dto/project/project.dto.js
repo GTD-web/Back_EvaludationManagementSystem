@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectDto = void 0;
+exports.ProjectsBulkCreateResponseDto = exports.BulkCreateFailedItemDto = exports.ProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectsBulkDto = exports.CreateProjectDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
@@ -44,8 +44,9 @@ __decorate([
 ], CreateProjectDto.prototype, "projectCode", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '프로젝트 상태',
+        description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
         enum: project_types_1.ProjectStatus,
+        enumName: 'ProjectStatus',
         example: project_types_1.ProjectStatus.ACTIVE,
     }),
     (0, class_validator_1.IsNotEmpty)(),
@@ -83,6 +84,38 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], CreateProjectDto.prototype, "managerId", void 0);
+class CreateProjectsBulkDto {
+    projects;
+}
+exports.CreateProjectsBulkDto = CreateProjectsBulkDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '생성할 프로젝트 목록',
+        type: [CreateProjectDto],
+        example: [
+            {
+                name: 'EMS 프로젝트',
+                projectCode: 'EMS-2024',
+                status: 'ACTIVE',
+                startDate: '2024-01-01',
+                endDate: '2024-12-31',
+                managerId: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            {
+                name: 'HRM 프로젝트',
+                projectCode: 'HRM-2024',
+                status: 'COMPLETED',
+                startDate: '2024-02-01',
+                endDate: '2024-11-30',
+                managerId: '550e8400-e29b-41d4-a716-446655440001',
+            },
+        ],
+    }),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CreateProjectDto),
+    __metadata("design:type", Array)
+], CreateProjectsBulkDto.prototype, "projects", void 0);
 class UpdateProjectDto {
     name;
     projectCode;
@@ -112,8 +145,9 @@ __decorate([
 ], UpdateProjectDto.prototype, "projectCode", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '프로젝트 상태',
+        description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
         enum: project_types_1.ProjectStatus,
+        enumName: 'ProjectStatus',
         example: project_types_1.ProjectStatus.ACTIVE,
     }),
     (0, class_validator_1.IsOptional)(),
@@ -213,8 +247,9 @@ __decorate([
 ], GetProjectListQueryDto.prototype, "sortOrder", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '프로젝트 상태 필터',
+        description: '프로젝트 상태 필터 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
         enum: project_types_1.ProjectStatus,
+        enumName: 'ProjectStatus',
         example: project_types_1.ProjectStatus.ACTIVE,
     }),
     (0, class_validator_1.IsOptional)(),
@@ -363,8 +398,9 @@ __decorate([
 ], ProjectResponseDto.prototype, "projectCode", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '프로젝트 상태',
+        description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
         enum: project_types_1.ProjectStatus,
+        enumName: 'ProjectStatus',
         example: project_types_1.ProjectStatus.ACTIVE,
     }),
     __metadata("design:type", String)
@@ -609,4 +645,74 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], ProjectManagerListResponseDto.prototype, "total", void 0);
+class BulkCreateFailedItemDto {
+    index;
+    data;
+    error;
+}
+exports.BulkCreateFailedItemDto = BulkCreateFailedItemDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '실패한 항목의 인덱스 (0부터 시작)',
+        example: 0,
+    }),
+    __metadata("design:type", Number)
+], BulkCreateFailedItemDto.prototype, "index", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '실패한 프로젝트 데이터',
+        type: CreateProjectDto,
+    }),
+    __metadata("design:type", CreateProjectDto)
+], BulkCreateFailedItemDto.prototype, "data", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '실패 사유',
+        example: '프로젝트 코드 EMS-2024는 이미 사용 중입니다.',
+    }),
+    __metadata("design:type", String)
+], BulkCreateFailedItemDto.prototype, "error", void 0);
+class ProjectsBulkCreateResponseDto {
+    success;
+    failed;
+    successCount;
+    failedCount;
+    totalCount;
+}
+exports.ProjectsBulkCreateResponseDto = ProjectsBulkCreateResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '성공적으로 생성된 프로젝트 목록',
+        type: [ProjectResponseDto],
+    }),
+    __metadata("design:type", Array)
+], ProjectsBulkCreateResponseDto.prototype, "success", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '생성에 실패한 프로젝트 목록',
+        type: [BulkCreateFailedItemDto],
+    }),
+    __metadata("design:type", Array)
+], ProjectsBulkCreateResponseDto.prototype, "failed", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '성공한 항목 수',
+        example: 5,
+    }),
+    __metadata("design:type", Number)
+], ProjectsBulkCreateResponseDto.prototype, "successCount", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '실패한 항목 수',
+        example: 2,
+    }),
+    __metadata("design:type", Number)
+], ProjectsBulkCreateResponseDto.prototype, "failedCount", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '전체 항목 수',
+        example: 7,
+    }),
+    __metadata("design:type", Number)
+], ProjectsBulkCreateResponseDto.prototype, "totalCount", void 0);
 //# sourceMappingURL=project.dto.js.map

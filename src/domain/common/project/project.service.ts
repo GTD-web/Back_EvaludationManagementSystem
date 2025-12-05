@@ -66,6 +66,90 @@ export class ProjectService {
   }
 
   /**
+   * 여러 프로젝트를 일괄 생성한다
+   * @param dataList 프로젝트 생성 데이터 배열
+   * @param createdBy 생성자 ID
+   * @returns 생성된 프로젝트 정보 배열과 실패한 항목 정보
+   */
+  async 일괄_생성한다(
+    dataList: CreateProjectDto[],
+    createdBy: string,
+  ): Promise<{
+    success: ProjectDto[];
+    failed: Array<{ index: number; data: CreateProjectDto; error: string }>;
+  }> {
+    const success: ProjectDto[] = [];
+    const failed: Array<{
+      index: number;
+      data: CreateProjectDto;
+      error: string;
+    }> = [];
+
+    // 프로젝트 코드 중복 사전 검사
+    const projectCodes = dataList
+      .map((data) => data.projectCode)
+      .filter((code): code is string => !!code);
+
+    if (projectCodes.length > 0) {
+      const existingProjects = await this.projectRepository.find({
+        where: projectCodes.map((code) => ({
+          projectCode: code,
+          deletedAt: IsNull(),
+        })),
+      });
+
+      const existingCodes = new Set(
+        existingProjects.map((p) => p.projectCode),
+      );
+
+      // 중복 코드가 있는 항목은 실패 처리
+      for (let i = 0; i < dataList.length; i++) {
+        if (
+          dataList[i].projectCode &&
+          existingCodes.has(dataList[i].projectCode!)
+        ) {
+          failed.push({
+            index: i,
+            data: dataList[i],
+            error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
+          });
+        }
+      }
+    }
+
+    // 실패 처리된 인덱스를 제외하고 생성
+    const failedIndices = new Set(failed.map((f) => f.index));
+
+    for (let i = 0; i < dataList.length; i++) {
+      if (failedIndices.has(i)) {
+        continue;
+      }
+
+      try {
+        const project = Project.생성한다(dataList[i], createdBy);
+        const savedProject = await this.projectRepository.save(project);
+
+        // 생성 후 manager 정보를 포함하여 다시 조회
+        const result = await this.ID로_조회한다(savedProject.id);
+        if (result) {
+          success.push(result);
+        }
+      } catch (error) {
+        failed.push({
+          index: i,
+          data: dataList[i],
+          error:
+            error instanceof Error
+              ? error.message
+              : '프로젝트 생성 중 오류가 발생했습니다.',
+        });
+      }
+    }
+
+    return { success, failed };
+  }
+
+  /**
    * 프로젝트 정보를 수정한다
    * @param id 프로젝트 ID
    * @param data 수정할 데이터

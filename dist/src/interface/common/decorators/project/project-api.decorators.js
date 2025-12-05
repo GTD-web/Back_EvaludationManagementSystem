@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateProject = CreateProject;
+exports.CreateProjectsBulk = CreateProjectsBulk;
 exports.GetProjectList = GetProjectList;
 exports.GetProjectDetail = GetProjectDetail;
 exports.UpdateProject = UpdateProject;
@@ -34,6 +35,36 @@ function CreateProject() {
         status: common_1.HttpStatus.CREATED,
         description: '프로젝트가 성공적으로 생성되었습니다.',
         type: project_dto_1.ProjectResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.BAD_REQUEST,
+        description: '잘못된 요청 데이터입니다.',
+    }));
+}
+function CreateProjectsBulk() {
+    return (0, common_1.applyDecorators)((0, common_2.Post)('bulk'), (0, common_2.HttpCode)(common_1.HttpStatus.CREATED), (0, swagger_1.ApiOperation)({
+        summary: '프로젝트 일괄 생성',
+        description: `여러 프로젝트를 한 번에 생성합니다.
+
+**동작:**
+- 여러 프로젝트를 배열로 받아 일괄 생성합니다
+- 각 프로젝트별로 PM을 개별 설정할 수 있습니다
+- 프로젝트 코드 중복을 사전 검사합니다
+- 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다
+- 성공/실패 항목을 구분하여 응답합니다
+- 생성자 정보를 자동으로 기록합니다
+
+**테스트 케이스:**
+- 전체 성공: 모든 프로젝트가 정상적으로 생성됨
+- 부분 성공: 일부 프로젝트만 생성 성공하고 나머지는 실패
+- PM 포함 생성: 각 프로젝트별로 다른 PM 지정
+- 프로젝트 코드 중복: 중복된 코드가 있는 프로젝트는 실패 처리
+- 빈 배열: 프로젝트 배열이 비어있는 경우
+- 필수 필드 누락: 일부 프로젝트의 필수 필드 누락 시 해당 항목만 실패
+- 잘못된 데이터: 유효하지 않은 데이터가 있는 경우 해당 항목만 실패`,
+    }), (0, swagger_1.ApiBody)({ type: project_dto_1.CreateProjectsBulkDto }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.CREATED,
+        description: '프로젝트 일괄 생성 완료 (일부 실패 가능)',
+        type: project_dto_1.ProjectsBulkCreateResponseDto,
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.BAD_REQUEST,
         description: '잘못된 요청 데이터입니다.',

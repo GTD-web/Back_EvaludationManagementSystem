@@ -166,15 +166,16 @@ export class NotificationServiceImpl
 
     try {
       this.logger.log(
-        `알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, sourceSystem=${params.sourceSystem}, skip=${params.skip}, take=${params.take}`,
+        `알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, skip=${params.skip}, take=${params.take}`,
       );
 
-      const queryParams: any = {};
+      const queryParams: any = {
+        // EMS 시스템에서는 항상 sourceSystem='EMS'인 알림만 조회
+        sourceSystem: 'EMS',
+      };
+      
       if (params.isRead !== undefined) {
         queryParams.isRead = params.isRead;
-      }
-      if (params.sourceSystem !== undefined) {
-        queryParams.sourceSystem = params.sourceSystem;
       }
       if (params.skip !== undefined) {
         queryParams.skip = params.skip;
@@ -184,7 +185,7 @@ export class NotificationServiceImpl
       }
 
       this.logger.debug(
-        `알림 서버로 전송할 쿼리 파라미터: ${JSON.stringify(queryParams)}`,
+        `알림 서버로 전송할 쿼리 파라미터 (sourceSystem='EMS' 자동 적용): ${JSON.stringify(queryParams)}`,
       );
 
       const response = await this.httpClient.get(

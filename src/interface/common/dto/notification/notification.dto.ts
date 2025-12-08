@@ -1,14 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-
-/**
- * 알림 출처 시스템
- */
-export enum SourceSystem {
-  EMS = 'EMS',
-  PORTAL = 'portal',
-}
 
 /**
  * 알림 정보 DTO
@@ -60,15 +52,6 @@ export class GetNotificationsQueryDto {
   @IsOptional()
   @IsString()
   isRead?: string;  // string으로 받아서 컨트롤러에서 변환
-
-  @ApiPropertyOptional({
-    description: '출처 시스템 필터',
-    enum: SourceSystem,
-    example: SourceSystem.EMS,
-  })
-  @IsOptional()
-  @IsEnum(SourceSystem)
-  sourceSystem?: SourceSystem;
 
   @ApiPropertyOptional({
     description: '건너뛸 개수',

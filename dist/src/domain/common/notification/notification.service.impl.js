@@ -102,13 +102,12 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
     async 알림목록을조회한다(params) {
         this.초기화확인();
         try {
-            this.logger.log(`알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, sourceSystem=${params.sourceSystem}, skip=${params.skip}, take=${params.take}`);
-            const queryParams = {};
+            this.logger.log(`알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, skip=${params.skip}, take=${params.take}`);
+            const queryParams = {
+                sourceSystem: 'EMS',
+            };
             if (params.isRead !== undefined) {
                 queryParams.isRead = params.isRead;
-            }
-            if (params.sourceSystem !== undefined) {
-                queryParams.sourceSystem = params.sourceSystem;
             }
             if (params.skip !== undefined) {
                 queryParams.skip = params.skip;
@@ -116,7 +115,7 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
             if (params.take !== undefined) {
                 queryParams.take = params.take;
             }
-            this.logger.debug(`알림 서버로 전송할 쿼리 파라미터: ${JSON.stringify(queryParams)}`);
+            this.logger.debug(`알림 서버로 전송할 쿼리 파라미터 (sourceSystem='EMS' 자동 적용): ${JSON.stringify(queryParams)}`);
             const response = await this.httpClient.get(`/api/portal/notifications/${params.recipientId}`, { params: queryParams });
             this.logger.log(`알림 서버 응답: 알림 수=${response.data.notifications?.length || 0}, 전체=${response.data.total || 0}, 미읽음=${response.data.unreadCount || 0}`);
             const notifications = (response.data.notifications || []).map((notification) => ({

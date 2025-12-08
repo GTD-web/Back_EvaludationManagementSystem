@@ -9,10 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SendNotificationResponseDto = exports.SendSimpleNotificationBodyDto = exports.SendSimpleNotificationQueryDto = exports.SendNotificationRequestDto = exports.NotificationRecipientDto = exports.MarkAllAsReadResponseDto = exports.MarkNotificationAsReadResponseDto = exports.GetNotificationsResponseDto = exports.GetNotificationsQueryDto = exports.NotificationDto = void 0;
+exports.SendNotificationResponseDto = exports.SendSimpleNotificationBodyDto = exports.SendSimpleNotificationQueryDto = exports.SendNotificationRequestDto = exports.NotificationRecipientDto = exports.MarkAllAsReadResponseDto = exports.MarkNotificationAsReadResponseDto = exports.GetNotificationsResponseDto = exports.GetNotificationsQueryDto = exports.NotificationDto = exports.SourceSystem = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+var SourceSystem;
+(function (SourceSystem) {
+    SourceSystem["EMS"] = "EMS";
+    SourceSystem["PORTAL"] = "portal";
+})(SourceSystem || (exports.SourceSystem = SourceSystem = {}));
 class NotificationDto {
     id;
     sender;
@@ -73,6 +78,7 @@ __decorate([
 ], NotificationDto.prototype, "readAt", void 0);
 class GetNotificationsQueryDto {
     isRead;
+    sourceSystem;
     skip;
     take;
 }
@@ -87,6 +93,16 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], GetNotificationsQueryDto.prototype, "isRead", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '출처 시스템 필터',
+        enum: SourceSystem,
+        example: SourceSystem.EMS,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(SourceSystem),
+    __metadata("design:type", String)
+], GetNotificationsQueryDto.prototype, "sourceSystem", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: '건너뛸 개수',

@@ -102,10 +102,13 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
     async 알림목록을조회한다(params) {
         this.초기화확인();
         try {
-            this.logger.log(`알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, skip=${params.skip}, take=${params.take}`);
+            this.logger.log(`알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, sourceSystem=${params.sourceSystem}, skip=${params.skip}, take=${params.take}`);
             const queryParams = {};
             if (params.isRead !== undefined) {
                 queryParams.isRead = params.isRead;
+            }
+            if (params.sourceSystem !== undefined) {
+                queryParams.sourceSystem = params.sourceSystem;
             }
             if (params.skip !== undefined) {
                 queryParams.skip = params.skip;

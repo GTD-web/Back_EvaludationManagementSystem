@@ -89,6 +89,37 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
     async getEvaluationPeriodDetail(periodId) {
         return await this.evaluationPeriodManagementService.평가기간상세_조회한다(periodId);
     }
+    async getEvaluationPeriodForCopy(periodId) {
+        const evaluationPeriod = await this.evaluationPeriodManagementService.평가기간상세_조회한다(periodId);
+        if (!evaluationPeriod) {
+            throw new common_1.BadRequestException(`평가 기간을 찾을 수 없습니다. (ID: ${periodId})`);
+        }
+        const evaluationLines = await this.evaluationLineService.전체_조회한다();
+        const evaluationLineMappings = await this.evaluationLineMappingService.필터_조회한다({
+            evaluationPeriodId: periodId,
+        });
+        const wbsItemIds = [
+            ...new Set(evaluationLineMappings
+                .map((m) => m.wbsItemId)
+                .filter((id) => id !== null && id !== undefined)),
+        ];
+        let evaluationCriteria = [];
+        if (wbsItemIds.length > 0) {
+            const criteriaPromises = wbsItemIds.map((wbsItemId) => this.wbsEvaluationCriteriaService.WBS항목별_조회한다(wbsItemId));
+            const criteriaResults = await Promise.all(criteriaPromises);
+            evaluationCriteria = criteriaResults
+                .flat()
+                .map((c) => c.DTO로_변환한다());
+        }
+        return {
+            evaluationPeriod,
+            evaluationCriteria,
+            evaluationLines: {
+                lines: evaluationLines.map((line) => line.DTO로_변환한다()),
+                mappings: evaluationLineMappings.map((mapping) => mapping.DTO로_변환한다()),
+            },
+        };
+    }
     async createEvaluationPeriod(createData, user) {
         const createdBy = user.id;
         const contextDto = {
@@ -125,32 +156,58 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
                     .map((m) => m.wbsItemId)
                     .filter((id) => id !== null && id !== undefined)),
             ];
-            const copiedCriteriaMap = new Map();
+            let criteriaCopyCount = 0;
+            let criteriaSkipCount = 0;
             for (const wbsItemId of wbsItemIds) {
                 const sourceCriteria = await this.wbsEvaluationCriteriaService.WBS항목별_조회한다(wbsItemId);
                 if (sourceCriteria.length > 0) {
                     this.logger.log(`WBS ${wbsItemId}의 ${sourceCriteria.length}개 평가 기준을 복사합니다`);
                     for (const criteria of sourceCriteria) {
-                        await this.wbsEvaluationCriteriaService.생성한다({
-                            wbsItemId: criteria.wbsItemId,
-                            criteria: criteria.criteria,
-                            importance: criteria.importance,
-                        });
+                        try {
+                            await this.wbsEvaluationCriteriaService.생성한다({
+                                wbsItemId: criteria.wbsItemId,
+                                criteria: criteria.criteria,
+                                importance: criteria.importance,
+                            });
+                            criteriaCopyCount++;
+                        }
+                        catch (error) {
+                            if (error.code === 'DUPLICATE_WBS_EVALUATION_CRITERIA') {
+                                this.logger.log(`평가 기준 건너뜀 (이미 존재): WBS=${wbsItemId}, criteria="${criteria.criteria}"`);
+                                criteriaSkipCount++;
+                            }
+                            else {
+                                throw error;
+                            }
+                        }
                     }
-                    copiedCriteriaMap.set(wbsItemId, wbsItemId);
                 }
             }
+            let mappingCopyCount = 0;
+            let mappingSkipCount = 0;
             for (const mapping of sourceLineMappings) {
-                await this.evaluationLineMappingService.생성한다({
-                    evaluationPeriodId: targetPeriodId,
-                    evaluationLineId: mapping.evaluationLineId,
-                    employeeId: mapping.employeeId,
-                    evaluatorId: mapping.evaluatorId,
-                    wbsItemId: mapping.wbsItemId,
-                    createdBy,
-                });
+                try {
+                    await this.evaluationLineMappingService.생성한다({
+                        evaluationPeriodId: targetPeriodId,
+                        evaluationLineId: mapping.evaluationLineId,
+                        employeeId: mapping.employeeId,
+                        evaluatorId: mapping.evaluatorId,
+                        wbsItemId: mapping.wbsItemId,
+                        createdBy,
+                    });
+                    mappingCopyCount++;
+                }
+                catch (error) {
+                    if (error.code === 'EVALUATION_LINE_MAPPING_DUPLICATE') {
+                        this.logger.log(`평가라인 매핑 건너뜀 (이미 존재): employee=${mapping.employeeId}, evaluator=${mapping.evaluatorId}`);
+                        mappingSkipCount++;
+                    }
+                    else {
+                        throw error;
+                    }
+                }
             }
-            this.logger.log(`평가항목과 평가라인 복사 완료 - ${sourceLineMappings.length}개 매핑, ${copiedCriteriaMap.size}개 WBS 평가기준`);
+            this.logger.log(`평가항목과 평가라인 복사 완료 - WBS 평가기준: ${criteriaCopyCount}개 복사, ${criteriaSkipCount}개 건너뜀, 평가라인 매핑: ${mappingCopyCount}개 복사, ${mappingSkipCount}개 건너뜀`);
         }
         catch (error) {
             this.logger.error(`평가항목과 평가라인 복사 실패 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}`, error.stack);
@@ -321,6 +378,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EvaluationPeriodManagementController.prototype, "getEvaluationPeriodDetail", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.GetEvaluationPeriodForCopy)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "getEvaluationPeriodForCopy", null);
 __decorate([
     (0, evaluation_period_api_decorators_1.CreateEvaluationPeriod)(),
     __param(0, (0, common_1.Body)()),

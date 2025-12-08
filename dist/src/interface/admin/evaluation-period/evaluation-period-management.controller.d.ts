@@ -27,6 +27,14 @@ export declare class EvaluationPeriodManagementController {
         limit: number;
     }>;
     getEvaluationPeriodDetail(periodId: string): Promise<EvaluationPeriodDto | null>;
+    getEvaluationPeriodForCopy(periodId: string): Promise<{
+        evaluationPeriod: EvaluationPeriodDto | null;
+        evaluationCriteria: any[];
+        evaluationLines: {
+            lines: any[];
+            mappings: any[];
+        };
+    }>;
     createEvaluationPeriod(createData: CreateEvaluationPeriodApiDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
     private 평가항목과_평가라인을_복사한다;
     startEvaluationPeriod(periodId: string, user: AuthenticatedUser): Promise<{

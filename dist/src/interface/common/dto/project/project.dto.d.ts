@@ -31,7 +31,8 @@ export declare class GetProjectListQueryDto {
     endDateTo?: Date;
 }
 export declare class ManagerInfoDto {
-    id: string;
+    managerId: string;
+    employeeId?: string;
     name: string;
     email?: string;
     phoneNumber?: string;

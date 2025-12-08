@@ -173,9 +173,10 @@ let ProjectService = class ProjectService {
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
             managerId: result.managerId,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -235,9 +236,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -297,9 +299,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -385,9 +388,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -510,9 +514,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -575,9 +580,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -635,9 +641,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,
@@ -695,9 +702,10 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
-            manager: result.manager_employee_id
+            manager: result.manager_external_id
                 ? {
-                    id: result.manager_employee_id,
+                    managerId: result.manager_external_id,
+                    employeeId: result.manager_employee_id,
                     name: result.manager_name,
                     email: result.manager_email,
                     phoneNumber: result.manager_phone_number,

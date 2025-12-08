@@ -21,10 +21,16 @@ function CreateProject() {
 - 프로젝트 매니저(PM)를 설정할 수 있습니다
 - 프로젝트 코드 중복을 검사합니다
 - 생성자 정보를 자동으로 기록합니다
+- 생성 후 매니저 정보를 포함하여 반환합니다 (managerId, employeeId)
+
+**반환 데이터:**
+- manager.managerId: SSO의 매니저 ID
+- manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 
 **테스트 케이스:**
 - 기본 생성: 필수 정보만으로 프로젝트 생성
 - PM 포함 생성: 프로젝트 매니저를 지정하여 생성
+- 매니저 정보 확인: 생성된 프로젝트의 managerId와 employeeId 반환
 - 프로젝트 코드 포함: 프로젝트 코드를 포함하여 생성
 - 날짜 정보 포함: 시작일과 종료일을 포함하여 생성
 - 프로젝트 코드 중복: 이미 존재하는 프로젝트 코드 사용 시 400 에러
@@ -52,9 +58,15 @@ function CreateProjectsBulk() {
 - 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다
 - 성공/실패 항목을 구분하여 응답합니다
 - 생성자 정보를 자동으로 기록합니다
+- 생성 후 각 프로젝트의 매니저 정보를 포함합니다 (managerId, employeeId)
+
+**반환 데이터:**
+- manager.managerId: SSO의 매니저 ID
+- manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 
 **테스트 케이스:**
 - 전체 성공: 모든 프로젝트가 정상적으로 생성됨
+- 매니저 정보 포함: 각 프로젝트의 managerId와 employeeId 반환
 - 부분 성공: 일부 프로젝트만 생성 성공하고 나머지는 실패
 - PM 포함 생성: 각 프로젝트별로 다른 PM 지정
 - 프로젝트 코드 중복: 중복된 코드가 있는 프로젝트는 실패 처리
@@ -80,9 +92,15 @@ function GetProjectList() {
 - 다양한 필터 조건으로 프로젝트를 검색할 수 있습니다
 - 정렬 기준과 방향을 지정할 수 있습니다
 - 소프트 삭제된 프로젝트는 제외됩니다
+- 각 프로젝트의 매니저 정보를 포함합니다 (managerId, employeeId)
+
+**반환 데이터:**
+- manager.managerId: SSO의 매니저 ID
+- manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 
 **테스트 케이스:**
 - 기본 목록 조회: 기본 페이징 설정으로 프로젝트 목록 조회
+- 매니저 정보 포함: 각 프로젝트에 managerId와 employeeId 포함
 - 페이징 적용: 특정 페이지와 항목 수 지정
 - 상태 필터: 특정 상태의 프로젝트만 조회
 - 매니저 필터: 특정 매니저의 프로젝트만 조회
@@ -102,11 +120,16 @@ function GetProjectDetail() {
 
 **동작:**
 - 프로젝트 ID로 상세 정보를 조회합니다
-- 매니저 정보를 포함하여 반환합니다
+- 매니저 정보를 포함하여 반환합니다 (managerId, employeeId)
 - 삭제된 프로젝트는 조회되지 않습니다
+
+**반환 데이터:**
+- manager.managerId: SSO의 매니저 ID
+- manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 
 **테스트 케이스:**
 - 기본 조회: 유효한 프로젝트 ID로 상세 정보 조회
+- 매니저 정보 포함: managerId와 employeeId가 응답에 포함됨
 - 존재하지 않는 프로젝트: 유효하지 않은 ID로 조회 시 404 에러
 - 잘못된 UUID 형식: UUID 형식이 아닌 ID 입력 시 400 에러
 - 삭제된 프로젝트: 삭제된 프로젝트 조회 시 404 에러`,
@@ -136,10 +159,16 @@ function UpdateProject() {
 - 프로젝트 매니저를 변경할 수 있습니다
 - 프로젝트 코드 변경 시 중복을 검사합니다
 - 수정자 정보를 자동으로 기록합니다
+- 수정 후 매니저 정보를 포함하여 반환합니다 (managerId, employeeId)
+
+**반환 데이터:**
+- manager.managerId: SSO의 매니저 ID
+- manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 
 **테스트 케이스:**
 - 기본 수정: 프로젝트명 등 기본 정보 수정
 - PM 변경: 프로젝트 매니저 변경
+- 매니저 정보 확인: 수정된 프로젝트의 managerId와 employeeId 반환
 - 상태 변경: 프로젝트 상태 변경 (ACTIVE → COMPLETED 등)
 - 날짜 정보 수정: 시작일, 종료일 수정
 - 부분 수정: 일부 필드만 수정

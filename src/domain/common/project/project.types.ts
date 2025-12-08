@@ -13,8 +13,10 @@ export enum ProjectStatus {
  * 프로젝트 매니저 정보
  */
 export interface ManagerInfo {
-  /** 매니저 ID */
-  id: string;
+  /** 매니저 ID (SSO의 직원 ID) */
+  managerId: string;
+  /** 로컬 Employee ID (로컬 DB의 직원 ID) */
+  employeeId?: string;
   /** 매니저 이름 */
   name: string;
   /** 이메일 */

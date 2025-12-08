@@ -16,6 +16,9 @@ import { NotificationModule } from '../../domain/common/notification';
 import { DepartmentModule } from '../../domain/common/department/department.module';
 import { ProjectModule } from '../../domain/common/project/project.module';
 import { SystemSettingModule } from '../../domain/common/system-setting/system-setting.module';
+import { WbsEvaluationCriteriaModule } from '../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.module';
+import { EvaluationLineModule } from '../../domain/core/evaluation-line/evaluation-line.module';
+import { EvaluationLineMappingModule } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { AuthController } from './auth/auth.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -73,6 +76,9 @@ import { NotificationController } from '../common/controllers/notification.contr
     DepartmentModule, // 부서 모듈 주입
     ProjectModule, // 프로젝트 모듈 주입
     SystemSettingModule, // 시스템 설정 모듈 주입
+    WbsEvaluationCriteriaModule, // WBS 평가 기준 모듈 주입
+    EvaluationLineModule, // 평가 라인 모듈 주입
+    EvaluationLineMappingModule, // 평가 라인 맵핑 모듈 주입
   ],
   controllers: [
     AuthController, // 인증 컨트롤러

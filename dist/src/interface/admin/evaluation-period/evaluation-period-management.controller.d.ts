@@ -1,5 +1,8 @@
 import { EvaluationPeriodManagementContextService } from '@context/evaluation-period-management-context/evaluation-period-management.service';
 import { EvaluationPeriodBusinessService } from '@business/evaluation-period/evaluation-period-business.service';
+import { WbsEvaluationCriteriaService } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.service';
+import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
+import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import type { EvaluationPeriodDto } from '../../../domain/core/evaluation-period/evaluation-period.types';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { ChangeEvaluationPeriodPhaseApiDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
@@ -9,8 +12,11 @@ export declare class EvaluationPeriodManagementController {
     private readonly evaluationPeriodBusinessService;
     private readonly evaluationPeriodManagementService;
     private readonly systemSettingService;
+    private readonly wbsEvaluationCriteriaService;
+    private readonly evaluationLineService;
+    private readonly evaluationLineMappingService;
     private readonly logger;
-    constructor(evaluationPeriodBusinessService: EvaluationPeriodBusinessService, evaluationPeriodManagementService: EvaluationPeriodManagementContextService, systemSettingService: SystemSettingService);
+    constructor(evaluationPeriodBusinessService: EvaluationPeriodBusinessService, evaluationPeriodManagementService: EvaluationPeriodManagementContextService, systemSettingService: SystemSettingService, wbsEvaluationCriteriaService: WbsEvaluationCriteriaService, evaluationLineService: EvaluationLineService, evaluationLineMappingService: EvaluationLineMappingService);
     getDefaultGradeRanges(): Promise<GradeRangeResponseDto[]>;
     updateDefaultGradeRanges(updateData: UpdateDefaultGradeRangesApiDto): Promise<GradeRangeResponseDto[]>;
     getActiveEvaluationPeriods(): Promise<EvaluationPeriodDto[]>;
@@ -21,7 +27,16 @@ export declare class EvaluationPeriodManagementController {
         limit: number;
     }>;
     getEvaluationPeriodDetail(periodId: string): Promise<EvaluationPeriodDto | null>;
+    getEvaluationPeriodForCopy(periodId: string): Promise<{
+        evaluationPeriod: EvaluationPeriodDto | null;
+        evaluationCriteria: any[];
+        evaluationLines: {
+            lines: any[];
+            mappings: any[];
+        };
+    }>;
     createEvaluationPeriod(createData: CreateEvaluationPeriodApiDto, user: AuthenticatedUser): Promise<EvaluationPeriodDto>;
+    private 평가항목과_평가라인을_복사한다;
     startEvaluationPeriod(periodId: string, user: AuthenticatedUser): Promise<{
         success: boolean;
     }>;

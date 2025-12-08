@@ -123,6 +123,11 @@ export interface GetNotificationsParams {
   isRead?: boolean;
 
   /**
+   * 출처 시스템 필터
+   */
+  sourceSystem?: string;
+
+  /**
    * 건너뛸 개수
    */
   skip?: number;

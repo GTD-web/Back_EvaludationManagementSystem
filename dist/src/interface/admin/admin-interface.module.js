@@ -25,6 +25,9 @@ const notification_1 = require("../../domain/common/notification");
 const department_module_1 = require("../../domain/common/department/department.module");
 const project_module_1 = require("../../domain/common/project/project.module");
 const system_setting_module_1 = require("../../domain/common/system-setting/system-setting.module");
+const wbs_evaluation_criteria_module_1 = require("../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.module");
+const evaluation_line_module_1 = require("../../domain/core/evaluation-line/evaluation-line.module");
+const evaluation_line_mapping_module_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module");
 const employee_entity_1 = require("../../domain/common/employee/employee.entity");
 const auth_controller_1 = require("./auth/auth.controller");
 const dashboard_controller_1 = require("./dashboard/dashboard.controller");
@@ -79,6 +82,9 @@ exports.AdminInterfaceModule = AdminInterfaceModule = __decorate([
             department_module_1.DepartmentModule,
             project_module_1.ProjectModule,
             system_setting_module_1.SystemSettingModule,
+            wbs_evaluation_criteria_module_1.WbsEvaluationCriteriaModule,
+            evaluation_line_module_1.EvaluationLineModule,
+            evaluation_line_mapping_module_1.EvaluationLineMappingModule,
         ],
         controllers: [
             auth_controller_1.AuthController,

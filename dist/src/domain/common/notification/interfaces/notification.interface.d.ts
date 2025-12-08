@@ -27,6 +27,7 @@ export interface SendNotificationResult {
 export interface GetNotificationsParams {
     recipientId: string;
     isRead?: boolean;
+    sourceSystem?: string;
     skip?: number;
     take?: number;
 }

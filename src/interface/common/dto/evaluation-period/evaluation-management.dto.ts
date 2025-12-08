@@ -174,6 +174,15 @@ export class CreateEvaluationPeriodApiDto {
   @ValidateNested({ each: true })
   @Type(() => CreateGradeRangeApiDto)
   gradeRanges?: CreateGradeRangeApiDto[];
+
+  @ApiPropertyOptional({
+    description:
+      '복사할 원본 평가기간 ID (지정 시 원본의 평가항목과 평가라인을 복사)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsString({ message: '원본 평가기간 ID는 문자열이어야 합니다.' })
+  sourcePeriodId?: string;
 }
 
 /**

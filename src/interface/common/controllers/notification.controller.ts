@@ -49,12 +49,13 @@ export class NotificationController {
     }
 
     this.logger.debug(
-      `🔔 알림 목록 조회 API 호출 - recipientId: ${recipientId}, isRead: ${isRead} (원본: "${query.isRead}", type: ${typeof isRead}), skip: ${query.skip}, take: ${query.take}`,
+      `🔔 알림 목록 조회 API 호출 - recipientId: ${recipientId}, isRead: ${isRead} (원본: "${query.isRead}", type: ${typeof isRead}), sourceSystem: ${query.sourceSystem}, skip: ${query.skip}, take: ${query.take}`,
     );
 
     const result = await this.notificationService.알림목록을조회한다({
       recipientId,
       isRead: isRead,
+      sourceSystem: query.sourceSystem,
       skip: query.skip,
       take: query.take,
     });

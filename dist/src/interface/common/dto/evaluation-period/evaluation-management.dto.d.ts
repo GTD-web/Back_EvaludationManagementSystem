@@ -24,6 +24,7 @@ export declare class CreateEvaluationPeriodApiDto {
     description?: string;
     maxSelfEvaluationRate?: number;
     gradeRanges?: CreateGradeRangeApiDto[];
+    sourcePeriodId?: string;
 }
 export declare class UpdateEvaluationPeriodBasicApiDto {
     name?: string;

@@ -166,12 +166,15 @@ export class NotificationServiceImpl
 
     try {
       this.logger.log(
-        `알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, skip=${params.skip}, take=${params.take}`,
+        `알림 목록 조회 요청: recipientId=${params.recipientId}, isRead=${params.isRead}, sourceSystem=${params.sourceSystem}, skip=${params.skip}, take=${params.take}`,
       );
 
       const queryParams: any = {};
       if (params.isRead !== undefined) {
         queryParams.isRead = params.isRead;
+      }
+      if (params.sourceSystem !== undefined) {
+        queryParams.sourceSystem = params.sourceSystem;
       }
       if (params.skip !== undefined) {
         queryParams.skip = params.skip;

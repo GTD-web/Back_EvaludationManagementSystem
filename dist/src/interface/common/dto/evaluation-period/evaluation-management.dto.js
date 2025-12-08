@@ -136,6 +136,7 @@ class CreateEvaluationPeriodApiDto {
     description;
     maxSelfEvaluationRate;
     gradeRanges;
+    sourcePeriodId;
 }
 exports.CreateEvaluationPeriodApiDto = CreateEvaluationPeriodApiDto;
 __decorate([
@@ -199,6 +200,15 @@ __decorate([
     (0, class_transformer_1.Type)(() => CreateGradeRangeApiDto),
     __metadata("design:type", Array)
 ], CreateEvaluationPeriodApiDto.prototype, "gradeRanges", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '복사할 원본 평가기간 ID (지정 시 원본의 평가항목과 평가라인을 복사)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: '원본 평가기간 ID는 문자열이어야 합니다.' }),
+    __metadata("design:type", String)
+], CreateEvaluationPeriodApiDto.prototype, "sourcePeriodId", void 0);
 class UpdateEvaluationPeriodBasicApiDto {
     name;
     description;

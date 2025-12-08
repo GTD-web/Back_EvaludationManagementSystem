@@ -1,3 +1,7 @@
+export declare enum SourceSystem {
+    EMS = "EMS",
+    PORTAL = "portal"
+}
 export declare class NotificationDto {
     id: string;
     sender: string;
@@ -13,6 +17,7 @@ export declare class NotificationDto {
 }
 export declare class GetNotificationsQueryDto {
     isRead?: string;
+    sourceSystem?: SourceSystem;
     skip?: number;
     take?: number;
 }

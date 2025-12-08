@@ -174,9 +174,10 @@ export function GetMyEvaluationTargetsStatus() {
 - 피평가자가 1차 평가자에게 자기평가를 제출했는지 여부 제공 (전체 자기평가 수, 제출된 수, 제출 완료 여부)
 - **자기평가 조회 관련 필드 (평가자 유형에 따라 제공):**
   * **1차 평가자인 경우**: viewedByPrimaryEvaluator 필드만 제공 (자기평가 제출 시에만)
-  * **2차 평가자인 경우**: viewedBySecondaryEvaluator 필드만 제공 (자기평가 제출 시에만)
+  * **2차 평가자인 경우**: viewedBySecondaryEvaluator 필드만 제공 (1차 평가 제출 시에만)
   * **평가자가 아닌 경우**: viewedBy 관련 필드는 응답에 포함되지 않음
-  * **자기평가 미제출 시**: viewedBy 관련 필드는 응답에 포함되지 않음
+  * **자기평가 미제출 시 (1차 평가자)**: viewedByPrimaryEvaluator 필드는 응답에 포함되지 않음
+  * **1차 평가 미제출 시 (2차 평가자)**: viewedBySecondaryEvaluator 필드는 응답에 포함되지 않음
 - 내가 담당하는 하향평가 현황 제공 (평가 대상 WBS 수, 완료 수, 평균 점수, 수정 가능 여부)
 - **1차 평가 조회 관련 필드 (평가자 유형에 따라 제공):**
   * **2차 평가자인 경우**: secondaryStatus.primaryEvaluationViewed 필드 제공 (1차 평가 제출 시에만)
@@ -204,12 +205,12 @@ export function GetMyEvaluationTargetsStatus() {
 - 기능 테스트: 담당하는 평가 대상자가 없으면 빈 배열을 반환해야 한다
 - 기능 테스트: 여러 피평가자를 담당하는 경우 모두 조회되어야 한다
 - 기능 테스트: 성과 입력 상태가 정확해야 한다
-- 기능 테스트: 자기평가 미제출 시 viewedBy 필드가 포함되지 않아야 한다
-- 기능 테스트: 자기평가 제출 시 viewedBy 필드가 포함되어야 한다
-- 기능 테스트: 평가자가 피평가자 데이터를 조회하면 viewedBy가 true로 변경되어야 한다
-- 기능 테스트: 1차 평가 미제출 시 primaryEvaluationViewed 필드가 포함되지 않아야 한다
-- 기능 테스트: 1차 평가 제출 시 primaryEvaluationViewed 필드가 포함되어야 한다
-- 기능 테스트: 2차 평가자가 피평가자 데이터를 조회하면 primaryEvaluationViewed가 true로 변경되어야 한다
+- 기능 테스트: 자기평가 미제출 시 1차 평가자의 viewedByPrimaryEvaluator 필드가 포함되지 않아야 한다
+- 기능 테스트: 자기평가 제출 시 1차 평가자의 viewedByPrimaryEvaluator 필드가 포함되어야 한다
+- 기능 테스트: 1차 평가자가 피평가자 데이터를 조회하면 viewedByPrimaryEvaluator가 true로 변경되어야 한다
+- 기능 테스트: 1차 평가 미제출 시 2차 평가자의 viewedBySecondaryEvaluator 필드가 포함되지 않아야 한다
+- 기능 테스트: 1차 평가 제출 시 2차 평가자의 viewedBySecondaryEvaluator 필드가 포함되어야 한다
+- 기능 테스트: 2차 평가자가 피평가자 데이터를 조회하면 viewedBySecondaryEvaluator와 primaryEvaluationViewed가 true로 변경되어야 한다
 - 실패 케이스: 존재하지 않는 평가기간 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 존재하지 않는 평가자 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 잘못된 평가기간 UUID 형식으로 요청 시 에러가 발생해야 한다

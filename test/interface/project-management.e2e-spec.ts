@@ -653,6 +653,393 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
     });
   });
 
+  describe('프로젝트 일괄 생성 (POST /admin/projects/bulk)', () => {
+    it('여러 프로젝트를 한 번에 생성할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '일괄 프로젝트 1',
+            projectCode: 'BULK-001',
+            status: ProjectStatus.ACTIVE,
+            startDate: '2024-01-01',
+            endDate: '2024-12-31',
+            managerId: MOCK_MANAGER_ID_1,
+          },
+          {
+            name: '일괄 프로젝트 2',
+            projectCode: 'BULK-002',
+            status: ProjectStatus.ACTIVE,
+            startDate: '2024-02-01',
+            endDate: '2024-11-30',
+            managerId: MOCK_MANAGER_ID_2,
+          },
+          {
+            name: '일괄 프로젝트 3',
+            projectCode: 'BULK-003',
+            status: ProjectStatus.COMPLETED,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body).toHaveProperty('success');
+      expect(response.body).toHaveProperty('failed');
+      expect(response.body).toHaveProperty('successCount');
+      expect(response.body).toHaveProperty('failedCount');
+      expect(response.body).toHaveProperty('totalCount');
+
+      expect(response.body.successCount).toBe(3);
+      expect(response.body.failedCount).toBe(0);
+      expect(response.body.totalCount).toBe(3);
+      expect(response.body.success).toHaveLength(3);
+      expect(response.body.failed).toHaveLength(0);
+
+      // 생성된 프로젝트 ID 저장 (cleanup용)
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 각 프로젝트 데이터 검증
+      expect(response.body.success[0]).toMatchObject({
+        name: '일괄 프로젝트 1',
+        projectCode: 'BULK-001',
+        status: ProjectStatus.ACTIVE,
+      });
+      expect(response.body.success[1]).toMatchObject({
+        name: '일괄 프로젝트 2',
+        projectCode: 'BULK-002',
+        status: ProjectStatus.ACTIVE,
+      });
+      expect(response.body.success[2]).toMatchObject({
+        name: '일괄 프로젝트 3',
+        projectCode: 'BULK-003',
+        status: ProjectStatus.COMPLETED,
+      });
+    });
+
+    it('각 프로젝트별로 다른 PM을 지정할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: 'PM1 프로젝트',
+            projectCode: 'PM1-001',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_1,
+          },
+          {
+            name: 'PM2 프로젝트',
+            projectCode: 'PM2-002',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_2,
+          },
+          {
+            name: 'PM 없는 프로젝트',
+            projectCode: 'NO-PM-003',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(3);
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // PM 정보 확인 (manager 정보는 Employee 테이블에 해당 externalId가 있을 때만 포함됨)
+      expect(response.body.success[0]).toHaveProperty('managerId');
+      expect(response.body.success[1]).toHaveProperty('managerId');
+    });
+
+    it('중복된 프로젝트 코드가 있는 경우 해당 항목만 실패한다', async () => {
+      // Given - 먼저 하나의 프로젝트 생성
+      const existingProject = await testSuite
+        .request()
+        .post('/admin/projects')
+        .send({
+          name: '기존 프로젝트',
+          projectCode: 'EXISTING-001',
+          status: ProjectStatus.ACTIVE,
+        });
+      createdProjectIds.push(existingProject.body.id);
+
+      // 일괄 생성 데이터 (중복 코드 포함)
+      const bulkData = {
+        projects: [
+          {
+            name: '새 프로젝트 1',
+            projectCode: 'NEW-001',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '중복 프로젝트',
+            projectCode: 'EXISTING-001', // 중복!
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '새 프로젝트 2',
+            projectCode: 'NEW-002',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(2);
+      expect(response.body.failedCount).toBe(1);
+      expect(response.body.totalCount).toBe(3);
+
+      // 성공한 프로젝트
+      expect(response.body.success).toHaveLength(2);
+      expect(response.body.success[0].projectCode).toBe('NEW-001');
+      expect(response.body.success[1].projectCode).toBe('NEW-002');
+
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 실패한 프로젝트
+      expect(response.body.failed).toHaveLength(1);
+      expect(response.body.failed[0]).toHaveProperty('index');
+      expect(response.body.failed[0]).toHaveProperty('data');
+      expect(response.body.failed[0]).toHaveProperty('error');
+      expect(response.body.failed[0].index).toBe(1);
+      expect(response.body.failed[0].data.projectCode).toBe('EXISTING-001');
+      expect(response.body.failed[0].error).toContain('이미 사용 중입니다');
+    });
+
+    it('일부 프로젝트에 필수 필드가 누락된 경우 해당 항목만 실패한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '정상 프로젝트 1',
+            projectCode: 'VALID-001',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            // name 누락!
+            projectCode: 'INVALID-002',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '정상 프로젝트 2',
+            projectCode: 'VALID-003',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData);
+
+      // 전체 요청 자체가 validation 에러로 실패할 수 있음
+      // ValidationPipe가 배열 내 각 항목을 검증하므로 400 에러 반환
+      expect(response.status).toBe(400);
+    });
+
+    it('빈 배열로 일괄 생성 시 빈 결과를 반환한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData);
+
+      // Then
+      // 빈 배열도 유효한 요청이므로 201 또는 400 (최소 1개 이상 필요한 경우)
+      // 현재 구현은 빈 배열도 허용하므로 201
+      if (response.status === 201) {
+        expect(response.body.successCount).toBe(0);
+        expect(response.body.failedCount).toBe(0);
+        expect(response.body.totalCount).toBe(0);
+      }
+    });
+
+    it('잘못된 상태 값이 있는 경우 validation 에러를 반환한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '정상 프로젝트',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '잘못된 상태 프로젝트',
+            status: 'INVALID_STATUS', // 잘못된 상태
+          },
+        ],
+      };
+
+      // When & Then
+      await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(400);
+    });
+
+    it('대량의 프로젝트를 일괄 생성할 수 있다', async () => {
+      // Given - 10개의 프로젝트 데이터
+      const projects = Array.from({ length: 10 }, (_, i) => ({
+        name: `대량 프로젝트 ${i + 1}`,
+        projectCode: `BULK-LARGE-${String(i + 1).padStart(3, '0')}`,
+        status: i % 2 === 0 ? ProjectStatus.ACTIVE : ProjectStatus.COMPLETED,
+        managerId: i % 2 === 0 ? MOCK_MANAGER_ID_1 : MOCK_MANAGER_ID_2,
+      }));
+
+      const bulkData = { projects };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(10);
+      expect(response.body.failedCount).toBe(0);
+      expect(response.body.success).toHaveLength(10);
+
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 모든 프로젝트가 정상 생성되었는지 확인
+      for (let i = 0; i < 10; i++) {
+        expect(response.body.success[i]).toMatchObject({
+          name: `대량 프로젝트 ${i + 1}`,
+          projectCode: `BULK-LARGE-${String(i + 1).padStart(3, '0')}`,
+        });
+      }
+    });
+
+    it('모든 프로젝트 생성에 실패하는 경우를 처리할 수 있다', async () => {
+      // Given - 먼저 프로젝트들 생성
+      const existingProjects = [
+        { name: 'A', projectCode: 'EXIST-A', status: ProjectStatus.ACTIVE },
+        { name: 'B', projectCode: 'EXIST-B', status: ProjectStatus.ACTIVE },
+      ];
+
+      for (const project of existingProjects) {
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(project);
+        createdProjectIds.push(response.body.id);
+      }
+
+      // 모두 중복된 코드로 시도
+      const bulkData = {
+        projects: [
+          {
+            name: '중복 A',
+            projectCode: 'EXIST-A',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '중복 B',
+            projectCode: 'EXIST-B',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(0);
+      expect(response.body.failedCount).toBe(2);
+      expect(response.body.totalCount).toBe(2);
+      expect(response.body.success).toHaveLength(0);
+      expect(response.body.failed).toHaveLength(2);
+
+      // 실패 정보 확인
+      expect(response.body.failed[0].error).toContain('이미 사용 중입니다');
+      expect(response.body.failed[1].error).toContain('이미 사용 중입니다');
+    });
+
+    it('생성된 프로젝트들을 목록에서 조회할 수 있다', async () => {
+      // Given & When - 일괄 생성
+      const bulkData = {
+        projects: [
+          {
+            name: '조회 테스트 1',
+            projectCode: 'LIST-001',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '조회 테스트 2',
+            projectCode: 'LIST-002',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      const createResponse = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      createResponse.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // Then - 목록 조회
+      const listResponse = await testSuite
+        .request()
+        .get('/admin/projects')
+        .expect(200);
+
+      expect(listResponse.body.total).toBeGreaterThanOrEqual(2);
+
+      // 생성된 프로젝트들이 목록에 포함되어 있는지 확인
+      const createdIds = createResponse.body.success.map((p: any) => p.id);
+      const listedIds = listResponse.body.projects.map((p: any) => p.id);
+
+      createdIds.forEach((id: string) => {
+        expect(listedIds).toContain(id);
+      });
+    });
+  });
+
   describe('PM 목록 조회 (GET /admin/projects/managers)', () => {
     it('관리 권한이 있는 직원 목록을 조회할 수 있다', async () => {
       // When

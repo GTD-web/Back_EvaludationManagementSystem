@@ -138,7 +138,7 @@ let ProjectManagementController = class ProjectManagementController {
         const managerDtos = await Promise.all(managers.map(async (emp) => {
             const employee = await this.employeeService.findByExternalId(emp.id);
             return {
-                id: emp.id,
+                managerId: emp.id,
                 employeeId: employee?.id,
                 employeeNumber: emp.employeeNumber,
                 name: emp.name,

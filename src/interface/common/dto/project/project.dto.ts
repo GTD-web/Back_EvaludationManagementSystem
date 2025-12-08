@@ -475,7 +475,7 @@ export class ProjectManagerDto {
     description: '매니저 ID (SSO의 직원 ID)',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  id: string;
+  managerId: string;
 
   @ApiPropertyOptional({
     description: '로컬 Employee ID (로컬 DB의 직원 ID)',

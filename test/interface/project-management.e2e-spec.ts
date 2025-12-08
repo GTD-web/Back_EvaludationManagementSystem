@@ -1069,7 +1069,8 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
 
       // Then
       const manager = response.body.managers[0];
-      expect(manager).toHaveProperty('id');
+      expect(manager).toHaveProperty('managerId');
+      expect(manager).toHaveProperty('employeeId');
       expect(manager).toHaveProperty('employeeNumber');
       expect(manager).toHaveProperty('name');
       expect(manager).toHaveProperty('email');
@@ -1141,7 +1142,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
 
       // Then
       const hasNonManager = response.body.managers.some(
-        (manager: any) => manager.id === 'emp-003',
+        (manager: any) => manager.managerId === 'emp-003',
       );
       expect(hasNonManager).toBe(false);
     });
@@ -1241,7 +1242,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
           name: 'PM 선택 프로젝트',
           projectCode: 'PM-SELECT-2024',
           status: ProjectStatus.ACTIVE,
-          managerId: selectedManager.id,
+          managerId: selectedManager.managerId,
         })
         .expect(201);
 

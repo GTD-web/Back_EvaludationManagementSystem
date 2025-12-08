@@ -318,7 +318,7 @@ export function GetProjectManagers() {
 - 부서 ID로 특정 부서의 PM만 조회 가능합니다
 
 **반환 데이터:**
-- id: SSO의 매니저 ID (managerId)
+- managerId: SSO의 매니저 ID
 - employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
 - 기타 직원 정보 (사번, 이름, 이메일, 부서, 직책 등)
 

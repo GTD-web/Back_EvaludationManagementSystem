@@ -552,7 +552,7 @@ __decorate([
     __metadata("design:type", String)
 ], GetProjectManagersQueryDto.prototype, "search", void 0);
 class ProjectManagerDto {
-    id;
+    managerId;
     employeeId;
     employeeNumber;
     name;
@@ -571,7 +571,7 @@ __decorate([
         example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     __metadata("design:type", String)
-], ProjectManagerDto.prototype, "id", void 0);
+], ProjectManagerDto.prototype, "managerId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: '로컬 Employee ID (로컬 DB의 직원 ID)',

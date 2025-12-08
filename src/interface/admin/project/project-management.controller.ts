@@ -224,7 +224,7 @@ export class ProjectManagementController {
         const employee = await this.employeeService.findByExternalId(emp.id);
 
         return {
-          id: emp.id, // SSO의 매니저 ID
+          managerId: emp.id, // SSO의 매니저 ID
           employeeId: employee?.id, // 로컬 Employee ID
           employeeNumber: emp.employeeNumber,
           name: emp.name,

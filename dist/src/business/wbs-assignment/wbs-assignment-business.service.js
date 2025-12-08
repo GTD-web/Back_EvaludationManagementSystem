@@ -404,7 +404,8 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         console.log('🔍 프로젝트 정보:', {
             id: project.id,
             name: project.name,
-            managerId: project.manager?.id,
+            managerId: project.manager?.managerId,
+            employeeId: project.manager?.employeeId,
         });
         const existingPrimaryEvaluator = await this.기존_1차_평가자를_조회한다(employeeId, periodId);
         let primaryEvaluatorId = existingPrimaryEvaluator;
@@ -430,10 +431,10 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
             });
         }
         const projectManagerExternalId = project.managerId;
-        const projectManagerId = project.manager?.id;
+        const projectManagerEmployeeId = project.manager?.employeeId;
         let evaluatorId = null;
-        if (projectManagerId) {
-            evaluatorId = projectManagerId;
+        if (projectManagerEmployeeId) {
+            evaluatorId = projectManagerEmployeeId;
         }
         else if (projectManagerExternalId) {
             const managerEmployee = await this.employeeService.findByExternalId(projectManagerExternalId);
@@ -479,8 +480,8 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
             employeeId,
             wbsItemId,
             primaryEvaluator: employee.managerId,
-            secondaryEvaluator: projectManagerId && projectManagerId !== employee.managerId
-                ? projectManagerId
+            secondaryEvaluator: projectManagerEmployeeId && projectManagerEmployeeId !== employee.managerId
+                ? projectManagerEmployeeId
                 : null,
         });
     }

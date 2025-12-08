@@ -20,12 +20,15 @@ const project_dto_1 = require("../../common/dto/project/project.dto");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const sso_module_1 = require("../../../domain/common/sso/sso.module");
+const employee_service_1 = require("../../../domain/common/employee/employee.service");
 let ProjectManagementController = class ProjectManagementController {
     projectService;
     ssoService;
-    constructor(projectService, ssoService) {
+    employeeService;
+    constructor(projectService, ssoService, employeeService) {
         this.projectService = projectService;
         this.ssoService = ssoService;
+        this.employeeService = employeeService;
     }
     async createProject(createDto, user) {
         const createdBy = user.id;
@@ -132,17 +135,21 @@ let ProjectManagementController = class ProjectManagementController {
                 emp.employeeNumber.toLowerCase().includes(searchLower) ||
                 emp.email.toLowerCase().includes(searchLower));
         }
-        const managerDtos = managers.map((emp) => ({
-            id: emp.id,
-            employeeNumber: emp.employeeNumber,
-            name: emp.name,
-            email: emp.email,
-            departmentName: emp.department?.departmentName,
-            departmentCode: emp.department?.departmentCode,
-            positionName: emp.position?.positionName,
-            positionLevel: emp.position?.positionLevel,
-            jobTitleName: emp.jobTitle?.jobTitleName,
-            hasManagementAuthority: emp.position?.hasManagementAuthority,
+        const managerDtos = await Promise.all(managers.map(async (emp) => {
+            const employee = await this.employeeService.findByExternalId(emp.id);
+            return {
+                managerId: emp.id,
+                employeeId: employee?.id,
+                employeeNumber: emp.employeeNumber,
+                name: emp.name,
+                email: emp.email,
+                departmentName: emp.department?.departmentName,
+                departmentCode: emp.department?.departmentCode,
+                positionName: emp.position?.positionName,
+                positionLevel: emp.position?.positionLevel,
+                jobTitleName: emp.jobTitle?.jobTitleName,
+                hasManagementAuthority: emp.position?.hasManagementAuthority,
+            };
         }));
         return {
             managers: managerDtos,
@@ -262,6 +269,6 @@ exports.ProjectManagementController = ProjectManagementController = __decorate([
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, common_1.Controller)('admin/projects'),
     __param(1, (0, common_1.Inject)(sso_module_1.SSOService)),
-    __metadata("design:paramtypes", [project_service_1.ProjectService, Object])
+    __metadata("design:paramtypes", [project_service_1.ProjectService, Object, employee_service_1.EmployeeService])
 ], ProjectManagementController);
 //# sourceMappingURL=project-management.controller.js.map

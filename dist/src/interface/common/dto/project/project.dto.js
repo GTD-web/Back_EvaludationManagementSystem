@@ -308,7 +308,8 @@ __decorate([
     __metadata("design:type", Date)
 ], GetProjectListQueryDto.prototype, "endDateTo", void 0);
 class ManagerInfoDto {
-    id;
+    managerId;
+    employeeId;
     name;
     email;
     phoneNumber;
@@ -318,11 +319,18 @@ class ManagerInfoDto {
 exports.ManagerInfoDto = ManagerInfoDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '매니저 ID (UUID)',
+        description: '매니저 ID (SSO의 직원 ID)',
         example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     __metadata("design:type", String)
-], ManagerInfoDto.prototype, "id", void 0);
+], ManagerInfoDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '로컬 Employee ID (로컬 DB의 직원 ID)',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    __metadata("design:type", String)
+], ManagerInfoDto.prototype, "employeeId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '매니저 이름',
@@ -544,7 +552,8 @@ __decorate([
     __metadata("design:type", String)
 ], GetProjectManagersQueryDto.prototype, "search", void 0);
 class ProjectManagerDto {
-    id;
+    managerId;
+    employeeId;
     employeeNumber;
     name;
     email;
@@ -558,11 +567,18 @@ class ProjectManagerDto {
 exports.ProjectManagerDto = ProjectManagerDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '직원 ID (UUID)',
+        description: '매니저 ID (SSO의 직원 ID)',
         example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     __metadata("design:type", String)
-], ProjectManagerDto.prototype, "id", void 0);
+], ProjectManagerDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '로컬 Employee ID (로컬 DB의 직원 ID)',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    __metadata("design:type", String)
+], ProjectManagerDto.prototype, "employeeId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '사번',

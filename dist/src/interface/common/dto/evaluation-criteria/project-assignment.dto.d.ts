@@ -118,7 +118,8 @@ export declare class GetAvailableProjectsQueryDto {
     sortOrder?: 'ASC' | 'DESC';
 }
 export declare class ProjectManagerInfoDto {
-    id: string;
+    managerId: string;
+    employeeId?: string;
     name: string;
     email?: string;
     phoneNumber?: string;

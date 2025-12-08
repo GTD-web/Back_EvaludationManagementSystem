@@ -131,11 +131,20 @@ let NotificationServiceImpl = NotificationServiceImpl_1 = class NotificationServ
                 createdAt: new Date(notification.createdAt),
                 readAt: notification.readAt ? new Date(notification.readAt) : undefined,
             }));
-            const unreadCount = notifications.filter((n) => !n.isRead).length;
-            this.logger.log(`알림 목록 조회 완료: 조회=${notifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`);
+            const sourceSystemStats = notifications.reduce((acc, n) => {
+                acc[n.sourceSystem] = (acc[n.sourceSystem] || 0) + 1;
+                return acc;
+            }, {});
+            this.logger.warn(`⚠️ 알림 서버 응답에 포함된 sourceSystem 통계: ${JSON.stringify(sourceSystemStats)}`);
+            const filteredNotifications = notifications.filter((n) => n.sourceSystem === 'EMS');
+            if (filteredNotifications.length < notifications.length) {
+                this.logger.warn(`⚠️ 알림 서버가 sourceSystem 필터링을 하지 않아 백엔드에서 필터링: 원본 ${notifications.length}개 → 필터링 후 ${filteredNotifications.length}개`);
+            }
+            const unreadCount = filteredNotifications.filter((n) => !n.isRead).length;
+            this.logger.log(`알림 목록 조회 완료: 조회=${filteredNotifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`);
             return {
-                notifications,
-                total: response.data.total || notifications.length,
+                notifications: filteredNotifications,
+                total: response.data.total || filteredNotifications.length,
                 unreadCount,
             };
         }

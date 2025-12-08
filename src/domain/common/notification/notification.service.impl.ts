@@ -214,19 +214,40 @@ export class NotificationServiceImpl
         readAt: notification.readAt ? new Date(notification.readAt) : undefined,
       }));
 
+      // sourceSystem 통계 로깅 (디버깅용)
+      const sourceSystemStats = notifications.reduce((acc, n) => {
+        acc[n.sourceSystem] = (acc[n.sourceSystem] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      this.logger.warn(
+        `⚠️ 알림 서버 응답에 포함된 sourceSystem 통계: ${JSON.stringify(sourceSystemStats)}`,
+      );
+
+      // EMS가 아닌 알림 필터링 (알림 서버에서 필터링하지 않은 경우 대비)
+      const filteredNotifications = notifications.filter(
+        (n) => n.sourceSystem === 'EMS',
+      );
+
+      if (filteredNotifications.length < notifications.length) {
+        this.logger.warn(
+          `⚠️ 알림 서버가 sourceSystem 필터링을 하지 않아 백엔드에서 필터링: 원본 ${notifications.length}개 → 필터링 후 ${filteredNotifications.length}개`,
+        );
+      }
+
       // unreadCount: 현재 가져온 notifications 배열에서 읽지 않은 알림 개수
-      const unreadCount = notifications.filter((n) => !n.isRead).length;
+      const unreadCount = filteredNotifications.filter((n) => !n.isRead).length;
 
       this.logger.log(
-        `알림 목록 조회 완료: 조회=${notifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`,
+        `알림 목록 조회 완료: 조회=${filteredNotifications.length}개, 전체=${response.data.total || 0}개, 미읽음=${unreadCount}개`,
       );
 
       // total은 메일 서버에서 받은 값 사용 (필터 조건에 맞는 전체 개수)
       // take 값에 상관없이 필터 조건(isRead)에 해당하는 총 알림 개수를 반환
       // unreadCount는 현재 페이지(notifications)에서 읽지 않은 알림 개수
       return {
-        notifications,
-        total: response.data.total || notifications.length,
+        notifications: filteredNotifications,
+        total: response.data.total || filteredNotifications.length,
         unreadCount,
       };
     } catch (error) {

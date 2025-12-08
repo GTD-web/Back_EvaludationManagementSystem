@@ -18,6 +18,9 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_management_service_1 = require("../../../context/evaluation-period-management-context/evaluation-period-management.service");
 const evaluation_period_business_service_1 = require("../../../business/evaluation-period/evaluation-period-business.service");
+const wbs_evaluation_criteria_service_1 = require("../../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.service");
+const evaluation_line_service_1 = require("../../../domain/core/evaluation-line/evaluation-line.service");
+const evaluation_line_mapping_service_1 = require("../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
@@ -27,11 +30,17 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
     evaluationPeriodBusinessService;
     evaluationPeriodManagementService;
     systemSettingService;
+    wbsEvaluationCriteriaService;
+    evaluationLineService;
+    evaluationLineMappingService;
     logger = new common_1.Logger(EvaluationPeriodManagementController_1.name);
-    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService, systemSettingService) {
+    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService, systemSettingService, wbsEvaluationCriteriaService, evaluationLineService, evaluationLineMappingService) {
         this.evaluationPeriodBusinessService = evaluationPeriodBusinessService;
         this.evaluationPeriodManagementService = evaluationPeriodManagementService;
         this.systemSettingService = systemSettingService;
+        this.wbsEvaluationCriteriaService = wbsEvaluationCriteriaService;
+        this.evaluationLineService = evaluationLineService;
+        this.evaluationLineMappingService = evaluationLineMappingService;
     }
     async getDefaultGradeRanges() {
         const gradeRanges = await this.systemSettingService.기본등급구간_조회한다();
@@ -95,7 +104,58 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
             })) || [],
         };
         const result = await this.evaluationPeriodBusinessService.평가기간을_생성한다(contextDto, createdBy);
+        if (createData.sourcePeriodId) {
+            await this.평가항목과_평가라인을_복사한다(createData.sourcePeriodId, result.evaluationPeriod.id, createdBy);
+        }
         return result.evaluationPeriod;
+    }
+    async 평가항목과_평가라인을_복사한다(sourcePeriodId, targetPeriodId, createdBy) {
+        this.logger.log(`평가항목과 평가라인 복사 시작 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}`);
+        try {
+            const sourceLineMappings = await this.evaluationLineMappingService.필터_조회한다({
+                evaluationPeriodId: sourcePeriodId,
+            });
+            if (sourceLineMappings.length === 0) {
+                this.logger.warn(`원본 평가기간에 복사할 평가라인이 없습니다: ${sourcePeriodId}`);
+                return;
+            }
+            this.logger.log(`${sourceLineMappings.length}개의 평가라인 매핑을 복사합니다`);
+            const wbsItemIds = [
+                ...new Set(sourceLineMappings
+                    .map((m) => m.wbsItemId)
+                    .filter((id) => id !== null && id !== undefined)),
+            ];
+            const copiedCriteriaMap = new Map();
+            for (const wbsItemId of wbsItemIds) {
+                const sourceCriteria = await this.wbsEvaluationCriteriaService.WBS항목별_조회한다(wbsItemId);
+                if (sourceCriteria.length > 0) {
+                    this.logger.log(`WBS ${wbsItemId}의 ${sourceCriteria.length}개 평가 기준을 복사합니다`);
+                    for (const criteria of sourceCriteria) {
+                        await this.wbsEvaluationCriteriaService.생성한다({
+                            wbsItemId: criteria.wbsItemId,
+                            criteria: criteria.criteria,
+                            importance: criteria.importance,
+                        });
+                    }
+                    copiedCriteriaMap.set(wbsItemId, wbsItemId);
+                }
+            }
+            for (const mapping of sourceLineMappings) {
+                await this.evaluationLineMappingService.생성한다({
+                    evaluationPeriodId: targetPeriodId,
+                    evaluationLineId: mapping.evaluationLineId,
+                    employeeId: mapping.employeeId,
+                    evaluatorId: mapping.evaluatorId,
+                    wbsItemId: mapping.wbsItemId,
+                    createdBy,
+                });
+            }
+            this.logger.log(`평가항목과 평가라인 복사 완료 - ${sourceLineMappings.length}개 매핑, ${copiedCriteriaMap.size}개 WBS 평가기준`);
+        }
+        catch (error) {
+            this.logger.error(`평가항목과 평가라인 복사 실패 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}`, error.stack);
+            throw error;
+        }
     }
     async startEvaluationPeriod(periodId, user) {
         const startedBy = user.id;
@@ -431,6 +491,9 @@ exports.EvaluationPeriodManagementController = EvaluationPeriodManagementControl
     (0, common_1.Controller)('admin/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_business_service_1.EvaluationPeriodBusinessService,
         evaluation_period_management_service_1.EvaluationPeriodManagementContextService,
-        system_setting_service_1.SystemSettingService])
+        system_setting_service_1.SystemSettingService,
+        wbs_evaluation_criteria_service_1.WbsEvaluationCriteriaService,
+        evaluation_line_service_1.EvaluationLineService,
+        evaluation_line_mapping_service_1.EvaluationLineMappingService])
 ], EvaluationPeriodManagementController);
 //# sourceMappingURL=evaluation-period-management.controller.js.map

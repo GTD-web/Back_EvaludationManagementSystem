@@ -31,10 +31,12 @@ export class EvaluationPeriodManagementApiClient {
    * @param config.limit - 페이지 크기 (기본값: 10)
    * @returns 평가기간 목록 (페이징 정보 포함)
    */
-  async getEvaluationPeriods(config: {
-    page?: number;
-    limit?: number;
-  } = {}): Promise<any> {
+  async getEvaluationPeriods(
+    config: {
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<any> {
     const { page = 1, limit = 10 } = config;
 
     const response = await this.testSuite
@@ -62,6 +64,25 @@ export class EvaluationPeriodManagementApiClient {
   }
 
   /**
+   * 평가 기간 복제용 데이터 조회 API 호출
+   *
+   * @param periodId - 평가기간 ID
+   * @returns 평가기간 복제용 데이터 (평가기간, 평가항목, 평가라인 포함)
+   */
+  async getEvaluationPeriodForCopy(periodId: string): Promise<{
+    evaluationPeriod: any;
+    evaluationCriteria: any[];
+    evaluationLines: any;
+  }> {
+    const response = await this.testSuite
+      .request()
+      .get(`/admin/evaluation-periods/${periodId}/for-copy`)
+      .expect(200);
+
+    return response.body;
+  }
+
+  /**
    * 기본 등급 구간 조회 API 호출
    *
    * @returns 기본 등급 구간 목록
@@ -81,11 +102,13 @@ export class EvaluationPeriodManagementApiClient {
    * @param gradeRanges - 변경할 등급 구간 목록
    * @returns 변경된 등급 구간 목록
    */
-  async updateDefaultGradeRanges(gradeRanges: Array<{
-    grade: string;
-    minRange: number;
-    maxRange: number;
-  }>): Promise<any> {
+  async updateDefaultGradeRanges(
+    gradeRanges: Array<{
+      grade: string;
+      minRange: number;
+      maxRange: number;
+    }>,
+  ): Promise<any> {
     const response = await this.testSuite
       .request()
       .post('/admin/evaluation-periods/default-grade-ranges')
@@ -101,6 +124,7 @@ export class EvaluationPeriodManagementApiClient {
    * 평가기간 생성 API 호출
    *
    * @param createData - 평가기간 생성 데이터
+   * @param createData.sourcePeriodId - 복사할 원본 평가기간 ID (선택적)
    * @returns 생성된 평가기간 정보
    */
   async createEvaluationPeriod(createData: {
@@ -114,6 +138,7 @@ export class EvaluationPeriodManagementApiClient {
       minRange: number;
       maxRange: number;
     }>;
+    sourcePeriodId?: string;
   }): Promise<any> {
     const response = await this.testSuite
       .request()
@@ -357,7 +382,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${periodId}/settings/criteria-permission`)
+      .patch(
+        `/admin/evaluation-periods/${periodId}/settings/criteria-permission`,
+      )
       .send(permissionData)
       .expect(200);
 
@@ -379,7 +406,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${periodId}/settings/self-evaluation-permission`)
+      .patch(
+        `/admin/evaluation-periods/${periodId}/settings/self-evaluation-permission`,
+      )
       .send(permissionData)
       .expect(200);
 
@@ -401,7 +430,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${periodId}/settings/self-evaluation-permission`)
+      .patch(
+        `/admin/evaluation-periods/${periodId}/settings/self-evaluation-permission`,
+      )
       .send(permissionData)
       .expect(200);
 
@@ -423,7 +454,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${periodId}/settings/final-evaluation-permission`)
+      .patch(
+        `/admin/evaluation-periods/${periodId}/settings/final-evaluation-permission`,
+      )
       .send(permissionData)
       .expect(200);
 
@@ -447,7 +480,9 @@ export class EvaluationPeriodManagementApiClient {
   ): Promise<any> {
     const response = await this.testSuite
       .request()
-      .patch(`/admin/evaluation-periods/${periodId}/settings/manual-permissions`)
+      .patch(
+        `/admin/evaluation-periods/${periodId}/settings/manual-permissions`,
+      )
       .send(permissionData)
       .expect(200);
 

@@ -1135,3 +1135,66 @@ export function DeleteEvaluationPeriod() {
     }),
   );
 }
+
+/**
+ * 평가 기간 복제용 데이터 조회 엔드포인트 데코레이터
+ */
+export function GetEvaluationPeriodForCopy() {
+  return applyDecorators(
+    Get(':id/for-copy'),
+    ApiOperation({
+      summary: '평가 기간 복제용 데이터 조회',
+      description: `이전 평가 기간의 설정을 새 평가 기간에 복사하기 위한 데이터를 조회합니다.
+
+**동작:**
+- 평가 기간의 기본 정보, 평가항목, 평가라인을 조회합니다.
+- 복사 시 제외되는 정보 (평가 기간명, 날짜 정보, 상태 및 진행 단계)는 포함하지 않습니다.
+
+**반환 데이터:**
+- evaluationPeriod: 평가 기간의 기본 정보 (설명, 자기평가 달성률, 등급 구간, 수동 허용 설정)
+- evaluationCriteria: 평가 기간에 연결된 모든 WBS의 평가 기준 목록
+- evaluationLines: 평가 기간에 연결된 모든 평가 라인 및 매핑 정보
+
+**테스트 케이스:**
+- 기본 조회: 존재하는 평가 기간의 복제용 데이터를 성공적으로 조회
+- 평가항목 포함: WBS 평가 기준 목록이 올바르게 포함됨
+- 평가라인 포함: 평가 라인 및 매핑 정보가 올바르게 포함됨
+- 존재하지 않는 ID: 404 에러 반환
+- 잘못된 UUID 형식: 400 에러 반환`,
+    }),
+    ApiParam({ name: 'id', description: '평가 기간 ID (UUID 형식)' }),
+    ApiResponse({
+      status: 200,
+      description: '평가 기간 복제용 데이터',
+      schema: {
+        type: 'object',
+        properties: {
+          evaluationPeriod: { type: 'object' },
+          evaluationCriteria: {
+            type: 'array',
+            items: { type: 'object' },
+          },
+          evaluationLines: {
+            type: 'object',
+            properties: {
+              lines: {
+                type: 'array',
+                items: { type: 'object' },
+              },
+              mappings: {
+                type: 'array',
+                items: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 (잘못된 UUID 형식 등)',
+    }),
+    ApiResponse({ status: 404, description: '평가 기간을 찾을 수 없습니다.' }),
+    ApiResponse({ status: 500, description: '서버 내부 오류' }),
+  );
+}

@@ -15,8 +15,8 @@ function GetNotifications() {
 
 **동작:**
 - 수신자 ID로 알림 목록 조회
+- **자동으로 sourceSystem='EMS'인 알림만 조회** (백엔드에서 자동 필터링)
 - 읽음 여부 필터링 가능 (isRead 파라미터)
-- 출처 시스템 필터링 가능 (sourceSystem 파라미터)
 - 페이지네이션 지원 (skip, take 파라미터)
 - 필터 조건에 맞는 전체 알림 개수(total) 반환
 - 읽지 않은 알림 개수(unreadCount) 반환
@@ -64,14 +64,13 @@ function GetNotifications() {
 \`\`\`
 
 **테스트 케이스:**
-- 기본 조회: 수신자의 알림 목록을 조회할 수 있어야 한다
+- 기본 조회: 수신자의 EMS 알림 목록을 조회할 수 있어야 한다 (sourceSystem='EMS'만 자동 필터링)
 - 읽지 않은 알림만 조회: isRead=false로 필터링
 - 읽은 알림만 조회: isRead=true로 필터링
-- 출처 시스템 필터링: sourceSystem으로 특정 시스템의 알림만 조회
-- 복합 필터링: isRead와 sourceSystem을 동시에 적용
 - 페이지네이션: skip, take 파라미터로 페이지네이션 가능
 - 빈 결과: 알림이 없는 경우 빈 배열 반환
 - 필드 검증: id, sender, recipientId, title, content, isRead, sourceSystem, createdAt 등 포함
+- sourceSystem 검증: 모든 알림의 sourceSystem이 'EMS'여야 함
 - 개수 검증: total과 unreadCount가 응답에 포함되어야 함
 - total 정확성: 필터 조건에 맞는 전체 개수가 정확해야 함
 - UUID 검증: 잘못된 UUID 형식의 recipientId로 요청 시 400 에러`,
@@ -86,12 +85,6 @@ function GetNotifications() {
         description: '읽음 여부 필터 (기본값: 전체, 가능값: "true", "false")',
         type: String,
         example: 'false',
-    }), (0, swagger_1.ApiQuery)({
-        name: 'sourceSystem',
-        required: false,
-        description: '출처 시스템 필터 (기본값: 전체)',
-        enum: notification_dto_1.SourceSystem,
-        example: notification_dto_1.SourceSystem.EMS,
     }), (0, swagger_1.ApiQuery)({
         name: 'skip',
         required: false,

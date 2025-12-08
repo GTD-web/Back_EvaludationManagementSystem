@@ -283,12 +283,19 @@ export function GetProjectManagers() {
 **동작:**
 - SSO 서비스에서 전체 직원 정보를 조회합니다
 - 관리 권한이 있는 직원들을 필터링합니다
+- 로컬 Employee 테이블과 매핑하여 employeeId를 포함합니다
 - 부서, 직책, 직급 정보를 포함하여 반환합니다
 - 검색어로 이름, 사번, 이메일 필터링이 가능합니다
 - 부서 ID로 특정 부서의 PM만 조회 가능합니다
 
+**반환 데이터:**
+- id: SSO의 매니저 ID (managerId)
+- employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
+- 기타 직원 정보 (사번, 이름, 이메일, 부서, 직책 등)
+
 **테스트 케이스:**
 - 전체 PM 목록 조회: 필터 없이 모든 PM 목록 조회
+- employeeId 매핑 확인: 각 PM의 employeeId가 올바르게 매핑됨
 - 부서별 PM 조회: 특정 부서의 PM만 조회
 - 검색어로 필터링: 이름, 사번, 이메일로 검색
 - 관리 권한 보유자만 조회: hasManagementAuthority가 true인 직원만 포함

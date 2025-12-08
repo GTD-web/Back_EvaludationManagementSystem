@@ -67,6 +67,7 @@ export declare class GetProjectManagersQueryDto {
 }
 export declare class ProjectManagerDto {
     id: string;
+    employeeId?: string;
     employeeNumber: string;
     name: string;
     email: string;

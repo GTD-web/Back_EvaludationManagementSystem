@@ -34,6 +34,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SSOService } from '@domain/common/sso/sso.module';
 import type { ISSOService } from '@domain/common/sso/interfaces';
+import { EmployeeService } from '@domain/common/employee/employee.service';
 
 /**
  * 프로젝트 관리 컨트롤러
@@ -48,6 +49,7 @@ export class ProjectManagementController {
   constructor(
     private readonly projectService: ProjectService,
     @Inject(SSOService) private readonly ssoService: ISSOService,
+    private readonly employeeService: EmployeeService,
   ) {}
 
   /**
@@ -215,19 +217,27 @@ export class ProjectManagementController {
       );
     }
 
-    // DTO 변환
-    const managerDtos: ProjectManagerDto[] = managers.map((emp) => ({
-      id: emp.id,
-      employeeNumber: emp.employeeNumber,
-      name: emp.name,
-      email: emp.email,
-      departmentName: emp.department?.departmentName,
-      departmentCode: emp.department?.departmentCode,
-      positionName: emp.position?.positionName,
-      positionLevel: emp.position?.positionLevel,
-      jobTitleName: emp.jobTitle?.jobTitleName,
-      hasManagementAuthority: emp.position?.hasManagementAuthority,
-    }));
+    // DTO 변환 (externalId로 Employee 조회하여 employeeId 매핑)
+    const managerDtos: ProjectManagerDto[] = await Promise.all(
+      managers.map(async (emp) => {
+        // SSO의 emp.id(externalId)로 로컬 Employee 조회
+        const employee = await this.employeeService.findByExternalId(emp.id);
+
+        return {
+          id: emp.id, // SSO의 매니저 ID
+          employeeId: employee?.id, // 로컬 Employee ID
+          employeeNumber: emp.employeeNumber,
+          name: emp.name,
+          email: emp.email,
+          departmentName: emp.department?.departmentName,
+          departmentCode: emp.department?.departmentCode,
+          positionName: emp.position?.positionName,
+          positionLevel: emp.position?.positionLevel,
+          jobTitleName: emp.jobTitle?.jobTitleName,
+          hasManagementAuthority: emp.position?.hasManagementAuthority,
+        };
+      }),
+    );
 
     return {
       managers: managerDtos,

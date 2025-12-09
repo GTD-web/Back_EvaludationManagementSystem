@@ -177,7 +177,10 @@ export class CreateProjectDto {
  */
 export class CreateProjectsBulkDto {
   @ApiProperty({
-    description: '생성할 프로젝트 목록',
+    description:
+      '생성할 프로젝트 목록\n' +
+      '• 각 프로젝트마다 childProjects로 하위 프로젝트를 함께 생성 가능\n' +
+      '• orderLevel로 계층 구조 형성 (같은 레벨은 형제 관계)',
     type: [CreateProjectDto],
     example: [
       {
@@ -187,6 +190,23 @@ export class CreateProjectsBulkDto {
         startDate: '2024-01-01',
         endDate: '2024-12-31',
         managerId: '550e8400-e29b-41d4-a716-446655440000',
+        childProjects: [
+          {
+            orderLevel: 1,
+            name: 'EMS 프로젝트 - 백엔드',
+            managerId: '660e9500-f30c-52e5-b827-557766551111',
+          },
+          {
+            orderLevel: 1,
+            name: 'EMS 프로젝트 - 프론트엔드',
+            managerId: '770ea600-g40d-63f6-c938-668877662222',
+          },
+          {
+            orderLevel: 2,
+            name: 'EMS 프로젝트 - API 개발',
+            managerId: '880fb700-h50e-74g7-d049-779988773333',
+          },
+        ],
       },
       {
         name: 'HRM 프로젝트',
@@ -195,6 +215,18 @@ export class CreateProjectsBulkDto {
         startDate: '2024-02-01',
         endDate: '2024-11-30',
         managerId: '550e8400-e29b-41d4-a716-446655440001',
+        childProjects: [
+          {
+            orderLevel: 1,
+            name: 'HRM 프로젝트 - 인사관리',
+            managerId: '990gc800-i60f-85h8-e150-880099884444',
+          },
+          {
+            orderLevel: 1,
+            name: 'HRM 프로젝트 - 급여관리',
+            managerId: 'aa0hd900-j70g-96i9-f261-991100995555',
+          },
+        ],
       },
     ],
   })

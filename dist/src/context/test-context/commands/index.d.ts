@@ -10,4 +10,4 @@ import { CreateTestQuestionsHandler } from './create-test-questions.handler';
 import { MapQuestionsToGroupHandler } from './map-questions-to-group.handler';
 import { CleanupTestDataHandler } from './cleanup-test-data.handler';
 import { CleanupEvaluationQuestionDataHandler } from './cleanup-evaluation-question-data.handler';
-export declare const COMMAND_HANDLERS: (typeof CreateCompleteTestEnvironmentHandler | typeof CleanupTestDataHandler | typeof CreateTestQuestionGroupsHandler | typeof CreateTestQuestionsHandler | typeof MapQuestionsToGroupHandler | typeof CleanupEvaluationQuestionDataHandler)[];
+export declare const COMMAND_HANDLERS: (typeof CreateCompleteTestEnvironmentHandler | typeof CreateTestQuestionGroupsHandler | typeof CreateTestQuestionsHandler | typeof MapQuestionsToGroupHandler | typeof CleanupTestDataHandler | typeof CleanupEvaluationQuestionDataHandler)[];

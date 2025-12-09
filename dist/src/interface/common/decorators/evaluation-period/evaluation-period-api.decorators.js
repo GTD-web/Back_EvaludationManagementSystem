@@ -21,9 +21,13 @@ exports.UpdateSelfEvaluationSettingPermission = UpdateSelfEvaluationSettingPermi
 exports.UpdateFinalEvaluationSettingPermission = UpdateFinalEvaluationSettingPermission;
 exports.UpdateManualSettingPermissions = UpdateManualSettingPermissions;
 exports.CopyEvaluationPeriod = CopyEvaluationPeriod;
+exports.CopyPreviousPeriodData = CopyPreviousPeriodData;
+exports.CopyMyPreviousPeriodData = CopyMyPreviousPeriodData;
 exports.ChangeEvaluationPeriodPhase = ChangeEvaluationPeriodPhase;
 exports.DeleteEvaluationPeriod = DeleteEvaluationPeriod;
 exports.GetEvaluationPeriodForCopy = GetEvaluationPeriodForCopy;
+exports.GetEmployeePeriodAssignments = GetEmployeePeriodAssignments;
+exports.GetMyPeriodAssignments = GetMyPeriodAssignments;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_response_dto_1 = require("../../dto/evaluation-period/evaluation-period-response.dto");
@@ -747,6 +751,173 @@ function CopyEvaluationPeriod() {
         description: '서버 내부 오류',
     }));
 }
+function CopyPreviousPeriodData() {
+    return (0, common_1.applyDecorators)((0, common_1.Post)(':targetPeriodId/copy-from/:sourcePeriodId'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+        summary: '나의 이전 평가기간 데이터 복사',
+        description: `현재 로그인한 사용자의 이전 평가기간 데이터(프로젝트 할당, WBS, 평가라인)를 현재 평가기간으로 복사합니다.
+
+**동작:**
+- JWT 토큰에서 현재 로그인한 사용자 ID를 자동으로 추출합니다.
+- 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
+- 복사되는 항목:
+  * 프로젝트 할당 (EvaluationProjectAssignment)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
+- 선택적 필터링:
+  * projects: 특정 프로젝트와 해당 프로젝트의 WBS만 복사 (미지정 시 모든 프로젝트와 WBS)
+  * 각 프로젝트별로 wbsIds를 지정하여 프로젝트 내 특정 WBS만 선택 가능
+- 중복 방지:
+  * 이미 존재하는 프로젝트 할당은 건너뜀
+  * 이미 존재하는 평가라인 매핑은 건너뜀
+
+**복사되지 않는 항목:**
+- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
+- 성과 입력 데이터
+- 평가 제출 상태
+
+**사용 시나리오:**
+- 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때
+- 평가항목 설정 시간을 절약하고자 할 때
+- 동일한 프로젝트 구조로 평가를 진행하고자 할 때
+
+**테스트 케이스:**
+- 정상 복사: 이전 평가기간의 모든 데이터가 새 평가기간으로 복사됨
+- 프로젝트-WBS 매핑 필터링: 특정 프로젝트와 해당 프로젝트의 특정 WBS만 복사됨
+- 중복 방지: 이미 존재하는 데이터는 건너뛰고 신규 데이터만 생성
+- 응답 검증: 복사된 프로젝트 할당 수와 평가라인 매핑 수가 정확함
+- 존재하지 않는 원본 평가기간: 404 에러
+- 존재하지 않는 대상 평가기간: 404 에러
+- 인증 필요: JWT 토큰 없이 요청 시 401 에러
+- 잘못된 UUID: 400 에러`,
+    }), (0, swagger_1.ApiParam)({
+        name: 'targetPeriodId',
+        description: '대상 평가기간 ID (복사할 새로운 평가기간)',
+        type: 'string',
+        format: 'uuid',
+        example: '123e4567-e89b-12d3-a456-426614174001',
+    }), (0, swagger_1.ApiParam)({
+        name: 'sourcePeriodId',
+        description: '원본 평가기간 ID (복사할 데이터가 있는 이전 평가기간)',
+        type: 'string',
+        format: 'uuid',
+        example: '323e4567-e89b-12d3-a456-426614174003',
+    }), (0, swagger_1.ApiBody)({
+        type: evaluation_management_dto_1.CopyPreviousPeriodDataApiDto,
+        required: false,
+        description: '복사할 프로젝트와 WBS 필터 (선택사항)',
+        examples: {
+            allData: {
+                summary: '모든 데이터 복사',
+                description: '필터 없이 모든 프로젝트와 WBS를 복사합니다.',
+                value: {},
+            },
+            specificProjects: {
+                summary: '특정 프로젝트만 복사',
+                description: '지정된 프로젝트의 모든 WBS를 복사합니다.',
+                value: {
+                    projects: [
+                        {
+                            projectId: '123e4567-e89b-12d3-a456-426614174000',
+                        },
+                    ],
+                },
+            },
+            projectsWithWbs: {
+                summary: '프로젝트별 특정 WBS만 복사',
+                description: '각 프로젝트에서 지정된 WBS만 복사합니다.',
+                value: {
+                    projects: [
+                        {
+                            projectId: '123e4567-e89b-12d3-a456-426614174000',
+                            wbsIds: ['123e4567-e89b-12d3-a456-426614174001'],
+                        },
+                    ],
+                },
+            },
+        },
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.OK,
+        description: '이전 평가기간 데이터가 성공적으로 복사되었습니다.',
+        type: evaluation_management_dto_1.CopyPreviousPeriodDataResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.BAD_REQUEST,
+        description: '잘못된 요청 (UUID 형식 오류 등)',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.UNAUTHORIZED,
+        description: '인증이 필요합니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.NOT_FOUND,
+        description: '평가기간을 찾을 수 없음',
+    }));
+}
+function CopyMyPreviousPeriodData() {
+    return (0, common_1.applyDecorators)((0, common_1.Post)(':targetPeriodId/my-data/copy-from/:sourcePeriodId'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+        summary: '나의 이전 평가기간 데이터 복사',
+        description: `현재 로그인한 사용자의 이전 평가기간 데이터(프로젝트 할당, WBS, 평가라인)를 현재 평가기간으로 복사합니다.
+
+**동작:**
+- JWT 토큰에서 현재 로그인한 사용자 ID 추출
+- 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사
+- 복사되는 항목:
+  * 프로젝트 할당 (EvaluationProjectAssignment)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
+- 선택적 필터링:
+  * projectIds: 특정 프로젝트만 복사 (미지정 시 모든 프로젝트)
+  * wbsIds: 특정 WBS만 복사 (미지정 시 모든 WBS)
+- 중복 방지:
+  * 이미 존재하는 프로젝트 할당은 건너뜀
+  * 이미 존재하는 평가라인 매핑은 건너뜀
+
+**복사되지 않는 항목:**
+- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
+- 성과 입력 데이터
+- 평가 제출 상태
+
+**사용 시나리오:**
+- 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때
+- 평가항목 설정 시간을 절약하고자 할 때
+- 동일한 프로젝트 구조로 평가를 진행하고자 할 때
+
+**테스트 케이스:**
+- 정상 복사: 이전 평가기간의 모든 데이터가 새 평가기간으로 복사됨
+- 프로젝트 필터링: projectIds 지정 시 해당 프로젝트만 복사됨
+- WBS 필터링: wbsIds 지정 시 해당 WBS의 평가라인만 복사됨
+- 중복 방지: 이미 존재하는 데이터는 건너뛰고 신규 데이터만 생성
+- 응답 검증: 복사된 프로젝트 할당 수와 평가라인 매핑 수가 정확함
+- 존재하지 않는 원본 평가기간: 404 에러
+- 존재하지 않는 대상 평가기간: 404 에러
+- 토큰 없음: 401 에러
+- 잘못된 UUID: 400 에러`,
+    }), (0, swagger_1.ApiParam)({
+        name: 'targetPeriodId',
+        description: '대상 평가기간 ID (복사할 새로운 평가기간)',
+        type: 'string',
+        format: 'uuid',
+        example: '123e4567-e89b-12d3-a456-426614174001',
+    }), (0, swagger_1.ApiParam)({
+        name: 'sourcePeriodId',
+        description: '원본 평가기간 ID (복사할 데이터가 있는 이전 평가기간)',
+        type: 'string',
+        format: 'uuid',
+        example: '323e4567-e89b-12d3-a456-426614174003',
+    }), (0, swagger_1.ApiBody)({
+        type: evaluation_management_dto_1.CopyPreviousPeriodDataApiDto,
+        required: false,
+        description: '복사할 프로젝트/WBS 필터 (선택사항)',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.OK,
+        description: '이전 평가기간 데이터가 성공적으로 복사되었습니다.',
+        type: evaluation_management_dto_1.CopyPreviousPeriodDataResponseDto,
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.BAD_REQUEST,
+        description: '잘못된 요청 (UUID 형식 오류 등)',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.UNAUTHORIZED,
+        description: '인증되지 않은 요청',
+    }), (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.NOT_FOUND,
+        description: '평가기간을 찾을 수 없음',
+    }));
+}
 function ChangeEvaluationPeriodPhase() {
     return (0, common_1.applyDecorators)((0, common_1.Post)(':id/phase-change'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: '평가기간 단계 변경',
@@ -889,5 +1060,275 @@ function GetEvaluationPeriodForCopy() {
         status: 400,
         description: '잘못된 요청 (잘못된 UUID 형식 등)',
     }), (0, swagger_1.ApiResponse)({ status: 404, description: '평가 기간을 찾을 수 없습니다.' }), (0, swagger_1.ApiResponse)({ status: 500, description: '서버 내부 오류' }));
+}
+function GetEmployeePeriodAssignments() {
+    return (0, common_1.applyDecorators)((0, common_1.Get)(':periodId/employees/:employeeId/assignments'), (0, swagger_1.ApiOperation)({
+        summary: '직원의 평가기간별 할당 정보 조회',
+        description: `특정 평가기간에 특정 직원에게 할당된 프로젝트와 WBS(평가항목) 목록을 조회합니다.
+
+**동작:**
+- 해당 평가기간에 직원에게 할당된 모든 프로젝트를 조회합니다.
+- 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
+- 프로젝트 매니저 정보도 함께 반환합니다.
+
+**사용 사례:**
+- 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용
+- 특정 평가기간에 직원이 담당했던 프로젝트/WBS 이력 조회
+
+**응답 구조:**
+- evaluationPeriod: 평가기간 기본 정보
+- employee: 직원 기본 정보
+- projects: 프로젝트 및 WBS 할당 목록
+  * projectManager: 프로젝트 매니저 정보
+  * wbsList: WBS 목록
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - primaryDownwardEvaluation: 1차 평가자 정보
+    - secondaryDownwardEvaluation: 2차 평가자 정보
+- totalProjects: 총 프로젝트 수
+- totalWbs: 총 WBS 수
+
+**테스트 케이스:**
+- 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
+- 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨
+- 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
+- 잘못된 periodId: UUID 형식이 아닌 경우 400 에러
+- 잘못된 employeeId: UUID 형식이 아닌 경우 400 에러
+- 존재하지 않는 평가기간: 404 에러
+- 존재하지 않는 직원: 404 에러`,
+    }), (0, swagger_1.ApiParam)({
+        name: 'periodId',
+        description: '평가기간 ID (UUID 형식)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        schema: { type: 'string', format: 'uuid' },
+    }), (0, swagger_1.ApiParam)({
+        name: 'employeeId',
+        description: '직원 ID (UUID 형식)',
+        example: '123e4567-e89b-12d3-a456-426614174001',
+        schema: { type: 'string', format: 'uuid' },
+    }), (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '할당 정보 조회 성공',
+        schema: {
+            type: 'object',
+            properties: {
+                evaluationPeriod: {
+                    type: 'object',
+                    properties: {
+                        id: {
+                            type: 'string',
+                            example: '123e4567-e89b-12d3-a456-426614174000',
+                        },
+                        name: { type: 'string', example: '2024년 상반기 평가' },
+                        startDate: {
+                            type: 'string',
+                            example: '2024-01-01T00:00:00.000Z',
+                        },
+                        endDate: { type: 'string', example: '2024-06-30T23:59:59.000Z' },
+                        status: { type: 'string', example: 'active' },
+                    },
+                },
+                employee: {
+                    type: 'object',
+                    properties: {
+                        id: {
+                            type: 'string',
+                            example: '123e4567-e89b-12d3-a456-426614174001',
+                        },
+                        name: { type: 'string', example: '홍길동' },
+                        employeeNumber: { type: 'string', example: 'EMP-2024-001' },
+                    },
+                },
+                projects: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            projectId: { type: 'string' },
+                            projectName: { type: 'string' },
+                            projectCode: { type: 'string' },
+                            projectManager: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string' },
+                                    name: { type: 'string' },
+                                },
+                            },
+                            wbsList: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        wbsId: { type: 'string' },
+                                        wbsName: { type: 'string' },
+                                        wbsCode: { type: 'string' },
+                                        importance: { type: 'number', example: 8 },
+                                        primaryDownwardEvaluation: {
+                                            type: 'object',
+                                            properties: {
+                                                evaluatorId: { type: 'string' },
+                                                evaluatorName: { type: 'string' },
+                                            },
+                                        },
+                                        secondaryDownwardEvaluation: {
+                                            type: 'object',
+                                            properties: {
+                                                evaluatorId: { type: 'string' },
+                                                evaluatorName: { type: 'string' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                totalProjects: { type: 'number', example: 3 },
+                totalWbs: { type: 'number', example: 12 },
+            },
+        },
+    }), (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '잘못된 요청 (UUID 형식 오류 등)',
+    }), (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: '평가기간 또는 직원을 찾을 수 없습니다.',
+    }));
+}
+function GetMyPeriodAssignments() {
+    return (0, common_1.applyDecorators)((0, common_1.Get)(':periodId/my-assignments'), (0, swagger_1.ApiOperation)({
+        summary: '내 평가기간별 할당 정보 조회',
+        description: `특정 평가기간에 현재 로그인한 사용자에게 할당된 프로젝트와 WBS(평가항목) 목록을 조회합니다.
+
+**동작:**
+- JWT 토큰에서 현재 로그인한 사용자 ID를 추출합니다.
+- 해당 평가기간에 사용자에게 할당된 모든 프로젝트를 조회합니다.
+- 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
+- 프로젝트 매니저 정보도 함께 반환합니다.
+
+**사용 사례:**
+- 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용
+- 본인이 이전 평가기간에 담당했던 프로젝트/WBS 이력 조회
+
+**응답 구조:**
+- evaluationPeriod: 평가기간 기본 정보
+- employee: 현재 사용자 기본 정보
+- projects: 프로젝트 및 WBS 할당 목록
+  * projectManager: 프로젝트 매니저 정보
+  * wbsList: WBS 목록
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - primaryDownwardEvaluation: 1차 평가자 정보
+    - secondaryDownwardEvaluation: 2차 평가자 정보
+- totalProjects: 총 프로젝트 수
+- totalWbs: 총 WBS 수
+
+**테스트 케이스:**
+- 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
+- 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨
+- 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
+- 잘못된 periodId: UUID 형식이 아닌 경우 400 에러
+- 존재하지 않는 평가기간: 404 에러
+- 인증 필요: Bearer 토큰 없이 요청 시 401 에러`,
+    }), (0, swagger_1.ApiParam)({
+        name: 'periodId',
+        description: '평가기간 ID (UUID 형식)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        schema: { type: 'string', format: 'uuid' },
+    }), (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '할당 정보 조회 성공',
+        schema: {
+            type: 'object',
+            properties: {
+                evaluationPeriod: {
+                    type: 'object',
+                    properties: {
+                        id: {
+                            type: 'string',
+                            example: '123e4567-e89b-12d3-a456-426614174000',
+                        },
+                        name: { type: 'string', example: '2024년 상반기 평가' },
+                        startDate: {
+                            type: 'string',
+                            example: '2024-01-01T00:00:00.000Z',
+                        },
+                        endDate: { type: 'string', example: '2024-06-30T23:59:59.000Z' },
+                        status: { type: 'string', example: 'active' },
+                    },
+                },
+                employee: {
+                    type: 'object',
+                    properties: {
+                        id: {
+                            type: 'string',
+                            example: '123e4567-e89b-12d3-a456-426614174001',
+                        },
+                        name: { type: 'string', example: '홍길동' },
+                        employeeNumber: { type: 'string', example: 'EMP-2024-001' },
+                    },
+                },
+                projects: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            projectId: { type: 'string' },
+                            projectName: { type: 'string' },
+                            projectCode: { type: 'string' },
+                            projectManager: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string' },
+                                    name: { type: 'string' },
+                                },
+                            },
+                            wbsList: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        wbsId: { type: 'string' },
+                                        wbsName: { type: 'string' },
+                                        wbsCode: { type: 'string' },
+                                        importance: { type: 'number', example: 8 },
+                                        primaryDownwardEvaluation: {
+                                            type: 'object',
+                                            properties: {
+                                                evaluatorId: { type: 'string' },
+                                                evaluatorName: { type: 'string' },
+                                            },
+                                        },
+                                        secondaryDownwardEvaluation: {
+                                            type: 'object',
+                                            properties: {
+                                                evaluatorId: { type: 'string' },
+                                                evaluatorName: { type: 'string' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                totalProjects: { type: 'number', example: 3 },
+                totalWbs: { type: 'number', example: 12 },
+            },
+        },
+    }), (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '잘못된 요청 (UUID 형식 오류 등)',
+    }), (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '인증이 필요합니다.',
+    }), (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: '평가기간을 찾을 수 없습니다.',
+    }));
 }
 //# sourceMappingURL=evaluation-period-api.decorators.js.map

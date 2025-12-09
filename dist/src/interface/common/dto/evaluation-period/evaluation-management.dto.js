@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ApiResponseDto = exports.ChangeEvaluationPeriodPhaseApiDto = exports.UpdateManualSettingPermissionsApiDto = exports.ManualPermissionSettingDto = exports.UpdateDefaultGradeRangesApiDto = exports.UpdateGradeRangesApiDto = exports.UpdatePeerEvaluationDeadlineApiDto = exports.UpdateSelfEvaluationDeadlineApiDto = exports.UpdatePerformanceDeadlineApiDto = exports.UpdateEvaluationSetupDeadlineApiDto = exports.CopyEvaluationPeriodApiDto = exports.UpdateEvaluationPeriodStartDateApiDto = exports.UpdateEvaluationPeriodScheduleApiDto = exports.UpdateEvaluationPeriodBasicApiDto = exports.CreateEvaluationPeriodApiDto = exports.CreateGradeRangeApiDto = exports.PaginationResponseDto = exports.PaginationQueryDto = void 0;
+exports.ApiResponseDto = exports.CopyPreviousPeriodDataResponseDto = exports.CopyPreviousPeriodDataApiDto = exports.CopyProjectWithWbsDto = exports.ChangeEvaluationPeriodPhaseApiDto = exports.UpdateManualSettingPermissionsApiDto = exports.ManualPermissionSettingDto = exports.UpdateDefaultGradeRangesApiDto = exports.UpdateGradeRangesApiDto = exports.UpdatePeerEvaluationDeadlineApiDto = exports.UpdateSelfEvaluationDeadlineApiDto = exports.UpdatePerformanceDeadlineApiDto = exports.UpdateEvaluationSetupDeadlineApiDto = exports.CopyEvaluationPeriodApiDto = exports.UpdateEvaluationPeriodStartDateApiDto = exports.UpdateEvaluationPeriodScheduleApiDto = exports.UpdateEvaluationPeriodBasicApiDto = exports.CreateEvaluationPeriodApiDto = exports.CreateGradeRangeApiDto = exports.PaginationResponseDto = exports.PaginationQueryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
@@ -487,6 +487,86 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: '단계는 필수 입력 항목입니다.' }),
     __metadata("design:type", String)
 ], ChangeEvaluationPeriodPhaseApiDto.prototype, "targetPhase", void 0);
+class CopyProjectWithWbsDto {
+    projectId;
+    wbsIds;
+}
+exports.CopyProjectWithWbsDto = CopyProjectWithWbsDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '프로젝트 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    }),
+    (0, class_validator_1.IsUUID)('4', { message: 'projectId는 유효한 UUID여야 합니다.' }),
+    __metadata("design:type", String)
+], CopyProjectWithWbsDto.prototype, "projectId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '복사할 WBS ID 목록 (선택사항, 미지정 시 프로젝트 내 모든 WBS 복사)',
+        example: ['123e4567-e89b-12d3-a456-426614174001'],
+        type: [String],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)({ message: 'wbsIds는 배열이어야 합니다.' }),
+    (0, class_validator_1.IsUUID)('4', { each: true, message: '각 wbsId는 유효한 UUID여야 합니다.' }),
+    __metadata("design:type", Array)
+], CopyProjectWithWbsDto.prototype, "wbsIds", void 0);
+class CopyPreviousPeriodDataApiDto {
+    projects;
+}
+exports.CopyPreviousPeriodDataApiDto = CopyPreviousPeriodDataApiDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '복사할 프로젝트 및 WBS 목록 (선택사항, 미지정 시 모든 프로젝트와 WBS 복사)',
+        example: [
+            {
+                projectId: '123e4567-e89b-12d3-a456-426614174000',
+                wbsIds: ['123e4567-e89b-12d3-a456-426614174001'],
+            },
+        ],
+        type: [CopyProjectWithWbsDto],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)({ message: 'projects는 배열이어야 합니다.' }),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CopyProjectWithWbsDto),
+    __metadata("design:type", Array)
+], CopyPreviousPeriodDataApiDto.prototype, "projects", void 0);
+class CopyPreviousPeriodDataResponseDto {
+    success;
+    message;
+    copiedProjectAssignments;
+    copiedEvaluationLineMappings;
+}
+exports.CopyPreviousPeriodDataResponseDto = CopyPreviousPeriodDataResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '성공 여부',
+        example: true,
+    }),
+    __metadata("design:type", Boolean)
+], CopyPreviousPeriodDataResponseDto.prototype, "success", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '응답 메시지',
+        example: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+    }),
+    __metadata("design:type", String)
+], CopyPreviousPeriodDataResponseDto.prototype, "message", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '복사된 프로젝트 할당 수',
+        example: 3,
+    }),
+    __metadata("design:type", Number)
+], CopyPreviousPeriodDataResponseDto.prototype, "copiedProjectAssignments", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '복사된 평가라인 매핑 수',
+        example: 12,
+    }),
+    __metadata("design:type", Number)
+], CopyPreviousPeriodDataResponseDto.prototype, "copiedEvaluationLineMappings", void 0);
 class ApiResponseDto {
     success;
     message;

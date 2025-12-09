@@ -132,6 +132,11 @@ export class ProjectManagementController {
         endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
+        parentProjectId: project.parentProjectId,
+        childProjects: project.childProjects?.map((child) =>
+          this.mapProjectToResponseDto(child),
+        ),
+        childProjectCount: project.childProjectCount,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,

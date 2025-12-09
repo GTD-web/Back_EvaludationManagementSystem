@@ -1,7 +1,9 @@
-import { Body, Controller, Query, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { EvaluationPeriodManagementContextService } from '@context/evaluation-period-management-context/evaluation-period-management.service';
 import { EvaluationPeriodBusinessService } from '@business/evaluation-period/evaluation-period-business.service';
+import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import type {
   CreateEvaluationPeriodMinimalDto,
   UpdateCriteriaSettingPermissionDto,
@@ -18,16 +20,19 @@ import type {
   UpdateSelfEvaluationSettingPermissionDto,
 } from '@context/evaluation-period-management-context/interfaces/evaluation-period-creation.interface';
 import type { EvaluationPeriodDto } from '@domain/core/evaluation-period/evaluation-period.types';
-import { ParseId } from '@interface/common/decorators/parse-uuid.decorator';
-import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
+import {
+  ParseId,
+  ParseUUID,
+} from '@interface/common/decorators/parse-uuid.decorator';
 import {
   ChangeEvaluationPeriodPhase,
   CompleteEvaluationPeriod,
+  CopyPreviousPeriodData,
   CreateEvaluationPeriod,
   DeleteEvaluationPeriod,
   GetActiveEvaluationPeriods,
   GetDefaultGradeRanges,
+  GetEmployeePeriodAssignments,
   GetEvaluationPeriodDetail,
   GetEvaluationPeriods,
   StartEvaluationPeriod,
@@ -46,6 +51,8 @@ import {
 } from '@interface/common/decorators/evaluation-period/evaluation-period-api.decorators';
 import {
   ChangeEvaluationPeriodPhaseApiDto,
+  CopyPreviousPeriodDataApiDto,
+  CopyPreviousPeriodDataResponseDto,
   CreateEvaluationPeriodApiDto,
   ManualPermissionSettingDto,
   PaginationQueryDto,
@@ -60,6 +67,7 @@ import {
   UpdateSelfEvaluationDeadlineApiDto,
 } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
+import type { EmployeePeriodAssignmentsResponseDto } from '@interface/common/dto/evaluation-period/employee-period-assignments.dto';
 import { SystemSettingService } from '@domain/common/system-setting/system-setting.service';
 
 /**
@@ -119,5 +127,49 @@ export class EvaluatorEvaluationPeriodManagementController {
     return await this.evaluationPeriodManagementService.평가기간상세_조회한다(
       periodId,
     );
+  }
+
+  /**
+   * 직원의 평가기간별 할당 정보를 조회합니다.
+   */
+  @GetEmployeePeriodAssignments()
+  async getEmployeePeriodAssignments(
+    @ParseUUID('periodId') periodId: string,
+    @ParseUUID('employeeId') employeeId: string,
+  ): Promise<EmployeePeriodAssignmentsResponseDto> {
+    return await this.evaluationPeriodManagementService.직원_평가기간별_할당정보_조회한다(
+      periodId,
+      employeeId,
+    );
+  }
+
+  /**
+   * 이전 평가기간 데이터를 복사합니다 (현재 로그인한 사용자).
+   */
+  @CopyPreviousPeriodData()
+  async copyPreviousPeriodData(
+    @ParseUUID('targetPeriodId') targetPeriodId: string,
+    @ParseUUID('sourcePeriodId') sourcePeriodId: string,
+    @Body() body: CopyPreviousPeriodDataApiDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CopyPreviousPeriodDataResponseDto> {
+    const employeeId = user.id; // JWT에서 현재 로그인한 사용자 ID 추출
+    const copiedBy = user.id;
+
+    const result =
+      await this.evaluationPeriodManagementService.이전_평가기간_데이터를_복사한다(
+        targetPeriodId,
+        sourcePeriodId,
+        employeeId,
+        copiedBy,
+        body.projects,
+      );
+
+    return {
+      success: true,
+      message: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+      copiedProjectAssignments: result.copiedProjectAssignments,
+      copiedEvaluationLineMappings: result.copiedEvaluationLineMappings,
+    };
   }
 }

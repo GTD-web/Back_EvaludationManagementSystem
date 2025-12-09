@@ -234,6 +234,20 @@ export class ProjectService {
         const project = Project.생성한다(dataList[i], createdBy);
         const savedProject = await this.projectRepository.save(project);
 
+        // 하위 프로젝트 생성 (childProjects가 있는 경우)
+        if (dataList[i].childProjects && dataList[i].childProjects!.length > 0) {
+          await this.하위_프로젝트들_생성한다(
+            savedProject.id,
+            savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
+            dataList[i].childProjects!,
+            dataList[i].status,
+            dataList[i].startDate,
+            dataList[i].endDate,
+            dataList[i].managerId,
+            createdBy,
+          );
+        }
+
         // 생성 후 manager 정보와 하위 프로젝트를 포함하여 다시 조회
         const result = await this.ID로_조회한다(savedProject.id, true);
         if (result) {

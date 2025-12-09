@@ -12,10 +12,18 @@ const cqrs_1 = require("@nestjs/cqrs");
 const typeorm_1 = require("@nestjs/typeorm");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const evaluation_period_employee_mapping_module_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.module");
+const evaluation_project_assignment_module_1 = require("../../domain/core/evaluation-project-assignment/evaluation-project-assignment.module");
+const evaluation_line_mapping_module_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module");
 const evaluation_period_entity_1 = require("../../domain/core/evaluation-period/evaluation-period.entity");
 const employee_entity_1 = require("../../domain/common/employee/employee.entity");
 const department_entity_1 = require("../../domain/common/department/department.entity");
 const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
+const evaluation_project_assignment_entity_1 = require("../../domain/core/evaluation-project-assignment/evaluation-project-assignment.entity");
+const evaluation_line_mapping_entity_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.entity");
+const project_entity_1 = require("../../domain/common/project/project.entity");
+const wbs_item_entity_1 = require("../../domain/common/wbs-item/wbs-item.entity");
+const wbs_evaluation_criteria_entity_1 = require("../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity");
+const evaluation_line_entity_1 = require("../../domain/core/evaluation-line/evaluation-line.entity");
 const evaluation_period_management_service_1 = require("./evaluation-period-management.service");
 const handlers_1 = require("./handlers");
 let EvaluationPeriodManagementContextModule = class EvaluationPeriodManagementContextModule {
@@ -30,9 +38,17 @@ exports.EvaluationPeriodManagementContextModule = EvaluationPeriodManagementCont
                 employee_entity_1.Employee,
                 department_entity_1.Department,
                 evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping,
+                evaluation_project_assignment_entity_1.EvaluationProjectAssignment,
+                evaluation_line_mapping_entity_1.EvaluationLineMapping,
+                project_entity_1.Project,
+                wbs_item_entity_1.WbsItem,
+                wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria,
+                evaluation_line_entity_1.EvaluationLine,
             ]),
             evaluation_period_module_1.EvaluationPeriodModule,
             evaluation_period_employee_mapping_module_1.EvaluationPeriodEmployeeMappingModule,
+            evaluation_project_assignment_module_1.EvaluationProjectAssignmentModule,
+            evaluation_line_mapping_module_1.EvaluationLineMappingModule,
         ],
         providers: [
             evaluation_period_management_service_1.EvaluationPeriodManagementContextService,

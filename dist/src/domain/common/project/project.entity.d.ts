@@ -9,8 +9,6 @@ export declare class Project extends BaseEntity<ProjectDto> implements IProject 
     endDate?: Date;
     managerId?: string;
     parentProjectId?: string;
-    parentProject?: Project;
-    childProjects?: Project[];
     constructor(name?: string, projectCode?: string, status?: ProjectStatus, startDate?: Date, endDate?: Date, managerId?: string, parentProjectId?: string);
     DTO로_변환한다(): ProjectDto;
     static 생성한다(data: CreateProjectDto, createdBy: string): Project;

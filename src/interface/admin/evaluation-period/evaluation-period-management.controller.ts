@@ -38,10 +38,12 @@ import {
   ChangeEvaluationPeriodPhase,
   CompleteEvaluationPeriod,
   CopyEvaluationPeriod,
+  CopyPreviousPeriodData,
   CreateEvaluationPeriod,
   DeleteEvaluationPeriod,
   GetActiveEvaluationPeriods,
   GetDefaultGradeRanges,
+  GetEmployeePeriodAssignments,
   GetEvaluationPeriodDetail,
   GetEvaluationPeriodForCopy,
   GetEvaluationPeriods,
@@ -62,6 +64,8 @@ import {
 } from '@interface/common/decorators/evaluation-period/evaluation-period-api.decorators';
 import {
   ChangeEvaluationPeriodPhaseApiDto,
+  CopyPreviousPeriodDataApiDto,
+  CopyPreviousPeriodDataResponseDto,
   CreateEvaluationPeriodApiDto,
   ManualPermissionSettingDto,
   PaginationQueryDto,
@@ -77,6 +81,7 @@ import {
   UpdateSelfEvaluationDeadlineApiDto,
 } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
+import type { EmployeePeriodAssignmentsResponseDto } from '@interface/common/dto/evaluation-period/employee-period-assignments.dto';
 import { SystemSettingService } from '@domain/common/system-setting/system-setting.service';
 
 /**
@@ -197,6 +202,20 @@ export class EvaluationPeriodManagementController {
   ): Promise<EvaluationPeriodDto | null> {
     return await this.evaluationPeriodManagementService.평가기간상세_조회한다(
       periodId,
+    );
+  }
+
+  /**
+   * 직원의 평가기간별 할당 정보를 조회합니다.
+   */
+  @GetEmployeePeriodAssignments()
+  async getEmployeePeriodAssignments(
+    @ParseUUID('periodId') periodId: string,
+    @ParseUUID('employeeId') employeeId: string,
+  ): Promise<EmployeePeriodAssignmentsResponseDto> {
+    return await this.evaluationPeriodManagementService.직원_평가기간별_할당정보_조회한다(
+      periodId,
+      employeeId,
     );
   }
 
@@ -797,6 +816,40 @@ export class EvaluationPeriodManagementController {
       success: true,
       transitionedCount: result,
       message: `${result}개의 평가기간이 자동 단계 전이되었습니다.`,
+    };
+  }
+
+  /**
+   * 이전 평가기간 데이터를 복사합니다 (현재 로그인한 사용자).
+   */
+  @CopyPreviousPeriodData()
+  async copyPreviousPeriodData(
+    @ParseUUID('targetPeriodId') targetPeriodId: string,
+    @ParseUUID('sourcePeriodId') sourcePeriodId: string,
+    @Body() body: CopyPreviousPeriodDataApiDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CopyPreviousPeriodDataResponseDto> {
+    const employeeId = user.id; // JWT에서 현재 로그인한 사용자 ID 추출
+    const copiedBy = user.id;
+
+    this.logger.log(
+      `이전 평가기간 데이터 복사 요청 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}`,
+    );
+
+    const result =
+      await this.evaluationPeriodManagementService.이전_평가기간_데이터를_복사한다(
+        targetPeriodId,
+        sourcePeriodId,
+        employeeId,
+        copiedBy,
+        body.projects,
+      );
+
+    return {
+      success: true,
+      message: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+      copiedProjectAssignments: result.copiedProjectAssignments,
+      copiedEvaluationLineMappings: result.copiedEvaluationLineMappings,
     };
   }
 }

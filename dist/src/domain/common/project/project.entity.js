@@ -22,8 +22,6 @@ let Project = Project_1 = class Project extends base_entity_1.BaseEntity {
     endDate;
     managerId;
     parentProjectId;
-    parentProject;
-    childProjects;
     constructor(name, projectCode, status, startDate, endDate, managerId, parentProjectId) {
         super();
         if (name)
@@ -145,18 +143,6 @@ __decorate([
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Project.prototype, "parentProjectId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => Project, (project) => project.childProjects, {
-        nullable: true,
-        onDelete: 'CASCADE',
-    }),
-    (0, typeorm_1.JoinColumn)({ name: 'parentProjectId' }),
-    __metadata("design:type", Project)
-], Project.prototype, "parentProject", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => Project, (project) => project.parentProject),
-    __metadata("design:type", Array)
-], Project.prototype, "childProjects", void 0);
 exports.Project = Project = Project_1 = __decorate([
     (0, typeorm_1.Entity)('project'),
     __metadata("design:paramtypes", [String, String, String, Date,

@@ -120,6 +120,9 @@ let ProjectService = class ProjectService {
             try {
                 const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
                 const savedProject = await this.projectRepository.save(project);
+                if (dataList[i].childProjects && dataList[i].childProjects.length > 0) {
+                    await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, dataList[i].childProjects, dataList[i].status, dataList[i].startDate, dataList[i].endDate, dataList[i].managerId, createdBy);
+                }
                 const result = await this.ID로_조회한다(savedProject.id, true);
                 if (result) {
                     success.push(result);

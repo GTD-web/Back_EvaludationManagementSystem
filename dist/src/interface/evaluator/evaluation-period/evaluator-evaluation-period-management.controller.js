@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_management_service_1 = require("../../../context/evaluation-period-management-context/evaluation-period-management.service");
 const evaluation_period_business_service_1 = require("../../../business/evaluation-period/evaluation-period-business.service");
+const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
@@ -43,6 +44,20 @@ let EvaluatorEvaluationPeriodManagementController = class EvaluatorEvaluationPer
     }
     async getEvaluationPeriodDetail(periodId) {
         return await this.evaluationPeriodManagementService.평가기간상세_조회한다(periodId);
+    }
+    async getEmployeePeriodAssignments(periodId, employeeId) {
+        return await this.evaluationPeriodManagementService.직원_평가기간별_할당정보_조회한다(periodId, employeeId);
+    }
+    async copyPreviousPeriodData(targetPeriodId, sourcePeriodId, body, user) {
+        const employeeId = user.id;
+        const copiedBy = user.id;
+        const result = await this.evaluationPeriodManagementService.이전_평가기간_데이터를_복사한다(targetPeriodId, sourcePeriodId, employeeId, copiedBy, body.projects);
+        return {
+            success: true,
+            message: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+            copiedProjectAssignments: result.copiedProjectAssignments,
+            copiedEvaluationLineMappings: result.copiedEvaluationLineMappings,
+        };
     }
 };
 exports.EvaluatorEvaluationPeriodManagementController = EvaluatorEvaluationPeriodManagementController;
@@ -72,6 +87,24 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EvaluatorEvaluationPeriodManagementController.prototype, "getEvaluationPeriodDetail", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.GetEmployeePeriodAssignments)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], EvaluatorEvaluationPeriodManagementController.prototype, "getEmployeePeriodAssignments", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.CopyPreviousPeriodData)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('targetPeriodId')),
+    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('sourcePeriodId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, evaluation_management_dto_1.CopyPreviousPeriodDataApiDto, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluatorEvaluationPeriodManagementController.prototype, "copyPreviousPeriodData", null);
 exports.EvaluatorEvaluationPeriodManagementController = EvaluatorEvaluationPeriodManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-2. 평가자 - 평가기간'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),

@@ -27,6 +27,7 @@ export interface ProjectDto {
     parentProjectId?: string;
     parentProject?: ProjectDto;
     childProjects?: ProjectDto[];
+    childProjectCount?: number;
     readonly isDeleted: boolean;
     readonly isActive: boolean;
     readonly isCompleted: boolean;

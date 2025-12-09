@@ -66,6 +66,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   })
   managerId?: string;
 
+  // 상위 프로젝트 ID (FK로 관리, 관계는 서비스 레벨에서 처리)
   @Column({
     type: 'uuid',
     nullable: true,
@@ -73,16 +74,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   })
   @Index()
   parentProjectId?: string;
-
-  @ManyToOne(() => Project, (project) => project.childProjects, {
-    nullable: true,
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'parentProjectId' })
-  parentProject?: Project;
-
-  @OneToMany(() => Project, (project) => project.parentProject)
-  childProjects?: Project[];
 
   constructor(
     name?: string,

@@ -32,6 +32,10 @@ export interface ManagerInfo {
 /**
  * 프로젝트 DTO (평가 시스템용 간소화 버전)
  * 평가에 필요한 핵심 프로젝트 정보만 포함
+ * 
+ * 계층 구조:
+ * - parentProjectId가 없는 경우: 상위 프로젝트 (PM 관리)
+ * - parentProjectId가 있는 경우: 하위 프로젝트 (DPM 관리)
  */
 export interface ProjectDto {
   // BaseEntity 필드들
@@ -57,10 +61,18 @@ export interface ProjectDto {
   endDate?: Date;
 
   // 조인된 정보 필드들
-  /** 프로젝트 매니저 ID */
+  /** 프로젝트 매니저 ID (상위: PM, 하위: DPM) */
   managerId?: string;
   /** 프로젝트 매니저 정보 */
   manager?: ManagerInfo;
+
+  // 계층 구조 필드들
+  /** 상위 프로젝트 ID (하위 프로젝트인 경우) */
+  parentProjectId?: string;
+  /** 상위 프로젝트 정보 */
+  parentProject?: ProjectDto;
+  /** 하위 프로젝트 목록 */
+  childProjects?: ProjectDto[];
 
   // 계산된 필드들 (읽기 전용)
   /** 삭제된 상태 여부 */
@@ -73,6 +85,21 @@ export interface ProjectDto {
   readonly isCancelled: boolean;
 }
 
+/**
+ * 하위 프로젝트 입력 데이터
+ * 같은 orderLevel의 프로젝트들은 같은 부모를 가집니다 (형제 관계)
+ */
+export interface ChildProjectInput {
+  /** 계층 레벨 (1~10, 같은 레벨은 형제 관계) */
+  orderLevel: number;
+  /** 하위 프로젝트명 */
+  name: string;
+  /** 하위 프로젝트 코드 (미입력 시 자동 생성) */
+  projectCode?: string;
+  /** 하위 프로젝트 매니저 ID (필수) */
+  managerId: string;
+}
+
 // 프로젝트 생성 DTO (평가 시스템 전용)
 export interface CreateProjectDto {
   name: string;
@@ -81,6 +108,10 @@ export interface CreateProjectDto {
   startDate?: Date;
   endDate?: Date;
   managerId?: string;
+  /** 상위 프로젝트 ID (하위 프로젝트 생성 시) */
+  parentProjectId?: string;
+  /** 하위 프로젝트 목록 (평면 구조, orderLevel로 재귀 체인 생성) */
+  childProjects?: ChildProjectInput[];
 }
 
 // 프로젝트 업데이트 DTO (평가 시스템 전용)
@@ -91,6 +122,10 @@ export interface UpdateProjectDto {
   startDate?: Date;
   endDate?: Date;
   managerId?: string;
+  /** 상위 프로젝트 ID (하위 프로젝트로 변경 또는 상위 프로젝트 변경 시) */
+  parentProjectId?: string;
+  /** 하위 프로젝트 목록 (기존 하위 삭제 후 재생성, undefined: 변경 없음) */
+  childProjects?: ChildProjectInput[];
 }
 
 // 프로젝트 조회 필터 (평가 시스템용 간소화 버전)
@@ -101,6 +136,12 @@ export interface ProjectFilter {
   startDateTo?: Date;
   endDateFrom?: Date;
   endDateTo?: Date;
+  /** 상위 프로젝트 ID로 필터링 (하위 프로젝트 조회 시) */
+  parentProjectId?: string;
+  /** 계층 레벨 필터 (null: 상위 프로젝트만, 'all': 전체) */
+  hierarchyLevel?: 'parent' | 'child' | 'all';
+  /** 프로젝트명 검색 (부분 일치) */
+  search?: string;
 }
 
 // 프로젝트 통계 (평가 시스템용 간소화 버전)

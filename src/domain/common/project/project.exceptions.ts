@@ -4,9 +4,14 @@ import { ConflictException } from '@nestjs/common';
  * 프로젝트에 할당이 존재하여 삭제할 수 없는 예외
  */
 export class ProjectHasAssignmentsException extends ConflictException {
-  constructor(projectId: string, assignmentCount: number) {
+  constructor(
+    projectId: string,
+    assignmentCount: number,
+    customMessage?: string,
+  ) {
     super(
-      `프로젝트에 ${assignmentCount}개의 할당이 존재하여 삭제할 수 없습니다. 프로젝트 ID: ${projectId}`,
+      customMessage ||
+        `프로젝트에 ${assignmentCount}개의 할당이 존재하여 삭제할 수 없습니다. 프로젝트 ID: ${projectId}`,
     );
     this.name = 'ProjectHasAssignmentsException';
   }

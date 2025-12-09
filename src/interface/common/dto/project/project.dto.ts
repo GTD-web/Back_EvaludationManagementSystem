@@ -17,6 +17,62 @@ import { DateToUTC, OptionalDateToUTC } from '@interface/common/decorators';
 import { ProjectStatus } from '@domain/common/project/project.types';
 
 /**
+ * 하위 프로젝트 생성 DTO
+ * orderLevel로 계층 순서를 지정합니다.
+ * 같은 orderLevel의 프로젝트들은 같은 부모를 가집니다.
+ */
+export class ChildProjectInputDto {
+  @ApiProperty({
+    description:
+      '계층 레벨 (1~10)\n' +
+      '• 1: 1차 하위 (상위 프로젝트 직속)\n' +
+      '• 2: 2차 하위 (1차 하위의 하위)\n' +
+      '• 3: 3차 하위 (2차 하위의 하위)\n' +
+      '• 같은 orderLevel은 같은 부모 아래 형제 관계\n' +
+      '• 예: orderLevel=1이 3개면 상위 아래 3개 형제',
+    example: 1,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNotEmpty()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  orderLevel: number;
+
+  @ApiProperty({
+    description: '하위 프로젝트명',
+    example: 'EMS 프로젝트 - 1차 하위 A',
+  })
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiPropertyOptional({
+    description:
+      '하위 프로젝트 코드\n' +
+      '• 미입력 시 자동 생성: {상위코드}-SUB{orderLevel}-{인덱스}',
+    example: 'EMS-2024-SUB1-A',
+  })
+  @IsOptional()
+  @IsString()
+  projectCode?: string;
+
+  @ApiProperty({
+    description:
+      '하위 프로젝트 매니저 ID (DPM)\n' +
+      '• 각 하위 프로젝트마다 다른 PM 지정 가능\n' +
+      '• 필수 입력',
+    example: '660e9500-f30c-52e5-b827-557766551111',
+  })
+  @IsNotEmpty()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
+    message: 'managerId must be a valid UUID format',
+  })
+  managerId: string;
+}
+
+/**
  * 프로젝트 생성 DTO
  */
 export class CreateProjectDto {
@@ -65,7 +121,7 @@ export class CreateProjectDto {
   endDate?: Date;
 
   @ApiPropertyOptional({
-    description: '프로젝트 매니저 ID (UUID)',
+    description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsOptional()
@@ -73,6 +129,47 @@ export class CreateProjectDto {
     message: 'managerId must be a UUID',
   })
   managerId?: string;
+
+  @ApiPropertyOptional({
+    description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
+    example: '660e9500-f30c-52e5-b827-557766551111',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentProjectId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '하위 프로젝트 목록 (평면 구조)\n' +
+      '• 같은 orderLevel은 같은 부모 아래 형제 관계\n' +
+      '• orderLevel=1: 상위 프로젝트 직속 하위\n' +
+      '• orderLevel=2: orderLevel=1 중 마지막 프로젝트의 하위\n' +
+      '• orderLevel=3: orderLevel=2 중 마지막 프로젝트의 하위\n' +
+      '• 각 하위마다 다른 managerId(PM) 지정 가능',
+    type: [ChildProjectInputDto],
+    example: [
+      {
+        orderLevel: 1,
+        name: 'EMS 프로젝트 - 1차 하위 A',
+        managerId: '550e8400-e29b-41d4-a716-446655440000',
+      },
+      {
+        orderLevel: 1,
+        name: 'EMS 프로젝트 - 1차 하위 B',
+        managerId: '660e9500-f30c-52e5-b827-557766551111',
+      },
+      {
+        orderLevel: 2,
+        name: 'EMS 프로젝트 - 2차 하위',
+        managerId: '770ea600-g40d-63f6-c938-668877662222',
+      },
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChildProjectInputDto)
+  childProjects?: ChildProjectInputDto[];
 }
 
 /**
@@ -156,7 +253,7 @@ export class UpdateProjectDto {
   endDate?: Date;
 
   @ApiPropertyOptional({
-    description: '프로젝트 매니저 ID (UUID)',
+    description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsOptional()
@@ -164,6 +261,30 @@ export class UpdateProjectDto {
     message: 'managerId must be a UUID',
   })
   managerId?: string;
+
+  @ApiPropertyOptional({
+    description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',
+    example: '660e9500-f30c-52e5-b827-557766551111',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentProjectId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '하위 프로젝트 목록 (평면 구조)\n' +
+      '• 기존 하위 프로젝트를 모두 삭제하고 새로 생성\n' +
+      '• 같은 orderLevel은 형제 관계\n' +
+      '• 각 하위마다 다른 managerId(PM) 지정\n' +
+      '• undefined: 하위 변경 없음\n' +
+      '• []: 모든 하위 삭제',
+    type: [ChildProjectInputDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChildProjectInputDto)
+  childProjects?: ChildProjectInputDto[];
 }
 
 /**
@@ -235,6 +356,23 @@ export class GetProjectListQueryDto {
   managerId?: string;
 
   @ApiPropertyOptional({
+    description: '상위 프로젝트 ID (UUID) - 특정 상위 프로젝트의 하위 프로젝트만 조회',
+    example: '660e9500-f30c-52e5-b827-557766551111',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentProjectId?: string;
+
+  @ApiPropertyOptional({
+    description: '계층 레벨 필터 (parent: 상위 프로젝트만, child: 하위 프로젝트만, all: 전체)',
+    enum: ['parent', 'child', 'all'],
+    example: 'all',
+  })
+  @IsOptional()
+  @IsString()
+  hierarchyLevel?: 'parent' | 'child' | 'all';
+
+  @ApiPropertyOptional({
     description: '시작일 범위 시작 (YYYY-MM-DD)',
     example: '2024-01-01',
     type: String,
@@ -269,6 +407,14 @@ export class GetProjectListQueryDto {
   @IsOptional()
   @OptionalDateToUTC()
   endDateTo?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트명 검색 (부분 일치)',
+    example: 'EMS',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 /**
@@ -319,6 +465,53 @@ export class ManagerInfoDto {
 }
 
 /**
+ * 프로젝트 응답 DTO (간단한 버전 - 순환 참조 방지용)
+ */
+export class SimpleProjectResponseDto {
+  @ApiProperty({
+    description: '프로젝트 ID (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: '프로젝트명',
+    example: 'EMS 프로젝트',
+  })
+  name: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 코드',
+    example: 'EMS-2024',
+  })
+  projectCode?: string;
+
+  @ApiProperty({
+    description: '프로젝트 상태',
+    enum: ProjectStatus,
+    enumName: 'ProjectStatus',
+  })
+  status: ProjectStatus;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 매니저 ID',
+  })
+  managerId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 매니저 정보',
+    type: ManagerInfoDto,
+  })
+  manager?: ManagerInfoDto;
+
+  @ApiPropertyOptional({
+    description: '하위 프로젝트 목록 (재귀 구조)',
+    type: [SimpleProjectResponseDto],
+  })
+  childProjects?: SimpleProjectResponseDto[];
+}
+
+/**
  * 프로젝트 응답 DTO
  */
 export class ProjectResponseDto {
@@ -361,7 +554,7 @@ export class ProjectResponseDto {
   endDate?: Date;
 
   @ApiPropertyOptional({
-    description: '프로젝트 매니저 ID',
+    description: '프로젝트 매니저 ID (상위: PM, 하위: DPM)',
     example: '11111111-1111-1111-1111-111111111111',
   })
   managerId?: string;
@@ -371,6 +564,30 @@ export class ProjectResponseDto {
     type: ManagerInfoDto,
   })
   manager?: ManagerInfoDto;
+
+  @ApiPropertyOptional({
+    description: '상위 프로젝트 ID (하위 프로젝트인 경우)',
+    example: '22222222-2222-2222-2222-222222222222',
+  })
+  parentProjectId?: string;
+
+  @ApiPropertyOptional({
+    description: '상위 프로젝트 정보 (하위 프로젝트인 경우)',
+    type: SimpleProjectResponseDto,
+  })
+  parentProject?: SimpleProjectResponseDto;
+
+  @ApiPropertyOptional({
+    description: '하위 프로젝트 목록 (상위 프로젝트인 경우)',
+    type: [SimpleProjectResponseDto],
+  })
+  childProjects?: SimpleProjectResponseDto[];
+
+  @ApiPropertyOptional({
+    description: '하위 프로젝트 수',
+    example: 5,
+  })
+  childProjectCount?: number;
 
   @ApiProperty({
     description: '생성일시',

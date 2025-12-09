@@ -9,12 +9,69 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectsBulkCreateResponseDto = exports.BulkCreateFailedItemDto = exports.ProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectsBulkDto = exports.CreateProjectDto = void 0;
+exports.ProjectsBulkCreateResponseDto = exports.BulkCreateFailedItemDto = exports.ProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.SimpleProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectsBulkDto = exports.CreateProjectDto = exports.ChildProjectInputDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const decorators_1 = require("../../decorators");
 const project_types_1 = require("../../../../domain/common/project/project.types");
+class ChildProjectInputDto {
+    orderLevel;
+    name;
+    projectCode;
+    managerId;
+}
+exports.ChildProjectInputDto = ChildProjectInputDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '계층 레벨 (1~10)\n' +
+            '• 1: 1차 하위 (상위 프로젝트 직속)\n' +
+            '• 2: 2차 하위 (1차 하위의 하위)\n' +
+            '• 3: 3차 하위 (2차 하위의 하위)\n' +
+            '• 같은 orderLevel은 같은 부모 아래 형제 관계\n' +
+            '• 예: orderLevel=1이 3개면 상위 아래 3개 형제',
+        example: 1,
+        minimum: 1,
+        maximum: 10,
+    }),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(10),
+    __metadata("design:type", Number)
+], ChildProjectInputDto.prototype, "orderLevel", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '하위 프로젝트명',
+        example: 'EMS 프로젝트 - 1차 하위 A',
+    }),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ChildProjectInputDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 코드\n' +
+            '• 미입력 시 자동 생성: {상위코드}-SUB{orderLevel}-{인덱스}',
+        example: 'EMS-2024-SUB1-A',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ChildProjectInputDto.prototype, "projectCode", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '하위 프로젝트 매니저 ID (DPM)\n' +
+            '• 각 하위 프로젝트마다 다른 PM 지정 가능\n' +
+            '• 필수 입력',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Matches)(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
+        message: 'managerId must be a valid UUID format',
+    }),
+    __metadata("design:type", String)
+], ChildProjectInputDto.prototype, "managerId", void 0);
 class CreateProjectDto {
     name;
     projectCode;
@@ -22,6 +79,8 @@ class CreateProjectDto {
     startDate;
     endDate;
     managerId;
+    parentProjectId;
+    childProjects;
 }
 exports.CreateProjectDto = CreateProjectDto;
 __decorate([
@@ -75,7 +134,7 @@ __decorate([
 ], CreateProjectDto.prototype, "endDate", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '프로젝트 매니저 ID (UUID)',
+        description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
         example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     (0, class_validator_1.IsOptional)(),
@@ -84,6 +143,48 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], CreateProjectDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CreateProjectDto.prototype, "parentProjectId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 목록 (평면 구조)\n' +
+            '• 같은 orderLevel은 같은 부모 아래 형제 관계\n' +
+            '• orderLevel=1: 상위 프로젝트 직속 하위\n' +
+            '• orderLevel=2: orderLevel=1 중 마지막 프로젝트의 하위\n' +
+            '• orderLevel=3: orderLevel=2 중 마지막 프로젝트의 하위\n' +
+            '• 각 하위마다 다른 managerId(PM) 지정 가능',
+        type: [ChildProjectInputDto],
+        example: [
+            {
+                orderLevel: 1,
+                name: 'EMS 프로젝트 - 1차 하위 A',
+                managerId: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            {
+                orderLevel: 1,
+                name: 'EMS 프로젝트 - 1차 하위 B',
+                managerId: '660e9500-f30c-52e5-b827-557766551111',
+            },
+            {
+                orderLevel: 2,
+                name: 'EMS 프로젝트 - 2차 하위',
+                managerId: '770ea600-g40d-63f6-c938-668877662222',
+            },
+        ],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => ChildProjectInputDto),
+    __metadata("design:type", Array)
+], CreateProjectDto.prototype, "childProjects", void 0);
 class CreateProjectsBulkDto {
     projects;
 }
@@ -123,6 +224,8 @@ class UpdateProjectDto {
     startDate;
     endDate;
     managerId;
+    parentProjectId;
+    childProjects;
 }
 exports.UpdateProjectDto = UpdateProjectDto;
 __decorate([
@@ -176,7 +279,7 @@ __decorate([
 ], UpdateProjectDto.prototype, "endDate", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '프로젝트 매니저 ID (UUID)',
+        description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
         example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     (0, class_validator_1.IsOptional)(),
@@ -185,6 +288,31 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], UpdateProjectDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "parentProjectId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 목록 (평면 구조)\n' +
+            '• 기존 하위 프로젝트를 모두 삭제하고 새로 생성\n' +
+            '• 같은 orderLevel은 형제 관계\n' +
+            '• 각 하위마다 다른 managerId(PM) 지정\n' +
+            '• undefined: 하위 변경 없음\n' +
+            '• []: 모든 하위 삭제',
+        type: [ChildProjectInputDto],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => ChildProjectInputDto),
+    __metadata("design:type", Array)
+], UpdateProjectDto.prototype, "childProjects", void 0);
 class GetProjectListQueryDto {
     page = 1;
     limit = 20;
@@ -192,10 +320,13 @@ class GetProjectListQueryDto {
     sortOrder = 'DESC';
     status;
     managerId;
+    parentProjectId;
+    hierarchyLevel;
     startDateFrom;
     startDateTo;
     endDateFrom;
     endDateTo;
+    search;
 }
 exports.GetProjectListQueryDto = GetProjectListQueryDto;
 __decorate([
@@ -269,6 +400,25 @@ __decorate([
 ], GetProjectListQueryDto.prototype, "managerId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
+        description: '상위 프로젝트 ID (UUID) - 특정 상위 프로젝트의 하위 프로젝트만 조회',
+        example: '660e9500-f30c-52e5-b827-557766551111',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], GetProjectListQueryDto.prototype, "parentProjectId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '계층 레벨 필터 (parent: 상위 프로젝트만, child: 하위 프로젝트만, all: 전체)',
+        enum: ['parent', 'child', 'all'],
+        example: 'all',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProjectListQueryDto.prototype, "hierarchyLevel", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
         description: '시작일 범위 시작 (YYYY-MM-DD)',
         example: '2024-01-01',
         type: String,
@@ -307,6 +457,15 @@ __decorate([
     (0, decorators_1.OptionalDateToUTC)(),
     __metadata("design:type", Date)
 ], GetProjectListQueryDto.prototype, "endDateTo", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '프로젝트명 검색 (부분 일치)',
+        example: 'EMS',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProjectListQueryDto.prototype, "search", void 0);
 class ManagerInfoDto {
     managerId;
     employeeId;
@@ -366,6 +525,65 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], ManagerInfoDto.prototype, "rankName", void 0);
+class SimpleProjectResponseDto {
+    id;
+    name;
+    projectCode;
+    status;
+    managerId;
+    manager;
+    childProjects;
+}
+exports.SimpleProjectResponseDto = SimpleProjectResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '프로젝트 ID (UUID)',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    __metadata("design:type", String)
+], SimpleProjectResponseDto.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '프로젝트명',
+        example: 'EMS 프로젝트',
+    }),
+    __metadata("design:type", String)
+], SimpleProjectResponseDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '프로젝트 코드',
+        example: 'EMS-2024',
+    }),
+    __metadata("design:type", String)
+], SimpleProjectResponseDto.prototype, "projectCode", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '프로젝트 상태',
+        enum: project_types_1.ProjectStatus,
+        enumName: 'ProjectStatus',
+    }),
+    __metadata("design:type", String)
+], SimpleProjectResponseDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '프로젝트 매니저 ID',
+    }),
+    __metadata("design:type", String)
+], SimpleProjectResponseDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '프로젝트 매니저 정보',
+        type: ManagerInfoDto,
+    }),
+    __metadata("design:type", ManagerInfoDto)
+], SimpleProjectResponseDto.prototype, "manager", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 목록 (재귀 구조)',
+        type: [SimpleProjectResponseDto],
+    }),
+    __metadata("design:type", Array)
+], SimpleProjectResponseDto.prototype, "childProjects", void 0);
 class ProjectResponseDto {
     id;
     name;
@@ -375,6 +593,10 @@ class ProjectResponseDto {
     endDate;
     managerId;
     manager;
+    parentProjectId;
+    parentProject;
+    childProjects;
+    childProjectCount;
     createdAt;
     updatedAt;
     deletedAt;
@@ -429,7 +651,7 @@ __decorate([
 ], ProjectResponseDto.prototype, "endDate", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '프로젝트 매니저 ID',
+        description: '프로젝트 매니저 ID (상위: PM, 하위: DPM)',
         example: '11111111-1111-1111-1111-111111111111',
     }),
     __metadata("design:type", String)
@@ -441,6 +663,34 @@ __decorate([
     }),
     __metadata("design:type", ManagerInfoDto)
 ], ProjectResponseDto.prototype, "manager", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '상위 프로젝트 ID (하위 프로젝트인 경우)',
+        example: '22222222-2222-2222-2222-222222222222',
+    }),
+    __metadata("design:type", String)
+], ProjectResponseDto.prototype, "parentProjectId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '상위 프로젝트 정보 (하위 프로젝트인 경우)',
+        type: SimpleProjectResponseDto,
+    }),
+    __metadata("design:type", SimpleProjectResponseDto)
+], ProjectResponseDto.prototype, "parentProject", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 목록 (상위 프로젝트인 경우)',
+        type: [SimpleProjectResponseDto],
+    }),
+    __metadata("design:type", Array)
+], ProjectResponseDto.prototype, "childProjects", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 수',
+        example: 5,
+    }),
+    __metadata("design:type", Number)
+], ProjectResponseDto.prototype, "childProjectCount", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '생성일시',

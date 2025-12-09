@@ -36,13 +36,56 @@ let ProjectService = class ProjectService {
                 throw new common_1.BadRequestException(`프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`);
             }
         }
+        if (data.parentProjectId) {
+            const parentProject = await this.projectRepository.findOne({
+                where: { id: data.parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
+            });
+            if (!parentProject) {
+                throw new common_1.NotFoundException(`상위 프로젝트 ID ${data.parentProjectId}를 찾을 수 없습니다.`);
+            }
+        }
         const project = project_entity_1.Project.생성한다(data, createdBy);
         const savedProject = await this.projectRepository.save(project);
-        const result = await this.ID로_조회한다(savedProject.id);
+        if (data.childProjects && data.childProjects.length > 0) {
+            await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, data.childProjects, data.status, data.startDate, data.endDate, data.managerId, createdBy);
+        }
+        const result = await this.ID로_조회한다(savedProject.id, true);
         if (!result) {
             throw new common_1.NotFoundException(`생성된 프로젝트를 찾을 수 없습니다.`);
         }
         return result;
+    }
+    async 하위_프로젝트들_생성한다(topLevelProjectId, topLevelProjectCode, childProjects, status, startDate, endDate, defaultManagerId, createdBy = 'system') {
+        const groupedByLevel = new Map();
+        for (const child of childProjects) {
+            const existing = groupedByLevel.get(child.orderLevel) || [];
+            existing.push(child);
+            groupedByLevel.set(child.orderLevel, existing);
+        }
+        const sortedLevels = Array.from(groupedByLevel.keys()).sort((a, b) => a - b);
+        let lastCreatedIdOfPreviousLevel = topLevelProjectId;
+        for (const level of sortedLevels) {
+            const childrenInLevel = groupedByLevel.get(level) || [];
+            let lastCreatedInThisLevel = null;
+            for (let index = 0; index < childrenInLevel.length; index++) {
+                const child = childrenInLevel[index];
+                const childProjectCode = child.projectCode ||
+                    `${topLevelProjectCode}-SUB${level}-${String.fromCharCode(65 + index)}`;
+                const createdChild = await this.projectRepository.save(project_entity_1.Project.생성한다({
+                    name: child.name,
+                    projectCode: childProjectCode,
+                    status,
+                    startDate,
+                    endDate,
+                    managerId: child.managerId,
+                    parentProjectId: lastCreatedIdOfPreviousLevel,
+                }, createdBy));
+                lastCreatedInThisLevel = createdChild;
+            }
+            if (lastCreatedInThisLevel) {
+                lastCreatedIdOfPreviousLevel = lastCreatedInThisLevel.id;
+            }
+        }
     }
     async 일괄_생성한다(dataList, createdBy) {
         const success = [];
@@ -77,7 +120,7 @@ let ProjectService = class ProjectService {
             try {
                 const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
                 const savedProject = await this.projectRepository.save(project);
-                const result = await this.ID로_조회한다(savedProject.id);
+                const result = await this.ID로_조회한다(savedProject.id, true);
                 if (result) {
                     success.push(result);
                 }
@@ -111,7 +154,16 @@ let ProjectService = class ProjectService {
         }
         project.업데이트한다(data, updatedBy);
         await this.projectRepository.save(project);
-        const result = await this.ID로_조회한다(id);
+        if (data.childProjects !== undefined) {
+            const existingChildren = await this.모든_하위_프로젝트_조회한다(id);
+            for (const child of existingChildren.reverse()) {
+                await this.projectRepository.remove(child);
+            }
+            if (data.childProjects.length > 0) {
+                await this.하위_프로젝트들_생성한다(id, project.projectCode || id, data.childProjects, project.status, project.startDate, project.endDate, project.managerId, updatedBy);
+            }
+        }
+        const result = await this.ID로_조회한다(id, true);
         if (!result) {
             throw new common_1.NotFoundException(`수정된 프로젝트를 찾을 수 없습니다.`);
         }
@@ -124,16 +176,37 @@ let ProjectService = class ProjectService {
         if (!project) {
             throw new common_1.NotFoundException(`ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`);
         }
-        const assignmentCount = await this.evaluationProjectAssignmentRepository.count({
-            where: { projectId: id, deletedAt: (0, typeorm_2.IsNull)() },
-        });
-        if (assignmentCount > 0) {
-            throw new project_exceptions_1.ProjectHasAssignmentsException(id, assignmentCount);
+        const allChildProjects = await this.모든_하위_프로젝트_조회한다(id);
+        const projectIdsToCheck = [id, ...allChildProjects.map((p) => p.id)];
+        for (const projectId of projectIdsToCheck) {
+            const assignmentCount = await this.evaluationProjectAssignmentRepository.count({
+                where: { projectId, deletedAt: (0, typeorm_2.IsNull)() },
+            });
+            if (assignmentCount > 0) {
+                const projectToCheck = [project, ...allChildProjects].find((p) => p.id === projectId);
+                throw new project_exceptions_1.ProjectHasAssignmentsException(projectId, assignmentCount, `프로젝트 "${projectToCheck?.name || projectId}"에 ${assignmentCount}개의 할당이 있어 삭제할 수 없습니다.`);
+            }
+        }
+        for (const child of allChildProjects.reverse()) {
+            child.삭제한다(deletedBy);
+            await this.projectRepository.save(child);
         }
         project.삭제한다(deletedBy);
         await this.projectRepository.save(project);
     }
-    async ID로_조회한다(id) {
+    async 모든_하위_프로젝트_조회한다(parentId) {
+        const allChildren = [];
+        const directChildren = await this.projectRepository.find({
+            where: { parentProjectId: parentId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        for (const child of directChildren) {
+            allChildren.push(child);
+            const grandChildren = await this.모든_하위_프로젝트_조회한다(child.id);
+            allChildren.push(...grandChildren);
+        }
+        return allChildren;
+    }
+    async ID로_조회한다(id, includeChildren = false) {
         const result = await this.projectRepository
             .createQueryBuilder('project')
             .leftJoin('employee', 'manager', 'manager.externalId = project.managerId AND manager.deletedAt IS NULL')
@@ -148,6 +221,7 @@ let ProjectService = class ProjectService {
             'project.updatedAt AS "updatedAt"',
             'project.deletedAt AS "deletedAt"',
             'project.managerId AS "managerId"',
+            'project.parentProjectId AS "parentProjectId"',
             'manager.id AS manager_employee_id',
             'manager.externalId AS manager_external_id',
             'manager.name AS manager_name',
@@ -162,6 +236,10 @@ let ProjectService = class ProjectService {
         if (!result) {
             return null;
         }
+        let childProjects;
+        if (includeChildren) {
+            childProjects = await this.하위_프로젝트_목록_조회한다(id);
+        }
         return {
             id: result.id,
             name: result.name,
@@ -173,6 +251,7 @@ let ProjectService = class ProjectService {
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
             managerId: result.managerId,
+            parentProjectId: result.parentProjectId,
             manager: result.manager_external_id
                 ? {
                     managerId: result.manager_external_id,
@@ -184,6 +263,7 @@ let ProjectService = class ProjectService {
                     rankName: result.manager_rank_name,
                 }
                 : undefined,
+            childProjects,
             get isDeleted() {
                 return result.deletedAt !== null && result.deletedAt !== undefined;
             },
@@ -377,6 +457,19 @@ let ProjectService = class ProjectService {
                 endDateTo: filter.endDateTo,
             });
         }
+        if (filter.parentProjectId !== undefined) {
+            queryBuilder.andWhere('project.parentProjectId = :parentProjectId', {
+                parentProjectId: filter.parentProjectId,
+            });
+        }
+        if (filter.hierarchyLevel) {
+            if (filter.hierarchyLevel === 'parent') {
+                queryBuilder.andWhere('project.parentProjectId IS NULL');
+            }
+            else if (filter.hierarchyLevel === 'child') {
+                queryBuilder.andWhere('project.parentProjectId IS NOT NULL');
+            }
+        }
         const results = await queryBuilder.getRawMany();
         return results.map((result) => ({
             id: result.id,
@@ -447,6 +540,24 @@ let ProjectService = class ProjectService {
                 endDateTo: filter.endDateTo,
             });
         }
+        if (filter.search) {
+            countQueryBuilder.andWhere('project.name ILIKE :search', {
+                search: `%${filter.search}%`,
+            });
+        }
+        if (filter.parentProjectId !== undefined) {
+            countQueryBuilder.andWhere('project.parentProjectId = :parentProjectId', {
+                parentProjectId: filter.parentProjectId,
+            });
+        }
+        if (filter.hierarchyLevel) {
+            if (filter.hierarchyLevel === 'parent') {
+                countQueryBuilder.andWhere('project.parentProjectId IS NULL');
+            }
+            else if (filter.hierarchyLevel === 'child') {
+                countQueryBuilder.andWhere('project.parentProjectId IS NOT NULL');
+            }
+        }
         const total = await countQueryBuilder.getCount();
         const queryBuilder = this.projectRepository
             .createQueryBuilder('project')
@@ -461,6 +572,8 @@ let ProjectService = class ProjectService {
             'project.createdAt AS "createdAt"',
             'project.updatedAt AS "updatedAt"',
             'project.deletedAt AS "deletedAt"',
+            'project.managerId AS "managerId"',
+            'project.parentProjectId AS "parentProjectId"',
             'manager.id AS manager_employee_id',
             'manager.externalId AS manager_external_id',
             'manager.name AS manager_name',
@@ -500,6 +613,24 @@ let ProjectService = class ProjectService {
                 endDateTo: filter.endDateTo,
             });
         }
+        if (filter.search) {
+            queryBuilder.andWhere('project.name ILIKE :search', {
+                search: `%${filter.search}%`,
+            });
+        }
+        if (filter.parentProjectId !== undefined) {
+            queryBuilder.andWhere('project.parentProjectId = :parentProjectId', {
+                parentProjectId: filter.parentProjectId,
+            });
+        }
+        if (filter.hierarchyLevel) {
+            if (filter.hierarchyLevel === 'parent') {
+                queryBuilder.andWhere('project.parentProjectId IS NULL');
+            }
+            else if (filter.hierarchyLevel === 'child') {
+                queryBuilder.andWhere('project.parentProjectId IS NOT NULL');
+            }
+        }
         queryBuilder.orderBy(`project.${sortBy}`, sortOrder);
         const offset = (page - 1) * limit;
         queryBuilder.offset(offset).limit(limit);
@@ -514,6 +645,8 @@ let ProjectService = class ProjectService {
             createdAt: result.createdAt,
             updatedAt: result.updatedAt,
             deletedAt: result.deletedAt,
+            managerId: result.managerId,
+            parentProjectId: result.parentProjectId,
             manager: result.manager_external_id
                 ? {
                     managerId: result.manager_external_id,
@@ -760,6 +893,112 @@ let ProjectService = class ProjectService {
     }
     async 취소_처리한다(id, updatedBy) {
         return this.상태_변경한다(id, project_types_1.ProjectStatus.CANCELLED, updatedBy);
+    }
+    async 하위_프로젝트_목록_조회한다(parentProjectId, depth = 0, maxDepth = 10) {
+        if (depth >= maxDepth) {
+            return [];
+        }
+        const results = await this.projectRepository
+            .createQueryBuilder('project')
+            .leftJoin('employee', 'manager', 'manager.externalId = project.managerId AND manager.deletedAt IS NULL')
+            .select([
+            'project.id AS id',
+            'project.name AS name',
+            'project.projectCode AS "projectCode"',
+            'project.status AS status',
+            'project.startDate AS "startDate"',
+            'project.endDate AS "endDate"',
+            'project.createdAt AS "createdAt"',
+            'project.updatedAt AS "updatedAt"',
+            'project.deletedAt AS "deletedAt"',
+            'project.managerId AS "managerId"',
+            'project.parentProjectId AS "parentProjectId"',
+            'manager.id AS manager_employee_id',
+            'manager.externalId AS manager_external_id',
+            'manager.name AS manager_name',
+            'manager.email AS manager_email',
+            'manager.phoneNumber AS manager_phone_number',
+            'manager.departmentName AS manager_department_name',
+            'manager.rankName AS manager_rank_name',
+        ])
+            .where('project.parentProjectId = :parentProjectId', { parentProjectId })
+            .andWhere('project.deletedAt IS NULL')
+            .orderBy('project.createdAt', 'ASC')
+            .getRawMany();
+        const projectsWithChildren = await Promise.all(results.map(async (result) => {
+            const children = await this.하위_프로젝트_목록_조회한다(result.id, depth + 1, maxDepth);
+            return {
+                id: result.id,
+                name: result.name,
+                projectCode: result.projectCode,
+                status: result.status,
+                startDate: result.startDate,
+                endDate: result.endDate,
+                createdAt: result.createdAt,
+                updatedAt: result.updatedAt,
+                deletedAt: result.deletedAt,
+                managerId: result.managerId,
+                parentProjectId: result.parentProjectId,
+                manager: result.manager_external_id
+                    ? {
+                        managerId: result.manager_external_id,
+                        employeeId: result.manager_employee_id,
+                        name: result.manager_name,
+                        email: result.manager_email,
+                        phoneNumber: result.manager_phone_number,
+                        departmentName: result.manager_department_name,
+                        rankName: result.manager_rank_name,
+                    }
+                    : undefined,
+                childProjects: children.length > 0 ? children : undefined,
+                get isDeleted() {
+                    return result.deletedAt !== null && result.deletedAt !== undefined;
+                },
+                get isActive() {
+                    return result.status === 'ACTIVE';
+                },
+                get isCompleted() {
+                    return result.status === 'COMPLETED';
+                },
+                get isCancelled() {
+                    return result.status === 'CANCELLED';
+                },
+            };
+        }));
+        return projectsWithChildren;
+    }
+    async 하위_프로젝트_수를_조회한다(parentProjectId) {
+        return this.projectRepository.count({
+            where: { parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+    }
+    async 계층구조_목록_조회한다(options = {}) {
+        const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'DESC', filter = {} } = options;
+        const parentFilter = {
+            ...filter,
+            hierarchyLevel: 'parent',
+        };
+        const parentProjects = await this.목록_조회한다({
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            filter: parentFilter,
+        });
+        const projectsWithChildren = await Promise.all(parentProjects.projects.map(async (parent) => {
+            const children = await this.하위_프로젝트_목록_조회한다(parent.id);
+            return {
+                ...parent,
+                childProjects: children,
+                childProjectCount: children.length,
+            };
+        }));
+        return {
+            projects: projectsWithChildren,
+            total: parentProjects.total,
+            page: parentProjects.page,
+            limit: parentProjects.limit,
+        };
     }
 };
 exports.ProjectService = ProjectService;

@@ -24,10 +24,19 @@ export interface ProjectDto {
     endDate?: Date;
     managerId?: string;
     manager?: ManagerInfo;
+    parentProjectId?: string;
+    parentProject?: ProjectDto;
+    childProjects?: ProjectDto[];
     readonly isDeleted: boolean;
     readonly isActive: boolean;
     readonly isCompleted: boolean;
     readonly isCancelled: boolean;
+}
+export interface ChildProjectInput {
+    orderLevel: number;
+    name: string;
+    projectCode?: string;
+    managerId: string;
 }
 export interface CreateProjectDto {
     name: string;
@@ -36,6 +45,8 @@ export interface CreateProjectDto {
     startDate?: Date;
     endDate?: Date;
     managerId?: string;
+    parentProjectId?: string;
+    childProjects?: ChildProjectInput[];
 }
 export interface UpdateProjectDto {
     name?: string;
@@ -44,6 +55,8 @@ export interface UpdateProjectDto {
     startDate?: Date;
     endDate?: Date;
     managerId?: string;
+    parentProjectId?: string;
+    childProjects?: ChildProjectInput[];
 }
 export interface ProjectFilter {
     status?: ProjectStatus;
@@ -52,6 +65,9 @@ export interface ProjectFilter {
     startDateTo?: Date;
     endDateFrom?: Date;
     endDateTo?: Date;
+    parentProjectId?: string;
+    hierarchyLevel?: 'parent' | 'child' | 'all';
+    search?: string;
 }
 export interface ProjectStatistics {
     totalProjects: number;

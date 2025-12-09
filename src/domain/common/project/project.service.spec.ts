@@ -446,6 +446,122 @@ describe('ProjectService', () => {
         BadRequestException,
       );
     });
+
+    it('하위 프로젝트와 함께 프로젝트를 생성할 수 있다', async () => {
+      // Given
+      const createData = {
+        name: '상위 프로젝트',
+        projectCode: 'PARENT-001',
+        status: ProjectStatus.ACTIVE,
+        childProjects: [
+          {
+            orderLevel: 1,
+            name: '1차 하위 A',
+            managerId: 'pm-1',
+          },
+          {
+            orderLevel: 1,
+            name: '1차 하위 B',
+            managerId: 'pm-2',
+          },
+          {
+            orderLevel: 2,
+            name: '2차 하위',
+            managerId: 'pm-3',
+          },
+        ],
+      };
+      const createdBy = 'user-001';
+
+      projectRepository.findOne.mockResolvedValue(null);
+      projectRepository.save.mockImplementation((project: any) =>
+        Promise.resolve({
+          ...project,
+          id: `id-${Math.random()}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any),
+      );
+
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({
+          id: '1',
+          name: createData.name,
+          projectCode: createData.projectCode,
+          status: createData.status,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+          managerId: null,
+          manager_employee_id: null,
+        }),
+      };
+      projectRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
+
+      // When
+      const result = await service.생성한다(createData, createdBy);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result.name).toBe(createData.name);
+      // 1 (상위) + 3 (하위) = 4번 save 호출
+      expect(projectRepository.save).toHaveBeenCalledTimes(4);
+    });
+
+    it('같은 orderLevel에 여러 하위 프로젝트를 생성할 수 있다', async () => {
+      // Given
+      const createData = {
+        name: '상위 프로젝트',
+        status: ProjectStatus.ACTIVE,
+        childProjects: [
+          { orderLevel: 1, name: '1차 A', managerId: 'pm-1' },
+          { orderLevel: 1, name: '1차 B', managerId: 'pm-2' },
+          { orderLevel: 1, name: '1차 C', managerId: 'pm-3' },
+        ],
+      };
+      const createdBy = 'user-001';
+
+      projectRepository.findOne.mockResolvedValue(null);
+      projectRepository.save.mockImplementation((project: any) =>
+        Promise.resolve({
+          ...project,
+          id: `id-${Math.random()}`,
+        } as any),
+      );
+
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({
+          id: '1',
+          name: createData.name,
+          status: createData.status,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+          managerId: null,
+          manager_employee_id: null,
+        }),
+      };
+      projectRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
+
+      // When
+      await service.생성한다(createData, createdBy);
+
+      // Then
+      // 1 (상위) + 3 (orderLevel=1 형제들) = 4번 save 호출
+      expect(projectRepository.save).toHaveBeenCalledTimes(4);
+    });
   });
 });
 

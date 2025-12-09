@@ -305,6 +305,8 @@ export class GetMyEvaluationTargetsStatusHandler
             viewedByPrimaryEvaluator: boolean;
             viewedBySecondaryEvaluator: boolean;
             primaryEvaluationViewed: boolean;
+            hasSelfEvaluationSubmitted: boolean;
+            hasPrimaryEvaluationSubmitted: boolean;
           } | null = null;
 
           if (
@@ -335,16 +337,22 @@ export class GetMyEvaluationTargetsStatusHandler
             grade: selfEvaluationStatus.grade,
           };
 
-          // 자기평가가 제출된 경우에만 평가자 유형에 따라 viewedBy 필드 추가
+          // 평가자 유형에 따라 조건부로 viewedBy 필드 추가
           if (viewedStatus) {
-            // 1차 평가자인 경우: viewedByPrimaryEvaluator만 추가
-            if (evaluatorTypes.includes(EvaluatorType.PRIMARY)) {
+            // 1차 평가자인 경우: 자기평가가 제출된 경우에만 viewedByPrimaryEvaluator 추가
+            if (
+              evaluatorTypes.includes(EvaluatorType.PRIMARY) &&
+              viewedStatus.hasSelfEvaluationSubmitted
+            ) {
               selfEvaluationResult.viewedByPrimaryEvaluator =
                 viewedStatus.viewedByPrimaryEvaluator;
             }
 
-            // 2차 평가자인 경우: viewedBySecondaryEvaluator만 추가
-            if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
+            // 2차 평가자인 경우: 1차 평가가 제출된 경우에만 viewedBySecondaryEvaluator 추가
+            if (
+              evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+              viewedStatus.hasPrimaryEvaluationSubmitted
+            ) {
               selfEvaluationResult.viewedBySecondaryEvaluator =
                 viewedStatus.viewedBySecondaryEvaluator;
             }
@@ -812,6 +820,8 @@ export class GetMyEvaluationTargetsStatusHandler
     viewedByPrimaryEvaluator: boolean;
     viewedBySecondaryEvaluator: boolean;
     primaryEvaluationViewed: boolean;
+    hasSelfEvaluationSubmitted: boolean;
+    hasPrimaryEvaluationSubmitted: boolean;
   }> {
     // 1. 피평가자의 마지막 자기평가 제출 시간 조회 (1차 평가자에게 제출)
     const lastSelfEvaluationSubmitTime = await this.wbsSelfEvaluationRepository
@@ -855,6 +865,9 @@ export class GetMyEvaluationTargetsStatusHandler
       .getOne();
 
     const lastViewedTime = lastViewedActivity?.activityDate;
+    // Activity Log에 기록된 평가자 타입 (현재 사용자가 1차, 2차 평가자 모두인 경우 모두 포함)
+    const viewedAsEvaluatorTypes =
+      (lastViewedActivity?.activityMetadata as any)?.evaluatorTypes || [];
 
     // 4. 확인 여부 계산
     let viewedByPrimaryEvaluator = false;
@@ -863,7 +876,11 @@ export class GetMyEvaluationTargetsStatusHandler
 
     if (lastViewedTime) {
       // 1차 평가자인 경우: 자기평가 제출 확인
-      if (evaluatorTypes.includes(EvaluatorType.PRIMARY)) {
+      // Activity Log에 PRIMARY로 기록되어 있고, 현재 사용자도 PRIMARY 평가자인 경우
+      if (
+        evaluatorTypes.includes(EvaluatorType.PRIMARY) &&
+        viewedAsEvaluatorTypes.includes(EvaluatorType.PRIMARY)
+      ) {
         if (
           lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
           lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
@@ -873,7 +890,11 @@ export class GetMyEvaluationTargetsStatusHandler
       }
 
       // 2차 평가자인 경우: 1차평가 제출 후에만 확인 가능
-      if (evaluatorTypes.includes(EvaluatorType.SECONDARY)) {
+      // Activity Log에 SECONDARY로 기록되어 있고, 현재 사용자도 SECONDARY 평가자인 경우
+      if (
+        evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+        viewedAsEvaluatorTypes.includes(EvaluatorType.SECONDARY)
+      ) {
         // 1차평가가 제출되었는지 먼저 확인
         if (lastPrimaryEvaluationSubmitTime?.completedAt) {
           // 1차평가가 제출된 경우에만 viewed 확인
@@ -890,6 +911,8 @@ export class GetMyEvaluationTargetsStatusHandler
       viewedByPrimaryEvaluator,
       viewedBySecondaryEvaluator,
       primaryEvaluationViewed,
+      hasSelfEvaluationSubmitted: !!lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt,
+      hasPrimaryEvaluationSubmitted: !!lastPrimaryEvaluationSubmitTime?.completedAt,
     };
   }
 }

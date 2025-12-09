@@ -5,8 +5,9 @@ import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-l
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import type { EvaluationPeriodDto } from '../../../domain/core/evaluation-period/evaluation-period.types';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
-import { ChangeEvaluationPeriodPhaseApiDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
+import { ChangeEvaluationPeriodPhaseApiDto, CopyPreviousPeriodDataApiDto, CopyPreviousPeriodDataResponseDto, CreateEvaluationPeriodApiDto, ManualPermissionSettingDto, PaginationQueryDto, UpdateDefaultGradeRangesApiDto, UpdateEvaluationPeriodBasicApiDto, UpdateEvaluationPeriodScheduleApiDto, UpdateEvaluationPeriodStartDateApiDto, UpdateEvaluationSetupDeadlineApiDto, UpdateGradeRangesApiDto, UpdateManualSettingPermissionsApiDto, UpdatePeerEvaluationDeadlineApiDto, UpdatePerformanceDeadlineApiDto, UpdateSelfEvaluationDeadlineApiDto } from '@interface/common/dto/evaluation-period/evaluation-management.dto';
 import type { GradeRangeResponseDto } from '@interface/common/dto/evaluation-period/evaluation-period-response.dto';
+import type { EmployeePeriodAssignmentsResponseDto } from '@interface/common/dto/evaluation-period/employee-period-assignments.dto';
 import { SystemSettingService } from '@domain/common/system-setting/system-setting.service';
 export declare class EvaluationPeriodManagementController {
     private readonly evaluationPeriodBusinessService;
@@ -27,6 +28,7 @@ export declare class EvaluationPeriodManagementController {
         limit: number;
     }>;
     getEvaluationPeriodDetail(periodId: string): Promise<EvaluationPeriodDto | null>;
+    getEmployeePeriodAssignments(periodId: string, employeeId: string): Promise<EmployeePeriodAssignmentsResponseDto>;
     getEvaluationPeriodForCopy(periodId: string): Promise<{
         evaluationPeriod: EvaluationPeriodDto | null;
         evaluationCriteria: any[];
@@ -65,4 +67,5 @@ export declare class EvaluationPeriodManagementController {
         transitionedCount: number;
         message: string;
     }>;
+    copyPreviousPeriodData(targetPeriodId: string, sourcePeriodId: string, body: CopyPreviousPeriodDataApiDto, user: AuthenticatedUser): Promise<CopyPreviousPeriodDataResponseDto>;
 }

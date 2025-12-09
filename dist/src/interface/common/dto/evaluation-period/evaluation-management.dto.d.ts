@@ -73,6 +73,19 @@ export declare class UpdateManualSettingPermissionsApiDto {
 export declare class ChangeEvaluationPeriodPhaseApiDto {
     targetPhase: string;
 }
+export declare class CopyProjectWithWbsDto {
+    projectId: string;
+    wbsIds?: string[];
+}
+export declare class CopyPreviousPeriodDataApiDto {
+    projects?: CopyProjectWithWbsDto[];
+}
+export declare class CopyPreviousPeriodDataResponseDto {
+    success: boolean;
+    message: string;
+    copiedProjectAssignments: number;
+    copiedEvaluationLineMappings: number;
+}
 export declare class ApiResponseDto<T = any> {
     success: boolean;
     message: string;

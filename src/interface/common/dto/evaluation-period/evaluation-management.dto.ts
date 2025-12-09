@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
   ValidateNested,
@@ -445,6 +446,78 @@ export class ChangeEvaluationPeriodPhaseApiDto {
   @IsString({ message: '단계는 문자열이어야 합니다.' })
   @IsNotEmpty({ message: '단계는 필수 입력 항목입니다.' })
   targetPhase: string;
+}
+
+/**
+ * 복사할 프로젝트 및 WBS 선택 DTO
+ */
+export class CopyProjectWithWbsDto {
+  @ApiProperty({
+    description: '프로젝트 ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID('4', { message: 'projectId는 유효한 UUID여야 합니다.' })
+  projectId: string;
+
+  @ApiPropertyOptional({
+    description: '복사할 WBS ID 목록 (선택사항, 미지정 시 프로젝트 내 모든 WBS 복사)',
+    example: ['123e4567-e89b-12d3-a456-426614174001'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray({ message: 'wbsIds는 배열이어야 합니다.' })
+  @IsUUID('4', { each: true, message: '각 wbsId는 유효한 UUID여야 합니다.' })
+  wbsIds?: string[];
+}
+
+/**
+ * 이전 평가기간 데이터 복사 요청 DTO
+ */
+export class CopyPreviousPeriodDataApiDto {
+  @ApiPropertyOptional({
+    description: '복사할 프로젝트 및 WBS 목록 (선택사항, 미지정 시 모든 프로젝트와 WBS 복사)',
+    example: [
+      {
+        projectId: '123e4567-e89b-12d3-a456-426614174000',
+        wbsIds: ['123e4567-e89b-12d3-a456-426614174001'],
+      },
+    ],
+    type: [CopyProjectWithWbsDto],
+  })
+  @IsOptional()
+  @IsArray({ message: 'projects는 배열이어야 합니다.' })
+  @ValidateNested({ each: true })
+  @Type(() => CopyProjectWithWbsDto)
+  projects?: CopyProjectWithWbsDto[];
+}
+
+/**
+ * 이전 평가기간 데이터 복사 응답 DTO
+ */
+export class CopyPreviousPeriodDataResponseDto {
+  @ApiProperty({
+    description: '성공 여부',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: '응답 메시지',
+    example: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: '복사된 프로젝트 할당 수',
+    example: 3,
+  })
+  copiedProjectAssignments: number;
+
+  @ApiProperty({
+    description: '복사된 평가라인 매핑 수',
+    example: 12,
+  })
+  copiedEvaluationLineMappings: number;
 }
 
 /**

@@ -1,54 +1,97 @@
-name: Deploy to EC2 on master
+name: Deploy Backend to EC2 on master
 
 on:
   push:
     branches:
-      - master  # master로 머지/푸시될 때만 실행
+      - master
 
 jobs:
-  deploy:
+  # 1) GitHub Actions 서버에서 빌드 + 의존성 설치
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2 via SSH
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'                 # 🔥 npm 캐시 사용 (의존성 설치 점점 빨라짐)
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies (on GitHub Actions)..."
+          npm ci
+
+      - name: Build project
+        run: |
+          echo "🔨 Building project..."
+          npm run build
+
+      - name: Prepare release artifact
+        run: |
+          mkdir -p release
+          cp -r dist package.json package-lock.json release/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release
+          path: release
+
+  # 2) EC2로 결과물만 보내고 PM2 재시작
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-release
+          path: backend-release
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "backend-release/*"
+          target: "/home/ubuntu/services/Back_EvaludationManagementSystem"
+
+      - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 프로젝트 디렉토리로 이동
+            set -euo pipefail
+
             cd /home/ubuntu/services/Back_EvaludationManagementSystem
-            
-            # Git 최신 코드 가져오기
-            echo "📥 Fetching latest code from master..."
-            git fetch origin
-            git reset --hard origin/master
-            
-            # 최신 커밋 정보 출력
-            echo "📌 Current commit: $(git log -1 --oneline)"
-            
-            # Node.js 의존성 설치
-            echo "📦 Installing dependencies..."
-            npm ci --production=false
-            
-            # 프로젝트 빌드
-            echo "🔨 Building project..."
-            npm run build
-            
-            # PM2로 서버 재시작 (없으면 시작, 있으면 재시작)
+
+            echo "📦 Checking dependencies on EC2..."
+
+            # 👉 의존성 설치는 '최초 1회'만 해두고,
+            #    그 다음부터는 node_modules가 있을 때는 스킵/가볍게만 처리
+            if [ ! -d node_modules ]; then
+              echo "node_modules 없음 → prod dependencies 설치 (npm ci --omit=dev)"
+              npm ci --omit=dev
+            else
+              echo "node_modules 이미 있음 → 변경분만 설치 (npm install --omit=dev)"
+              npm install --omit=dev
+            fi
+
             echo "🚀 Restarting application with PM2..."
             pm2 restart lumir-evaluation-system || pm2 start dist/src/main.js --name lumir-evaluation-system
-            
-            # PM2 설정 저장
+
             pm2 save
-            
-            # 배포 상태 확인
+
             echo "✅ Deployment completed!"
             echo "📊 PM2 Status:"
             pm2 list
-            pm2 logs lumir-evaluation-system --lines 5 --nostream || true
-
+            pm2 logs lumir-evaluation-system --lines 10 --nostream || true

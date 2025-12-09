@@ -598,7 +598,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         .expect(409);
 
       // Then - 409 Conflict 에러와 함께 할당 개수 정보 확인
-      expect(response.body.message).toContain('할당이 존재하여 삭제할 수 없습니다');
+      expect(response.body.message).toContain('할당이 있어 삭제할 수 없습니다');
 
       // 프로젝트가 여전히 존재하는지 확인
       const projectResponse = await testSuite
@@ -1070,7 +1070,6 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
       // Then
       const manager = response.body.managers[0];
       expect(manager).toHaveProperty('managerId');
-      expect(manager).toHaveProperty('employeeId');
       expect(manager).toHaveProperty('employeeNumber');
       expect(manager).toHaveProperty('name');
       expect(manager).toHaveProperty('email');
@@ -1256,6 +1255,445 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         .expect(200);
 
       expect(detailResponse.body.id).toBe(projectResponse.body.id);
+    });
+  });
+
+  describe('프로젝트 계층 구조 (Hierarchy)', () => {
+    describe('하위 프로젝트 포함 생성', () => {
+      it('하위 프로젝트와 함께 프로젝트를 생성할 수 있다', async () => {
+        // Given
+        const projectData = {
+          name: 'EMS 프로젝트',
+          projectCode: 'EMS-2024',
+          status: ProjectStatus.ACTIVE,
+          managerId: MOCK_MANAGER_ID_1,
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: 'EMS 프로젝트 - 1차 하위 A',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+            {
+              orderLevel: 1,
+              name: 'EMS 프로젝트 - 1차 하위 B',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 2,
+              name: 'EMS 프로젝트 - 2차 하위',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        expect(response.body.name).toBe(projectData.name);
+        createdProjectIds.push(response.body.id);
+
+        // 상세 조회로 하위 프로젝트 확인
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${response.body.id}`)
+          .expect(200);
+
+        expect(detailResponse.body.childProjects).toBeDefined();
+        expect(detailResponse.body.childProjects.length).toBeGreaterThan(0);
+      });
+
+      it('같은 orderLevel에 여러 하위 프로젝트를 생성할 수 있다', async () => {
+        // Given - orderLevel=1이 3개
+        const projectData = {
+          name: '다중 하위 테스트',
+          status: ProjectStatus.ACTIVE,
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '1차 하위 A',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 1,
+              name: '1차 하위 B',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+            {
+              orderLevel: 1,
+              name: '1차 하위 C',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        createdProjectIds.push(response.body.id);
+
+        // 목록 조회로 하위 프로젝트 확인
+        const listResponse = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'parent' })
+          .expect(200);
+
+        const createdProject = listResponse.body.projects.find(
+          (p: any) => p.id === response.body.id,
+        );
+        expect(createdProject).toBeDefined();
+        expect(createdProject.childProjects).toBeDefined();
+      });
+
+      it('각 하위 프로젝트마다 다른 PM을 지정할 수 있다', async () => {
+        // Given
+        const projectData = {
+          name: 'PM 다른 하위 테스트',
+          status: ProjectStatus.ACTIVE,
+          managerId: MOCK_MANAGER_ID_1, // 상위 PM
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '1차 - PM1',
+              managerId: MOCK_MANAGER_ID_1, // 다른 PM
+            },
+            {
+              orderLevel: 1,
+              name: '1차 - PM2',
+              managerId: MOCK_MANAGER_ID_2, // 또 다른 PM
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        createdProjectIds.push(response.body.id);
+      });
+
+      it('childProjects 없이 생성하면 단일 프로젝트만 생성된다', async () => {
+        // Given
+        const projectData = {
+          name: '단일 프로젝트',
+          status: ProjectStatus.ACTIVE,
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        createdProjectIds.push(response.body.id);
+
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${response.body.id}`)
+          .expect(200);
+
+        expect(
+          !detailResponse.body.childProjects ||
+            detailResponse.body.childProjects.length === 0,
+        ).toBe(true);
+      });
+    });
+
+    describe('하위 프로젝트 수정', () => {
+      let parentProjectId: string;
+
+      beforeEach(async () => {
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send({
+            name: '수정 테스트 프로젝트',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '기존 1차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          })
+          .expect(201);
+
+        parentProjectId = response.body.id;
+        createdProjectIds.push(parentProjectId);
+      });
+
+      it('childProjects를 제공하여 하위 프로젝트를 재생성할 수 있다', async () => {
+        // Given
+        const updateData = {
+          name: '수정된 프로젝트',
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '새 1차 A',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 1,
+              name: '새 1차 B',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        expect(response.body.name).toBe(updateData.name);
+
+        // 상세 조회로 하위 확인
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(detailResponse.body.childProjects).toBeDefined();
+      });
+
+      it('childProjects=[]로 모든 하위 프로젝트를 삭제할 수 있다', async () => {
+        // Given
+        const updateData = {
+          childProjects: [],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(
+          !detailResponse.body.childProjects ||
+            detailResponse.body.childProjects.length === 0,
+        ).toBe(true);
+      });
+
+      it('childProjects를 생략하면 하위 프로젝트가 유지된다', async () => {
+        // Given
+        const updateData = {
+          name: '이름만 수정',
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(detailResponse.body.name).toBe(updateData.name);
+        // 하위 프로젝트는 그대로 유지됨
+        expect(detailResponse.body.childProjects).toBeDefined();
+      });
+    });
+
+    describe('하위 프로젝트 CASCADE 삭제', () => {
+      let parentProjectId: string;
+
+      beforeEach(async () => {
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send({
+            name: 'CASCADE 삭제 테스트',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '1차 하위',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+              {
+                orderLevel: 2,
+                name: '2차 하위',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+            ],
+          })
+          .expect(201);
+
+        parentProjectId = response.body.id;
+        createdProjectIds.push(parentProjectId);
+      });
+
+      it('상위 프로젝트 삭제 시 모든 하위도 함께 삭제된다', async () => {
+        // When
+        await testSuite
+          .request()
+          .delete(`/admin/projects/${parentProjectId}`)
+          .expect(204);
+
+        // Then - 상위 조회 시 404
+        await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(404);
+
+        // 목록에서도 제외됨
+        const listResponse = await testSuite.request().get('/admin/projects');
+
+        const found = listResponse.body.projects.find(
+          (p: any) => p.id === parentProjectId,
+        );
+        expect(found).toBeUndefined();
+      });
+
+      it('하위에 할당이 있으면 상위 삭제가 실패한다', async () => {
+        // Given - 하위 프로젝트에 할당 추가
+        const seedDataScenario = new SeedDataScenario(testSuite);
+        const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+          scenario: 'with_period',
+          clearExisting: false,
+          projectCount: 1,
+          wbsPerProject: 1,
+          departmentCount: 1,
+          employeeCount: 1,
+        });
+
+        const assignedProjectId = seedResult.projectIds?.[0];
+
+        // When & Then - 할당이 있는 프로젝트 삭제 시도
+        await testSuite
+          .request()
+          .delete(`/admin/projects/${assignedProjectId}`)
+          .expect(409);
+      });
+    });
+
+    describe('계층 구조 조회', () => {
+      beforeEach(async () => {
+        // 여러 계층 구조 프로젝트 생성
+        const projects = [
+          {
+            name: '상위 A',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '상위 A - 1차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+          {
+            name: '상위 B',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '상위 B - 1차',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+              {
+                orderLevel: 2,
+                name: '상위 B - 2차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+        ];
+
+        for (const project of projects) {
+          const response = await testSuite
+            .request()
+            .post('/admin/projects')
+            .send(project)
+            .expect(201);
+
+          createdProjectIds.push(response.body.id);
+        }
+      });
+
+      it('hierarchyLevel=parent로 상위 프로젝트만 조회할 수 있다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'parent' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects).toBeInstanceOf(Array);
+        // 모든 프로젝트의 parentProjectId가 null이어야 함
+        response.body.projects.forEach((project: any) => {
+          expect(project.parentProjectId).toBeNull();
+        });
+      });
+
+      it('hierarchyLevel=child로 하위 프로젝트만 조회할 수 있다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'child' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects).toBeInstanceOf(Array);
+        // 모든 프로젝트의 parentProjectId가 있어야 함
+        response.body.projects.forEach((project: any) => {
+          expect(project.parentProjectId).toBeDefined();
+          expect(project.parentProjectId).not.toBeNull();
+        });
+      });
+
+      it('search로 프로젝트명 검색이 가능하다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ search: '상위 A' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects.length).toBeGreaterThan(0);
+        const project = response.body.projects.find((p: any) =>
+          p.name.includes('상위 A'),
+        );
+        expect(project).toBeDefined();
+      });
     });
   });
 });

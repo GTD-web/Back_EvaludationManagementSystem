@@ -1,4 +1,10 @@
 import { ProjectStatus } from '@domain/common/project/project.types';
+export declare class ChildProjectInputDto {
+    orderLevel: number;
+    name: string;
+    projectCode?: string;
+    managerId: string;
+}
 export declare class CreateProjectDto {
     name: string;
     projectCode?: string;
@@ -6,6 +12,8 @@ export declare class CreateProjectDto {
     startDate?: Date;
     endDate?: Date;
     managerId?: string;
+    parentProjectId?: string;
+    childProjects?: ChildProjectInputDto[];
 }
 export declare class CreateProjectsBulkDto {
     projects: CreateProjectDto[];
@@ -17,6 +25,8 @@ export declare class UpdateProjectDto {
     startDate?: Date;
     endDate?: Date;
     managerId?: string;
+    parentProjectId?: string;
+    childProjects?: ChildProjectInputDto[];
 }
 export declare class GetProjectListQueryDto {
     page?: number;
@@ -25,10 +35,13 @@ export declare class GetProjectListQueryDto {
     sortOrder?: 'ASC' | 'DESC';
     status?: ProjectStatus;
     managerId?: string;
+    parentProjectId?: string;
+    hierarchyLevel?: 'parent' | 'child' | 'all';
     startDateFrom?: Date;
     startDateTo?: Date;
     endDateFrom?: Date;
     endDateTo?: Date;
+    search?: string;
 }
 export declare class ManagerInfoDto {
     managerId: string;
@@ -39,6 +52,15 @@ export declare class ManagerInfoDto {
     departmentName?: string;
     rankName?: string;
 }
+export declare class SimpleProjectResponseDto {
+    id: string;
+    name: string;
+    projectCode?: string;
+    status: ProjectStatus;
+    managerId?: string;
+    manager?: ManagerInfoDto;
+    childProjects?: SimpleProjectResponseDto[];
+}
 export declare class ProjectResponseDto {
     id: string;
     name: string;
@@ -48,6 +70,10 @@ export declare class ProjectResponseDto {
     endDate?: Date;
     managerId?: string;
     manager?: ManagerInfoDto;
+    parentProjectId?: string;
+    parentProject?: SimpleProjectResponseDto;
+    childProjects?: SimpleProjectResponseDto[];
+    childProjectCount?: number;
     createdAt: Date;
     updatedAt: Date;
     deletedAt?: Date;

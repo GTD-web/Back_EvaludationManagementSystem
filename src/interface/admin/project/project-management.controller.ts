@@ -9,6 +9,7 @@ import {
   UpdateProject,
   DeleteProject,
   GetProjectManagers,
+  GenerateChildProjects,
 } from '@interface/common/decorators/project/project-api.decorators';
 import {
   CreateProjectDto,
@@ -23,6 +24,11 @@ import {
   ProjectsBulkCreateResponseDto,
 } from '@interface/common/dto/project/project.dto';
 import {
+  GenerateChildProjectsDto,
+  GenerateChildProjectsResultDto,
+  GenerateChildProjectDetailDto,
+} from '@interface/common/dto/project/generate-child-projects.dto';
+import {
   Body,
   Controller,
   Param,
@@ -30,6 +36,7 @@ import {
   Query,
   NotFoundException,
   Inject,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SSOService } from '@domain/common/sso/sso.module';
@@ -55,6 +62,7 @@ export class ProjectManagementController {
   /**
    * 프로젝트 생성
    * PM(Project Manager)을 함께 설정할 수 있습니다.
+   * 하위 프로젝트 생성 시 parentProjectId를 지정합니다.
    */
   @CreateProject()
   async createProject(
@@ -69,7 +77,9 @@ export class ProjectManagementController {
         status: createDto.status,
         startDate: createDto.startDate,
         endDate: createDto.endDate,
-        managerId: createDto.managerId, // PM 설정
+        managerId: createDto.managerId, // PM/DPM 설정
+        parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
+        childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
       createdBy,
     );
@@ -81,7 +91,11 @@ export class ProjectManagementController {
       status: project.status,
       startDate: project.startDate,
       endDate: project.endDate,
+      managerId: project.managerId,
       manager: project.manager,
+      parentProjectId: project.parentProjectId,
+      childProjects: project.childProjects, // 하위 프로젝트 포함
+      childProjectCount: project.childProjects?.length,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
@@ -133,26 +147,76 @@ export class ProjectManagementController {
   }
 
   /**
+   * 프로젝트 DTO를 재귀적으로 매핑하는 헬퍼 함수
+   * childProjects를 모든 레벨에서 재귀적으로 매핑합니다.
+   */
+  private mapProjectToResponseDto(project: any): any {
+    return {
+      id: project.id,
+      name: project.name,
+      projectCode: project.projectCode,
+      status: project.status,
+      managerId: project.managerId,
+      manager: project.manager,
+      childProjects: project.childProjects?.map((child) =>
+        this.mapProjectToResponseDto(child),
+      ), // ✅ 재귀 호출
+    };
+  }
+
+  /**
    * 프로젝트 목록 조회
+   * 계층 구조 필터링을 지원합니다.
+   * hierarchyLevel이 지정되지 않으면 기본적으로 계층 구조로 반환합니다.
    */
   @GetProjectList()
   async getProjectList(
     @Query() query: GetProjectListQueryDto,
   ): Promise<ProjectListResponseDto> {
-    const result = await this.projectService.목록_조회한다({
-      page: query.page,
-      limit: query.limit,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
-      filter: {
-        status: query.status,
-        managerId: query.managerId,
-        startDateFrom: query.startDateFrom,
-        startDateTo: query.startDateTo,
-        endDateFrom: query.endDateFrom,
-        endDateTo: query.endDateTo,
-      },
-    });
+    // hierarchyLevel이 'child'이거나 특정 parentProjectId로 필터링하는 경우 flat 조회
+    const useHierarchy =
+      !query.hierarchyLevel ||
+      (query.hierarchyLevel !== 'child' && !query.parentProjectId);
+
+    let result;
+
+    if (useHierarchy) {
+      // 계층 구조로 조회 (상위 프로젝트 + 하위 nested)
+      result = await this.projectService.계층구조_목록_조회한다({
+        page: query.page,
+        limit: query.limit,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+        filter: {
+          status: query.status,
+          managerId: query.managerId,
+          startDateFrom: query.startDateFrom,
+          startDateTo: query.startDateTo,
+          endDateFrom: query.endDateFrom,
+          endDateTo: query.endDateTo,
+          search: query.search,
+        },
+      });
+    } else {
+      // Flat 조회 (하위 프로젝트만 또는 특정 parentProjectId)
+      result = await this.projectService.목록_조회한다({
+        page: query.page,
+        limit: query.limit,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+        filter: {
+          status: query.status,
+          managerId: query.managerId,
+          startDateFrom: query.startDateFrom,
+          startDateTo: query.startDateTo,
+          endDateFrom: query.endDateFrom,
+          endDateTo: query.endDateTo,
+          parentProjectId: query.parentProjectId,
+          hierarchyLevel: query.hierarchyLevel,
+          search: query.search,
+        },
+      });
+    }
 
     const totalPages = Math.ceil(result.total / result.limit);
 
@@ -164,7 +228,13 @@ export class ProjectManagementController {
         status: project.status,
         startDate: project.startDate,
         endDate: project.endDate,
+        managerId: project.managerId,
         manager: project.manager,
+        parentProjectId: project.parentProjectId,
+        childProjects: project.childProjects?.map((child) =>
+          this.mapProjectToResponseDto(child),
+        ), // ✅ 재귀 매핑
+        childProjectCount: project.childProjectCount,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,
@@ -247,19 +317,23 @@ export class ProjectManagementController {
 
   /**
    * 프로젝트 상세 조회
+   * 하위 프로젝트 목록을 포함하여 반환합니다.
    * 주의: 파라미터 경로(:id)는 구체적인 경로들 뒤에 배치해야 함
    */
   @GetProjectDetail()
   async getProjectDetail(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ProjectResponseDto> {
-    const project = await this.projectService.ID로_조회한다(id);
+    const project = await this.projectService.ID로_조회한다(id, true); // 하위 프로젝트 포함
 
     if (!project) {
       throw new NotFoundException(
         `ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`,
       );
     }
+
+    // 하위 프로젝트 수 조회
+    const childProjectCount = project.childProjects?.length || 0;
 
     return {
       id: project.id,
@@ -270,6 +344,16 @@ export class ProjectManagementController {
       endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      parentProjectId: project.parentProjectId,
+      childProjects: project.childProjects?.map((child) => ({
+        id: child.id,
+        name: child.name,
+        projectCode: child.projectCode,
+        status: child.status,
+        managerId: child.managerId,
+        manager: child.manager,
+      })),
+      childProjectCount,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
@@ -282,6 +366,7 @@ export class ProjectManagementController {
   /**
    * 프로젝트 수정
    * PM(Project Manager) 변경도 가능합니다.
+   * 상위 프로젝트 변경도 가능합니다.
    */
   @UpdateProject()
   async updateProject(
@@ -299,7 +384,9 @@ export class ProjectManagementController {
         status: updateDto.status,
         startDate: updateDto.startDate,
         endDate: updateDto.endDate,
-        managerId: updateDto.managerId, // PM 변경
+        managerId: updateDto.managerId, // PM/DPM 변경
+        parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
+        childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },
       updatedBy,
     );
@@ -311,7 +398,11 @@ export class ProjectManagementController {
       status: project.status,
       startDate: project.startDate,
       endDate: project.endDate,
+      managerId: project.managerId,
       manager: project.manager,
+      parentProjectId: project.parentProjectId,
+      childProjects: project.childProjects, // 하위 프로젝트 포함
+      childProjectCount: project.childProjects?.length,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
@@ -331,5 +422,132 @@ export class ProjectManagementController {
   ): Promise<void> {
     const deletedBy = user.id;
     await this.projectService.삭제한다(id, deletedBy);
+  }
+
+  /**
+   * 하위 프로젝트 자동 생성
+   * 모든 상위 프로젝트에 하위 프로젝트를 일괄 생성합니다.
+   */
+  @GenerateChildProjects()
+  async generateChildProjects(
+    @Body() dto: GenerateChildProjectsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<GenerateChildProjectsResultDto> {
+    const startTime = Date.now();
+    const createdBy = user.id;
+
+    try {
+      // 1. 모든 상위 프로젝트 조회
+      const parentProjects = await this.projectService.목록_조회한다({
+        page: 1,
+        limit: 1000, // 충분히 큰 수
+        filter: {
+          hierarchyLevel: 'parent',
+        },
+      });
+
+      let totalChildCreated = 0;
+      let skippedCount = 0;
+      let failedCount = 0;
+      const details: GenerateChildProjectDetailDto[] = [];
+      const errors: string[] = [];
+
+      // 2. 각 상위 프로젝트에 하위 프로젝트 생성
+      for (const parentProject of parentProjects.projects) {
+        const detail: GenerateChildProjectDetailDto = {
+          parentProjectId: parentProject.id,
+          parentProjectName: parentProject.name,
+          childrenCreated: 0,
+          skipped: false,
+          errors: [],
+        };
+
+        try {
+          // 이미 하위 프로젝트가 있는지 확인
+          const existingChildren =
+            await this.projectService.하위_프로젝트_목록_조회한다(
+              parentProject.id,
+            );
+
+          if (existingChildren.length > 0 && dto.skipIfExists !== false) {
+            detail.skipped = true;
+            skippedCount++;
+            details.push(detail);
+            continue;
+          }
+
+          // 재귀적으로 하위 프로젝트 생성 (1차 -> 2차 -> 3차 -> 4차 -> 5차)
+          const totalDepth = dto.childCountPerProject || 5; // 기본 5단계
+          let currentParentId = parentProject.id;
+          const topLevelProjectName = parentProject.name; // ✅ 최상위 이름 저장
+          const topLevelProjectCode = parentProject.projectCode; // ✅ 최상위 코드 저장
+
+          // 각 단계별로 1개씩 생성하여 체인 구조 만들기
+          for (let level = 1; level <= totalDepth; level++) {
+            try {
+              const childProject = await this.projectService.생성한다(
+                {
+                  name: `${topLevelProjectName} - ${level}차 하위 프로젝트`, // ✅ 최상위 이름 사용
+                  projectCode: `${topLevelProjectCode}-SUB${level}`, // ✅ 최상위 코드 사용
+                  status: parentProject.status,
+                  startDate: parentProject.startDate,
+                  endDate: parentProject.endDate,
+                  managerId: parentProject.managerId,
+                  parentProjectId: currentParentId,
+                },
+                createdBy,
+              );
+
+              detail.childrenCreated++;
+              totalChildCreated++;
+
+              // 다음 단계의 부모는 현재 생성한 프로젝트의 ID만 업데이트
+              currentParentId = childProject.id;
+            } catch (error) {
+              const errorMsg = `${level}차 하위 생성 실패: ${error.message}`;
+              detail.errors = detail.errors || [];
+              detail.errors.push(errorMsg);
+              errors.push(
+                `[${parentProject.name}] ${errorMsg}`,
+              );
+              failedCount++;
+              break; // 실패하면 더 이상 진행하지 않음
+            }
+          }
+
+          details.push(detail);
+        } catch (error) {
+          const errorMsg = `프로젝트 처리 실패: ${error.message}`;
+          detail.errors = [errorMsg];
+          errors.push(`[${parentProject.name}] ${errorMsg}`);
+          details.push(detail);
+        }
+      }
+
+      const duration = (Date.now() - startTime) / 1000;
+
+      return {
+        success: true,
+        processedParentProjects: parentProjects.total,
+        skippedParentProjects: skippedCount,
+        totalChildProjectsCreated: totalChildCreated,
+        failedChildProjects: failedCount,
+        details,
+        errors: errors.length > 0 ? errors : undefined,
+        duration,
+      };
+    } catch (error) {
+      const duration = (Date.now() - startTime) / 1000;
+
+      return {
+        success: false,
+        processedParentProjects: 0,
+        skippedParentProjects: 0,
+        totalChildProjectsCreated: 0,
+        failedChildProjects: 0,
+        errors: [error.message],
+        duration,
+      };
+    }
   }
 }

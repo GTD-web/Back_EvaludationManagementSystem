@@ -97,25 +97,67 @@ export function CreateProjectsBulk() {
     Post('bulk'),
     HttpCode(HttpStatus.CREATED),
     ApiOperation({
-      summary: '프로젝트 일괄 생성',
-      description: `여러 프로젝트를 한 번에 생성합니다.
+      summary: '프로젝트 일괄 생성 (하위 프로젝트 자동 생성 포함)',
+      description: `여러 프로젝트를 한 번에 생성합니다. 각 프로젝트마다 하위 프로젝트를 함께 생성할 수 있습니다.
 
 **동작:**
 - 여러 프로젝트를 배열로 받아 일괄 생성합니다
 - 각 프로젝트별로 PM을 개별 설정할 수 있습니다
+- 각 프로젝트마다 childProjects 배열로 하위 프로젝트를 함께 생성할 수 있습니다
+- orderLevel 순서대로 재귀 체인 구조를 만듭니다
 - 프로젝트 코드 중복을 사전 검사합니다
 - 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다
 - 성공/실패 항목을 구분하여 응답합니다
 - 생성자 정보를 자동으로 기록합니다
 - 생성 후 각 프로젝트의 매니저 정보를 포함합니다 (managerId, employeeId)
 
+**하위 프로젝트 자동 생성 (트리 구조):**
+\`\`\`json
+{
+  "projects": [
+    {
+      "name": "EMS 프로젝트",
+      "childProjects": [
+        { "orderLevel": 1, "name": "1차 A", "managerId": "pm-1" },
+        { "orderLevel": 1, "name": "1차 B", "managerId": "pm-2" },
+        { "orderLevel": 2, "name": "2차 A", "managerId": "pm-3" }
+      ]
+    },
+    {
+      "name": "HRM 프로젝트",
+      "childProjects": [
+        { "orderLevel": 1, "name": "인사", "managerId": "pm-4" },
+        { "orderLevel": 1, "name": "급여", "managerId": "pm-5" }
+      ]
+    }
+  ]
+}
+\`\`\`
+**결과 구조:**
+\`\`\`
+EMS 프로젝트
+  ├─ 1차 A (pm-1)
+  └─ 1차 B (pm-2)
+      └─ 2차 A (pm-3)
+
+HRM 프로젝트
+  ├─ 인사 (pm-4)
+  └─ 급여 (pm-5)
+\`\`\`
+• 같은 orderLevel은 형제 관계
+• 다음 레벨은 이전 레벨의 마지막 프로젝트 아래
+
 **반환 데이터:**
 - manager.managerId: SSO의 매니저 ID
 - manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
+- childProjects: 생성된 하위 프로젝트 (재귀 구조)
 
 **테스트 케이스:**
 - 전체 성공: 모든 프로젝트가 정상적으로 생성됨
 - 매니저 정보 포함: 각 프로젝트의 managerId와 employeeId 반환
+- 하위 포함 일괄 생성: 각 프로젝트마다 childProjects로 재귀 체인 생성
+- orderLevel 자동 정렬: 순서 상관없이 orderLevel로 정렬됨
+- 프로젝트 코드 자동 생성: 하위 코드 미입력 시 자동 생성
 - 부분 성공: 일부 프로젝트만 생성 성공하고 나머지는 실패
 - PM 포함 생성: 각 프로젝트별로 다른 PM 지정
 - 프로젝트 코드 중복: 중복된 코드가 있는 프로젝트는 실패 처리

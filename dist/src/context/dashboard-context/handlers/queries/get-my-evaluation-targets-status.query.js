@@ -187,11 +187,13 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                         grade: selfEvaluationStatus.grade,
                     };
                     if (viewedStatus) {
-                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY)) {
+                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY) &&
+                            viewedStatus.hasSelfEvaluationSubmitted) {
                             selfEvaluationResult.viewedByPrimaryEvaluator =
                                 viewedStatus.viewedByPrimaryEvaluator;
                         }
-                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
+                        if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY) &&
+                            viewedStatus.hasPrimaryEvaluationSubmitted) {
                             selfEvaluationResult.viewedBySecondaryEvaluator =
                                 viewedStatus.viewedBySecondaryEvaluator;
                         }
@@ -482,17 +484,20 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
             .limit(1)
             .getOne();
         const lastViewedTime = lastViewedActivity?.activityDate;
+        const viewedAsEvaluatorTypes = lastViewedActivity?.activityMetadata?.evaluatorTypes || [];
         let viewedByPrimaryEvaluator = false;
         let viewedBySecondaryEvaluator = false;
         let primaryEvaluationViewed = false;
         if (lastViewedTime) {
-            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY)) {
+            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY) &&
+                viewedAsEvaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY)) {
                 if (lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
                     lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt) {
                     viewedByPrimaryEvaluator = true;
                 }
             }
-            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
+            if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY) &&
+                viewedAsEvaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.SECONDARY)) {
                 if (lastPrimaryEvaluationSubmitTime?.completedAt) {
                     if (lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
                         viewedBySecondaryEvaluator = true;
@@ -505,6 +510,8 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
             viewedByPrimaryEvaluator,
             viewedBySecondaryEvaluator,
             primaryEvaluationViewed,
+            hasSelfEvaluationSubmitted: !!lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt,
+            hasPrimaryEvaluationSubmitted: !!lastPrimaryEvaluationSubmitTime?.completedAt,
         };
     }
 };

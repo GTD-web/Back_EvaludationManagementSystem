@@ -32,7 +32,7 @@ export interface ManagerInfo {
 /**
  * 프로젝트 DTO (평가 시스템용 간소화 버전)
  * 평가에 필요한 핵심 프로젝트 정보만 포함
- * 
+ *
  * 계층 구조:
  * - parentProjectId가 없는 경우: 상위 프로젝트 (PM 관리)
  * - parentProjectId가 있는 경우: 하위 프로젝트 (DPM 관리)

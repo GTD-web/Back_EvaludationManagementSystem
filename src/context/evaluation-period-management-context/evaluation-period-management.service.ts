@@ -1156,18 +1156,46 @@ export class EvaluationPeriodManagementContextService
       });
     }
 
-    // 4. 직원에게 할당된 WBS ID 목록 추출
-    const assignedWbsIds = [
-      ...new Set(
-        lineMappings
-          .map((mapping) => mapping.wbsItemId)
-          .filter((id): id is string => !!id),
-      ),
-    ];
+    // 4. 직원에게 할당된 프로젝트 할당 조회 (소프트 삭제된 항목 제외)
+    const projectAssignments = await this.projectAssignmentRepository.find({
+      where: {
+        periodId: periodId,
+        employeeId: employeeId,
+        deletedAt: IsNull(),
+      },
+    });
 
-    this.logger.log(`할당된 WBS ${assignedWbsIds.length}개`);
+    this.logger.log(`프로젝트 할당 ${projectAssignments.length}개 발견`);
 
-    // 5. WBS가 할당되지 않은 경우 빈 응답 반환
+    // 5. 직원에게 할당된 WBS 할당 조회 (소프트 삭제된 항목 제외)
+    const wbsAssignments = await this.wbsAssignmentRepository.find({
+      where: {
+        periodId: periodId,
+        employeeId: employeeId,
+        deletedAt: IsNull(),
+      },
+    });
+
+    this.logger.log(`WBS 할당 ${wbsAssignments.length}개 발견`);
+
+    // 6. 할당된 WBS ID 목록 추출 (WBS 할당 기반 + 평가라인 매핑 기반)
+    const wbsIdsFromAssignments = new Set<string>(
+      wbsAssignments.map((assignment) => assignment.wbsItemId),
+    );
+    const wbsIdsFromMappings = new Set<string>(
+      lineMappings
+        .map((mapping) => mapping.wbsItemId)
+        .filter((id): id is string => !!id),
+    );
+
+    // 두 세트의 교집합 (WBS 할당이 있고 평가라인 매핑도 있는 것만)
+    const assignedWbsIds = Array.from(wbsIdsFromAssignments).filter((wbsId) =>
+      wbsIdsFromMappings.has(wbsId),
+    );
+
+    this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개 (할당 ∩ 매핑)`);
+
+    // 7. WBS가 할당되지 않은 경우 빈 응답 반환
     if (assignedWbsIds.length === 0) {
       const periodDto = evaluationPeriod.DTO로_변환한다();
 
@@ -1190,7 +1218,7 @@ export class EvaluationPeriodManagementContextService
       };
     }
 
-    // 6. 할당된 WBS 정보 조회
+    // 8. 할당된 WBS 정보 조회 (삭제되지 않은 WBS 아이템만)
     const assignedWbsList = await this.wbsItemRepository.find({
       where: {
         id: In(assignedWbsIds),
@@ -1199,16 +1227,29 @@ export class EvaluationPeriodManagementContextService
       order: { level: 'ASC', wbsCode: 'ASC' },
     });
 
-    // 7. WBS를 프로젝트별로 그룹화
+    this.logger.log(`조회된 WBS 아이템 ${assignedWbsList.length}개`);
+
+    // 9. WBS를 프로젝트별로 그룹화 (프로젝트 할당이 있는 것만)
+    const projectIdsFromAssignments = new Set<string>(
+      projectAssignments.map((assignment) => assignment.projectId),
+    );
     const projectWbsMap = new Map<string, WbsItem[]>();
     for (const wbs of assignedWbsList) {
+      // 프로젝트 할당이 없는 WBS는 제외
+      if (!projectIdsFromAssignments.has(wbs.projectId)) {
+        this.logger.log(
+          `WBS ${wbs.id}는 프로젝트 할당이 없어서 제외 (projectId: ${wbs.projectId})`,
+        );
+        continue;
+      }
+
       if (!projectWbsMap.has(wbs.projectId)) {
         projectWbsMap.set(wbs.projectId, []);
       }
       projectWbsMap.get(wbs.projectId)!.push(wbs);
     }
 
-    // 8. 프로젝트 정보 조회
+    // 10. 프로젝트 정보 조회 (삭제되지 않은 프로젝트만)
     const projectIds = Array.from(projectWbsMap.keys());
     const projectsList = await this.projectRepository.find({
       where: {
@@ -1232,7 +1273,7 @@ export class EvaluationPeriodManagementContextService
 
     const wbsWithEvaluationLineSet = new Set(assignedWbsIds);
 
-    // 9. WBS 평가기준 조회
+    // 11. WBS 평가기준 조회
     const wbsCriteria = await this.wbsEvaluationCriteriaRepository.find({
       where: {
         wbsItemId: In(assignedWbsIds),
@@ -1254,7 +1295,7 @@ export class EvaluationPeriodManagementContextService
       wbsCriteriaMap.get(criteria.wbsItemId)!.push(criteria);
     }
 
-    // 10. 평가라인 정보 조회
+    // 12. 평가라인 정보 조회
     const evaluationLineIds = [
       ...new Set(
         lineMappings
@@ -1295,7 +1336,7 @@ export class EvaluationPeriodManagementContextService
       evaluationLineMap.set(line.id, line);
     }
 
-    // 11. 평가자 정보 조회
+    // 13. 평가자 정보 조회
     const evaluatorIds = [
       ...new Set(
         lineMappings.map((mapping) => mapping.evaluatorId).filter((id) => id),
@@ -1341,7 +1382,7 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
-    // 12. WBS별 평가자 정보 그룹화 (primary/secondary 분리)
+    // 14. WBS별 평가자 정보 그룹화 (primary/secondary 분리)
     const wbsPrimaryEvaluatorMap = new Map<string, EvaluatorInfoDto>();
     const wbsSecondaryEvaluatorMap = new Map<string, EvaluatorInfoDto>();
 
@@ -1405,7 +1446,7 @@ export class EvaluationPeriodManagementContextService
       `WBS별 평가자 매핑 완료: 1차 ${wbsPrimaryEvaluatorMap.size}개, 2차 ${wbsSecondaryEvaluatorMap.size}개`,
     );
 
-    // 13. 프로젝트 매니저 정보 조회
+    // 15. 프로젝트 매니저 정보 조회
     const managerIds = [
       ...new Set(
         projectsList

@@ -761,13 +761,16 @@ function CopyPreviousPeriodData() {
 - 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
   * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
 - 선택적 필터링:
   * projects: 특정 프로젝트와 해당 프로젝트의 WBS만 복사 (미지정 시 모든 프로젝트와 WBS)
   * 각 프로젝트별로 wbsIds를 지정하여 프로젝트 내 특정 WBS만 선택 가능
 - 중복 방지:
   * 이미 존재하는 프로젝트 할당은 건너뜀
   * 이미 존재하는 평가라인 매핑은 건너뜀
+  * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
 - 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
@@ -859,13 +862,16 @@ function CopyMyPreviousPeriodData() {
 - 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
   * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
 - 선택적 필터링:
   * projectIds: 특정 프로젝트만 복사 (미지정 시 모든 프로젝트)
   * wbsIds: 특정 WBS만 복사 (미지정 시 모든 WBS)
 - 중복 방지:
   * 이미 존재하는 프로젝트 할당은 건너뜀
   * 이미 존재하는 평가라인 매핑은 건너뜀
+  * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
 - 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
@@ -1072,6 +1078,7 @@ function GetEmployeePeriodAssignments() {
 - 각 WBS의 평가기준 목록을 함께 반환합니다.
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
 - 프로젝트 매니저 정보도 함께 반환합니다.
+- **소프트 삭제된 프로젝트, WBS, 평가라인 매핑은 제외됩니다.**
 
 **사용 사례:**
 - 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용
@@ -1209,6 +1216,7 @@ function GetMyPeriodAssignments() {
 - 각 WBS의 평가기준 목록을 함께 반환합니다.
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
 - 프로젝트 매니저 정보도 함께 반환합니다.
+- **소프트 삭제된 프로젝트, WBS, 평가라인 매핑은 제외됩니다.**
 
 **사용 사례:**
 - 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용

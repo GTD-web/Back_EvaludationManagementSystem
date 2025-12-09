@@ -536,7 +536,9 @@ class CopyPreviousPeriodDataResponseDto {
     success;
     message;
     copiedProjectAssignments;
+    copiedWbsAssignments;
     copiedEvaluationLineMappings;
+    copiedWbsEvaluationCriteria;
 }
 exports.CopyPreviousPeriodDataResponseDto = CopyPreviousPeriodDataResponseDto;
 __decorate([
@@ -562,11 +564,25 @@ __decorate([
 ], CopyPreviousPeriodDataResponseDto.prototype, "copiedProjectAssignments", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
+        description: '복사된 WBS 할당 수',
+        example: 8,
+    }),
+    __metadata("design:type", Number)
+], CopyPreviousPeriodDataResponseDto.prototype, "copiedWbsAssignments", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
         description: '복사된 평가라인 매핑 수',
         example: 12,
     }),
     __metadata("design:type", Number)
 ], CopyPreviousPeriodDataResponseDto.prototype, "copiedEvaluationLineMappings", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '복사된 WBS 평가 기준 수',
+        example: 15,
+    }),
+    __metadata("design:type", Number)
+], CopyPreviousPeriodDataResponseDto.prototype, "copiedWbsEvaluationCriteria", void 0);
 class ApiResponseDto {
     success;
     message;

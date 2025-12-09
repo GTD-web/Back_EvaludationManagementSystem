@@ -514,10 +514,22 @@ export class CopyPreviousPeriodDataResponseDto {
   copiedProjectAssignments: number;
 
   @ApiProperty({
+    description: '복사된 WBS 할당 수',
+    example: 8,
+  })
+  copiedWbsAssignments: number;
+
+  @ApiProperty({
     description: '복사된 평가라인 매핑 수',
     example: 12,
   })
   copiedEvaluationLineMappings: number;
+
+  @ApiProperty({
+    description: '복사된 WBS 평가 기준 수',
+    example: 15,
+  })
+  copiedWbsEvaluationCriteria: number;
 }
 
 /**

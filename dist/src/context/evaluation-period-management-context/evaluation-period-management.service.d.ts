@@ -5,6 +5,8 @@ import { EvaluationPeriodService } from '../../domain/core/evaluation-period/eva
 import { EvaluationPeriodAutoPhaseService } from '../../domain/core/evaluation-period/evaluation-period-auto-phase.service';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { EvaluationProjectAssignmentService } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.service';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
+import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationPeriodEmployeeMappingService } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service';
@@ -22,9 +24,11 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
     private readonly evaluationPeriodService;
     private readonly evaluationPeriodAutoPhaseService;
     private readonly evaluationProjectAssignmentService;
+    private readonly evaluationWbsAssignmentService;
     private readonly evaluationLineMappingService;
     private readonly evaluationPeriodEmployeeMappingService;
     private readonly projectAssignmentRepository;
+    private readonly wbsAssignmentRepository;
     private readonly lineMappingRepository;
     private readonly projectRepository;
     private readonly wbsItemRepository;
@@ -32,7 +36,7 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
     private readonly wbsEvaluationCriteriaRepository;
     private readonly evaluationLineRepository;
     private readonly logger;
-    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationPeriodService: EvaluationPeriodService, evaluationPeriodAutoPhaseService: EvaluationPeriodAutoPhaseService, evaluationProjectAssignmentService: EvaluationProjectAssignmentService, evaluationLineMappingService: EvaluationLineMappingService, evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, lineMappingRepository: Repository<EvaluationLineMapping>, projectRepository: Repository<Project>, wbsItemRepository: Repository<WbsItem>, employeeRepository: Repository<Employee>, wbsEvaluationCriteriaRepository: Repository<WbsEvaluationCriteria>, evaluationLineRepository: Repository<EvaluationLine>);
+    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationPeriodService: EvaluationPeriodService, evaluationPeriodAutoPhaseService: EvaluationPeriodAutoPhaseService, evaluationProjectAssignmentService: EvaluationProjectAssignmentService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService, evaluationLineMappingService: EvaluationLineMappingService, evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, lineMappingRepository: Repository<EvaluationLineMapping>, projectRepository: Repository<Project>, wbsItemRepository: Repository<WbsItem>, employeeRepository: Repository<Employee>, wbsEvaluationCriteriaRepository: Repository<WbsEvaluationCriteria>, evaluationLineRepository: Repository<EvaluationLine>);
     평가기간_생성한다(createData: CreateEvaluationPeriodMinimalDto, createdBy: string): Promise<EvaluationPeriodDto>;
     평가기간_시작한다(periodId: string, startedBy: string): Promise<boolean>;
     평가기간_완료한다(periodId: string, completedBy: string): Promise<boolean>;
@@ -93,7 +97,9 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
         wbsIds?: string[];
     }>): Promise<{
         copiedProjectAssignments: number;
+        copiedWbsAssignments: number;
         copiedEvaluationLineMappings: number;
+        copiedWbsEvaluationCriteria: number;
     }>;
     직원_평가기간별_할당정보_조회한다(periodId: string, employeeId: string): Promise<EmployeePeriodAssignmentsResponseDto>;
 }

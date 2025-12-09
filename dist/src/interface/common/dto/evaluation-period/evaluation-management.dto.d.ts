@@ -84,7 +84,9 @@ export declare class CopyPreviousPeriodDataResponseDto {
     success: boolean;
     message: string;
     copiedProjectAssignments: number;
+    copiedWbsAssignments: number;
     copiedEvaluationLineMappings: number;
+    copiedWbsEvaluationCriteria: number;
 }
 export declare class ApiResponseDto<T = any> {
     success: boolean;

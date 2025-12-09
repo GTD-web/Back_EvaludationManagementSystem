@@ -355,7 +355,9 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
             success: true,
             message: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
             copiedProjectAssignments: result.copiedProjectAssignments,
+            copiedWbsAssignments: result.copiedWbsAssignments,
             copiedEvaluationLineMappings: result.copiedEvaluationLineMappings,
+            copiedWbsEvaluationCriteria: result.copiedWbsEvaluationCriteria,
         };
     }
 };

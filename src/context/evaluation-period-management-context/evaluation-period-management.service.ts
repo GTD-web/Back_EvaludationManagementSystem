@@ -11,6 +11,8 @@ import { EvaluationPeriodService } from '../../domain/core/evaluation-period/eva
 import { EvaluationPeriodAutoPhaseService } from '../../domain/core/evaluation-period/evaluation-period-auto-phase.service';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { EvaluationProjectAssignmentService } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.service';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
+import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationPeriodEmployeeMappingService } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service';
@@ -102,10 +104,13 @@ export class EvaluationPeriodManagementContextService
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly evaluationPeriodAutoPhaseService: EvaluationPeriodAutoPhaseService,
     private readonly evaluationProjectAssignmentService: EvaluationProjectAssignmentService,
+    private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService,
     @InjectRepository(EvaluationProjectAssignment)
     private readonly projectAssignmentRepository: Repository<EvaluationProjectAssignment>,
+    @InjectRepository(EvaluationWbsAssignment)
+    private readonly wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
     @InjectRepository(EvaluationLineMapping)
     private readonly lineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(Project)
@@ -682,17 +687,21 @@ export class EvaluationPeriodManagementContextService
     // 1. 소스 평가기간 조회
     const sourcePeriod = await this.평가기간상세_조회한다(sourcePeriodId);
     if (!sourcePeriod) {
-      throw new Error(`소스 평가기간을 찾을 수 없습니다. (id: ${sourcePeriodId})`);
+      throw new Error(
+        `소스 평가기간을 찾을 수 없습니다. (id: ${sourcePeriodId})`,
+      );
     }
 
     // 2. 타겟 평가기간 조회
     const targetPeriod = await this.평가기간상세_조회한다(targetPeriodId);
     if (!targetPeriod) {
-      throw new Error(`타겟 평가기간을 찾을 수 없습니다. (id: ${targetPeriodId})`);
+      throw new Error(
+        `타겟 평가기간을 찾을 수 없습니다. (id: ${targetPeriodId})`,
+      );
     }
 
     // 3. 타겟 평가기간에 소스 평가기간의 설정 복사 (기간 정보는 제외)
-    
+
     // 3-1. 기본 정보 복사 (description, maxSelfEvaluationRate)
     await this.평가기간기본정보_수정한다(
       targetPeriodId,
@@ -725,7 +734,8 @@ export class EvaluationPeriodManagementContextService
       {
         criteriaSettingEnabled: sourcePeriod.criteriaSettingEnabled,
         selfEvaluationSettingEnabled: sourcePeriod.selfEvaluationSettingEnabled,
-        finalEvaluationSettingEnabled: sourcePeriod.finalEvaluationSettingEnabled,
+        finalEvaluationSettingEnabled:
+          sourcePeriod.finalEvaluationSettingEnabled,
       },
       updatedBy,
     );
@@ -750,7 +760,9 @@ export class EvaluationPeriodManagementContextService
     projects?: Array<{ projectId: string; wbsIds?: string[] }>,
   ): Promise<{
     copiedProjectAssignments: number;
+    copiedWbsAssignments: number;
     copiedEvaluationLineMappings: number;
+    copiedWbsEvaluationCriteria: number;
   }> {
     this.logger.log(
       `이전 평가기간 데이터 복사 시작 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}`,
@@ -821,6 +833,8 @@ export class EvaluationPeriodManagementContextService
 
     // 5. 프로젝트 할당 복사
     let copiedProjectAssignmentsCount = 0;
+    const copiedProjectIds = new Set<string>(); // 복사된 프로젝트 ID 추적 (평가 기준 복사용)
+
     for (const assignment of filteredProjectAssignments) {
       try {
         await this.evaluationProjectAssignmentService.생성한다({
@@ -831,6 +845,7 @@ export class EvaluationPeriodManagementContextService
           displayOrder: assignment.displayOrder,
         });
         copiedProjectAssignmentsCount++;
+        copiedProjectIds.add(assignment.projectId); // 프로젝트 ID 추적
         this.logger.log(
           `프로젝트 할당 복사 완료 - 프로젝트: ${assignment.projectId}`,
         );
@@ -840,6 +855,7 @@ export class EvaluationPeriodManagementContextService
           error.message?.includes('이미 존재') ||
           error.code === 'DUPLICATE_ASSIGNMENT'
         ) {
+          copiedProjectIds.add(assignment.projectId); // 이미 존재하는 프로젝트도 추적
           this.logger.log(
             `프로젝트 할당 건너뜀 (이미 존재): 프로젝트=${assignment.projectId}`,
           );
@@ -853,7 +869,71 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
-    // 6. 원본 평가기간의 평가라인 매핑 조회
+    // 6. 원본 평가기간의 WBS 할당 조회
+    const sourceWbsAssignments = await this.wbsAssignmentRepository.find({
+      where: {
+        periodId: sourcePeriodId,
+        employeeId: employeeId,
+        deletedAt: IsNull(),
+      },
+      order: {
+        displayOrder: 'ASC',
+      },
+    });
+
+    this.logger.log(
+      `원본 평가기간의 WBS 할당 ${sourceWbsAssignments.length}개 발견`,
+    );
+
+    // 7. WBS 할당 필터링 및 복사
+    let copiedWbsAssignmentsCount = 0;
+    const copiedWbsIds = new Set<string>(); // 복사된 WBS ID 추적
+
+    for (const wbsAssignment of sourceWbsAssignments) {
+      // 프로젝트 필터링
+      if (copiedProjectIds.has(wbsAssignment.projectId)) {
+        // wbsIds 필터링 (프로젝트별로 특정 WBS만 복사하도록 지정된 경우)
+        const allowedWbsIds = projectWbsMap.get(wbsAssignment.projectId);
+        const shouldCopyWbs =
+          !allowedWbsIds || allowedWbsIds.includes(wbsAssignment.wbsItemId);
+
+        if (shouldCopyWbs) {
+          try {
+            await this.evaluationWbsAssignmentService.생성한다({
+              periodId: targetPeriodId,
+              employeeId: employeeId,
+              projectId: wbsAssignment.projectId,
+              wbsItemId: wbsAssignment.wbsItemId,
+              assignedBy: copiedBy,
+            });
+            copiedWbsAssignmentsCount++;
+            copiedWbsIds.add(wbsAssignment.wbsItemId);
+            this.logger.log(
+              `WBS 할당 복사 완료 - WBS: ${wbsAssignment.wbsItemId}, 프로젝트: ${wbsAssignment.projectId}`,
+            );
+          } catch (error) {
+            // 중복 에러는 무시 (이미 존재하는 할당)
+            if (
+              error.message?.includes('이미 존재') ||
+              error.code === 'DUPLICATE_ASSIGNMENT'
+            ) {
+              copiedWbsIds.add(wbsAssignment.wbsItemId); // 이미 존재하는 WBS도 추적
+              this.logger.log(
+                `WBS 할당 건너뜀 (이미 존재): WBS=${wbsAssignment.wbsItemId}, 프로젝트=${wbsAssignment.projectId}`,
+              );
+            } else {
+              this.logger.error(
+                `WBS 할당 복사 실패 - WBS: ${wbsAssignment.wbsItemId}`,
+                error.stack,
+              );
+              // 에러가 발생해도 계속 진행
+            }
+          }
+        }
+      }
+    }
+
+    // 8. 원본 평가기간의 평가라인 매핑 조회
     const sourceLineMappings = await this.lineMappingRepository.find({
       where: {
         evaluationPeriodId: sourcePeriodId,
@@ -865,33 +945,16 @@ export class EvaluationPeriodManagementContextService
       `원본 평가기간의 평가라인 매핑 ${sourceLineMappings.length}개 발견`,
     );
 
-    // 7. WBS 필터링 (프로젝트별 wbsIds가 지정된 경우)
-    let filteredLineMappings = sourceLineMappings;
-    
-    if (projectWbsMap.size > 0) {
-      // 각 프로젝트의 WBS를 먼저 조회하여 프로젝트-WBS 관계 확인
-      const wbsProjectMap = new Map<string, string>(); // wbsId -> projectId 매핑
-      
-      for (const assignment of filteredProjectAssignments) {
-        const projectWbsIds = projectWbsMap.get(assignment.projectId);
-        if (projectWbsIds) {
-          // 이 프로젝트의 지정된 WBS만 매핑
-          for (const wbsId of projectWbsIds) {
-            wbsProjectMap.set(wbsId, assignment.projectId);
-          }
-        }
-      }
+    // 9. 평가라인 매핑 필터링 (복사된 WBS만)
+    let filteredLineMappings = sourceLineMappings.filter(
+      (mapping) => !mapping.wbsItemId || copiedWbsIds.has(mapping.wbsItemId), // WBS가 없는 경우(직원별 고정) 또는 복사된 WBS인 경우
+    );
 
-      // wbsProjectMap에 있는 WBS만 복사
-      if (wbsProjectMap.size > 0) {
-        filteredLineMappings = sourceLineMappings.filter((mapping) =>
-          mapping.wbsItemId ? wbsProjectMap.has(mapping.wbsItemId) : true, // 직원별 고정 담당자(wbsItemId IS NULL)는 포함
-        );
-      }
-    }
+    this.logger.log(`필터링 후 평가라인 매핑 ${filteredLineMappings.length}개`);
 
-    // 8. 평가라인 매핑 복사
+    // 10. 평가라인 매핑 복사
     let copiedLineMappingsCount = 0;
+
     for (const mapping of filteredLineMappings) {
       try {
         await this.evaluationLineMappingService.생성한다({
@@ -925,13 +988,83 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
+    // 11. WBS 평가 기준 복사
+    // 복사된 WBS의 평가 기준을 복사
+    let copiedCriteriaCount = 0;
+
+    if (copiedWbsIds.size > 0) {
+      this.logger.log(
+        `복사된 WBS ${copiedWbsIds.size}개의 평가 기준 복사 시작`,
+      );
+
+      // 각 WBS의 평가 기준 복사
+      for (const wbsItemId of copiedWbsIds) {
+        const sourceCriteria = await this.wbsEvaluationCriteriaRepository.find({
+          where: {
+            wbsItemId: wbsItemId,
+            deletedAt: IsNull(),
+          },
+        });
+
+        if (sourceCriteria.length > 0) {
+          this.logger.log(
+            `WBS ${wbsItemId}의 평가 기준 ${sourceCriteria.length}개 복사 시작`,
+          );
+
+          for (const criteria of sourceCriteria) {
+            try {
+              // 대상 평가기간에 동일한 평가 기준이 이미 있는지 확인
+              const existingCriteria =
+                await this.wbsEvaluationCriteriaRepository.findOne({
+                  where: {
+                    wbsItemId: criteria.wbsItemId,
+                    criteria: criteria.criteria,
+                    deletedAt: IsNull(),
+                  },
+                });
+
+              if (!existingCriteria) {
+                // 평가 기준 복사
+                const newCriteria = this.wbsEvaluationCriteriaRepository.create(
+                  {
+                    wbsItemId: criteria.wbsItemId,
+                    criteria: criteria.criteria,
+                    importance: criteria.importance,
+                    createdBy: copiedBy,
+                  },
+                );
+                await this.wbsEvaluationCriteriaRepository.save(newCriteria);
+                copiedCriteriaCount++;
+
+                this.logger.log(
+                  `평가 기준 복사 완료 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}", 중요도: ${criteria.importance}`,
+                );
+              } else {
+                this.logger.log(
+                  `평가 기준 건너뜀 (이미 존재): WBS=${criteria.wbsItemId}, 기준="${criteria.criteria}"`,
+                );
+              }
+            } catch (error) {
+              this.logger.error(
+                `평가 기준 복사 실패 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}"`,
+                error.stack,
+              );
+              // 에러가 발생해도 계속 진행
+            }
+          }
+        }
+      }
+    }
+
     this.logger.log(
-      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개`,
+      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준: ${copiedCriteriaCount}개`,
     );
 
     return {
       copiedProjectAssignments: copiedProjectAssignmentsCount,
+      copiedWbsAssignments: copiedWbsAssignmentsCount,
       copiedEvaluationLineMappings: copiedLineMappingsCount,
+      copiedWbsEvaluationCriteria: copiedCriteriaCount,
     };
   }
 
@@ -1005,6 +1138,7 @@ export class EvaluationPeriodManagementContextService
       where: {
         evaluationPeriodId: periodId,
         employeeId: employeeId,
+        deletedAt: IsNull(), // 삭제된 매핑 제외
       },
     });
 
@@ -1031,9 +1165,7 @@ export class EvaluationPeriodManagementContextService
       ),
     ];
 
-    this.logger.log(
-      `할당된 WBS ${assignedWbsIds.length}개`,
-    );
+    this.logger.log(`할당된 WBS ${assignedWbsIds.length}개`);
 
     // 5. WBS가 할당되지 않은 경우 빈 응답 반환
     if (assignedWbsIds.length === 0) {
@@ -1085,10 +1217,8 @@ export class EvaluationPeriodManagementContextService
       },
     });
 
-    this.logger.log(
-      `프로젝트 ${projectsList.length}개 조회됨`,
-    );
-    
+    this.logger.log(`프로젝트 ${projectsList.length}개 조회됨`);
+
     projectsList.forEach((project) => {
       this.logger.log(
         `  프로젝트 ${project.name} (${project.projectCode}): managerId=${project.managerId || 'null'}`,
@@ -1113,9 +1243,7 @@ export class EvaluationPeriodManagementContextService
       },
     });
 
-    this.logger.log(
-      `WBS 평가기준 ${wbsCriteria.length}개 조회됨`,
-    );
+    this.logger.log(`WBS 평가기준 ${wbsCriteria.length}개 조회됨`);
 
     // WBS ID별 평가기준 목록 매핑
     const wbsCriteriaMap = new Map<string, WbsEvaluationCriteria[]>();
@@ -1149,10 +1277,8 @@ export class EvaluationPeriodManagementContextService
           })
         : [];
 
-    this.logger.log(
-      `평가라인 ${evaluationLines.length}개 조회됨`,
-    );
-    
+    this.logger.log(`평가라인 ${evaluationLines.length}개 조회됨`);
+
     if (evaluationLines.length > 0) {
       this.logger.log('평가라인 상세:');
       evaluationLines.forEach((line) => {
@@ -1178,7 +1304,9 @@ export class EvaluationPeriodManagementContextService
 
     // 직원별 고정 1차 평가자 ID도 추가
     if (primaryEvaluatorMapping?.mapping_evaluator_id) {
-      if (!evaluatorIds.includes(primaryEvaluatorMapping.mapping_evaluator_id)) {
+      if (
+        !evaluatorIds.includes(primaryEvaluatorMapping.mapping_evaluator_id)
+      ) {
         evaluatorIds.push(primaryEvaluatorMapping.mapping_evaluator_id);
       }
     }
@@ -1238,9 +1366,7 @@ export class EvaluationPeriodManagementContextService
         `모든 WBS ${assignedWbsIds.length}개에 고정 1차 평가자 할당: ${evaluatorName}`,
       );
     } else {
-      this.logger.log(
-        `직원별 고정 1차 평가자 없음 - WBS별 매핑에서 조회`,
-      );
+      this.logger.log(`직원별 고정 1차 평가자 없음 - WBS별 매핑에서 조회`);
     }
 
     // 12-2. WBS별 평가자 매핑 (wbsItemId가 있는 매핑)
@@ -1363,14 +1489,16 @@ export class EvaluationPeriodManagementContextService
           );
         }
       } else {
-        this.logger.log(
-          `  프로젝트 ${project.name}에 PM이 설정되지 않음`,
-        );
+        this.logger.log(`  프로젝트 ${project.name}에 PM이 설정되지 않음`);
       }
 
-      const primaryCount = wbsItemDtos.filter((w) => w.primaryDownwardEvaluation).length;
-      const secondaryCount = wbsItemDtos.filter((w) => w.secondaryDownwardEvaluation).length;
-      
+      const primaryCount = wbsItemDtos.filter(
+        (w) => w.primaryDownwardEvaluation,
+      ).length;
+      const secondaryCount = wbsItemDtos.filter(
+        (w) => w.secondaryDownwardEvaluation,
+      ).length;
+
       this.logger.log(
         `  프로젝트 ${project.name}: WBS ${wbsItemDtos.length}개, 1차 평가자 ${primaryCount}개, 2차 평가자 ${secondaryCount}개`,
       );

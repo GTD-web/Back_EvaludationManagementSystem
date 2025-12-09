@@ -23,6 +23,8 @@ const evaluation_period_service_1 = require("../../domain/core/evaluation-period
 const evaluation_period_auto_phase_service_1 = require("../../domain/core/evaluation-period/evaluation-period-auto-phase.service");
 const evaluation_project_assignment_entity_1 = require("../../domain/core/evaluation-project-assignment/evaluation-project-assignment.entity");
 const evaluation_project_assignment_service_1 = require("../../domain/core/evaluation-project-assignment/evaluation-project-assignment.service");
+const evaluation_wbs_assignment_entity_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity");
+const evaluation_wbs_assignment_service_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service");
 const evaluation_line_mapping_entity_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.entity");
 const evaluation_line_mapping_service_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const evaluation_period_employee_mapping_service_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service");
@@ -39,9 +41,11 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
     evaluationPeriodService;
     evaluationPeriodAutoPhaseService;
     evaluationProjectAssignmentService;
+    evaluationWbsAssignmentService;
     evaluationLineMappingService;
     evaluationPeriodEmployeeMappingService;
     projectAssignmentRepository;
+    wbsAssignmentRepository;
     lineMappingRepository;
     projectRepository;
     wbsItemRepository;
@@ -49,15 +53,17 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
     wbsEvaluationCriteriaRepository;
     evaluationLineRepository;
     logger = new common_1.Logger(EvaluationPeriodManagementContextService_1.name);
-    constructor(commandBus, queryBus, evaluationPeriodService, evaluationPeriodAutoPhaseService, evaluationProjectAssignmentService, evaluationLineMappingService, evaluationPeriodEmployeeMappingService, projectAssignmentRepository, lineMappingRepository, projectRepository, wbsItemRepository, employeeRepository, wbsEvaluationCriteriaRepository, evaluationLineRepository) {
+    constructor(commandBus, queryBus, evaluationPeriodService, evaluationPeriodAutoPhaseService, evaluationProjectAssignmentService, evaluationWbsAssignmentService, evaluationLineMappingService, evaluationPeriodEmployeeMappingService, projectAssignmentRepository, wbsAssignmentRepository, lineMappingRepository, projectRepository, wbsItemRepository, employeeRepository, wbsEvaluationCriteriaRepository, evaluationLineRepository) {
         this.commandBus = commandBus;
         this.queryBus = queryBus;
         this.evaluationPeriodService = evaluationPeriodService;
         this.evaluationPeriodAutoPhaseService = evaluationPeriodAutoPhaseService;
         this.evaluationProjectAssignmentService = evaluationProjectAssignmentService;
+        this.evaluationWbsAssignmentService = evaluationWbsAssignmentService;
         this.evaluationLineMappingService = evaluationLineMappingService;
         this.evaluationPeriodEmployeeMappingService = evaluationPeriodEmployeeMappingService;
         this.projectAssignmentRepository = projectAssignmentRepository;
+        this.wbsAssignmentRepository = wbsAssignmentRepository;
         this.lineMappingRepository = lineMappingRepository;
         this.projectRepository = projectRepository;
         this.wbsItemRepository = wbsItemRepository;
@@ -295,6 +301,7 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             }
         }
         let copiedProjectAssignmentsCount = 0;
+        const copiedProjectIds = new Set();
         for (const assignment of filteredProjectAssignments) {
             try {
                 await this.evaluationProjectAssignmentService.생성한다({
@@ -305,15 +312,60 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
                     displayOrder: assignment.displayOrder,
                 });
                 copiedProjectAssignmentsCount++;
+                copiedProjectIds.add(assignment.projectId);
                 this.logger.log(`프로젝트 할당 복사 완료 - 프로젝트: ${assignment.projectId}`);
             }
             catch (error) {
                 if (error.message?.includes('이미 존재') ||
                     error.code === 'DUPLICATE_ASSIGNMENT') {
+                    copiedProjectIds.add(assignment.projectId);
                     this.logger.log(`프로젝트 할당 건너뜀 (이미 존재): 프로젝트=${assignment.projectId}`);
                 }
                 else {
                     this.logger.error(`프로젝트 할당 복사 실패 - 프로젝트: ${assignment.projectId}`, error.stack);
+                }
+            }
+        }
+        const sourceWbsAssignments = await this.wbsAssignmentRepository.find({
+            where: {
+                periodId: sourcePeriodId,
+                employeeId: employeeId,
+                deletedAt: (0, typeorm_2.IsNull)(),
+            },
+            order: {
+                displayOrder: 'ASC',
+            },
+        });
+        this.logger.log(`원본 평가기간의 WBS 할당 ${sourceWbsAssignments.length}개 발견`);
+        let copiedWbsAssignmentsCount = 0;
+        const copiedWbsIds = new Set();
+        for (const wbsAssignment of sourceWbsAssignments) {
+            if (copiedProjectIds.has(wbsAssignment.projectId)) {
+                const allowedWbsIds = projectWbsMap.get(wbsAssignment.projectId);
+                const shouldCopyWbs = !allowedWbsIds || allowedWbsIds.includes(wbsAssignment.wbsItemId);
+                if (shouldCopyWbs) {
+                    try {
+                        await this.evaluationWbsAssignmentService.생성한다({
+                            periodId: targetPeriodId,
+                            employeeId: employeeId,
+                            projectId: wbsAssignment.projectId,
+                            wbsItemId: wbsAssignment.wbsItemId,
+                            assignedBy: copiedBy,
+                        });
+                        copiedWbsAssignmentsCount++;
+                        copiedWbsIds.add(wbsAssignment.wbsItemId);
+                        this.logger.log(`WBS 할당 복사 완료 - WBS: ${wbsAssignment.wbsItemId}, 프로젝트: ${wbsAssignment.projectId}`);
+                    }
+                    catch (error) {
+                        if (error.message?.includes('이미 존재') ||
+                            error.code === 'DUPLICATE_ASSIGNMENT') {
+                            copiedWbsIds.add(wbsAssignment.wbsItemId);
+                            this.logger.log(`WBS 할당 건너뜀 (이미 존재): WBS=${wbsAssignment.wbsItemId}, 프로젝트=${wbsAssignment.projectId}`);
+                        }
+                        else {
+                            this.logger.error(`WBS 할당 복사 실패 - WBS: ${wbsAssignment.wbsItemId}`, error.stack);
+                        }
+                    }
                 }
             }
         }
@@ -324,21 +376,8 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             },
         });
         this.logger.log(`원본 평가기간의 평가라인 매핑 ${sourceLineMappings.length}개 발견`);
-        let filteredLineMappings = sourceLineMappings;
-        if (projectWbsMap.size > 0) {
-            const wbsProjectMap = new Map();
-            for (const assignment of filteredProjectAssignments) {
-                const projectWbsIds = projectWbsMap.get(assignment.projectId);
-                if (projectWbsIds) {
-                    for (const wbsId of projectWbsIds) {
-                        wbsProjectMap.set(wbsId, assignment.projectId);
-                    }
-                }
-            }
-            if (wbsProjectMap.size > 0) {
-                filteredLineMappings = sourceLineMappings.filter((mapping) => mapping.wbsItemId ? wbsProjectMap.has(mapping.wbsItemId) : true);
-            }
-        }
+        let filteredLineMappings = sourceLineMappings.filter((mapping) => !mapping.wbsItemId || copiedWbsIds.has(mapping.wbsItemId));
+        this.logger.log(`필터링 후 평가라인 매핑 ${filteredLineMappings.length}개`);
         let copiedLineMappingsCount = 0;
         for (const mapping of filteredLineMappings) {
             try {
@@ -363,10 +402,55 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
                 }
             }
         }
-        this.logger.log(`이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개`);
+        let copiedCriteriaCount = 0;
+        if (copiedWbsIds.size > 0) {
+            this.logger.log(`복사된 WBS ${copiedWbsIds.size}개의 평가 기준 복사 시작`);
+            for (const wbsItemId of copiedWbsIds) {
+                const sourceCriteria = await this.wbsEvaluationCriteriaRepository.find({
+                    where: {
+                        wbsItemId: wbsItemId,
+                        deletedAt: (0, typeorm_2.IsNull)(),
+                    },
+                });
+                if (sourceCriteria.length > 0) {
+                    this.logger.log(`WBS ${wbsItemId}의 평가 기준 ${sourceCriteria.length}개 복사 시작`);
+                    for (const criteria of sourceCriteria) {
+                        try {
+                            const existingCriteria = await this.wbsEvaluationCriteriaRepository.findOne({
+                                where: {
+                                    wbsItemId: criteria.wbsItemId,
+                                    criteria: criteria.criteria,
+                                    deletedAt: (0, typeorm_2.IsNull)(),
+                                },
+                            });
+                            if (!existingCriteria) {
+                                const newCriteria = this.wbsEvaluationCriteriaRepository.create({
+                                    wbsItemId: criteria.wbsItemId,
+                                    criteria: criteria.criteria,
+                                    importance: criteria.importance,
+                                    createdBy: copiedBy,
+                                });
+                                await this.wbsEvaluationCriteriaRepository.save(newCriteria);
+                                copiedCriteriaCount++;
+                                this.logger.log(`평가 기준 복사 완료 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}", 중요도: ${criteria.importance}`);
+                            }
+                            else {
+                                this.logger.log(`평가 기준 건너뜀 (이미 존재): WBS=${criteria.wbsItemId}, 기준="${criteria.criteria}"`);
+                            }
+                        }
+                        catch (error) {
+                            this.logger.error(`평가 기준 복사 실패 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}"`, error.stack);
+                        }
+                    }
+                }
+            }
+        }
+        this.logger.log(`이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준: ${copiedCriteriaCount}개`);
         return {
             copiedProjectAssignments: copiedProjectAssignmentsCount,
+            copiedWbsAssignments: copiedWbsAssignmentsCount,
             copiedEvaluationLineMappings: copiedLineMappingsCount,
+            copiedWbsEvaluationCriteria: copiedCriteriaCount,
         };
     }
     async 직원_평가기간별_할당정보_조회한다(periodId, employeeId) {
@@ -405,6 +489,7 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             where: {
                 evaluationPeriodId: periodId,
                 employeeId: employeeId,
+                deletedAt: (0, typeorm_2.IsNull)(),
             },
         });
         this.logger.log(`평가라인 매핑 총 ${lineMappings.length}개 발견 (직원별 고정 포함)`);
@@ -676,20 +761,23 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
 exports.EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService;
 exports.EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService = EvaluationPeriodManagementContextService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __param(7, (0, typeorm_1.InjectRepository)(evaluation_project_assignment_entity_1.EvaluationProjectAssignment)),
-    __param(8, (0, typeorm_1.InjectRepository)(evaluation_line_mapping_entity_1.EvaluationLineMapping)),
-    __param(9, (0, typeorm_1.InjectRepository)(project_entity_1.Project)),
-    __param(10, (0, typeorm_1.InjectRepository)(wbs_item_entity_1.WbsItem)),
-    __param(11, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
-    __param(12, (0, typeorm_1.InjectRepository)(wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria)),
-    __param(13, (0, typeorm_1.InjectRepository)(evaluation_line_entity_1.EvaluationLine)),
+    __param(8, (0, typeorm_1.InjectRepository)(evaluation_project_assignment_entity_1.EvaluationProjectAssignment)),
+    __param(9, (0, typeorm_1.InjectRepository)(evaluation_wbs_assignment_entity_1.EvaluationWbsAssignment)),
+    __param(10, (0, typeorm_1.InjectRepository)(evaluation_line_mapping_entity_1.EvaluationLineMapping)),
+    __param(11, (0, typeorm_1.InjectRepository)(project_entity_1.Project)),
+    __param(12, (0, typeorm_1.InjectRepository)(wbs_item_entity_1.WbsItem)),
+    __param(13, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
+    __param(14, (0, typeorm_1.InjectRepository)(wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria)),
+    __param(15, (0, typeorm_1.InjectRepository)(evaluation_line_entity_1.EvaluationLine)),
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
         cqrs_1.QueryBus,
         evaluation_period_service_1.EvaluationPeriodService,
         evaluation_period_auto_phase_service_1.EvaluationPeriodAutoPhaseService,
         evaluation_project_assignment_service_1.EvaluationProjectAssignmentService,
+        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService,
         evaluation_line_mapping_service_1.EvaluationLineMappingService,
         evaluation_period_employee_mapping_service_1.EvaluationPeriodEmployeeMappingService,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

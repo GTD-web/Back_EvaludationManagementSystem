@@ -214,7 +214,7 @@ export class Employee extends BaseEntity<EmployeeDto> implements IEmployee {
 
   @Column({
     type: 'boolean',
-    default: true,
+    default: false,
     comment: '시스템 접근 가능 여부 (2중 보안용)',
   })
   isAccessible: boolean;

@@ -67,5 +67,5 @@ export declare class EvaluationPeriodManagementController {
         transitionedCount: number;
         message: string;
     }>;
-    copyPreviousPeriodData(targetPeriodId: string, sourcePeriodId: string, body: CopyPreviousPeriodDataApiDto, user: AuthenticatedUser): Promise<CopyPreviousPeriodDataResponseDto>;
+    copyPreviousPeriodData(targetPeriodId: string, employeeId: string, sourcePeriodId: string, body: CopyPreviousPeriodDataApiDto, user: AuthenticatedUser): Promise<CopyPreviousPeriodDataResponseDto>;
 }

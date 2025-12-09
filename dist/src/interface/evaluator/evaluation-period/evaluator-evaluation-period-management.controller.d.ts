@@ -21,5 +21,5 @@ export declare class EvaluatorEvaluationPeriodManagementController {
     }>;
     getEvaluationPeriodDetail(periodId: string): Promise<EvaluationPeriodDto | null>;
     getEmployeePeriodAssignments(periodId: string, employeeId: string): Promise<EmployeePeriodAssignmentsResponseDto>;
-    copyPreviousPeriodData(targetPeriodId: string, sourcePeriodId: string, body: CopyPreviousPeriodDataApiDto, user: AuthenticatedUser): Promise<CopyPreviousPeriodDataResponseDto>;
+    copyPreviousPeriodData(targetPeriodId: string, employeeId: string, sourcePeriodId: string, body: CopyPreviousPeriodDataApiDto, user: AuthenticatedUser): Promise<CopyPreviousPeriodDataResponseDto>;
 }

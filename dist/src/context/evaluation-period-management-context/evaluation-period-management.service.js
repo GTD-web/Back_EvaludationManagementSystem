@@ -499,12 +499,28 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
                 this.logger.log(`  [${index + 1}] WBS: ${mapping.wbsItemId ? mapping.wbsItemId.substring(0, 8) + '...' : 'NULL(직원별 고정)'}, 평가라인: ${mapping.evaluationLineId?.substring(0, 8)}..., 평가자: ${mapping.evaluatorId?.substring(0, 8)}...`);
             });
         }
-        const assignedWbsIds = [
-            ...new Set(lineMappings
-                .map((mapping) => mapping.wbsItemId)
-                .filter((id) => !!id)),
-        ];
-        this.logger.log(`할당된 WBS ${assignedWbsIds.length}개`);
+        const projectAssignments = await this.projectAssignmentRepository.find({
+            where: {
+                periodId: periodId,
+                employeeId: employeeId,
+                deletedAt: (0, typeorm_2.IsNull)(),
+            },
+        });
+        this.logger.log(`프로젝트 할당 ${projectAssignments.length}개 발견`);
+        const wbsAssignments = await this.wbsAssignmentRepository.find({
+            where: {
+                periodId: periodId,
+                employeeId: employeeId,
+                deletedAt: (0, typeorm_2.IsNull)(),
+            },
+        });
+        this.logger.log(`WBS 할당 ${wbsAssignments.length}개 발견`);
+        const wbsIdsFromAssignments = new Set(wbsAssignments.map((assignment) => assignment.wbsItemId));
+        const wbsIdsFromMappings = new Set(lineMappings
+            .map((mapping) => mapping.wbsItemId)
+            .filter((id) => !!id));
+        const assignedWbsIds = Array.from(wbsIdsFromAssignments).filter((wbsId) => wbsIdsFromMappings.has(wbsId));
+        this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개 (할당 ∩ 매핑)`);
         if (assignedWbsIds.length === 0) {
             const periodDto = evaluationPeriod.DTO로_변환한다();
             return {
@@ -532,8 +548,14 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             },
             order: { level: 'ASC', wbsCode: 'ASC' },
         });
+        this.logger.log(`조회된 WBS 아이템 ${assignedWbsList.length}개`);
+        const projectIdsFromAssignments = new Set(projectAssignments.map((assignment) => assignment.projectId));
         const projectWbsMap = new Map();
         for (const wbs of assignedWbsList) {
+            if (!projectIdsFromAssignments.has(wbs.projectId)) {
+                this.logger.log(`WBS ${wbs.id}는 프로젝트 할당이 없어서 제외 (projectId: ${wbs.projectId})`);
+                continue;
+            }
             if (!projectWbsMap.has(wbs.projectId)) {
                 projectWbsMap.set(wbs.projectId, []);
             }

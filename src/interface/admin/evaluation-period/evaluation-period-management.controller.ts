@@ -820,20 +820,20 @@ export class EvaluationPeriodManagementController {
   }
 
   /**
-   * 이전 평가기간 데이터를 복사합니다 (현재 로그인한 사용자).
+   * 이전 평가기간 데이터를 복사합니다 (지정한 직원).
    */
   @CopyPreviousPeriodData()
   async copyPreviousPeriodData(
     @ParseUUID('targetPeriodId') targetPeriodId: string,
+    @ParseUUID('employeeId') employeeId: string,
     @ParseUUID('sourcePeriodId') sourcePeriodId: string,
     @Body() body: CopyPreviousPeriodDataApiDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CopyPreviousPeriodDataResponseDto> {
-    const employeeId = user.id; // JWT에서 현재 로그인한 사용자 ID 추출
-    const copiedBy = user.id;
+    const copiedBy = user.id; // 복사 수행자는 현재 로그인한 사용자
 
     this.logger.log(
-      `이전 평가기간 데이터 복사 요청 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}`,
+      `이전 평가기간 데이터 복사 요청 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 수행자: ${copiedBy}`,
     );
 
     const result =

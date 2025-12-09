@@ -1021,19 +1021,19 @@ export function CopyEvaluationPeriod() {
 // ==================== POST 엔드포인트 데코레이터 ====================
 
 /**
- * 이전 평가기간 데이터 복사 엔드포인트 데코레이터 (Admin/Evaluator/User용)
+ * 이전 평가기간 데이터 복사 엔드포인트 데코레이터 (Admin/Evaluator용)
  */
 export function CopyPreviousPeriodData() {
   return applyDecorators(
-    Post(':targetPeriodId/copy-from/:sourcePeriodId'),
+    Post(':targetPeriodId/employees/:employeeId/copy-from/:sourcePeriodId'),
     HttpCode(HttpStatus.OK),
     ApiOperation({
-      summary: '나의 이전 평가기간 데이터 복사',
-      description: `현재 로그인한 사용자의 이전 평가기간 데이터(프로젝트 할당, WBS, 평가라인)를 현재 평가기간으로 복사합니다.
+      summary: '직원의 이전 평가기간 데이터 복사',
+      description: `특정 직원의 이전 평가기간 데이터(프로젝트 할당, WBS, 평가라인)를 현재 평가기간으로 복사합니다.
 
 **동작:**
-- JWT 토큰에서 현재 로그인한 사용자 ID를 자동으로 추출합니다.
-- 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
+- 지정한 직원(:employeeId)의 이전 평가기간 데이터를 복사합니다.
+- 이전 평가기간(:sourcePeriodId)의 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
   * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
@@ -1073,6 +1073,13 @@ export function CopyPreviousPeriodData() {
       type: 'string',
       format: 'uuid',
       example: '123e4567-e89b-12d3-a456-426614174001',
+    }),
+    ApiParam({
+      name: 'employeeId',
+      description: '직원 ID (데이터를 복사할 대상 직원)',
+      type: 'string',
+      format: 'uuid',
+      example: '223e4567-e89b-12d3-a456-426614174002',
     }),
     ApiParam({
       name: 'sourcePeriodId',

@@ -55,7 +55,7 @@ async function bootstrap() {
         credentials: false,
     });
     (0, swagger_config_1.setupSwagger)(app, {
-        title: 'Lumir Admin API',
+        title: 'Lumir Admin API (v1.0)',
         description: '루미르 평가 관리 시스템 - 관리자용 API 문서입니다.',
         version: '1.0',
         path: 'admin/api-docs',

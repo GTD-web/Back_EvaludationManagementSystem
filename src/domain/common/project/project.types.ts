@@ -73,6 +73,8 @@ export interface ProjectDto {
   parentProject?: ProjectDto;
   /** 하위 프로젝트 목록 */
   childProjects?: ProjectDto[];
+  /** 하위 프로젝트 개수 */
+  childProjectCount?: number;
 
   // 계산된 필드들 (읽기 전용)
   /** 삭제된 상태 여부 */

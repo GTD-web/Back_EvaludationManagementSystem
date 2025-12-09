@@ -302,8 +302,8 @@ export class SeedDataController {
           // Employee 엔티티 추가 필드
           lastSyncAt: now,
           isExcludedFromList: false,
-          isAccessible: true,
           createdBy: 'system',
+          // isAccessible은 엔티티 생성자의 기본값(true)을 사용
         });
 
         addedEmployeeIds.push(newEmployee.id);

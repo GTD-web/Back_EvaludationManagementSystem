@@ -210,7 +210,6 @@ let SeedDataController = SeedDataController_1 = class SeedDataController {
                     externalUpdatedAt: now,
                     lastSyncAt: now,
                     isExcludedFromList: false,
-                    isAccessible: true,
                     createdBy: 'system',
                 });
                 addedEmployeeIds.push(newEmployee.id);

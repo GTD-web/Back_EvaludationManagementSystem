@@ -1082,9 +1082,10 @@ function GetEmployeePeriodAssignments() {
 - 해당 평가기간에 직원에게 할당된 모든 프로젝트를 조회합니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
 - 각 WBS의 평가기준 목록을 함께 반환합니다.
-- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
+- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
-- **소프트 삭제된 프로젝트, WBS, 평가라인 매핑은 제외됩니다.**
+- **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
+- **평가라인 매핑이 없어도 WBS 할당은 조회됩니다 (이전 평가기간 데이터 복사를 위해).**
 
 **사용 사례:**
 - 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용
@@ -1097,15 +1098,16 @@ function GetEmployeePeriodAssignments() {
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
     - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
-    - primaryDownwardEvaluation: 1차 평가자 정보
-    - secondaryDownwardEvaluation: 2차 평가자 정보
+    - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
+    - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
 - totalWbs: 총 WBS 수
 
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
-- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨
+- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
+- 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
 - 잘못된 periodId: UUID 형식이 아닌 경우 400 에러
 - 잘못된 employeeId: UUID 형식이 아닌 경우 400 에러
@@ -1220,9 +1222,10 @@ function GetMyPeriodAssignments() {
 - 해당 평가기간에 사용자에게 할당된 모든 프로젝트를 조회합니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
 - 각 WBS의 평가기준 목록을 함께 반환합니다.
-- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다.
+- 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
-- **소프트 삭제된 프로젝트, WBS, 평가라인 매핑은 제외됩니다.**
+- **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
+- **평가라인 매핑이 없어도 WBS 할당은 조회됩니다 (이전 평가기간 데이터 복사를 위해).**
 
 **사용 사례:**
 - 이전 평가기간 데이터 복사 시 복사할 항목을 선택하기 위해 사용
@@ -1235,15 +1238,16 @@ function GetMyPeriodAssignments() {
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
     - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
-    - primaryDownwardEvaluation: 1차 평가자 정보
-    - secondaryDownwardEvaluation: 2차 평가자 정보
+    - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
+    - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
 - totalWbs: 총 WBS 수
 
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
-- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨
+- 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
+- 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
 - 잘못된 periodId: UUID 형식이 아닌 경우 400 에러
 - 존재하지 않는 평가기간: 404 에러

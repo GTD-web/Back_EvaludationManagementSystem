@@ -515,12 +515,8 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             },
         });
         this.logger.log(`WBS 할당 ${wbsAssignments.length}개 발견`);
-        const wbsIdsFromAssignments = new Set(wbsAssignments.map((assignment) => assignment.wbsItemId));
-        const wbsIdsFromMappings = new Set(lineMappings
-            .map((mapping) => mapping.wbsItemId)
-            .filter((id) => !!id));
-        const assignedWbsIds = Array.from(wbsIdsFromAssignments).filter((wbsId) => wbsIdsFromMappings.has(wbsId));
-        this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개 (할당 ∩ 매핑)`);
+        const assignedWbsIds = wbsAssignments.map((assignment) => assignment.wbsItemId);
+        this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개`);
         if (assignedWbsIds.length === 0) {
             const periodDto = evaluationPeriod.DTO로_변환한다();
             return {

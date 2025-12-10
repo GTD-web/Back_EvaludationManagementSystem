@@ -1178,22 +1178,11 @@ export class EvaluationPeriodManagementContextService
 
     this.logger.log(`WBS 할당 ${wbsAssignments.length}개 발견`);
 
-    // 6. 할당된 WBS ID 목록 추출 (WBS 할당 기반 + 평가라인 매핑 기반)
-    const wbsIdsFromAssignments = new Set<string>(
-      wbsAssignments.map((assignment) => assignment.wbsItemId),
-    );
-    const wbsIdsFromMappings = new Set<string>(
-      lineMappings
-        .map((mapping) => mapping.wbsItemId)
-        .filter((id): id is string => !!id),
-    );
+    // 6. 할당된 WBS ID 목록 추출 (WBS 할당 기반)
+    // 이전 평가기간 데이터 복사를 위해 평가라인 매핑이 없어도 모든 WBS 할당을 조회합니다
+    const assignedWbsIds = wbsAssignments.map((assignment) => assignment.wbsItemId);
 
-    // 두 세트의 교집합 (WBS 할당이 있고 평가라인 매핑도 있는 것만)
-    const assignedWbsIds = Array.from(wbsIdsFromAssignments).filter((wbsId) =>
-      wbsIdsFromMappings.has(wbsId),
-    );
-
-    this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개 (할당 ∩ 매핑)`);
+    this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개`);
 
     // 7. WBS가 할당되지 않은 경우 빈 응답 반환
     if (assignedWbsIds.length === 0) {

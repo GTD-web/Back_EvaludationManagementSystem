@@ -1218,20 +1218,11 @@ export class EvaluationPeriodManagementContextService
 
     this.logger.log(`조회된 WBS 아이템 ${assignedWbsList.length}개`);
 
-    // 9. WBS를 프로젝트별로 그룹화 (프로젝트 할당이 있는 것만)
-    const projectIdsFromAssignments = new Set<string>(
-      projectAssignments.map((assignment) => assignment.projectId),
-    );
+    // 9. WBS를 프로젝트별로 그룹화
+    // WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 모두 포함
+    // (이전 평가기간 데이터 복사를 위해 WBS 할당이 있는 모든 프로젝트를 보여줌)
     const projectWbsMap = new Map<string, WbsItem[]>();
     for (const wbs of assignedWbsList) {
-      // 프로젝트 할당이 없는 WBS는 제외
-      if (!projectIdsFromAssignments.has(wbs.projectId)) {
-        this.logger.log(
-          `WBS ${wbs.id}는 프로젝트 할당이 없어서 제외 (projectId: ${wbs.projectId})`,
-        );
-        continue;
-      }
-
       if (!projectWbsMap.has(wbs.projectId)) {
         projectWbsMap.set(wbs.projectId, []);
       }

@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-11-17T00:48:39.835Z",
+  "timestamp": "2025-12-03T01:57:47.148Z",
   "testResults": [
     {
       "testName": "평가자가 담당하지 않는 피평가자의 평가는 조회되지 않아야 한다",
       "result": {
-        "evaluatorId": "7f6b006a-ec69-4f16-a77e-536bf98c7c56",
-        "evaluateeId": "66a5a34e-37d9-4931-b4f3-3fdac108fb31",
+        "evaluatorId": "cc369b34-d3b8-49eb-9eeb-db31e3e2b2ec",
+        "evaluateeId": "a8db02f6-9b28-4525-81d8-fbdc6e744cd5",
         "submittedCount": 0,
         "skippedCount": 0,
         "failedCount": 0
@@ -23,7 +23,7 @@
     {
       "testName": "하향평가가 없는 경우 빈 결과를 반환해야 한다",
       "result": {
-        "evaluatorId": "eb9146f9-a212-4471-9d7f-43f00c2db60c",
+        "evaluatorId": "b6590947-4f80-413e-a66c-dfa6244b4558",
         "evaluateeId": "99999999-9999-9999-9999-999999999999",
         "submittedCount": 0,
         "skippedCount": 0,

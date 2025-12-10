@@ -8,7 +8,9 @@ export declare class DownwardEvaluationService {
     생성한다(createData: CreateDownwardEvaluationData): Promise<DownwardEvaluation>;
     수정한다(id: string, updateData: UpdateDownwardEvaluationData, updatedBy: string): Promise<DownwardEvaluation>;
     삭제한다(id: string, deletedBy: string): Promise<void>;
+    완전_삭제한다(id: string): Promise<void>;
     조회한다(id: string): Promise<DownwardEvaluation | null>;
+    활성_조회한다(id: string): Promise<DownwardEvaluation | null>;
     필터_조회한다(filter: DownwardEvaluationFilter): Promise<DownwardEvaluation[]>;
     완료한다(id: string, completedBy: string): Promise<DownwardEvaluation>;
     피평가자별_조회한다(employeeId: string): Promise<DownwardEvaluation[]>;

@@ -917,7 +917,8 @@ export class WbsAssignmentBusinessService {
     console.log('🔍 프로젝트 정보:', {
       id: project.id,
       name: project.name,
-      managerId: project.manager?.id,
+      managerId: project.manager?.managerId,
+      employeeId: project.manager?.employeeId,
     });
 
     // 3. 1차 평가자 구성 (기존 할당된 평가자 우선, 없으면 담당 평가자)
@@ -956,12 +957,12 @@ export class WbsAssignmentBusinessService {
     // 4. 2차 평가자 구성 (프로젝트 PM) - Upsert 방식
     // 제약 조건 제거: PM이 있으면 항상 2차 평가자로 구성
     const projectManagerExternalId = project.managerId;
-    const projectManagerId = project.manager?.id;
+    const projectManagerEmployeeId = project.manager?.employeeId;
 
-    // projectManagerId가 있으면 사용, 없으면 externalId로 Employee 조회
+    // projectManagerEmployeeId가 있으면 사용, 없으면 externalId로 Employee 조회
     let evaluatorId: string | null = null;
-    if (projectManagerId) {
-      evaluatorId = projectManagerId;
+    if (projectManagerEmployeeId) {
+      evaluatorId = projectManagerEmployeeId;
     } else if (projectManagerExternalId) {
       // externalId로 Employee 조회하여 id 획득
       const managerEmployee = await this.employeeService.findByExternalId(
@@ -1025,8 +1026,8 @@ export class WbsAssignmentBusinessService {
       wbsItemId,
       primaryEvaluator: employee.managerId,
       secondaryEvaluator:
-        projectManagerId && projectManagerId !== employee.managerId
-          ? projectManagerId
+        projectManagerEmployeeId && projectManagerEmployeeId !== employee.managerId
+          ? projectManagerEmployeeId
           : null,
     });
   }

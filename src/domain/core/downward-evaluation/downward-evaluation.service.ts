@@ -122,7 +122,7 @@ export class DownwardEvaluationService {
   }
 
   /**
-   * 하향평가를 삭제한다
+   * 하향평가를 삭제한다 (soft delete)
    */
   async 삭제한다(id: string, deletedBy: string): Promise<void> {
     this.logger.log(`하향평가 삭제 시작 - ID: ${id}`);
@@ -146,17 +146,56 @@ export class DownwardEvaluationService {
   }
 
   /**
+   * 하향평가를 완전히 제거한다 (hard delete)
+   * 평가자 변경 시 기존 평가자의 하향평가를 완전히 제거하는 용도로 사용
+   */
+  async 완전_삭제한다(id: string): Promise<void> {
+    this.logger.log(`하향평가 완전 삭제 시작 - ID: ${id}`);
+
+    try {
+      const result = await this.downwardEvaluationRepository.delete(id);
+
+      if (result.affected === 0) {
+        this.logger.warn(`하향평가를 찾을 수 없음 - ID: ${id}`);
+        return;
+      }
+
+      this.logger.log(`하향평가 완전 삭제 완료 - ID: ${id}`);
+    } catch (error) {
+      this.logger.error(`하향평가 완전 삭제 실패 - ID: ${id}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
    * 하향평가를 조회한다
    */
   async 조회한다(id: string): Promise<DownwardEvaluation | null> {
     this.logger.debug(`하향평가 조회 - ID: ${id}`);
 
     try {
+      // soft delete를 고려하지 않고 조회 (삭제 작업 등에 필요)
       return await this.downwardEvaluationRepository.findOne({
         where: { id },
       });
     } catch (error) {
       this.logger.error(`하향평가 조회 실패 - ID: ${id}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 삭제되지 않은 하향평가만 조회한다
+   */
+  async 활성_조회한다(id: string): Promise<DownwardEvaluation | null> {
+    this.logger.debug(`활성 하향평가 조회 - ID: ${id}`);
+
+    try {
+      return await this.downwardEvaluationRepository.findOne({
+        where: { id, deletedAt: null as any },
+      });
+    } catch (error) {
+      this.logger.error(`활성 하향평가 조회 실패 - ID: ${id}`, error.stack);
       throw error;
     }
   }
@@ -172,6 +211,9 @@ export class DownwardEvaluationService {
     try {
       let queryBuilder =
         this.downwardEvaluationRepository.createQueryBuilder('evaluation');
+
+      // Soft delete 필터링 - 삭제되지 않은 데이터만 조회
+      queryBuilder.andWhere('evaluation.deletedAt IS NULL');
 
       // 필터 적용
       if (filter.employeeId) {

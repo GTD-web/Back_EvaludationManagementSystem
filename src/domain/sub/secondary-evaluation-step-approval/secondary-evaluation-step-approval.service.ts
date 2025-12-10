@@ -36,7 +36,6 @@ export class SecondaryEvaluationStepApprovalService
   async ID로_조회한다(
     id: string,
   ): Promise<SecondaryEvaluationStepApproval | null> {
-    this.logger.log(`2차 평가자별 단계 승인 조회 - ID: ${id}`);
     return await this.secondaryStepApprovalRepository.findOne({
       where: { id, deletedAt: IsNull() },
     });
@@ -49,9 +48,6 @@ export class SecondaryEvaluationStepApprovalService
     mappingId: string,
     evaluatorId: string,
   ): Promise<SecondaryEvaluationStepApproval | null> {
-    this.logger.log(
-      `2차 평가자별 단계 승인 조회 - 맵핑 ID: ${mappingId}, 평가자 ID: ${evaluatorId}`,
-    );
     return await this.secondaryStepApprovalRepository.findOne({
       where: {
         evaluationPeriodEmployeeMappingId: mappingId,
@@ -67,9 +63,7 @@ export class SecondaryEvaluationStepApprovalService
   async 맵핑ID로_모두_조회한다(
     mappingId: string,
   ): Promise<SecondaryEvaluationStepApproval[]> {
-    this.logger.log(
-      `2차 평가자별 단계 승인 전체 조회 - 맵핑 ID: ${mappingId}`,
-    );
+    this.logger.log(`2차 평가자별 단계 승인 전체 조회 - 맵핑 ID: ${mappingId}`);
     return await this.secondaryStepApprovalRepository.find({
       where: {
         evaluationPeriodEmployeeMappingId: mappingId,
@@ -84,9 +78,6 @@ export class SecondaryEvaluationStepApprovalService
   async 평가자ID로_조회한다(
     evaluatorId: string,
   ): Promise<SecondaryEvaluationStepApproval[]> {
-    this.logger.log(
-      `2차 평가자별 단계 승인 조회 - 평가자 ID: ${evaluatorId}`,
-    );
     return await this.secondaryStepApprovalRepository.find({
       where: {
         evaluatorId: evaluatorId,
@@ -190,4 +181,3 @@ export class SecondaryEvaluationStepApprovalService
     }
   }
 }
-

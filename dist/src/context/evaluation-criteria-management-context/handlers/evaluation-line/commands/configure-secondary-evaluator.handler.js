@@ -16,6 +16,8 @@ const common_1 = require("@nestjs/common");
 const evaluation_line_service_1 = require("../../../../../domain/core/evaluation-line/evaluation-line.service");
 const evaluation_line_mapping_service_1 = require("../../../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const evaluation_line_types_1 = require("../../../../../domain/core/evaluation-line/evaluation-line.types");
+const downward_evaluation_service_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.service");
+const downward_evaluation_types_1 = require("../../../../../domain/core/downward-evaluation/downward-evaluation.types");
 class ConfigureSecondaryEvaluatorCommand {
     employeeId;
     wbsItemId;
@@ -34,10 +36,12 @@ exports.ConfigureSecondaryEvaluatorCommand = ConfigureSecondaryEvaluatorCommand;
 let ConfigureSecondaryEvaluatorHandler = ConfigureSecondaryEvaluatorHandler_1 = class ConfigureSecondaryEvaluatorHandler {
     evaluationLineService;
     evaluationLineMappingService;
+    downwardEvaluationService;
     logger = new common_1.Logger(ConfigureSecondaryEvaluatorHandler_1.name);
-    constructor(evaluationLineService, evaluationLineMappingService) {
+    constructor(evaluationLineService, evaluationLineMappingService, downwardEvaluationService) {
         this.evaluationLineService = evaluationLineService;
         this.evaluationLineMappingService = evaluationLineMappingService;
+        this.downwardEvaluationService = downwardEvaluationService;
     }
     async execute(command) {
         const { employeeId, wbsItemId, periodId, evaluatorId, createdBy } = command;
@@ -73,6 +77,21 @@ let ConfigureSecondaryEvaluatorHandler = ConfigureSecondaryEvaluatorHandler_1 = 
             if (existingMappings.length > 0) {
                 for (const existingMapping of existingMappings) {
                     const mappingId = existingMapping.DTO로_변환한다().id;
+                    const previousEvaluatorId = existingMapping.evaluatorId;
+                    if (previousEvaluatorId && previousEvaluatorId !== evaluatorId) {
+                        this.logger.log(`2차 평가자 변경 감지 - WBS: ${wbsItemId}, 기존 평가자: ${previousEvaluatorId}, 새 평가자: ${evaluatorId}`);
+                        const existingDownwardEvaluations = await this.downwardEvaluationService.필터_조회한다({
+                            employeeId,
+                            evaluatorId: previousEvaluatorId,
+                            periodId,
+                            wbsId: wbsItemId,
+                            evaluationType: downward_evaluation_types_1.DownwardEvaluationType.SECONDARY,
+                        });
+                        for (const downwardEval of existingDownwardEvaluations) {
+                            await this.downwardEvaluationService.완전_삭제한다(downwardEval.id);
+                            this.logger.log(`기존 2차 평가자의 하향평가 완전 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`);
+                        }
+                    }
                     await this.evaluationLineMappingService.삭제한다(mappingId, createdBy || evaluatorId);
                     this.logger.log(`기존 2차 평가자 매핑 삭제 - 매핑 ID: ${mappingId}, 기존 평가자: ${existingMapping.evaluatorId}`);
                 }
@@ -114,6 +133,7 @@ exports.ConfigureSecondaryEvaluatorHandler = ConfigureSecondaryEvaluatorHandler;
 exports.ConfigureSecondaryEvaluatorHandler = ConfigureSecondaryEvaluatorHandler = ConfigureSecondaryEvaluatorHandler_1 = __decorate([
     (0, cqrs_1.CommandHandler)(ConfigureSecondaryEvaluatorCommand),
     __metadata("design:paramtypes", [evaluation_line_service_1.EvaluationLineService,
-        evaluation_line_mapping_service_1.EvaluationLineMappingService])
+        evaluation_line_mapping_service_1.EvaluationLineMappingService,
+        downward_evaluation_service_1.DownwardEvaluationService])
 ], ConfigureSecondaryEvaluatorHandler);
 //# sourceMappingURL=configure-secondary-evaluator.handler.js.map

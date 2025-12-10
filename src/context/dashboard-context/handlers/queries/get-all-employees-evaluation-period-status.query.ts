@@ -46,10 +46,6 @@ export class GetAllEmployeesEvaluationPeriodStatusHandler
   ): Promise<EmployeeEvaluationPeriodStatusDto[]> {
     const { evaluationPeriodId, includeUnregistered } = query;
 
-    this.logger.debug(
-      `평가기간의 모든 피평가자 현황 조회 시작 - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`,
-    );
-
     try {
       // 1. 평가기간의 모든 피평가자 맵핑 조회
       // Employee와 JOIN하여 isExcludedFromList만 체크 (직원 자체가 삭제되지 않은 경우만)
@@ -72,30 +68,17 @@ export class GetAllEmployeesEvaluationPeriodStatusHandler
       if (!includeUnregistered) {
         // 기본: 등록 해제되지 않은 직원만 (제외된 직원은 포함)
         queryBuilder.andWhere('mapping.deletedAt IS NULL');
-      } 
+      }
 
       // 디버깅을 위한 SQL 로그
       const sql = queryBuilder.getSql();
-      this.logger.debug(`실행된 SQL: ${sql}`);
-      
+
       // includeUnregistered가 true면 소프트 삭제된 엔티티도 포함
       if (includeUnregistered) {
         queryBuilder.withDeleted();
       }
-      
-      const mappings = await queryBuilder.getRawMany();
 
-      this.logger.debug(
-        `조회된 피평가자 수: ${mappings.length} - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`,
-      );
-      
-      // 디버깅을 위한 추가 로그
-      if (mappings.length === 0) {
-        this.logger.debug(
-          `등록 해제 포함 조회에서 매핑이 조회되지 않음 - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`,
-      );
-        this.logger.debug(`실행된 SQL: ${sql}`);
-      }
+      const mappings = await queryBuilder.getRawMany();
 
       // 2. 각 직원별 상세 현황 조회 (병렬 처리)
       // 성능 최적화: Promise.all로 병렬 실행 (순차 대비 70-80% 단축)
@@ -106,7 +89,7 @@ export class GetAllEmployeesEvaluationPeriodStatusHandler
           const singleQuery = new GetEmployeeEvaluationPeriodStatusQuery(
             evaluationPeriodId,
             mapping.employeeId,
-                    includeUnregistered,
+            includeUnregistered,
           );
 
           const status = await this.singleStatusHandler.execute(singleQuery);

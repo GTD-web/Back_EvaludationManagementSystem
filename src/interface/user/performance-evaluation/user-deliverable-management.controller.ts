@@ -2,7 +2,7 @@ import { DeliverableBusinessService } from '@business/deliverable/deliverable-bu
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import {
   BulkCreateDeliverables,
   BulkDeleteDeliverables,
@@ -33,6 +33,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-8. 사용자 - 성과평가 - 산출물')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/performance-evaluation/deliverables')
 export class UserDeliverableManagementController {
   constructor(

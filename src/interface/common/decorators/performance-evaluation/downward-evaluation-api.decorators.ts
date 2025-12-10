@@ -251,24 +251,32 @@ export function SubmitPrimaryDownwardEvaluation() {
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: '1차 하향평가 제출',
-      description: `**중요**: 1차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다.
+      description: `**중요**: 1차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **동작:**
+- 평가라인 매핑에서 실제 할당된 1차 평가자 ID를 조회하여 사용
 - 평가자, 피평가자, 평가기간, WBS로 1차 하향평가 조회
+- 평가가 없으면 자동으로 생성
+- content가 비어있으면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 제출 후 평가 내용은 변경 불가
 - approveAllBelow=true일 경우 자기평가도 함께 제출
+- content와 score가 없어도 제출 가능 (기본 메시지로 인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 1차 하향평가를 제출할 수 있어야 함
+- 평가가 없어도 자동 생성 후 제출 가능
 - 제출 시 isCompleted가 true로 변경
 - 제출 시 단계 승인 상태(primaryEvaluationStatus)가 pending으로 변경
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 pending으로 변경됨
 - submittedBy 없이도 제출 가능
 - approveAllBelow=true일 경우 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 자기평가는 제출되지 않음
-- 존재하지 않는 평가를 제출하면 404 에러
+- content와 score가 없어도 제출 가능
+- content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
+- 이미 저장된 평가를 content 없이 제출하면 기본 메시지로 업데이트
+- 통합 조회 API에서 미입력 메시지가 정상적으로 조회됨
 - 이미 제출된 평가를 재제출하면 409 에러
 - 잘못된 형식의 evaluateeId로 요청 시 400 에러
 - 잘못된 형식의 periodId로 요청 시 400 에러
@@ -343,24 +351,31 @@ export function SubmitSecondaryDownwardEvaluation() {
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: '2차 하향평가 제출',
-      description: `**중요**: 2차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. 1차 하향평가와 독립적으로 제출됩니다.
+      description: `**중요**: 2차 하향평가를 제출합니다. 제출 후에는 평가가 확정되어 수정이 불가능하며, isCompleted 상태가 true로 변경됩니다. 1차 하향평가와 독립적으로 제출됩니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **동작:**
+- 평가라인 매핑에서 실제 할당된 2차 평가자 ID를 조회하여 사용 (WBS별)
 - 평가자, 피평가자, 평가기간, WBS로 2차 하향평가 조회
+- 평가가 없으면 자동으로 생성
+- content가 비어있으면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 1차 하향평가와 독립적으로 제출
 - 제출 후 평가 내용은 변경 불가
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출
+- content와 score가 없어도 제출 가능 (기본 메시지로 인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 2차 하향평가를 제출할 수 있어야 함
+- 평가가 없어도 자동 생성 후 제출 가능
 - 제출 시 단계 승인 상태(secondaryEvaluationStatus)가 pending으로 변경
 - 1차와 2차 하향평가를 독립적으로 제출 가능
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 pending으로 변경됨
 - approveAllBelow=true일 경우 1차 하향평가와 자기평가도 함께 제출됨
 - approveAllBelow=false일 경우 1차 하향평가와 자기평가는 제출되지 않음
-- 존재하지 않는 2차 평가를 제출하면 404 에러
+- content와 score가 없어도 제출 가능
+- content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
+- 통합 조회 API에서 2차 평가 미입력 메시지가 정상적으로 조회됨
 - 이미 제출된 2차 평가를 재제출하면 409 에러`,
     }),
     ApiParam({
@@ -440,12 +455,14 @@ export function SubmitDownwardEvaluation() {
 - 제출 일시(completedAt) 기록
 - 1차/2차 구분 없이 제출 가능
 - 제출 후 평가 내용은 변경 불가
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 1차 하향평가 ID로 직접 제출 가능
 - 2차 하향평가 ID로 직접 제출 가능
 - 평가 타입에 관계없이 ID만으로 제출 가능
 - 제출 시 평가 타입에 따라 단계 승인 상태가 pending으로 변경
+- content와 score가 없어도 제출 가능
 - 존재하지 않는 ID로 제출 시 404 에러
 - 잘못된 UUID 형식으로 제출 시 400 에러
 - 이미 제출된 평가를 ID로 재제출 시 409 에러
@@ -498,7 +515,7 @@ export function BulkSubmitDownwardEvaluations() {
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: '피평가자의 모든 하향평가 일괄 제출',
-      description: `**중요**: 평가자가 담당하는 특정 피평가자의 모든 하향평가를 한 번에 제출합니다. 평가 유형(1차/2차)별로 일괄 제출할 수 있습니다.
+      description: `**중요**: 평가자가 담당하는 특정 피평가자의 모든 하향평가를 한 번에 제출합니다. 평가 유형(1차/2차)별로 일괄 제출할 수 있습니다. **평가가 존재하지 않으면 자동으로 생성한 후 제출합니다.**
 
 **특징:**
 - **평가자별 제출**: 요청한 평가자(evaluatorId)가 담당하는 평가만 제출됩니다.
@@ -506,11 +523,13 @@ export function BulkSubmitDownwardEvaluations() {
 - **1차 평가**: 1차 평가는 일반적으로 1명의 평가자만 존재하므로, 해당 평가자의 모든 평가를 일괄 제출합니다.
 
 **동작:**
+- 할당된 WBS에 대한 하향평가가 없으면 자동으로 생성
 - 요청한 평가자(evaluatorId)가 담당하는 피평가자의 모든 하향평가 조회
 - 평가 유형(primary/secondary)으로 필터링
 - 각 평가에 대해 제출 처리 (이미 완료된 평가는 건너뜀)
 - 제출 실패한 평가는 결과에 포함하여 반환
 - 모든 평가 제출을 하나의 트랜잭션으로 처리
+- content와 score가 없어도 제출 가능 (인사담당자에게 제출됨)
 
 **사용 예시:**
 - 1차 평가자 A가 피평가자 X의 모든 1차 하향평가를 일괄 제출
@@ -521,8 +540,9 @@ export function BulkSubmitDownwardEvaluations() {
 - 평가자가 담당하는 피평가자의 모든 1차 하향평가 일괄 제출
 - 평가자가 담당하는 피평가자의 모든 2차 하향평가 일괄 제출 (2차 평가자별로 독립적으로 제출 가능)
 - 여러 2차 평가자가 동일 피평가자의 평가를 각각 독립적으로 일괄 제출 가능
+- 평가가 없어도 자동 생성 후 제출 가능
 - 이미 완료된 평가는 건너뛰고 제출되지 않은 평가만 제출
-- 필수 항목(내용, 점수)이 없는 평가는 제출 실패 처리
+- content와 score가 없어도 제출 가능
 - 제출 결과에 제출된 평가 수, 건너뛴 평가 수, 실패한 평가 수 포함
 - 제출된 평가 ID 목록 반환
 - 실패한 평가의 오류 메시지 반환
@@ -642,14 +662,15 @@ export function ResetPrimaryDownwardEvaluation() {
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: '1차 하향평가 미제출 상태 변경',
-      description: `**중요**: 제출된 1차 하향평가를 미제출 상태로 되돌립니다. 평가 내용은 유지되며, isCompleted 상태만 false로 변경됩니다.
+      description: `**중요**: 제출된 1차 하향평가를 미제출 상태로 되돌립니다. 평가 내용은 유지되며, isCompleted 상태만 false로 변경됩니다. **2차 평가자도 1차 하향평가를 반려(초기화)할 수 있습니다.**
 
 **동작:**
-- 평가자, 피평가자, 평가기간, WBS로 1차 하향평가 조회
+- 피평가자, 평가기간, WBS로 1차 하향평가 조회 (평가자 조건 없이 조회)
 - 평가 상태를 미완료(isCompleted: false)로 변경
 - 수정 일시(updatedAt) 갱신
 - 평가 내용과 점수는 유지
 - 초기화 후 다시 제출 가능
+- **2차 평가자도 1차 하향평가를 반려할 수 있음**
 
 **테스트 케이스:**
 - 제출된 1차 하향평가를 미제출 상태로 변경 가능
@@ -659,6 +680,7 @@ export function ResetPrimaryDownwardEvaluation() {
 - 초기화 후 다시 제출 가능
 - 초기화 후 재제출 시 단계 승인 상태는 pending으로 유지
 - 초기화 시 updatedAt이 갱신
+- **2차 평가자가 1차 하향평가를 초기화 가능**
 - 존재하지 않는 평가를 초기화하려고 하면 404 에러
 - 미제출 상태인 평가를 초기화하려고 하면 400 에러
 - 잘못된 evaluateeId UUID 형식이면 400 에러

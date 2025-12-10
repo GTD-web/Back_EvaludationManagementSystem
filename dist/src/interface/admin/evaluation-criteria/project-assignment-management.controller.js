@@ -16,6 +16,7 @@ exports.ProjectAssignmentManagementController = void 0;
 const project_assignment_business_service_1 = require("../../../business/project-assignment/project-assignment-business.service");
 const evaluation_criteria_management_service_1 = require("../../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const project_assignment_api_decorators_1 = require("../../common/decorators/evaluation-criteria/project-assignment-api.decorators");
 const project_assignment_dto_1 = require("../../common/dto/evaluation-criteria/project-assignment.dto");
 const common_1 = require("@nestjs/common");
@@ -185,6 +186,7 @@ __decorate([
 exports.ProjectAssignmentManagementController = ProjectAssignmentManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-1. 관리자 - 평가 설정 - 프로젝트 할당'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/evaluation-criteria/project-assignments'),
     __metadata("design:paramtypes", [evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         project_assignment_business_service_1.ProjectAssignmentBusinessService])

@@ -83,7 +83,6 @@ let WbsSelfEvaluationBusinessService = WbsSelfEvaluationBusinessService_1 = clas
         this.logger.log(`자기평가 재작성 요청 생성 및 제출 상태 초기화 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
     }
     async 직원의_전체_자기평가를_1차평가자에게_제출한다(employeeId, periodId, submittedBy) {
-        this.logger.log(`직원의 전체 WBS 자기평가를 1차 평가자에게 제출 시작 - 직원: ${employeeId}, 평가기간: ${periodId}`);
         const result = await this.performanceEvaluationService.직원의_전체_자기평가를_1차평가자에게_제출한다(employeeId, periodId, submittedBy);
         try {
             await this.activityLogContextService.활동내역을_기록한다({
@@ -103,11 +102,9 @@ let WbsSelfEvaluationBusinessService = WbsSelfEvaluationBusinessService_1 = clas
                 error: error.message,
             });
         }
-        this.logger.log(`직원의 전체 WBS 자기평가를 1차 평가자에게 제출 완료 - 직원: ${employeeId}, 평가기간: ${periodId}`);
         return result;
     }
     async 직원의_전체_자기평가를_1차평가자_제출_취소한다(employeeId, periodId, resetBy) {
-        this.logger.log(`직원의 전체 WBS 자기평가를 1차 평가자 제출 취소 시작 - 직원: ${employeeId}, 평가기간: ${periodId}`);
         const result = await this.performanceEvaluationService.직원의_전체_자기평가를_1차평가자_제출_취소한다(employeeId, periodId, resetBy);
         try {
             await this.activityLogContextService.활동내역을_기록한다({
@@ -127,7 +124,6 @@ let WbsSelfEvaluationBusinessService = WbsSelfEvaluationBusinessService_1 = clas
                 error: error.message,
             });
         }
-        this.logger.log(`직원의 전체 WBS 자기평가를 1차 평가자 제출 취소 완료 - 직원: ${employeeId}, 평가기간: ${periodId}`);
         return result;
     }
 };

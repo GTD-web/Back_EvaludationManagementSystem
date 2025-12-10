@@ -1,5 +1,6 @@
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import { Body, Controller, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { WbsAssignmentBusinessService } from '../../../business/wbs-assignment/wbs-assignment-business.service';
@@ -22,6 +23,7 @@ import {
  */
 @ApiTags('A-4. 사용자 - 평가 설정 - WBS 할당')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/evaluation-criteria/wbs-assignments')
 export class UserWbsAssignmentManagementController {
   constructor(

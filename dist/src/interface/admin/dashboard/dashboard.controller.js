@@ -52,18 +52,24 @@ let DashboardController = class DashboardController {
         return rest;
     }
     async getMyAssignedData(evaluationPeriodId, user) {
-        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id);
+        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id, user.id);
         return this.이차_하향평가_정보를_제거한다(data);
     }
-    async getEmployeeAssignedData(evaluationPeriodId, employeeId) {
-        return await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId);
+    async getEmployeeAssignedData(evaluationPeriodId, employeeId, user) {
+        return await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId, user.id);
     }
     이차_하향평가_정보를_제거한다(data) {
         const projectsWithoutSecondaryDownwardEvaluation = data.projects.map((project) => ({
             ...project,
             wbsList: project.wbsList.map((wbs) => ({
                 ...wbs,
-                secondaryDownwardEvaluation: null,
+                secondaryDownwardEvaluation: wbs.secondaryDownwardEvaluation
+                    ? {
+                        evaluatorId: wbs.secondaryDownwardEvaluation.evaluatorId,
+                        evaluatorName: wbs.secondaryDownwardEvaluation.evaluatorName,
+                        isCompleted: wbs.secondaryDownwardEvaluation.isCompleted,
+                    }
+                    : null,
             })),
         }));
         const summaryWithoutSecondaryDownwardEvaluation = {
@@ -71,8 +77,8 @@ let DashboardController = class DashboardController {
             secondaryDownwardEvaluation: {
                 totalScore: null,
                 grade: null,
-                isSubmitted: false,
-                evaluators: [],
+                isSubmitted: data.summary.secondaryDownwardEvaluation?.isSubmitted || false,
+                evaluators: data.summary.secondaryDownwardEvaluation?.evaluators || [],
             },
         };
         return {
@@ -344,8 +350,9 @@ __decorate([
     (0, dashboard_api_decorators_1.GetEmployeeAssignedData)(),
     __param(0, (0, decorators_1.ParseUUID)('evaluationPeriodId')),
     __param(1, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], DashboardController.prototype, "getEmployeeAssignedData", null);
 __decorate([
@@ -390,6 +397,7 @@ __decorate([
 exports.DashboardController = DashboardController = __decorate([
     (0, swagger_1.ApiTags)('A-0-2. 관리자 - 대시보드'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService,
         evaluation_period_service_1.EvaluationPeriodService,

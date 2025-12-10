@@ -12,8 +12,13 @@ import { EvaluationQuestionManagementContextModule } from '../../context/evaluat
 import { SeedDataContextModule } from '../../context/seed-data-context/seed-data-context.module';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
+import { NotificationModule } from '../../domain/common/notification';
 import { DepartmentModule } from '../../domain/common/department/department.module';
 import { ProjectModule } from '../../domain/common/project/project.module';
+import { SystemSettingModule } from '../../domain/common/system-setting/system-setting.module';
+import { WbsEvaluationCriteriaModule } from '../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.module';
+import { EvaluationLineModule } from '../../domain/core/evaluation-line/evaluation-line.module';
+import { EvaluationLineMappingModule } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { AuthController } from './auth/auth.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -41,6 +46,7 @@ import { EvaluationActivityLogController } from './evaluation-activity-log/evalu
 import { ProjectManagementController } from './project/project-management.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
+import { NotificationController } from '../common/controllers/notification.controller';
 
 /**
  * 관리자 인터페이스 모듈
@@ -66,8 +72,13 @@ import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
     BusinessModule, // 비즈니스 레이어 모듈 주입
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
+    NotificationModule, // 알림 모듈 주입
     DepartmentModule, // 부서 모듈 주입
     ProjectModule, // 프로젝트 모듈 주입
+    SystemSettingModule, // 시스템 설정 모듈 주입
+    WbsEvaluationCriteriaModule, // WBS 평가 기준 모듈 주입
+    EvaluationLineModule, // 평가 라인 모듈 주입
+    EvaluationLineMappingModule, // 평가 라인 맵핑 모듈 주입
   ],
   controllers: [
     AuthController, // 인증 컨트롤러
@@ -91,13 +102,13 @@ import { RolesGuard, ROLES_GUARD_OPTIONS } from '../common/guards';
     RevisionRequestController, // 재작성 요청 컨트롤러
     AuditLogController, // Audit 로그 컨트롤러
     EvaluationActivityLogController, // 평가 활동 내역 컨트롤러
+    NotificationController, // 알림 컨트롤러
   ],
   providers: [
     {
       provide: ROLES_GUARD_OPTIONS,
       useValue: {
-        // admin 역할에 대해서만 접근 가능 여부 확인 수행
-        // user, evaluator 역할은 접근 가능 여부 확인 없이 허용
+        // admin 역할에 대해 접근 가능 여부 확인 수행
         rolesRequiringAccessibilityCheck: ['admin'],
       },
     },

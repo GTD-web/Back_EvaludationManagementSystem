@@ -2,18 +2,21 @@ import { PeerEvaluationBusinessService } from '@business/peer-evaluation/peer-ev
 import { PeerEvaluationDetailResult } from '@context/performance-evaluation-context/handlers/peer-evaluation';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   GetEvaluatorAssignedEvaluatees,
   GetPeerEvaluationDetail,
+  GetPeerEvaluations,
   SubmitPeerEvaluation,
   UpsertPeerEvaluationAnswers,
 } from '@interface/common/decorators/performance-evaluation/peer-evaluation-api.decorators';
 import {
   AssignedEvaluateeDto,
   GetEvaluatorAssignedEvaluateesQueryDto,
+  PeerEvaluationFilterDto,
+  PeerEvaluationListResponseDto,
   UpsertPeerEvaluationAnswersDto,
   UpsertPeerEvaluationAnswersResponseDto,
 } from '@interface/common/dto/performance-evaluation/peer-evaluation.dto';
@@ -25,11 +28,31 @@ import {
  */
 @ApiTags('C-5. 평가자 - 성과평가 - 동료평가')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/performance-evaluation/peer-evaluations')
 export class EvaluatorPeerEvaluationManagementController {
   constructor(
     private readonly peerEvaluationBusinessService: PeerEvaluationBusinessService,
   ) {}
+
+  /**
+   * 동료평가 목록 조회 (통합 엔드포인트)
+   * evaluatorId와 evaluateeId를 모두 query parameter로 받아 필터링합니다.
+   */
+  @GetPeerEvaluations()
+  async getPeerEvaluations(
+    @Query() filter: PeerEvaluationFilterDto,
+  ): Promise<PeerEvaluationListResponseDto> {
+    return await this.peerEvaluationBusinessService.동료평가_목록을_조회한다({
+      evaluatorId: filter.evaluatorId,
+      evaluateeId: filter.evaluateeId,
+      periodId: filter.periodId,
+      status: filter.status,
+      page: filter.page || 1,
+      limit: filter.limit || 10,
+    });
+  }
+
   /**
    * 평가자에게 할당된 피평가자 목록 조회
    */

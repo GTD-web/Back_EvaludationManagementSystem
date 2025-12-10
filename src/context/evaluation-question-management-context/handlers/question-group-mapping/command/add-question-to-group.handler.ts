@@ -72,7 +72,7 @@ export class AddQuestionToGroupHandler
     }
 
     // 3. displayOrder가 제공되지 않은 경우, 그룹의 마지막 순서로 자동 설정
-    let displayOrder = data.displayOrder ?? 0;
+    let displayOrder: number;
 
     if (data.displayOrder === undefined || data.displayOrder === null) {
       // 그룹의 현재 최대 displayOrder 조회
@@ -89,6 +89,9 @@ export class AddQuestionToGroupHandler
       this.logger.log(
         `displayOrder 자동 설정 - 그룹 ID: ${data.groupId}, 순서: ${displayOrder}`,
       );
+    } else {
+      // displayOrder가 명시적으로 제공된 경우 사용
+      displayOrder = data.displayOrder;
     }
 
     // 4. 매핑 생성

@@ -1,4 +1,5 @@
 import { ICommandHandler } from '@nestjs/cqrs';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { DownwardEvaluationService } from '@domain/core/downward-evaluation/downward-evaluation.service';
@@ -8,6 +9,10 @@ import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/eval
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { Employee } from '@domain/common/employee/employee.entity';
+import { NotificationHelperService } from '@domain/common/notification/notification-helper.service';
+import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
+import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
+import { EmployeeService } from '@domain/common/employee/employee.service';
 export declare class BulkSubmitDownwardEvaluationsCommand {
     readonly evaluatorId: string;
     readonly evaluateeId: string;
@@ -25,8 +30,13 @@ export declare class BulkSubmitDownwardEvaluationsHandler implements ICommandHan
     private readonly employeeRepository;
     private readonly downwardEvaluationService;
     private readonly transactionManager;
+    private readonly notificationHelper;
+    private readonly stepApprovalContext;
+    private readonly evaluationPeriodService;
+    private readonly employeeService;
+    private readonly configService;
     private readonly logger;
-    constructor(downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, employeeRepository: Repository<Employee>, downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService);
+    constructor(downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, employeeRepository: Repository<Employee>, downwardEvaluationService: DownwardEvaluationService, transactionManager: TransactionManagerService, notificationHelper: NotificationHelperService, stepApprovalContext: StepApprovalContextService, evaluationPeriodService: EvaluationPeriodService, employeeService: EmployeeService, configService: ConfigService);
     execute(command: BulkSubmitDownwardEvaluationsCommand): Promise<{
         submittedCount: number;
         skippedCount: number;
@@ -39,4 +49,5 @@ export declare class BulkSubmitDownwardEvaluationsHandler implements ICommandHan
         }>;
     }>;
     private 할당된_WBS에_대한_하향평가를_생성한다;
+    private 이차평가자에게_알림을전송한다;
 }

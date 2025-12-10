@@ -816,7 +816,8 @@ __decorate([
     __metadata("design:type", String)
 ], GetAvailableProjectsQueryDto.prototype, "sortOrder", void 0);
 class ProjectManagerInfoDto {
-    id;
+    managerId;
+    employeeId;
     name;
     email;
     phoneNumber;
@@ -825,11 +826,18 @@ class ProjectManagerInfoDto {
 exports.ProjectManagerInfoDto = ProjectManagerInfoDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '매니저 ID',
+        description: '매니저 ID (SSO의 직원 ID)',
         example: '123e4567-e89b-12d3-a456-426614174005',
     }),
     __metadata("design:type", String)
-], ProjectManagerInfoDto.prototype, "id", void 0);
+], ProjectManagerInfoDto.prototype, "managerId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '로컬 Employee ID (로컬 DB의 직원 ID)',
+        example: '234e5678-f90c-23d4-b567-537725285111',
+    }),
+    __metadata("design:type", String)
+], ProjectManagerInfoDto.prototype, "employeeId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '매니저 이름',

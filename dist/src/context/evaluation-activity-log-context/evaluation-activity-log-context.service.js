@@ -24,11 +24,6 @@ let EvaluationActivityLogContextService = EvaluationActivityLogContextService_1 
         this.employeeService = employeeService;
     }
     async 활동내역을_기록한다(params) {
-        this.logger.log('활동 내역 기록 시작', {
-            periodId: params.periodId,
-            employeeId: params.employeeId,
-            activityType: params.activityType,
-        });
         let performedByName = params.performedByName;
         if (!performedByName && params.performedBy) {
             try {
@@ -65,7 +60,6 @@ let EvaluationActivityLogContextService = EvaluationActivityLogContextService_1 
             activityMetadata: params.activityMetadata,
             activityDate: params.activityDate,
         });
-        this.logger.log('활동 내역 기록 완료', { id: result.id });
         return result;
     }
     async 평가기간_피평가자_활동내역을_조회한다(params) {
@@ -84,12 +78,6 @@ let EvaluationActivityLogContextService = EvaluationActivityLogContextService_1 
         });
     }
     async 단계승인_상태변경_활동내역을_기록한다(params) {
-        this.logger.log('단계 승인 상태 변경 활동 내역 기록 시작', {
-            evaluationPeriodId: params.evaluationPeriodId,
-            employeeId: params.employeeId,
-            step: params.step,
-            status: params.status,
-        });
         let activityTitle = '';
         let activityAction = 'approved';
         switch (params.step) {
@@ -139,12 +127,6 @@ let EvaluationActivityLogContextService = EvaluationActivityLogContextService_1 
         });
     }
     async 재작성완료_활동내역을_기록한다(params) {
-        this.logger.log('재작성 완료 활동 내역 기록 시작', {
-            evaluationPeriodId: params.evaluationPeriodId,
-            employeeId: params.employeeId,
-            step: params.step,
-            requestId: params.requestId,
-        });
         let activityTitle = '';
         switch (params.step) {
             case 'criteria':

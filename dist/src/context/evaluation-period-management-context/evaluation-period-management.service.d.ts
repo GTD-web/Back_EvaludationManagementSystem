@@ -1,7 +1,21 @@
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { Repository } from 'typeorm';
 import { EvaluationPeriodDto, EvaluationPeriodPhase } from '../../domain/core/evaluation-period/evaluation-period.types';
 import { EvaluationPeriodService } from '../../domain/core/evaluation-period/evaluation-period.service';
 import { EvaluationPeriodAutoPhaseService } from '../../domain/core/evaluation-period/evaluation-period-auto-phase.service';
+import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
+import { EvaluationProjectAssignmentService } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.service';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
+import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
+import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
+import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
+import { EvaluationPeriodEmployeeMappingService } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service';
+import { Project } from '@domain/common/project/project.entity';
+import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
+import { Employee } from '@domain/common/employee/employee.entity';
+import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
+import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
+import type { EmployeePeriodAssignmentsResponseDto } from '@interface/common/dto/evaluation-period/employee-period-assignments.dto';
 import { CreateEvaluationPeriodMinimalDto, UpdateCriteriaSettingPermissionDto, UpdateEvaluationPeriodBasicDto, UpdateEvaluationPeriodScheduleDto, UpdateEvaluationPeriodStartDateDto, UpdateEvaluationSetupDeadlineDto, UpdateFinalEvaluationSettingPermissionDto, UpdateGradeRangesDto, UpdateManualSettingPermissionsDto, UpdatePeerEvaluationDeadlineDto, UpdatePerformanceDeadlineDto, UpdateSelfEvaluationDeadlineDto, UpdateSelfEvaluationSettingPermissionDto } from './interfaces/evaluation-period-creation.interface';
 import { IEvaluationPeriodManagementContext } from './interfaces/evaluation-period-management-context.interface';
 export declare class EvaluationPeriodManagementContextService implements IEvaluationPeriodManagementContext {
@@ -9,8 +23,20 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
     private readonly queryBus;
     private readonly evaluationPeriodService;
     private readonly evaluationPeriodAutoPhaseService;
+    private readonly evaluationProjectAssignmentService;
+    private readonly evaluationWbsAssignmentService;
+    private readonly evaluationLineMappingService;
+    private readonly evaluationPeriodEmployeeMappingService;
+    private readonly projectAssignmentRepository;
+    private readonly wbsAssignmentRepository;
+    private readonly lineMappingRepository;
+    private readonly projectRepository;
+    private readonly wbsItemRepository;
+    private readonly employeeRepository;
+    private readonly wbsEvaluationCriteriaRepository;
+    private readonly evaluationLineRepository;
     private readonly logger;
-    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationPeriodService: EvaluationPeriodService, evaluationPeriodAutoPhaseService: EvaluationPeriodAutoPhaseService);
+    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationPeriodService: EvaluationPeriodService, evaluationPeriodAutoPhaseService: EvaluationPeriodAutoPhaseService, evaluationProjectAssignmentService: EvaluationProjectAssignmentService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService, evaluationLineMappingService: EvaluationLineMappingService, evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, lineMappingRepository: Repository<EvaluationLineMapping>, projectRepository: Repository<Project>, wbsItemRepository: Repository<WbsItem>, employeeRepository: Repository<Employee>, wbsEvaluationCriteriaRepository: Repository<WbsEvaluationCriteria>, evaluationLineRepository: Repository<EvaluationLine>);
     평가기간_생성한다(createData: CreateEvaluationPeriodMinimalDto, createdBy: string): Promise<EvaluationPeriodDto>;
     평가기간_시작한다(periodId: string, startedBy: string): Promise<boolean>;
     평가기간_완료한다(periodId: string, completedBy: string): Promise<boolean>;
@@ -65,4 +91,15 @@ export declare class EvaluationPeriodManagementContextService implements IEvalua
     평가대상자를_자동평가자와_함께_등록한다(evaluationPeriodId: string, employeeId: string, createdBy: string): Promise<any>;
     단계_변경한다(periodId: string, targetPhase: EvaluationPeriodPhase, changedBy: string): Promise<EvaluationPeriodDto>;
     자동_단계_전이를_실행한다(): Promise<number>;
+    평가기간_복제한다(targetPeriodId: string, sourcePeriodId: string, updatedBy: string): Promise<EvaluationPeriodDto>;
+    이전_평가기간_데이터를_복사한다(targetPeriodId: string, sourcePeriodId: string, employeeId: string, copiedBy: string, projects?: Array<{
+        projectId: string;
+        wbsIds?: string[];
+    }>): Promise<{
+        copiedProjectAssignments: number;
+        copiedWbsAssignments: number;
+        copiedEvaluationLineMappings: number;
+        copiedWbsEvaluationCriteria: number;
+    }>;
+    직원_평가기간별_할당정보_조회한다(periodId: string, employeeId: string): Promise<EmployeePeriodAssignmentsResponseDto>;
 }

@@ -8,6 +8,8 @@ import { DownwardEvaluationNotFoundException } from '@domain/core/downward-evalu
 import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
 import { SecondaryEvaluationStepApprovalService } from '@domain/sub/secondary-evaluation-step-approval/secondary-evaluation-step-approval.service';
 import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.types';
+import { StepApprovalContextService } from '../step-approval-context/step-approval-context.service';
+import { Employee } from '@domain/common/employee/employee.entity';
 
 // 자기평가 관련 커맨드 및 쿼리
 import {
@@ -136,7 +138,10 @@ export class PerformanceEvaluationService
     private readonly queryBus: QueryBus,
     @InjectRepository(EvaluationPeriodEmployeeMapping)
     private readonly mappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
     private readonly secondaryStepApprovalService: SecondaryEvaluationStepApprovalService,
+    private readonly stepApprovalContextService: StepApprovalContextService,
   ) {}
 
   // ==================== 자기평가(성과입력) 관련 메서드 ====================
@@ -677,6 +682,9 @@ export class PerformanceEvaluationService
 
   /**
    * 1차 하향평가를 제출한다
+   * 평가가 존재하지 않으면 자동으로 생성합니다.
+   * 평가라인 매핑에서 실제 할당된 1차 평가자 ID를 조회하여 사용합니다.
+   * content가 비어있으면 기본 제출 메시지를 생성합니다.
    */
   async 일차_하향평가를_제출한다(
     evaluateeId: string,
@@ -685,9 +693,35 @@ export class PerformanceEvaluationService
     evaluatorId: string,
     submittedBy: string,
   ): Promise<void> {
-    // 1차 하향평가를 조회
+    // 평가라인 매핑에서 실제 할당된 1차 평가자 ID 조회
+    const actualPrimaryEvaluatorId =
+      await this.stepApprovalContextService.일차평가자를_조회한다(
+        periodId,
+        evaluateeId,
+      );
+
+    if (!actualPrimaryEvaluatorId) {
+      throw new DownwardEvaluationNotFoundException(
+        `1차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId})`,
+      );
+    }
+
+    // 전달받은 evaluatorId와 실제 할당된 평가자 ID가 다르면 경고 로그
+    if (evaluatorId !== actualPrimaryEvaluatorId) {
+      this.logger.warn(
+        `⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 1차 평가자 ID(${actualPrimaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`,
+      );
+    }
+
+    // 제출자 정보 조회 (기본 메시지 생성용)
+    const submitter = await this.employeeRepository.findOne({
+      where: { id: submittedBy, deletedAt: null as any },
+    });
+    const submitterName = submitter?.name || '관리자';
+
+    // 실제 평가자 ID로 1차 하향평가를 조회
     const query = new GetDownwardEvaluationListQuery(
-      evaluatorId,
+      actualPrimaryEvaluatorId,
       evaluateeId,
       periodId,
       wbsId,
@@ -698,13 +732,61 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
+
+    // 평가가 없으면 자동으로 생성 (기본 메시지 포함)
     if (!result.evaluations || result.evaluations.length === 0) {
-      throw new DownwardEvaluationNotFoundException(
-        `1차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+
+      // 실제 평가자 ID로 생성
+      await this.하향평가를_저장한다(
+        actualPrimaryEvaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        undefined,
+        'primary',
+        defaultContent,
+        undefined,
+        submittedBy,
       );
+
+      // 생성 후 다시 조회
+      const newResult = await this.queryBus.execute(query);
+      if (!newResult.evaluations || newResult.evaluations.length === 0) {
+        throw new DownwardEvaluationNotFoundException(
+          `1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+        );
+      }
+
+      const evaluation = newResult.evaluations[0];
+
+      // 제출 커맨드 실행
+      const command = new SubmitDownwardEvaluationCommand(
+        evaluation.id,
+        submittedBy,
+      );
+
+      await this.commandBus.execute(command);
+      return;
     }
 
     const evaluation = result.evaluations[0];
+
+    // 평가가 있지만 content가 비어있으면 기본 메시지 추가
+    if (!evaluation.downwardEvaluationContent?.trim()) {
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+      await this.하향평가를_저장한다(
+        actualPrimaryEvaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        evaluation.selfEvaluationId,
+        'primary',
+        defaultContent,
+        evaluation.downwardEvaluationScore,
+        submittedBy,
+      );
+    }
 
     // 제출 커맨드 실행
     const command = new SubmitDownwardEvaluationCommand(
@@ -717,6 +799,9 @@ export class PerformanceEvaluationService
 
   /**
    * 2차 하향평가를 제출한다
+   * 평가가 존재하지 않으면 자동으로 생성합니다.
+   * 평가라인 매핑에서 실제 할당된 2차 평가자 ID를 조회하여 사용합니다.
+   * content가 비어있으면 기본 제출 메시지를 생성합니다.
    */
   async 이차_하향평가를_제출한다(
     evaluateeId: string,
@@ -725,9 +810,36 @@ export class PerformanceEvaluationService
     evaluatorId: string,
     submittedBy: string,
   ): Promise<void> {
-    // 2차 하향평가를 조회
+    // 평가라인 매핑에서 실제 할당된 2차 평가자 ID 조회 (WBS별)
+    const actualSecondaryEvaluatorId =
+      await this.stepApprovalContextService.이차평가자를_조회한다(
+        periodId,
+        evaluateeId,
+        wbsId,
+      );
+
+    if (!actualSecondaryEvaluatorId) {
+      throw new DownwardEvaluationNotFoundException(
+        `2차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+      );
+    }
+
+    // 전달받은 evaluatorId와 실제 할당된 평가자 ID가 다르면 경고 로그
+    if (evaluatorId !== actualSecondaryEvaluatorId) {
+      this.logger.warn(
+        `⚠️ 전달받은 evaluatorId(${evaluatorId})와 실제 할당된 2차 평가자 ID(${actualSecondaryEvaluatorId})가 다릅니다. 실제 평가자 ID를 사용합니다.`,
+      );
+    }
+
+    // 제출자 정보 조회 (기본 메시지 생성용)
+    const submitter = await this.employeeRepository.findOne({
+      where: { id: submittedBy, deletedAt: null as any },
+    });
+    const submitterName = submitter?.name || '관리자';
+
+    // 실제 평가자 ID로 2차 하향평가를 조회
     const query = new GetDownwardEvaluationListQuery(
-      evaluatorId,
+      actualSecondaryEvaluatorId,
       evaluateeId,
       periodId,
       wbsId,
@@ -738,13 +850,61 @@ export class PerformanceEvaluationService
     );
 
     const result = await this.queryBus.execute(query);
+
+    // 평가가 없으면 자동으로 생성 (기본 메시지 포함)
     if (!result.evaluations || result.evaluations.length === 0) {
-      throw new DownwardEvaluationNotFoundException(
-        `2차 하향평가 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+
+      // 실제 평가자 ID로 생성
+      await this.하향평가를_저장한다(
+        actualSecondaryEvaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        undefined,
+        'secondary',
+        defaultContent,
+        undefined,
+        submittedBy,
       );
+
+      // 생성 후 다시 조회
+      const newResult = await this.queryBus.execute(query);
+      if (!newResult.evaluations || newResult.evaluations.length === 0) {
+        throw new DownwardEvaluationNotFoundException(
+          `2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`,
+        );
+      }
+
+      const evaluation = newResult.evaluations[0];
+
+      // 제출 커맨드 실행
+      const command = new SubmitDownwardEvaluationCommand(
+        evaluation.id,
+        submittedBy,
+      );
+
+      await this.commandBus.execute(command);
+      return;
     }
 
     const evaluation = result.evaluations[0];
+
+    // 평가가 있지만 content가 비어있으면 기본 메시지 추가
+    if (!evaluation.downwardEvaluationContent?.trim()) {
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+      await this.하향평가를_저장한다(
+        actualSecondaryEvaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        evaluation.selfEvaluationId,
+        'secondary',
+        defaultContent,
+        evaluation.downwardEvaluationScore,
+        submittedBy,
+      );
+    }
 
     // 제출 커맨드 실행
     const command = new SubmitDownwardEvaluationCommand(
@@ -832,6 +992,8 @@ export class PerformanceEvaluationService
 
   /**
    * 1차 하향평가를 초기화한다 (미제출 상태로 변경)
+   * 2차 평가자도 1차 하향평가를 초기화(반려)할 수 있도록 evaluatorId 조건을 제거하고
+   * evaluateeId, periodId, wbsId, evaluationType만으로 조회합니다.
    */
   async 일차_하향평가를_초기화한다(
     evaluateeId: string,
@@ -840,9 +1002,9 @@ export class PerformanceEvaluationService
     evaluatorId: string,
     resetBy: string,
   ): Promise<void> {
-    // 1차 하향평가를 조회
+    // 1차 하향평가를 조회 (evaluatorId 조건 없이 조회하여 2차 평가자도 초기화 가능)
     const query = new GetDownwardEvaluationListQuery(
-      evaluatorId,
+      undefined, // evaluatorId를 undefined로 설정하여 모든 평가자의 평가 조회
       evaluateeId,
       periodId,
       wbsId,

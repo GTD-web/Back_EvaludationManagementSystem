@@ -26,6 +26,7 @@ import {
   StepApprovalStatusEnum,
 } from '@interface/common/dto/step-approval/update-step-approval.dto';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 
 /**
  * 단계 승인 컨트롤러
@@ -33,6 +34,7 @@ import { CurrentUser } from '@interface/common/decorators/current-user.decorator
  */
 @ApiTags('A-0-3. 관리자 - 단계 승인')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/step-approvals')
 export class StepApprovalController {
   constructor(

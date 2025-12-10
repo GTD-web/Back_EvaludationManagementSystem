@@ -62,7 +62,7 @@ let AddQuestionToGroupHandler = AddQuestionToGroupHandler_1 = class AddQuestionT
         if (!question) {
             throw new common_1.NotFoundException(`평가 질문을 찾을 수 없습니다. (id: ${data.questionId})`);
         }
-        let displayOrder = data.displayOrder ?? 0;
+        let displayOrder;
         if (data.displayOrder === undefined || data.displayOrder === null) {
             const maxOrderMapping = await this.questionGroupMappingRepository
                 .createQueryBuilder('mapping')
@@ -72,6 +72,9 @@ let AddQuestionToGroupHandler = AddQuestionToGroupHandler_1 = class AddQuestionT
                 .getOne();
             displayOrder = maxOrderMapping ? maxOrderMapping.displayOrder + 1 : 0;
             this.logger.log(`displayOrder 자동 설정 - 그룹 ID: ${data.groupId}, 순서: ${displayOrder}`);
+        }
+        else {
+            displayOrder = data.displayOrder;
         }
         const mapping = await this.questionGroupMappingService.생성한다({
             ...data,

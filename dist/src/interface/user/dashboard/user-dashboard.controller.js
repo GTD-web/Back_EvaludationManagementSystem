@@ -24,7 +24,7 @@ let UserDashboardController = class UserDashboardController {
         this.dashboardService = dashboardService;
     }
     async getMyAssignedData(evaluationPeriodId, user) {
-        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id);
+        const data = await this.dashboardService.사용자_할당_정보를_조회한다(evaluationPeriodId, user.id, user.id);
         return this.이차_하향평가_정보를_제거한다(data);
     }
     이차_하향평가_정보를_제거한다(data) {
@@ -32,7 +32,13 @@ let UserDashboardController = class UserDashboardController {
             ...project,
             wbsList: project.wbsList.map((wbs) => ({
                 ...wbs,
-                secondaryDownwardEvaluation: null,
+                secondaryDownwardEvaluation: wbs.secondaryDownwardEvaluation
+                    ? {
+                        evaluatorId: wbs.secondaryDownwardEvaluation.evaluatorId,
+                        evaluatorName: wbs.secondaryDownwardEvaluation.evaluatorName,
+                        isCompleted: wbs.secondaryDownwardEvaluation.isCompleted,
+                    }
+                    : null,
             })),
         }));
         const summaryWithoutSecondaryDownwardEvaluation = {
@@ -40,8 +46,8 @@ let UserDashboardController = class UserDashboardController {
             secondaryDownwardEvaluation: {
                 totalScore: null,
                 grade: null,
-                isSubmitted: false,
-                evaluators: [],
+                isSubmitted: data.summary.secondaryDownwardEvaluation?.isSubmitted || false,
+                evaluators: data.summary.secondaryDownwardEvaluation?.evaluators || [],
             },
         };
         return {
@@ -63,6 +69,7 @@ __decorate([
 exports.UserDashboardController = UserDashboardController = __decorate([
     (0, swagger_1.ApiTags)('A-0-2. 사용자 - 대시보드'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('user'),
     (0, common_1.Controller)('user/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService])
 ], UserDashboardController);

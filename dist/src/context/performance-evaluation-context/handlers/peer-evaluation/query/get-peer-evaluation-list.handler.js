@@ -51,14 +51,6 @@ let GetPeerEvaluationListHandler = GetPeerEvaluationListHandler_1 = class GetPee
     }
     async execute(query) {
         const { evaluatorId, evaluateeId, periodId, status, page, limit } = query;
-        this.logger.log('동료평가 목록 조회 핸들러 실행', {
-            evaluatorId,
-            evaluateeId,
-            periodId,
-            status,
-            page,
-            limit,
-        });
         const queryBuilder = this.peerEvaluationRepository
             .createQueryBuilder('evaluation')
             .leftJoin(evaluation_period_entity_1.EvaluationPeriod, 'period', 'period.id = evaluation.periodId AND period.deletedAt IS NULL')
@@ -242,10 +234,6 @@ let GetPeerEvaluationListHandler = GetPeerEvaluationListHandler_1 = class GetPee
             page,
             limit,
         };
-        this.logger.log('동료평가 목록 조회 완료', {
-            total: result.total,
-            count: result.evaluations.length,
-        });
         return result;
     }
 };

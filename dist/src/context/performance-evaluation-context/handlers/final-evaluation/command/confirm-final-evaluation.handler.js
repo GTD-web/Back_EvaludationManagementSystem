@@ -14,7 +14,9 @@ exports.ConfirmFinalEvaluationHandler = exports.ConfirmFinalEvaluationCommand = 
 const cqrs_1 = require("@nestjs/cqrs");
 const common_1 = require("@nestjs/common");
 const final_evaluation_service_1 = require("../../../../../domain/core/final-evaluation/final-evaluation.service");
+const final_evaluation_entity_1 = require("../../../../../domain/core/final-evaluation/final-evaluation.entity");
 const transaction_manager_service_1 = require("../../../../../../libs/database/transaction-manager.service");
+const evaluation_activity_log_context_service_1 = require("../../../../evaluation-activity-log-context/evaluation-activity-log-context.service");
 class ConfirmFinalEvaluationCommand {
     id;
     confirmedBy;
@@ -27,16 +29,39 @@ exports.ConfirmFinalEvaluationCommand = ConfirmFinalEvaluationCommand;
 let ConfirmFinalEvaluationHandler = ConfirmFinalEvaluationHandler_1 = class ConfirmFinalEvaluationHandler {
     finalEvaluationService;
     transactionManager;
+    activityLogService;
     logger = new common_1.Logger(ConfirmFinalEvaluationHandler_1.name);
-    constructor(finalEvaluationService, transactionManager) {
+    constructor(finalEvaluationService, transactionManager, activityLogService) {
         this.finalEvaluationService = finalEvaluationService;
         this.transactionManager = transactionManager;
+        this.activityLogService = activityLogService;
     }
     async execute(command) {
         const { id, confirmedBy } = command;
         this.logger.log('최종평가 확정 핸들러 실행', { id, confirmedBy });
         await this.transactionManager.executeTransaction(async (manager) => {
+            const repository = manager.getRepository(final_evaluation_entity_1.FinalEvaluation);
+            const finalEvaluation = await repository.findOne({ where: { id } });
             await this.finalEvaluationService.확정한다(id, confirmedBy, manager);
+            if (finalEvaluation) {
+                await this.activityLogService.활동내역을_기록한다({
+                    periodId: finalEvaluation.periodId,
+                    employeeId: finalEvaluation.employeeId,
+                    activityType: 'final_evaluation',
+                    activityAction: 'confirmed',
+                    activityTitle: '최종평가 확정',
+                    activityDescription: `최종평가가 확정되었습니다. (평가등급: ${finalEvaluation.evaluationGrade}, 직무등급: ${finalEvaluation.jobGrade}, 세부등급: ${finalEvaluation.jobDetailedGrade})`,
+                    relatedEntityType: 'FinalEvaluation',
+                    relatedEntityId: id,
+                    performedBy: confirmedBy,
+                    activityMetadata: {
+                        evaluationGrade: finalEvaluation.evaluationGrade,
+                        jobGrade: finalEvaluation.jobGrade,
+                        jobDetailedGrade: finalEvaluation.jobDetailedGrade,
+                        finalComments: finalEvaluation.finalComments,
+                    },
+                });
+            }
             this.logger.log('최종평가 확정 완료', { id });
         });
     }
@@ -46,6 +71,7 @@ exports.ConfirmFinalEvaluationHandler = ConfirmFinalEvaluationHandler = ConfirmF
     (0, common_1.Injectable)(),
     (0, cqrs_1.CommandHandler)(ConfirmFinalEvaluationCommand),
     __metadata("design:paramtypes", [final_evaluation_service_1.FinalEvaluationService,
-        transaction_manager_service_1.TransactionManagerService])
+        transaction_manager_service_1.TransactionManagerService,
+        evaluation_activity_log_context_service_1.EvaluationActivityLogContextService])
 ], ConfirmFinalEvaluationHandler);
 //# sourceMappingURL=confirm-final-evaluation.handler.js.map

@@ -4,6 +4,7 @@ import { Project } from './project.entity';
 import { ProjectService } from './project.service';
 import { ProjectTestService } from './project-test.service';
 import { Employee } from '@domain/common/employee/employee.entity';
+import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 
 /**
  * 프로젝트 모듈 (평가 시스템 전용)
@@ -12,7 +13,9 @@ import { Employee } from '@domain/common/employee/employee.entity';
  * 외부 시스템 연동 없이 독립적으로 운영됩니다.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Project, Employee])],
+  imports: [
+    TypeOrmModule.forFeature([Project, Employee, EvaluationProjectAssignment]),
+  ],
   providers: [ProjectService, ProjectTestService],
   exports: [ProjectService, ProjectTestService, TypeOrmModule],
 })

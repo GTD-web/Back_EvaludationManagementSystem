@@ -1,5 +1,5 @@
-export type EvaluationActivityType = 'wbs_self_evaluation' | 'downward_evaluation' | 'peer_evaluation' | 'additional_evaluation' | 'deliverable' | 'evaluation_status' | 'step_approval' | 'revision_request';
-export type EvaluationActivityAction = 'created' | 'updated' | 'submitted' | 'completed' | 'cancelled' | 'deleted' | 'assigned' | 'unassigned' | 'approved' | 'rejected' | 'revision_requested' | 'revision_completed';
+export type EvaluationActivityType = 'wbs_self_evaluation' | 'downward_evaluation' | 'peer_evaluation' | 'additional_evaluation' | 'deliverable' | 'evaluation_status' | 'step_approval' | 'revision_request' | 'final_evaluation';
+export type EvaluationActivityAction = 'created' | 'updated' | 'submitted' | 'completed' | 'cancelled' | 'deleted' | 'assigned' | 'unassigned' | 'approved' | 'rejected' | 'revision_requested' | 'revision_completed' | 'viewed' | 'confirmed' | 'confirmation_cancelled';
 export interface EvaluationActivityLogDto {
     id: string;
     periodId: string;

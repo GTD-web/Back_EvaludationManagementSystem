@@ -90,7 +90,6 @@ let ResetWbsSelfEvaluationsToEvaluatorByProjectHandler = ResetWbsSelfEvaluations
                         performanceResult: evaluation.performanceResult,
                         wasSubmittedToEvaluator,
                     });
-                    this.logger.debug(`평가 취소 성공 - ID: ${evaluation.id}`);
                 }
                 catch (error) {
                     this.logger.error(`평가 취소 실패 - ID: ${evaluation.id}`, error);

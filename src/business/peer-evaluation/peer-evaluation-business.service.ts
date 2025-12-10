@@ -584,10 +584,6 @@ export class PeerEvaluationBusinessService {
     page?: number;
     limit?: number;
   }): Promise<any> {
-    this.logger.log('동료평가 목록 조회 비즈니스 로직', {
-      evaluatorId: params.evaluatorId,
-    });
-
     const query = new GetPeerEvaluationListQuery(
       params.evaluatorId,
       params.evaluateeId,

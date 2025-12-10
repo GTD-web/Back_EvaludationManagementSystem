@@ -62,6 +62,6 @@ export interface IEmployee {
   readonly excludedBy?: string | null;
   /** 조회 제외 설정 일시 */
   readonly excludedAt?: Date | null;
-  /** 시스템 접근 가능 여부 (2중 보안용) */
+  /** 시스템 접근 가능 여부 (관리자 기능 접근 가능 여부) */
   readonly isAccessible: boolean;
 }

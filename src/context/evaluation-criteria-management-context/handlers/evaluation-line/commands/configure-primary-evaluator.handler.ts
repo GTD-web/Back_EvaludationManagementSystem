@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { EvaluationLineService } from '../../../../../domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '../../../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluatorType } from '../../../../../domain/core/evaluation-line/evaluation-line.types';
+import { DownwardEvaluationService } from '../../../../../domain/core/downward-evaluation/downward-evaluation.service';
+import { DownwardEvaluationType } from '../../../../../domain/core/downward-evaluation/downward-evaluation.types';
 
 /**
  * 1차 평가자 구성 커맨드 (직원별 고정 담당자)
@@ -50,6 +52,7 @@ export class ConfigurePrimaryEvaluatorHandler
   constructor(
     private readonly evaluationLineService: EvaluationLineService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
+    private readonly downwardEvaluationService: DownwardEvaluationService,
   ) {}
 
   async execute(
@@ -105,6 +108,31 @@ export class ConfigurePrimaryEvaluatorHandler
         // 기존 매핑이 있으면 업데이트
         const existingMapping = primaryMappings[0];
         const mappingId = existingMapping.DTO로_변환한다().id;
+        const previousEvaluatorId = existingMapping.evaluatorId;
+
+        // 평가자가 변경되는 경우, 기존 평가자의 하향평가 삭제
+        if (previousEvaluatorId && previousEvaluatorId !== evaluatorId) {
+          this.logger.log(
+            `1차 평가자 변경 감지 - 기존 평가자: ${previousEvaluatorId}, 새 평가자: ${evaluatorId}`,
+          );
+
+          // 기존 평가자가 작성한 PRIMARY 하향평가 조회
+          const existingDownwardEvaluations =
+            await this.downwardEvaluationService.필터_조회한다({
+              employeeId,
+              evaluatorId: previousEvaluatorId,
+              periodId,
+              evaluationType: DownwardEvaluationType.PRIMARY,
+            });
+
+          // 기존 평가자의 하향평가 완전 삭제 (hard delete)
+          for (const downwardEval of existingDownwardEvaluations) {
+            await this.downwardEvaluationService.완전_삭제한다(downwardEval.id);
+            this.logger.log(
+              `기존 1차 평가자의 하향평가 완전 삭제 - 하향평가 ID: ${downwardEval.id}, WBS: ${downwardEval.wbsId}`,
+            );
+          }
+        }
 
         // 업데이트 메서드 사용
         mappingEntity = await this.evaluationLineMappingService.업데이트한다(

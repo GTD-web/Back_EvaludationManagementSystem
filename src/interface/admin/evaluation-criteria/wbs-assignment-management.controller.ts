@@ -1,7 +1,8 @@
 import { WbsAssignmentBusinessService } from '@business/wbs-assignment/wbs-assignment-business.service';
 import { WbsAssignmentListResult } from '@context/evaluation-criteria-management-context/handlers/wbs-assignment/queries/get-wbs-assignment-list.handler';
-import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
+import type { AuthenticatedUser} from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   BulkCreateWbsAssignments,
   CancelWbsAssignmentByWbs,
@@ -51,6 +52,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('B-2. 관리자 - 평가 설정 - WBS 할당')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/evaluation-criteria/wbs-assignments')
 export class WbsAssignmentManagementController {
   constructor(

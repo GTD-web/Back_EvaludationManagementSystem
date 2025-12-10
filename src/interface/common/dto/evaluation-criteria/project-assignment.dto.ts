@@ -700,10 +700,16 @@ export class GetAvailableProjectsQueryDto {
  */
 export class ProjectManagerInfoDto {
   @ApiProperty({
-    description: '매니저 ID',
+    description: '매니저 ID (SSO의 직원 ID)',
     example: '123e4567-e89b-12d3-a456-426614174005',
   })
-  id: string;
+  managerId: string;
+
+  @ApiPropertyOptional({
+    description: '로컬 Employee ID (로컬 DB의 직원 ID)',
+    example: '234e5678-f90c-23d4-b567-537725285111',
+  })
+  employeeId?: string;
 
   @ApiProperty({
     description: '매니저 이름',

@@ -785,8 +785,6 @@ export class EmployeeSyncService implements OnModuleInit {
         if (needsUpdate) {
           // 기존 직원 업데이트
           // isAccessible 필드는 동기화 시 변경하지 않음 (수동 설정 값 보존)
-          const preservedIsAccessible = existingEmployee.isAccessible;
-
           Object.assign(existingEmployee, {
             employeeNumber: mappedData.employeeNumber,
             name: mappedData.name,
@@ -811,12 +809,7 @@ export class EmployeeSyncService implements OnModuleInit {
             updatedBy: this.systemUserId,
           } as UpdateEmployeeDto);
 
-          // 개발환경에서는 접근 가능하도록 설정
-          if (this.configService.get<string>('NODE_ENV') === 'development') {
-            existingEmployee.isAccessible = true;
-          } else {
-            existingEmployee.isAccessible = preservedIsAccessible;
-          }
+          // isAccessible은 기존 값을 그대로 유지 (변경하지 않음)
 
           return { success: true, employee: existingEmployee, isNew: false };
         }
@@ -850,28 +843,8 @@ export class EmployeeSyncService implements OnModuleInit {
         newEmployee.createdBy = this.systemUserId;
         newEmployee.updatedBy = this.systemUserId;
 
-        // 개발환경에서는 기본 roles 할당 및 접근 가능 설정 (로그인 없이도 시스템 사용 가능)
-        if (this.configService.get<string>('NODE_ENV') === 'development') {
-          // 개발환경에서는 모든 직원이 시스템에 접근 가능하도록 설정
-          newEmployee.isAccessible = true;
-
-          // @lumir.space 도메인 사용자는 admin 권한 부여
-          if (mappedData.email?.endsWith('@lumir.space')) {
-            newEmployee.roles = ['admin', 'user', 'evaluator'];
-            this.logger.debug(
-              `개발환경: ${mappedData.email}에 admin 권한 및 접근 권한 부여`,
-            );
-          } else {
-            // 그 외 사용자는 기본 user 권한
-            newEmployee.roles = ['user'];
-            this.logger.debug(
-              `개발환경: ${mappedData.email}에 user 권한 및 접근 권한 부여`,
-            );
-          }
-        } else {
-          // 프로덕션 환경에서는 기본값(true) 유지
-          newEmployee.isAccessible = true;
-        }
+        // isAccessible은 엔티티 생성자의 기본값(true)을 그대로 사용
+        // roles는 SSO 로그인 시에만 설정됨
 
         return { success: true, employee: newEmployee, isNew: true };
       }
@@ -1123,10 +1096,7 @@ export class EmployeeSyncService implements OnModuleInit {
 
       if (existingEmployee) {
         // 기존 엔티티에 새 데이터 덮어쓰기
-
         // isAccessible 필드는 동기화 시 변경하지 않음 (수동 설정 값 보존)
-        const preservedIsAccessible = existingEmployee.isAccessible;
-
         Object.assign(existingEmployee, {
           employeeNumber: employee.employeeNumber,
           name: employee.name,
@@ -1151,14 +1121,8 @@ export class EmployeeSyncService implements OnModuleInit {
           lastSyncAt: employee.lastSyncAt,
           updatedBy: this.systemUserId,
           // roles는 명시적으로 제외 (로그인 시에만 업데이트)
+          // isAccessible은 기존 값을 그대로 유지 (변경하지 않음)
         });
-
-        // 개발환경에서는 접근 가능하도록 설정
-        if (this.configService.get<string>('NODE_ENV') === 'development') {
-          existingEmployee.isAccessible = true;
-        } else {
-          existingEmployee.isAccessible = preservedIsAccessible;
-        }
 
         await this.employeeService.save(existingEmployee);
         return { success: true };

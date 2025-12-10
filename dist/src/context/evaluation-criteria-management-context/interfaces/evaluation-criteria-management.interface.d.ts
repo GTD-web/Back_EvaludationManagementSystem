@@ -108,7 +108,8 @@ export interface IEvaluationCriteriaManagementService {
             startDate?: Date;
             endDate?: Date;
             manager?: {
-                id: string;
+                managerId: string;
+                employeeId?: string;
                 name: string;
                 email?: string;
                 phoneNumber?: string;

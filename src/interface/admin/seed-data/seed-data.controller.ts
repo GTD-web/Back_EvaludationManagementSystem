@@ -12,6 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Roles } from '@interface/common/decorators';
 import { SeedDataService } from '@context/seed-data-context/seed-data.service';
 import {
   SeedDataConfigDto,
@@ -39,6 +40,7 @@ import { faker } from '@faker-js/faker/locale/ko';
 
 @ApiTags('A-0-1. Seed Data')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/seed')
 export class SeedDataController {
   private readonly logger = new Logger(SeedDataController.name);
@@ -302,8 +304,8 @@ export class SeedDataController {
           // Employee 엔티티 추가 필드
           lastSyncAt: now,
           isExcludedFromList: false,
-          isAccessible: true,
           createdBy: 'system',
+          // isAccessible은 엔티티 생성자의 기본값(true)을 사용
         });
 
         addedEmployeeIds.push(newEmployee.id);

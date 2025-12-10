@@ -25,12 +25,13 @@ import { TransactionManagerService } from './transaction-manager.service';
         const username = configService.get<string>('DATABASE_USERNAME');
         const password = configService.get<string>('DATABASE_PASSWORD', '');
         const database = configService.get<string>('DATABASE_NAME');
-        const needsSSL = configService.get<string>('DATABASE_SSL', 'false') === 'true';
+        const needsSSL =
+          configService.get<string>('DATABASE_SSL', 'false') === 'true';
 
         if (!host || !username || !database) {
           throw new Error(
             '데이터베이스 연결 정보가 누락되었습니다. ' +
-            'DATABASE_HOST, DATABASE_USERNAME, DATABASE_NAME 환경 변수를 설정해주세요.',
+              'DATABASE_HOST, DATABASE_USERNAME, DATABASE_NAME 환경 변수를 설정해주세요.',
           );
         }
 
@@ -42,11 +43,17 @@ import { TransactionManagerService } from './transaction-manager.service';
           password,
           database,
           autoLoadEntities: true,
-          synchronize: isDevelopment && !isTest, // 개발 환경에서만 스키마 자동 동기화
-          logging: configService.get<boolean>('DB_LOGGING', isDevelopment && !isTest),
+          synchronize: false, // Supabase 사용 시 자동 동기화 비활성화 (마이그레이션으로 관리)
+          logging: configService.get<boolean>(
+            'DB_LOGGING',
+            isDevelopment && !isTest,
+          ),
           ssl: needsSSL ? { rejectUnauthorized: false } : false,
           extra: {
-            max: configService.get<number>('DATABASE_POOL_MAX', isServerless ? 2 : 10),
+            max: configService.get<number>(
+              'DATABASE_POOL_MAX',
+              isServerless ? 2 : 10,
+            ),
             connectionTimeoutMillis: configService.get<number>(
               'DATABASE_CONNECTION_TIMEOUT',
               isServerless ? 5000 : 10000,

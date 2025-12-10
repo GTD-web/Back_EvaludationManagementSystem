@@ -40,7 +40,6 @@ let GetAllEmployeesEvaluationPeriodStatusHandler = GetAllEmployeesEvaluationPeri
     }
     async execute(query) {
         const { evaluationPeriodId, includeUnregistered } = query;
-        this.logger.debug(`평가기간의 모든 피평가자 현황 조회 시작 - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`);
         try {
             const queryBuilder = this.mappingRepository
                 .createQueryBuilder('mapping')
@@ -56,16 +55,10 @@ let GetAllEmployeesEvaluationPeriodStatusHandler = GetAllEmployeesEvaluationPeri
                 queryBuilder.andWhere('mapping.deletedAt IS NULL');
             }
             const sql = queryBuilder.getSql();
-            this.logger.debug(`실행된 SQL: ${sql}`);
             if (includeUnregistered) {
                 queryBuilder.withDeleted();
             }
             const mappings = await queryBuilder.getRawMany();
-            this.logger.debug(`조회된 피평가자 수: ${mappings.length} - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`);
-            if (mappings.length === 0) {
-                this.logger.debug(`등록 해제 포함 조회에서 매핑이 조회되지 않음 - 평가기간: ${evaluationPeriodId}, 등록해제포함: ${includeUnregistered}`);
-                this.logger.debug(`실행된 SQL: ${sql}`);
-            }
             const statusPromises = mappings.map(async (mapping) => {
                 try {
                     const singleQuery = new get_employee_evaluation_period_status_1.GetEmployeeEvaluationPeriodStatusQuery(evaluationPeriodId, mapping.employeeId, includeUnregistered);

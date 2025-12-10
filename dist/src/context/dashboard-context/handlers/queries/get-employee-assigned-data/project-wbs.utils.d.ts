@@ -1,5 +1,6 @@
 import { Repository } from 'typeorm';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
+import { Employee } from '@domain/common/employee/employee.entity';
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
@@ -9,4 +10,4 @@ import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
 import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
 import { AssignedProjectWithWbs } from './types';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
-export declare function getProjectsWithWbs(evaluationPeriodId: string, employeeId: string, mapping: EvaluationPeriodEmployeeMapping, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsItemRepository: Repository<WbsItem>, criteriaRepository: Repository<WbsEvaluationCriteria>, selfEvaluationRepository: Repository<WbsSelfEvaluation>, downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, deliverableRepository: Repository<Deliverable>): Promise<AssignedProjectWithWbs[]>;
+export declare function getProjectsWithWbs(evaluationPeriodId: string, employeeId: string, mapping: EvaluationPeriodEmployeeMapping, projectAssignmentRepository: Repository<EvaluationProjectAssignment>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsItemRepository: Repository<WbsItem>, criteriaRepository: Repository<WbsEvaluationCriteria>, selfEvaluationRepository: Repository<WbsSelfEvaluation>, downwardEvaluationRepository: Repository<DownwardEvaluation>, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, deliverableRepository: Repository<Deliverable>, employeeRepository: Repository<Employee>): Promise<AssignedProjectWithWbs[]>;

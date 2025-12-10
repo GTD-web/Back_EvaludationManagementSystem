@@ -77,14 +77,20 @@ export class DashboardService implements IDashboardContext {
    * 사용자 할당 정보를 조회한다
    *
    * 특정 직원의 평가기간 내 할당된 프로젝트, WBS, 평가기준, 성과, 자기평가 정보를 조회합니다.
+   *
+   * @param evaluationPeriodId 평가기간 ID
+   * @param employeeId 조회할 직원 ID (피평가자)
+   * @param viewerId 조회하는 사람의 ID (평가자 확인용, optional)
    */
   async 사용자_할당_정보를_조회한다(
     evaluationPeriodId: string,
     employeeId: string,
+    viewerId?: string,
   ): Promise<EmployeeAssignedDataResult> {
     const query = new GetEmployeeAssignedDataQuery(
       evaluationPeriodId,
       employeeId,
+      viewerId,
     );
     return await this.queryBus.execute(query);
   }

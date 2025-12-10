@@ -374,7 +374,6 @@ __decorate([
     __metadata("design:type", Date)
 ], DeliverableInfoDto.prototype, "createdAt", void 0);
 class WbsDownwardEvaluationDto {
-    downwardEvaluationId;
     evaluatorId;
     evaluatorName;
     evaluationContent;
@@ -383,14 +382,6 @@ class WbsDownwardEvaluationDto {
     submittedAt;
 }
 exports.WbsDownwardEvaluationDto = WbsDownwardEvaluationDto;
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: '하향평가 ID',
-        example: '123e4567-e89b-12d3-a456-426614174014',
-        nullable: true,
-    }),
-    __metadata("design:type", String)
-], WbsDownwardEvaluationDto.prototype, "downwardEvaluationId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '평가자 ID',

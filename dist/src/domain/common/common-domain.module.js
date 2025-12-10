@@ -14,6 +14,8 @@ const project_module_1 = require("./project/project.module");
 const wbs_item_module_1 = require("./wbs-item/wbs-item.module");
 const sso_module_1 = require("./sso/sso.module");
 const audit_log_module_1 = require("./audit-log/audit-log.module");
+const system_setting_module_1 = require("./system-setting/system-setting.module");
+const notification_1 = require("./notification");
 let CommonDomainModule = class CommonDomainModule {
 };
 exports.CommonDomainModule = CommonDomainModule;
@@ -26,6 +28,8 @@ exports.CommonDomainModule = CommonDomainModule = __decorate([
             wbs_item_module_1.WbsItemModule,
             sso_module_1.SSOModule,
             audit_log_module_1.AuditLogModule,
+            system_setting_module_1.SystemSettingModule,
+            notification_1.NotificationModule,
         ],
         exports: [
             employee_module_1.EmployeeModule,
@@ -34,6 +38,8 @@ exports.CommonDomainModule = CommonDomainModule = __decorate([
             wbs_item_module_1.WbsItemModule,
             sso_module_1.SSOModule,
             audit_log_module_1.AuditLogModule,
+            system_setting_module_1.SystemSettingModule,
+            notification_1.NotificationModule,
         ],
     })
 ], CommonDomainModule);

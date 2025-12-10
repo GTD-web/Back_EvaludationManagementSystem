@@ -139,40 +139,70 @@ export class RolesGuard implements CanActivate {
     // 사용자의 역할 확인
     const userRoles = user.roles || [];
 
-    // 필요한 역할 중 하나라도 사용자가 가지고 있는지 확인
-    const hasRole = this.rolesRequiringAccessibilityCheck.some((role) =>
-      userRoles.includes(role),
-    );
+    // @Roles() 데코레이터로 지정된 필요한 역할 확인
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (!hasRole) {
-      this.logger.warn(
-        `접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
-          `필요 역할: [${this.rolesRequiringAccessibilityCheck.join(', ')}], ` +
-          `보유 역할: [${userRoles.join(', ')}]`,
+    // @Roles() 데코레이터가 있으면 역할 검증 수행
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRequiredRole = requiredRoles.some((role) =>
+        userRoles.includes(role),
       );
-      throw new ForbiddenException(
-        `이 작업을 수행할 권한이 없습니다. 필요한 역할: ${this.rolesRequiringAccessibilityCheck.join(', ')}`,
-      );
+
+      if (!hasRequiredRole) {
+        this.logger.warn(
+          `접근 거부: 사용자 ${user.email}은(는) 필요한 역할이 없습니다. ` +
+            `필요 역할: [${requiredRoles.join(', ')}], ` +
+            `보유 역할: [${userRoles.join(', ')}]`,
+        );
+        throw new ForbiddenException(
+          `이 작업을 수행할 권한이 없습니다. 필요한 역할: ${requiredRoles.join(', ')}`,
+        );
+      }
     }
 
-    // admin 이면 이중 보안 검증 수행
-    if (userRoles.includes('admin')) {
-      // 사번으로 접근 가능 여부 확인
+    // 접근 가능 여부 확인이 필요한 역할인지 확인 (2중 보안)
+    const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter(
+      (role) => userRoles.includes(role),
+    );
+
+    if (rolesNeedingCheck.length > 0) {
+      // 사번으로 관리자 권한 확인
       const isAccessible =
-        await this.organizationManagementService.사번으로_접근가능한가(
+        await this.organizationManagementService.사번으로_관리자권한있는가(
           user.employeeNumber,
         );
 
       if (!isAccessible) {
+        // 체크하고 있는 역할에 맞는 메시지 생성
+        const roleLabels = rolesNeedingCheck.map((role) => {
+          switch (role) {
+            case 'admin':
+              return '관리자';
+            case 'evaluator':
+              return '평가자';
+            case 'user':
+              return '유저';
+            default:
+              return role;
+          }
+        });
+
+        const roleLabel = roleLabels.join('/');
+
         this.logger.warn(
           `접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-            `admin 역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다.`,
+            `역할을 가지고 있지만 ${roleLabel} 권한이 없습니다. ` +
+            `역할: [${userRoles.join(', ')}]`,
         );
         throw new ForbiddenException(
-          'EMS 시스템 접근 권한이 없습니다. EMS 관리자에게 문의하세요.',
+          `EMS ${roleLabel} 권한이 없습니다. EMS 관리자에게 문의하세요.`,
         );
       }
     }
+
     return true;
   }
 }

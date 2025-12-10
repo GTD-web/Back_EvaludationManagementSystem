@@ -39,12 +39,6 @@ export class EvaluationActivityLogContextService {
   async 활동내역을_기록한다(
     params: CreateEvaluationActivityLogRequest,
   ): Promise<EvaluationActivityLogDto> {
-    this.logger.log('활동 내역 기록 시작', {
-      periodId: params.periodId,
-      employeeId: params.employeeId,
-      activityType: params.activityType,
-    });
-
     // performedByName이 없으면 조회
     let performedByName = params.performedByName;
     if (!performedByName && params.performedBy) {
@@ -92,8 +86,6 @@ export class EvaluationActivityLogContextService {
       activityDate: params.activityDate,
     });
 
-    this.logger.log('활동 내역 기록 완료', { id: result.id });
-
     return result;
   }
 
@@ -131,13 +123,6 @@ export class EvaluationActivityLogContextService {
     updatedBy: string;
     evaluatorId?: string; // 2차 하향평가의 경우 필요
   }): Promise<EvaluationActivityLogDto> {
-    this.logger.log('단계 승인 상태 변경 활동 내역 기록 시작', {
-      evaluationPeriodId: params.evaluationPeriodId,
-      employeeId: params.employeeId,
-      step: params.step,
-      status: params.status,
-    });
-
     // 단계별 제목 결정
     let activityTitle = '';
     let activityAction: 'approved' | 'revision_requested' = 'approved';
@@ -204,13 +189,6 @@ export class EvaluationActivityLogContextService {
     responseComment: string;
     allCompleted: boolean;
   }): Promise<EvaluationActivityLogDto> {
-    this.logger.log('재작성 완료 활동 내역 기록 시작', {
-      evaluationPeriodId: params.evaluationPeriodId,
-      employeeId: params.employeeId,
-      step: params.step,
-      requestId: params.requestId,
-    });
-
     // 단계별 제목 결정
     let activityTitle = '';
     switch (params.step) {

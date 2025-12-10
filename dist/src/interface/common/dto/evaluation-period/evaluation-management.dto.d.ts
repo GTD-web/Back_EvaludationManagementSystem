@@ -24,6 +24,7 @@ export declare class CreateEvaluationPeriodApiDto {
     description?: string;
     maxSelfEvaluationRate?: number;
     gradeRanges?: CreateGradeRangeApiDto[];
+    sourcePeriodId?: string;
 }
 export declare class UpdateEvaluationPeriodBasicApiDto {
     name?: string;
@@ -39,6 +40,9 @@ export declare class UpdateEvaluationPeriodScheduleApiDto {
 }
 export declare class UpdateEvaluationPeriodStartDateApiDto {
     startDate: string;
+}
+export declare class CopyEvaluationPeriodApiDto {
+    sourceEvaluationPeriodId: string;
 }
 export declare class UpdateEvaluationSetupDeadlineApiDto {
     evaluationSetupDeadline: string;
@@ -68,6 +72,21 @@ export declare class UpdateManualSettingPermissionsApiDto {
 }
 export declare class ChangeEvaluationPeriodPhaseApiDto {
     targetPhase: string;
+}
+export declare class CopyProjectWithWbsDto {
+    projectId: string;
+    wbsIds?: string[];
+}
+export declare class CopyPreviousPeriodDataApiDto {
+    projects?: CopyProjectWithWbsDto[];
+}
+export declare class CopyPreviousPeriodDataResponseDto {
+    success: boolean;
+    message: string;
+    copiedProjectAssignments: number;
+    copiedWbsAssignments: number;
+    copiedEvaluationLineMappings: number;
+    copiedWbsEvaluationCriteria: number;
 }
 export declare class ApiResponseDto<T = any> {
     success: boolean;

@@ -84,7 +84,6 @@ export interface PeerEvaluationDetailResult {
     status: string;
   } | null;
 
-
   // 평가질문 목록
   questions: {
     id: string;
@@ -137,15 +136,6 @@ export class GetPeerEvaluationListHandler
     limit: number;
   }> {
     const { evaluatorId, evaluateeId, periodId, status, page, limit } = query;
-
-    this.logger.log('동료평가 목록 조회 핸들러 실행', {
-      evaluatorId,
-      evaluateeId,
-      periodId,
-      status,
-      page,
-      limit,
-    });
 
     // 동료평가 목록 조회 (상세 정보 포함)
     const queryBuilder = this.peerEvaluationRepository
@@ -368,7 +358,6 @@ export class GetPeerEvaluationListHandler
             }
           : null,
 
-
         questions: questions.map((q) => ({
           id: q.question_id,
           text: q.question_text,
@@ -389,11 +378,6 @@ export class GetPeerEvaluationListHandler
       page,
       limit,
     };
-
-    this.logger.log('동료평가 목록 조회 완료', {
-      total: result.total,
-      count: result.evaluations.length,
-    });
 
     return result;
   }

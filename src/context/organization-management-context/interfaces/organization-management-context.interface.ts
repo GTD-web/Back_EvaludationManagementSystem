@@ -99,24 +99,43 @@ export interface IOrganizationManagementContext {
   부서하이라키_직원포함_조회(): Promise<DepartmentHierarchyWithEmployeesDto[]>;
 
   /**
-   * 사번으로 직원의 접근 가능 여부를 확인합니다 (2중 보안용)
+   * 사번으로 직원의 관리자 권한 여부를 확인합니다
    * @param employeeNumber 직원 번호
-   * @returns 접근 가능 여부 (직원이 존재하고 접근 가능한 경우 true)
+   * @returns 관리자 권한 여부 (직원이 존재하고 관리자 권한이 있는 경우 true)
    */
-  사번으로_접근가능한가(employeeNumber: string): Promise<boolean>;
+  사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean>;
 
   /**
-   * 직원의 접근 가능 여부를 변경합니다
+   * 직원의 관리자 권한 여부를 변경합니다
    * @param employeeId 직원 ID
-   * @param isAccessible 접근 가능 여부
+   * @param isAdmin 관리자 권한 여부
    * @param updatedBy 변경 설정자
    * @returns 업데이트된 직원 정보
    */
-  직원접근가능여부변경(
+  직원관리자권한변경(
     employeeId: string,
-    isAccessible: boolean,
+    isAdmin: boolean,
     updatedBy: string,
   ): Promise<EmployeeDto>;
+
+  /**
+   * 여러 직원의 관리자 권한 여부를 일괄 변경합니다
+   * @param employeeIds 직원 ID 목록
+   * @param isAdmin 관리자 권한 여부
+   * @param updatedBy 변경 설정자
+   * @returns 처리 결과 (성공/실패 개수 및 실패한 ID 목록)
+   */
+  여러직원관리자권한변경(
+    employeeIds: string[],
+    isAdmin: boolean,
+    updatedBy: string,
+  ): Promise<{
+    totalProcessed: number;
+    succeeded: number;
+    failed: number;
+    failedIds: string[];
+    errors: string[];
+  }>;
 }
 
 /**

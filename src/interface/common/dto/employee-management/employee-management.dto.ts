@@ -33,18 +33,20 @@ export class ExcludeEmployeeFromListDto {
 export class IncludeEmployeeInListDto {}
 
 /**
- * 직원 접근 가능 여부 변경 쿼리 DTO
+ * 직원 관리자 권한 변경 쿼리 DTO
  */
-export class UpdateEmployeeAccessibilityQueryDto {
+export class UpdateEmployeeAdminQueryDto {
   @ApiProperty({
-    description: '접근 가능 여부 (가능값: "true", "false", "1", "0")',
+    description: '관리자 권한 여부 (가능값: "true", "false", "1", "0")',
     example: 'true',
     type: String,
   })
-  @IsNotEmpty({ message: 'isAccessible 쿼리 파라미터는 필수입니다.' })
-  @ToBooleanStrict(undefined, 'isAccessible')
-  isAccessible!: string;
+  @IsNotEmpty({ message: 'isAdmin 쿼리 파라미터는 필수입니다.' })
+  @ToBooleanStrict(undefined, 'isAdmin')
+  isAdmin!: string;
 }
+
+// 참고: API에서는 isAdmin을 사용하지만, 내부적으로는 isAccessible 필드로 매핑됩니다.
 
 /**
  * 직원 목록 조회 쿼리 DTO
@@ -177,7 +179,7 @@ export class EmployeeResponseDto {
   updatedAt!: Date;
 
   @ApiProperty({
-    description: '시스템 접근 가능 여부 (2중 보안용)',
+    description: '시스템 접근 가능 여부 (관리자 기능 접근 가능 여부)',
     example: true,
   })
   isAccessible!: boolean;

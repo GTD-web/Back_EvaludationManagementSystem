@@ -172,7 +172,17 @@ export function GetMyEvaluationTargetsStatus() {
 - 내가 PRIMARY 또는 SECONDARY 평가자로 지정된 피평가자 목록 반환
 - 각 피평가자에 대한 내 평가자 유형 제공 (PRIMARY/SECONDARY)
 - 피평가자가 1차 평가자에게 자기평가를 제출했는지 여부 제공 (전체 자기평가 수, 제출된 수, 제출 완료 여부)
+- **자기평가 조회 관련 필드 (평가자 유형에 따라 제공):**
+  * **1차 평가자인 경우**: viewedByPrimaryEvaluator 필드만 제공 (자기평가 제출 시에만)
+  * **2차 평가자인 경우**: viewedBySecondaryEvaluator 필드만 제공 (1차 평가 제출 시에만)
+  * **평가자가 아닌 경우**: viewedBy 관련 필드는 응답에 포함되지 않음
+  * **자기평가 미제출 시 (1차 평가자)**: viewedByPrimaryEvaluator 필드는 응답에 포함되지 않음
+  * **1차 평가 미제출 시 (2차 평가자)**: viewedBySecondaryEvaluator 필드는 응답에 포함되지 않음
 - 내가 담당하는 하향평가 현황 제공 (평가 대상 WBS 수, 완료 수, 평균 점수, 수정 가능 여부)
+- **1차 평가 조회 관련 필드 (평가자 유형에 따라 제공):**
+  * **2차 평가자인 경우**: secondaryStatus.primaryEvaluationViewed 필드 제공 (1차 평가 제출 시에만)
+  * **1차 평가자인 경우**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
+  * **1차 평가 미제출 시**: primaryEvaluationViewed 필드는 응답에 포함되지 않음
   * **평가 대상 WBS 수는 취소된 프로젝트 할당(소프트 딜리트)의 WBS 제외**
   * **취소된 프로젝트 할당에 속한 WBS의 하향평가는 카운트에서 제외됨**
 - 피평가자별 평가 대상 여부, 평가항목 설정 상태, WBS 평가기준 설정 상태, 평가라인 지정 상태, 성과 입력 상태 포함
@@ -195,6 +205,12 @@ export function GetMyEvaluationTargetsStatus() {
 - 기능 테스트: 담당하는 평가 대상자가 없으면 빈 배열을 반환해야 한다
 - 기능 테스트: 여러 피평가자를 담당하는 경우 모두 조회되어야 한다
 - 기능 테스트: 성과 입력 상태가 정확해야 한다
+- 기능 테스트: 자기평가 미제출 시 1차 평가자의 viewedByPrimaryEvaluator 필드가 포함되지 않아야 한다
+- 기능 테스트: 자기평가 제출 시 1차 평가자의 viewedByPrimaryEvaluator 필드가 포함되어야 한다
+- 기능 테스트: 1차 평가자가 피평가자 데이터를 조회하면 viewedByPrimaryEvaluator가 true로 변경되어야 한다
+- 기능 테스트: 1차 평가 미제출 시 2차 평가자의 viewedBySecondaryEvaluator 필드가 포함되지 않아야 한다
+- 기능 테스트: 1차 평가 제출 시 2차 평가자의 viewedBySecondaryEvaluator 필드가 포함되어야 한다
+- 기능 테스트: 2차 평가자가 피평가자 데이터를 조회하면 viewedBySecondaryEvaluator와 primaryEvaluationViewed가 true로 변경되어야 한다
 - 실패 케이스: 존재하지 않는 평가기간 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 존재하지 않는 평가자 조회 시 빈 배열을 반환해야 한다
 - 실패 케이스: 잘못된 평가기간 UUID 형식으로 요청 시 에러가 발생해야 한다
@@ -243,6 +259,8 @@ export function GetEmployeeAssignedData() {
       summary: '사용자 할당 정보 조회',
       description: `특정 직원의 평가기간 내 할당된 모든 정보를 조회합니다.
 
+**중요: 평가자가 다른 직원의 데이터를 조회하면 Activity Log에 'viewed' 활동이 자동으로 기록됩니다.**
+
 **동작:**
 - 평가기간 정보 반환 (평가기간명, 시작/종료일, 상태, 설정 허용 여부)
   * maxSelfEvaluationRate: 자기평가 달성률 최대값 (%) - 자기평가 입력 시 사용
@@ -255,7 +273,11 @@ export function GetEmployeeAssignedData() {
   * **summary의 평가자별 assignedWbsCount는 취소된 프로젝트 할당의 WBS 제외**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
 - 등록되지 않은 직원이나 존재하지 않는 평가기간 조회 시 404 에러 반환
+- **평가자가 조회 시**: JWT 토큰의 사용자 ID가 조회 대상 직원 ID와 다르면 Activity Log 기록
 
+**Activity Log 기록 조건:**
+- 조회하는 사람(viewerId)이 조회 대상 직원(employeeId)과 다른 경우
+- 조회하는 사람이 해당 직원의 평가자(PRIMARY/SECONDARY)인 경우
 
 **테스트 케이스:**
 - 유효한 평가기간과 직원ID로 할당 정보를 조회할 수 있어야 한다
@@ -268,6 +290,7 @@ export function GetEmployeeAssignedData() {
 - WBS별 평가기준이 올바르게 반환되어야 한다
 - 프로젝트별로 WBS가 올바르게 그룹화되어야 한다
 - 여러 직원의 할당 정보를 조회해도 데이터가 섞이지 않아야 한다
+- 평가자가 피평가자 정보 조회 시 Activity Log에 viewed 활동 기록
 - 등록되지 않은 직원 조회 시 404 에러가 발생해야 한다
 - 존재하지 않는 평가기간 조회 시 404 에러가 발생해야 한다
 - 잘못된 평가기간 UUID 형식으로 요청 시 400 에러가 발생해야 한다
@@ -321,7 +344,7 @@ export function GetMyAssignedData() {
       summary: '나의 할당 정보 조회 (현재 로그인 사용자)',
       description: `현재 로그인한 사용자(피평가자)의 평가기간 내 할당된 모든 정보를 조회합니다.
 
-**중요: 피평가자는 상위 평가자의 하향평가 정보를 볼 수 없습니다.**
+**중요: 피평가자는 상위 평가자의 하향평가 내용(점수, 코멘트)을 볼 수 없지만, 평가자 정보는 확인할 수 있습니다.**
 
 **동작:**
 - JWT 토큰에서 현재 로그인한 사용자 정보 추출
@@ -332,15 +355,17 @@ export function GetMyAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
-  * **하향평가 정보는 제거됨 (primaryDownwardEvaluation, secondaryDownwardEvaluation = null)**
+  * **2차 하향평가 정보는 평가자 정보만 제공 (evaluatorId, evaluatorName, isCompleted)**
+  * **2차 하향평가 내용은 제거됨 (evaluationContent, score, submittedAt)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수)
   * **하향평가 점수/등급은 제거됨 (primaryDownwardEvaluation.totalScore/grade = null, secondaryDownwardEvaluation.totalScore/grade = null)**
+  * **2차 평가자 목록은 제공됨 (secondaryDownwardEvaluation.evaluators)**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
 
 **employees/:employeeId/assigned-data와의 차이점:**
 - JWT 토큰에서 자동으로 employeeId 추출 (URL 파라미터 불필요)
 - 피평가자가 자신의 정보만 조회 가능
-- 하향평가 정보가 모두 제거되어 반환됨 (보안)
+- 2차 하향평가의 평가 내용은 제거되지만 평가자 정보는 제공됨
 
 **테스트 케이스:**
 - 정상 조회: 유효한 JWT 토큰으로 자신의 할당 정보 조회 성공 (200)
@@ -349,8 +374,10 @@ export function GetMyAssignedData() {
 - 평가기준 포함: WBS별 평가기준이 올바르게 반환됨
 - 성과 포함: 등록된 성과 정보가 포함됨
 - 자기평가 포함: 등록된 자기평가 정보가 포함됨
-- **하향평가 제거: WBS별 primaryDownwardEvaluation, secondaryDownwardEvaluation이 모두 null**
+- **2차 평가자 정보 포함: WBS별 secondaryDownwardEvaluation에 evaluatorId, evaluatorName, isCompleted 포함**
+- **2차 평가 내용 제거: evaluationContent, score, submittedAt은 제거됨**
 - **하향평가 점수/등급 제거: summary의 primaryDownwardEvaluation, secondaryDownwardEvaluation의 totalScore, grade가 모두 null**
+- **2차 평가자 목록 포함: summary.secondaryDownwardEvaluation.evaluators 제공**
 - 요약 정보 정확성: summary 카운트가 실제 데이터와 일치
 - 할당 없음: 할당이 없는 경우 빈 배열 반환 (200)
 - 토큰 없음: Authorization 헤더 없이 요청 시 401 에러
@@ -369,11 +396,11 @@ export function GetMyAssignedData() {
       description: `나의 할당 정보 조회 성공
 
 **주의:** 응답 구조는 EmployeeAssignedDataResponseDto와 동일하지만, 
-피평가자 보호를 위해 다음 필드들은 항상 null로 반환됩니다:
-- wbs.primaryDownwardEvaluation: null
-- wbs.secondaryDownwardEvaluation: null
+피평가자 보호를 위해 다음 필드들은 제한됩니다:
+- wbs.primaryDownwardEvaluation: 전체 정보 제공
+- wbs.secondaryDownwardEvaluation: { evaluatorId, evaluatorName, isCompleted } 만 제공
 - summary.primaryDownwardEvaluation: { totalScore: null, grade: null }
-- summary.secondaryDownwardEvaluation: { totalScore: null, grade: null }`,
+- summary.secondaryDownwardEvaluation: { totalScore: null, grade: null, evaluators: [...] }`,
       type: EmployeeAssignedDataResponseDto,
     }),
     ApiNotFoundResponse({
@@ -704,6 +731,8 @@ export function GetEmployeeCompleteStatus() {
 - 프로젝트 카운트: totalCount와 items 배열 길이 일치
 - 점수/등급 통합: 각 평가 항목에 점수와 등급이 포함됨
 - 중복 제거 확인: summary, editableStatus 필드가 없음
+- 미입력 제출 메시지 확인: content 없이 제출한 1차 하향평가의 "미입력 상태에서 제출하였습니다" 메시지 조회
+- 미입력 제출 메시지 확인: content 없이 제출한 2차 하향평가의 "미입력 상태에서 제출하였습니다" 메시지 조회
 - 404 에러: 존재하지 않는 평가기간/직원 조회
 - 400 에러: 잘못된 UUID 형식`,
     }),

@@ -36,10 +36,6 @@ export class EvaluationCriteriaBusinessService {
     employeeId: string,
     submittedBy: string,
   ): Promise<EvaluationPeriodEmployeeMappingDto> {
-    this.logger.log(
-      `평가기준 제출 및 재작성 요청 완료 처리 시작 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-    );
-
     // 1. 평가기준 제출
     const result =
       await this.evaluationCriteriaManagementService.평가기준을_제출한다(
@@ -89,10 +85,6 @@ export class EvaluationCriteriaBusinessService {
         error: error.message,
       });
     }
-
-    this.logger.log(
-      `평가기준 제출 및 재작성 요청 완료 처리 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-    );
 
     return result;
   }

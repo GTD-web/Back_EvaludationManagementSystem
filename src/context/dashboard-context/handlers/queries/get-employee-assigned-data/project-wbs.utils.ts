@@ -20,7 +20,9 @@ import {
 } from './types';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 
-const logger = new Logger('ProjectWbsUtils');
+// 임시로 로거 비활성화 (디버깅용)
+// const logger = new Logger('ProjectWbsUtils');
+const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
 
 /**
  * 프로젝트별 할당 정보 조회 (WBS 목록 포함)
@@ -40,6 +42,7 @@ export async function getProjectsWithWbs(
   downwardEvaluationRepository: Repository<DownwardEvaluation>,
   evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
   deliverableRepository: Repository<Deliverable>,
+  employeeRepository: Repository<Employee>,
 ): Promise<AssignedProjectWithWbs[]> {
   // 1. 평가 프로젝트 할당 조회 (Project와 PM 직원 정보 join)
   const projectAssignments = await projectAssignmentRepository
@@ -377,7 +380,54 @@ export async function getProjectsWithWbs(
       .andWhere('downward.deletedAt IS NULL')
       .getRawMany();
 
+    // 8-1. 하향평가에 나타난 모든 평가자 ID 수집
+    const allEvaluatorIds = new Set<string>();
+    for (const row of downwardEvaluationRows) {
+      const evaluatorId = row.downward_evaluator_id;
+      if (evaluatorId) {
+        allEvaluatorIds.add(evaluatorId);
+      }
+    }
+
+    // 8-2. 모든 평가자 정보 조회 (실제 제출한 평가자 이름을 정확히 표시하기 위해)
+    const evaluatorNameMap = new Map<string, string>(); // evaluatorId -> name
+    if (allEvaluatorIds.size > 0) {
+      const evaluators = await employeeRepository
+        .createQueryBuilder('employee')
+        .select(['employee.id AS employee_id', 'employee.name AS employee_name'])
+        .where('employee.id IN (:...ids)', {
+          ids: Array.from(allEvaluatorIds),
+        })
+        .andWhere('employee.deletedAt IS NULL')
+        .getRawMany();
+
+      for (const emp of evaluators) {
+        evaluatorNameMap.set(emp.employee_id, emp.employee_name);
+      }
+
+      // externalId로도 조회 (일부 평가자 ID가 externalId일 수 있음)
+      const evaluatorsByExternalId = await employeeRepository
+        .createQueryBuilder('employee')
+        .select([
+          'employee.externalId AS employee_id',
+          'employee.name AS employee_name',
+        ])
+        .where('employee.externalId IN (:...ids)', {
+          ids: Array.from(allEvaluatorIds),
+        })
+        .andWhere('employee.deletedAt IS NULL')
+        .getRawMany();
+
+      for (const emp of evaluatorsByExternalId) {
+        if (emp.employee_id) {
+          evaluatorNameMap.set(emp.employee_id, emp.employee_name);
+        }
+      }
+    }
+
     // 하향평가 데이터를 primary/secondary로 분류
+    // 주의: 평가자 ID와 무관하게 해당 WBS의 평가가 완료되었는지 확인
+    // 실제로 평가를 제출한 사람의 정보를 사용 (평가라인과 다른 사람이 제출한 경우 대응)
     for (const row of downwardEvaluationRows) {
       const wbsId = row.downward_wbs_id;
       if (!wbsId) continue;
@@ -394,12 +444,21 @@ export async function getProjectsWithWbs(
       const secondaryEvaluator = secondaryEvaluatorMap.get(wbsId);
 
       // evaluationContent는 문자열이어야 함 (JSON일 경우 문자열로 변환)
-      const evaluationContent =
+      let evaluationContent =
         typeof row.downward_evaluation_content === 'string'
           ? row.downward_evaluation_content
           : row.downward_evaluation_content
             ? JSON.stringify(row.downward_evaluation_content)
             : undefined;
+
+      // 제출된 하향평가인데 content가 없으면 기본 메시지 생성
+      if (row.downward_is_completed && !evaluationContent?.trim()) {
+        const actualEvaluatorId = row.downward_evaluator_id;
+        const actualEvaluatorName = actualEvaluatorId
+          ? evaluatorNameMap.get(actualEvaluatorId) || '평가자'
+          : '평가자';
+        evaluationContent = `${actualEvaluatorName}님이 미입력 상태에서 제출하였습니다.`;
+      }
 
       // score는 숫자여야 함
       const score =
@@ -417,29 +476,38 @@ export async function getProjectsWithWbs(
             ? new Date(row.downward_completed_at)
             : undefined;
 
-      if (
-        row.downward_evaluation_type === 'primary' &&
-        primaryEvaluator &&
-        row.downward_evaluator_id === primaryEvaluator.evaluatorId
-      ) {
+      // 실제 제출한 평가자의 이름 찾기
+      const actualEvaluatorId = row.downward_evaluator_id;
+      const actualEvaluatorName = actualEvaluatorId
+        ? evaluatorNameMap.get(actualEvaluatorId) || undefined
+        : undefined;
+
+      // 1차 평가: 평가자 ID와 무관하게 PRIMARY 타입 평가가 완료되었는지 확인
+      // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
+      if (row.downward_evaluation_type === 'primary') {
         evalData.primary = {
-          downwardEvaluationId: row.downward_id,
-          evaluatorId: primaryEvaluator.evaluatorId,
-          evaluatorName: primaryEvaluator.evaluatorName,
+          evaluatorId:
+            actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
+          evaluatorName:
+            actualEvaluatorName ||
+            primaryEvaluator?.evaluatorName ||
+            '알 수 없음',
           evaluationContent,
           score,
           isCompleted: row.downward_is_completed || false,
           submittedAt,
         };
-      } else if (
-        row.downward_evaluation_type === 'secondary' &&
-        secondaryEvaluator &&
-        row.downward_evaluator_id === secondaryEvaluator.evaluatorId
-      ) {
+      }
+      // 2차 평가: 평가자 ID와 무관하게 SECONDARY 타입 평가가 완료되었는지 확인
+      // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
+      else if (row.downward_evaluation_type === 'secondary') {
         evalData.secondary = {
-          downwardEvaluationId: row.downward_id,
-          evaluatorId: secondaryEvaluator.evaluatorId,
-          evaluatorName: secondaryEvaluator.evaluatorName,
+          evaluatorId:
+            actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
+          evaluatorName:
+            actualEvaluatorName ||
+            secondaryEvaluator?.evaluatorName ||
+            '알 수 없음',
           evaluationContent,
           score,
           isCompleted: row.downward_is_completed || false,
@@ -577,23 +645,34 @@ export async function getProjectsWithWbs(
       };
       const deliverables = deliverablesMap.get(wbsItemId) || [];
 
-      // secondaryDownwardEvaluation의 evaluatorName이 비어있고, 프로젝트 PM이 있으면 PM 이름으로 채움
+      // 2차 평가자 설정: 매핑이 있으면 사용, 없으면 프로젝트 PM을 기본값으로 설정
       let secondaryEval = downwardEvalData.secondary;
-      if (
-        secondaryEval &&
-        !secondaryEval.evaluatorName &&
-        projectManager &&
-        secondaryEval.evaluatorId === projectManager.id
-      ) {
-        logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+      
+      if (secondaryEval) {
+        // 매핑이 있지만 evaluatorName이 비어있는 경우, PM 이름으로 채움
+        if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+          logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+            wbsId: wbsItemId,
+            evaluatorId: secondaryEval.evaluatorId,
+            pmId: projectManager.id,
+            pmName: projectManager.name,
+          });
+          secondaryEval = {
+            ...secondaryEval,
+            evaluatorName: projectManager.name,
+          };
+        }
+      } else if (projectManager) {
+        // 2차 평가자 매핑이 없으면 프로젝트 PM을 기본값으로 설정
+        logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
           wbsId: wbsItemId,
-          evaluatorId: secondaryEval.evaluatorId,
           pmId: projectManager.id,
           pmName: projectManager.name,
         });
         secondaryEval = {
-          ...secondaryEval,
+          evaluatorId: projectManager.id,
           evaluatorName: projectManager.name,
+          isCompleted: false,
         };
       }
 

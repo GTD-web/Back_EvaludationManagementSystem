@@ -13,6 +13,8 @@ import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downwar
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approval';
+import { NotificationHelperService } from '@domain/common/notification';
+import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 
 /**
  * 하향평가 비즈니스 서비스
@@ -22,7 +24,7 @@ import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approva
  * - 평가자 권한 확인
  * - 여러 컨텍스트 간 조율
  * - 재작성 요청 자동 완료 처리
- * - 알림 서비스 연동 (추후)
+ * - 알림 서비스 연동
  */
 @Injectable()
 export class DownwardEvaluationBusinessService {
@@ -35,11 +37,12 @@ export class DownwardEvaluationBusinessService {
     private readonly revisionRequestContextService: RevisionRequestContextService,
     private readonly stepApprovalContextService: StepApprovalContextService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
+    private readonly notificationHelper: NotificationHelperService,
+    private readonly evaluationPeriodService: EvaluationPeriodService,
     @InjectRepository(WbsSelfEvaluation)
     private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
     @InjectRepository(DownwardEvaluation)
     private readonly downwardEvaluationRepository: Repository<DownwardEvaluation>,
-    // private readonly notificationService: NotificationService, // TODO: 알림 서비스 추가 시 주입
   ) {}
 
   /**
@@ -55,12 +58,6 @@ export class DownwardEvaluationBusinessService {
     downwardEvaluationScore?: number;
     actionBy: string;
   }): Promise<string> {
-    this.logger.log('1차 하향평가 저장 비즈니스 로직 시작', {
-      evaluatorId: params.evaluatorId,
-      evaluateeId: params.evaluateeId,
-      wbsId: params.wbsId,
-    });
-
     // 1. 평가라인 검증: 1차 평가자 권한 확인
     // TODO: 테스트를 위해 임시 주석 처리
     // await this.evaluationCriteriaManagementService.평가라인을_검증한다(
@@ -319,9 +316,58 @@ export class DownwardEvaluationBusinessService {
       );
     }
 
+    // 4. 알림 전송 (비동기 처리, 실패해도 제출은 성공)
+    this.피평가자에게_알림을_전송한다(evaluateeId, periodId).catch((error) => {
+      this.logger.error(
+        '1차 하향평가 제출 알림 전송 실패 (무시됨)',
+        error.stack,
+      );
+    });
+
     this.logger.log(
       `1차 하향평가 제출 및 재작성 요청 완료 처리 완료 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}`,
     );
+  }
+
+  /**
+   * 피평가자에게 1차 하향평가 제출 알림을 전송한다
+   */
+  private async 피평가자에게_알림을_전송한다(
+    evaluateeId: string,
+    periodId: string,
+  ): Promise<void> {
+    try {
+      // 평가기간 정보 조회
+      const period = await this.evaluationPeriodService.ID로_조회한다(periodId);
+      if (!period) {
+        this.logger.warn(
+          `평가기간을 찾을 수 없어 알림을 전송하지 않습니다. periodId=${periodId}`,
+        );
+        return;
+      }
+
+      // 알림 전송
+      await this.notificationHelper.직원에게_알림을_전송한다({
+        sender: 'system',
+        title: '1차 하향평가 제출 알림',
+        content: `${period.name} 평가기간의 1차 하향평가가 제출되었습니다.`,
+        employeeNumber: evaluateeId,
+        sourceSystem: 'ems',
+        linkUrl: '/evaluations/self',
+        metadata: {
+          type: 'primary-downward-evaluation-submitted',
+          priority: 'medium',
+          periodId,
+        },
+      });
+
+      this.logger.log(
+        `1차 하향평가 제출 알림 전송 완료: 피평가자=${evaluateeId}`,
+      );
+    } catch (error) {
+      this.logger.error('알림 전송 중 오류 발생', error.stack);
+      throw error;
+    }
   }
 
   /**

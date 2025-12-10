@@ -13,7 +13,8 @@ export type EvaluationActivityType =
   | 'deliverable'
   | 'evaluation_status'
   | 'step_approval'
-  | 'revision_request';
+  | 'revision_request'
+  | 'final_evaluation';
 
 /**
  * 활동 액션
@@ -30,7 +31,10 @@ export type EvaluationActivityAction =
   | 'approved'
   | 'rejected'
   | 'revision_requested'
-  | 'revision_completed';
+  | 'revision_completed'
+  | 'viewed'
+  | 'confirmed'
+  | 'confirmation_cancelled';
 
 /**
  * 평가 활동 내역 DTO

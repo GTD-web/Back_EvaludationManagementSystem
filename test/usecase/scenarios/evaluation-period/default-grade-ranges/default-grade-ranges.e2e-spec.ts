@@ -4,7 +4,7 @@ import { EvaluationPeriodManagementApiClient } from '../../api-clients/evaluatio
 import {
   getDefaultGradeRanges,
   setDefaultGradeRanges,
-} from '../../../../../src/interface/common/constants/default-grade-ranges.constant';
+} from '../../../../../src/interface/common/dto/evaluation-period/grade-ranges.store';
 
 /**
  * 기본 등급 구간 관리 E2E 테스트

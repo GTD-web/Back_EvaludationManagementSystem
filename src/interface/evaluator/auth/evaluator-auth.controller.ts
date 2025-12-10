@@ -9,7 +9,7 @@ import {
 } from '@interface/common/dto/auth/login-response.dto';
 import { LoginDto } from '@interface/common/dto/auth/login.dto';
 import {
-  GetMe,
+  GetMeAsEvaluator,
   Login,
 } from '@interface/common/decorators/auth/auth.decorators';
 
@@ -49,9 +49,9 @@ export class EvaluatorAuthController {
   }
 
   /**
-   * 현재 로그인한 사용자 정보 조회
+   * 현재 로그인한 평가자 정보 조회
    */
-  @GetMe()
+  @GetMeAsEvaluator()
   async getMe(@CurrentUser() user: AuthenticatedUser): Promise<UserInfoDto> {
     // JWT 가드를 통해 검증된 사용자 정보 반환
     // AuthenticatedUser는 기본 필드만 포함하므로,

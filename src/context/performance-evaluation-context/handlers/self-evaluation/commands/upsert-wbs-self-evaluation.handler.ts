@@ -50,12 +50,6 @@ export class UpsertWbsSelfEvaluationHandler
       actionBy,
     } = command;
 
-    this.logger.log('WBS 자기평가 Upsert 핸들러 실행', {
-      periodId,
-      employeeId,
-      wbsItemId,
-    });
-
     return await this.transactionManager.executeTransaction(async () => {
       // 평가기간 조회 및 점수 범위 검증
       const evaluationPeriod =
@@ -91,10 +85,6 @@ export class UpsertWbsSelfEvaluationHandler
       if (existingEvaluations.length > 0) {
         // 기존 자기평가 수정
         const existing = existingEvaluations[0];
-        this.logger.log('기존 자기평가 수정', {
-          evaluationId: existing.id,
-        });
-
         evaluation = await this.wbsSelfEvaluationService.수정한다(
           existing.id,
           {
@@ -106,11 +96,6 @@ export class UpsertWbsSelfEvaluationHandler
         );
       } else {
         // 새로운 자기평가 생성
-        this.logger.log('새로운 자기평가 생성', {
-          employeeId,
-          wbsItemId,
-        });
-
         evaluation = await this.wbsSelfEvaluationService.생성한다({
           periodId,
           employeeId,
@@ -122,10 +107,6 @@ export class UpsertWbsSelfEvaluationHandler
           createdBy: actionBy,
         });
       }
-
-      this.logger.log('WBS 자기평가 저장 완료', {
-        evaluationId: evaluation.id,
-      });
 
       return evaluation.DTO로_변환한다();
     });

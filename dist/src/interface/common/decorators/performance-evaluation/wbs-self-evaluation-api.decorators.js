@@ -193,6 +193,8 @@ function SubmitWbsSelfEvaluationToEvaluator() {
 - submittedToEvaluator 변경: 1차 평가자 제출 상태가 true로 설정됨
 - updatedAt 갱신: 제출 시 수정일시 자동 업데이트
 - 멱등성 보장: 이미 1차 평가자에게 제출된 자기평가를 다시 제출해도 성공 (상태 유지)
+- **Activity Log 연동**: 제출 후 1차 평가자가 데이터 조회 시 viewedByPrimaryEvaluator 필드 활성화
+- **2차 평가자 제한**: 2차 평가자는 1차 평가가 제출된 후에만 viewedBySecondaryEvaluator 활성화 가능
 - 잘못된 UUID: UUID 형식이 아닌 ID로 요청 시 400 에러
 - 존재하지 않는 ID: 유효한 UUID이지만 존재하지 않는 자기평가 ID로 요청 시 400 에러
 - 평가 내용/점수 필수: 평가 내용과 점수가 입력되지 않았으면 400 에러

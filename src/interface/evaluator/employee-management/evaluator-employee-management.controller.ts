@@ -10,6 +10,7 @@ import {
   GetDepartmentHierarchyWithEmployees,
 } from '@interface/common/decorators/employee-management/employee-management-api.decorators';
 import { GetEmployeesQueryDto } from '@interface/common/dto/employee-management/employee-management.dto';
+import { Roles } from '@interface/common/decorators';
 import { Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
@@ -21,6 +22,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-1. 평가자 - 조직 관리')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/employees')
 export class EvaluatorEmployeeManagementController {
   constructor(

@@ -1,6 +1,5 @@
-import { ICommandHandler } from '@nestjs/cqrs';
+import { ICommandHandler, CommandBus } from '@nestjs/cqrs';
 import { EvaluationQuestionService } from '../../../../../domain/sub/evaluation-question/evaluation-question.service';
-import { QuestionGroupMappingService } from '../../../../../domain/sub/question-group-mapping/question-group-mapping.service';
 import type { CreateEvaluationQuestionDto } from '../../../../../domain/sub/evaluation-question/evaluation-question.types';
 export declare class CreateEvaluationQuestionCommand {
     readonly data: CreateEvaluationQuestionDto;
@@ -9,8 +8,8 @@ export declare class CreateEvaluationQuestionCommand {
 }
 export declare class CreateEvaluationQuestionHandler implements ICommandHandler<CreateEvaluationQuestionCommand, string> {
     private readonly evaluationQuestionService;
-    private readonly questionGroupMappingService;
+    private readonly commandBus;
     private readonly logger;
-    constructor(evaluationQuestionService: EvaluationQuestionService, questionGroupMappingService: QuestionGroupMappingService);
+    constructor(evaluationQuestionService: EvaluationQuestionService, commandBus: CommandBus);
     execute(command: CreateEvaluationQuestionCommand): Promise<string>;
 }

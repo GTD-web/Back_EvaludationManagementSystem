@@ -251,7 +251,65 @@ describe('재작성 요청 API Query 파라미터 변환 E2E 테스트', () => {
     });
   });
 
-  describe('GET /admin/revision-requests - isCompleted 파라미터 변환', () => {
+  describe('GET /admin/revision-requests - 전체 재작성 요청 필터링', () => {
+    it('파라미터 없이 요청했을 때 모든 상태의 요청이 반환되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] 파라미터 없이 요청했을 때 모든 상태의 요청이 반환되어야 한다';
+
+      try {
+        // Given - 파라미터 없이 요청
+        result = await apiClient.getRevisionRequests({});
+
+        // Then - 결과가 반환되어야 함 (빈 배열일 수도 있음)
+        expect(Array.isArray(result)).toBe(true);
+
+        // 다양한 상태가 섞여있는지 확인 (데이터가 있는 경우)
+        if (result.length > 0) {
+          const hasTrue = result.some((item: any) => item.isCompleted === true);
+          const hasFalse = result.some(
+            (item: any) => item.isCompleted === false,
+          );
+
+          // 테스트 결과 저장 (성공)
+          testResults.push({
+            testName,
+            result: {
+              requestParams: {},
+              resultCount: result.length,
+              isArray: Array.isArray(result),
+              hasCompletedTrue: hasTrue,
+              hasCompletedFalse: hasFalse,
+              passed: true,
+            },
+          });
+        } else {
+          testResults.push({
+            testName,
+            result: {
+              requestParams: {},
+              resultCount: 0,
+              isArray: true,
+              passed: true,
+            },
+          });
+        }
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: {},
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
     it('isCompleted=false로 요청했을 때 false로 필터링되어야 한다', async () => {
       let result: any[];
       let error: any;
@@ -301,7 +359,7 @@ describe('재작성 요청 API Query 파라미터 변환 E2E 테스트', () => {
       let result: any[];
       let error: any;
       const testName =
-        'isCompleted=true로 요청했을 때 true로 필터링되어야 한다';
+        '[전체] isCompleted=true로 요청했을 때 true로 필터링되어야 한다';
 
       try {
         // Given
@@ -334,6 +392,930 @@ describe('재작성 요청 API Query 파라미터 변환 E2E 테스트', () => {
           testName,
           result: {
             requestParams: { isCompleted: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=false로 요청했을 때 false로 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=false로 요청했을 때 false로 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(false);
+          expect(item.isRead).not.toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false },
+            resultCount: result.length,
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=true로 요청했을 때 true로 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=true로 요청했을 때 true로 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isRead).not.toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: true,
+          isCompleted: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isCompleted).toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: true },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            allItemsHaveIsCompletedTrue: result.every(
+              (item: any) => item.isCompleted === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: true,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: false },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: false },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: false,
+          isCompleted: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(false);
+          expect(item.isCompleted).toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: true },
+            resultCount: result.length,
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            allItemsHaveIsCompletedTrue: result.every(
+              (item: any) => item.isCompleted === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=false와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] isRead=false와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getRevisionRequests({
+          isRead: false,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(false);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: false },
+            resultCount: result.length,
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: false },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+  });
+
+  describe('GET /admin/revision-requests/me - 내 재작성 요청 추가 필터링', () => {
+    it('isRead=true로 요청했을 때 true로 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] isRead=true로 요청했을 때 true로 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getMyRevisionRequests({
+          isRead: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isRead).not.toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=false로 요청했을 때 false로 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] isRead=false로 요청했을 때 false로 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getMyRevisionRequests({
+          isRead: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(false);
+          expect(item.isRead).not.toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false },
+            resultCount: result.length,
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getMyRevisionRequests({
+          isRead: true,
+          isCompleted: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isCompleted).toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: true },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            allItemsHaveIsCompletedTrue: result.every(
+              (item: any) => item.isCompleted === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getMyRevisionRequests({
+          isRead: true,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(true);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: false },
+            resultCount: result.length,
+            allItemsHaveIsReadTrue: result.every(
+              (item: any) => item.isRead === true,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: true, isCompleted: false },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given
+        result = await apiClient.getMyRevisionRequests({
+          isRead: false,
+          isCompleted: true,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.isRead).toBe(false);
+          expect(item.isCompleted).toBe(true);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: true },
+            resultCount: result.length,
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            allItemsHaveIsCompletedTrue: result.every(
+              (item: any) => item.isCompleted === true,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { isRead: false, isCompleted: true },
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+  });
+
+  describe('GET /admin/revision-requests - 다른 필터와의 조합', () => {
+    it('evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 evaluationPeriodId 얻기
+        const allRequests = await apiClient.getRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const evaluationPeriodId = allRequests[0].evaluationPeriod.id;
+
+        // When
+        result = await apiClient.getRevisionRequests({
+          evaluationPeriodId,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.evaluationPeriod.id).toBe(evaluationPeriodId);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { evaluationPeriodId, isCompleted: false },
+            resultCount: result.length,
+            allMatchEvaluationPeriod: result.every(
+              (item: any) => item.evaluationPeriod.id === evaluationPeriodId,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('employeeId와 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] employeeId와 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 employeeId 얻기
+        const allRequests = await apiClient.getRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const employeeId = allRequests[0].employee.id;
+
+        // When
+        result = await apiClient.getRevisionRequests({
+          employeeId,
+          isRead: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.employee.id).toBe(employeeId);
+          expect(item.isRead).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { employeeId, isRead: false },
+            resultCount: result.length,
+            allMatchEmployee: result.every(
+              (item: any) => item.employee.id === employeeId,
+            ),
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('step과 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] step과 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 step 얻기
+        const allRequests = await apiClient.getRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const step = allRequests[0].step;
+
+        // When
+        result = await apiClient.getRevisionRequests({
+          step: step as any,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.step).toBe(step);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { step, isCompleted: false },
+            resultCount: result.length,
+            allMatchStep: result.every((item: any) => item.step === step),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('여러 필터를 동시에 사용할 때 모두 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[전체] 여러 필터(evaluationPeriodId, isRead, isCompleted)를 동시에 사용할 때 모두 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 evaluationPeriodId 얻기
+        const allRequests = await apiClient.getRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const evaluationPeriodId = allRequests[0].evaluationPeriod.id;
+
+        // When
+        result = await apiClient.getRevisionRequests({
+          evaluationPeriodId,
+          isRead: false,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.evaluationPeriod.id).toBe(evaluationPeriodId);
+          expect(item.isRead).toBe(false);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: {
+              evaluationPeriodId,
+              isRead: false,
+              isCompleted: false,
+            },
+            resultCount: result.length,
+            allMatchEvaluationPeriod: result.every(
+              (item: any) => item.evaluationPeriod.id === evaluationPeriodId,
+            ),
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+  });
+
+  describe('GET /admin/revision-requests/me - 다른 필터와의 조합', () => {
+    it('evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 evaluationPeriodId 얻기
+        const allRequests = await apiClient.getMyRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const evaluationPeriodId = allRequests[0].evaluationPeriod.id;
+
+        // When
+        result = await apiClient.getMyRevisionRequests({
+          evaluationPeriodId,
+          isCompleted: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.evaluationPeriod.id).toBe(evaluationPeriodId);
+          expect(item.isCompleted).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { evaluationPeriodId, isCompleted: false },
+            resultCount: result.length,
+            allMatchEvaluationPeriod: result.every(
+              (item: any) => item.evaluationPeriod.id === evaluationPeriodId,
+            ),
+            allItemsHaveIsCompletedFalse: result.every(
+              (item: any) => item.isCompleted === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
+            passed: false,
+            error: extractErrorMessage(error),
+          },
+        });
+        throw e;
+      }
+    });
+
+    it('step과 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다', async () => {
+      let result: any[];
+      let error: any;
+      const testName =
+        '[내꺼] step과 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다';
+
+      try {
+        // Given - 먼저 전체 조회로 step 얻기
+        const allRequests = await apiClient.getMyRevisionRequests({});
+        if (allRequests.length === 0) {
+          // 데이터가 없으면 테스트 스킵
+          testResults.push({
+            testName,
+            result: {
+              skipped: true,
+              reason: '테스트 데이터 없음',
+              passed: true,
+            },
+          });
+          return;
+        }
+
+        const step = allRequests[0].step;
+
+        // When
+        result = await apiClient.getMyRevisionRequests({
+          step: step as any,
+          isRead: false,
+        });
+
+        // Then
+        result.forEach((item: any) => {
+          expect(item.step).toBe(step);
+          expect(item.isRead).toBe(false);
+        });
+
+        // 테스트 결과 저장 (성공)
+        testResults.push({
+          testName,
+          result: {
+            requestParams: { step, isRead: false },
+            resultCount: result.length,
+            allMatchStep: result.every((item: any) => item.step === step),
+            allItemsHaveIsReadFalse: result.every(
+              (item: any) => item.isRead === false,
+            ),
+            passed: true,
+          },
+        });
+      } catch (e) {
+        error = e;
+        // 테스트 결과 저장 (실패)
+        testResults.push({
+          testName,
+          result: {
             passed: false,
             error: extractErrorMessage(error),
           },

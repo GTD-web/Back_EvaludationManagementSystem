@@ -185,6 +185,7 @@ export interface MyDownwardEvaluationStatus {
         completedEvaluationCount: number;
         totalScore: number | null;
         grade: string | null;
+        primaryEvaluationViewed?: boolean;
     } | null;
 }
 export interface MyEvaluationTargetStatusDto {
@@ -209,6 +210,9 @@ export interface MyEvaluationTargetStatusDto {
         hasPrimaryEvaluator: boolean;
         hasSecondaryEvaluator: boolean;
     };
+    setup: {
+        status: 'none' | 'in_progress' | 'pending' | 'approved' | 'revision_requested' | 'revision_completed';
+    };
     performanceInput: {
         status: PerformanceInputStatus;
         totalWbsCount: number;
@@ -226,6 +230,8 @@ export interface MyEvaluationTargetStatusDto {
         isSubmittedToManager: boolean;
         totalScore: number | null;
         grade: string | null;
+        viewedByPrimaryEvaluator?: boolean;
+        viewedBySecondaryEvaluator?: boolean;
     };
     downwardEvaluation: MyDownwardEvaluationStatus;
 }

@@ -3,10 +3,20 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { EvaluationPeriodEmployeeMappingModule } from '../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.module';
+import { EvaluationProjectAssignmentModule } from '../../domain/core/evaluation-project-assignment/evaluation-project-assignment.module';
+import { EvaluationWbsAssignmentModule } from '../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module';
+import { EvaluationLineMappingModule } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { EvaluationPeriod } from '../../domain/core/evaluation-period/evaluation-period.entity';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { Department } from '../../domain/common/department/department.entity';
 import { EvaluationPeriodEmployeeMapping } from '../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
+import { EvaluationProjectAssignment } from '../../domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
+import { EvaluationWbsAssignment } from '../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
+import { EvaluationLineMapping } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
+import { Project } from '../../domain/common/project/project.entity';
+import { WbsItem } from '../../domain/common/wbs-item/wbs-item.entity';
+import { WbsEvaluationCriteria } from '../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
+import { EvaluationLine } from '../../domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationPeriodManagementContextService } from './evaluation-period-management.service';
 import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
 
@@ -23,9 +33,19 @@ import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
       Employee,
       Department,
       EvaluationPeriodEmployeeMapping,
+      EvaluationProjectAssignment,
+      EvaluationWbsAssignment,
+      EvaluationLineMapping,
+      Project,
+      WbsItem,
+      WbsEvaluationCriteria,
+      EvaluationLine,
     ]),
     EvaluationPeriodModule,
     EvaluationPeriodEmployeeMappingModule,
+    EvaluationProjectAssignmentModule,
+    EvaluationWbsAssignmentModule,
+    EvaluationLineMappingModule,
   ],
   providers: [
     EvaluationPeriodManagementContextService,

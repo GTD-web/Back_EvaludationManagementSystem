@@ -258,9 +258,6 @@ let PeerEvaluationBusinessService = PeerEvaluationBusinessService_1 = class Peer
         });
     }
     async 동료평가_목록을_조회한다(params) {
-        this.logger.log('동료평가 목록 조회 비즈니스 로직', {
-            evaluatorId: params.evaluatorId,
-        });
         const query = new peer_evaluation_1.GetPeerEvaluationListQuery(params.evaluatorId, params.evaluateeId, params.periodId, params.status, params.page, params.limit);
         return await this.performanceEvaluationService.동료평가_목록을_조회한다(query);
     }

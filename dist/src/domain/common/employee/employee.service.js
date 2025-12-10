@@ -229,29 +229,61 @@ let EmployeeService = class EmployeeService {
         });
         return employee ? employee.isExcludedFromList : false;
     }
-    async 사번으로_접근가능한가(employeeNumber) {
+    async 사번으로_관리자권한있는가(employeeNumber) {
         const employee = await this.employeeRepository.findOne({
             where: { employeeNumber, deletedAt: (0, typeorm_2.IsNull)() },
         });
         return employee ? employee.isAccessible : false;
     }
-    async 접근가능한가(id) {
+    async 관리자권한있는가(id) {
         const employee = await this.employeeRepository.findOne({
             where: { id, deletedAt: (0, typeorm_2.IsNull)() },
         });
         return employee ? employee.isAccessible : false;
     }
-    async 접근가능여부변경한다(id, isAccessible, updatedBy) {
+    async 관리자권한변경한다(id, isAdmin, updatedBy) {
         const employee = await this.employeeRepository.findOne({
             where: { id, deletedAt: (0, typeorm_2.IsNull)() },
         });
         if (!employee) {
             return null;
         }
-        employee.isAccessible = isAccessible;
+        employee.isAccessible = isAdmin;
         employee.updatedBy = updatedBy;
         const updated = await this.employeeRepository.save(employee);
         return updated.DTO로_변환한다();
+    }
+    async 여러직원관리자권한변경한다(ids, isAdmin, updatedBy) {
+        const result = {
+            totalProcessed: ids.length,
+            succeeded: 0,
+            failed: 0,
+            failedIds: [],
+            errors: [],
+        };
+        for (const id of ids) {
+            try {
+                const employee = await this.employeeRepository.findOne({
+                    where: { id, deletedAt: (0, typeorm_2.IsNull)() },
+                });
+                if (!employee) {
+                    result.failed++;
+                    result.failedIds.push(id);
+                    result.errors.push(`직원을 찾을 수 없습니다: ${id}`);
+                    continue;
+                }
+                employee.isAccessible = isAdmin;
+                employee.updatedBy = updatedBy;
+                await this.employeeRepository.save(employee);
+                result.succeeded++;
+            }
+            catch (error) {
+                result.failed++;
+                result.failedIds.push(id);
+                result.errors.push(`직원 ${id} 처리 중 오류 발생: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+        return result;
     }
     async findById(id) {
         return this.employeeRepository.findOne({

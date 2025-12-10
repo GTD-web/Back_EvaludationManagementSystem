@@ -18,6 +18,8 @@ const step_approval_context_module_1 = require("../../context/step-approval-cont
 const evaluation_activity_log_context_module_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.module");
 const wbs_self_evaluation_entity_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity");
 const downward_evaluation_entity_1 = require("../../domain/core/downward-evaluation/downward-evaluation.entity");
+const notification_1 = require("../../domain/common/notification");
+const core_domain_module_1 = require("../../domain/core/core-domain.module");
 let DownwardEvaluationBusinessModule = class DownwardEvaluationBusinessModule {
 };
 exports.DownwardEvaluationBusinessModule = DownwardEvaluationBusinessModule;
@@ -25,12 +27,14 @@ exports.DownwardEvaluationBusinessModule = DownwardEvaluationBusinessModule = __
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([wbs_self_evaluation_entity_1.WbsSelfEvaluation, downward_evaluation_entity_1.DownwardEvaluation]),
+            core_domain_module_1.CoreDomainModule,
             performance_evaluation_context_module_1.PerformanceEvaluationContextModule,
             evaluation_criteria_management_context_module_1.EvaluationCriteriaManagementContextModule,
             evaluation_period_management_context_module_1.EvaluationPeriodManagementContextModule,
             revision_request_context_module_1.RevisionRequestContextModule,
             step_approval_context_module_1.StepApprovalContextModule,
             evaluation_activity_log_context_module_1.EvaluationActivityLogContextModule,
+            notification_1.NotificationModule,
         ],
         providers: [downward_evaluation_business_service_1.DownwardEvaluationBusinessService],
         exports: [downward_evaluation_business_service_1.DownwardEvaluationBusinessService],

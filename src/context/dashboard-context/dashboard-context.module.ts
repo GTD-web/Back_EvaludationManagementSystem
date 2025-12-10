@@ -21,9 +21,11 @@ import { Deliverable } from '../../domain/core/deliverable/deliverable.entity';
 import { EvaluationRevisionRequest } from '../../domain/sub/evaluation-revision-request/evaluation-revision-request.entity';
 import { EvaluationRevisionRequestRecipient } from '../../domain/sub/evaluation-revision-request/evaluation-revision-request-recipient.entity';
 import { SecondaryEvaluationStepApproval } from '../../domain/sub/secondary-evaluation-step-approval/secondary-evaluation-step-approval.entity';
+import { EvaluationActivityLog } from '../../domain/core/evaluation-activity-log/evaluation-activity-log.entity';
 import { QUERY_HANDLERS } from './handlers/queries';
 import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evaluation-step-approval';
 import { SecondaryEvaluationStepApprovalModule } from '@domain/sub/secondary-evaluation-step-approval';
+import { EvaluationActivityLogContextModule } from '../evaluation-activity-log-context/evaluation-activity-log-context.module';
 
 /**
  * 대시보드 컨텍스트 모듈
@@ -36,6 +38,7 @@ import { SecondaryEvaluationStepApprovalModule } from '@domain/sub/secondary-eva
     CqrsModule,
     EmployeeEvaluationStepApprovalModule,
     SecondaryEvaluationStepApprovalModule,
+    EvaluationActivityLogContextModule,
     TypeOrmModule.forFeature([
       EvaluationPeriod,
       EvaluationPeriodEmployeeMapping,
@@ -56,6 +59,7 @@ import { SecondaryEvaluationStepApprovalModule } from '@domain/sub/secondary-eva
       EvaluationRevisionRequest,
       EvaluationRevisionRequestRecipient,
       SecondaryEvaluationStepApproval,
+      EvaluationActivityLog,
     ]),
   ],
   providers: [DashboardService, ...QUERY_HANDLERS],

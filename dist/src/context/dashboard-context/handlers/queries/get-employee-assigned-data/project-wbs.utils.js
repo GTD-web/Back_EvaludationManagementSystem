@@ -1,12 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProjectsWithWbs = getProjectsWithWbs;
-const common_1 = require("@nestjs/common");
 const project_entity_1 = require("../../../../../domain/common/project/project.entity");
 const employee_entity_1 = require("../../../../../domain/common/employee/employee.entity");
 const wbs_item_entity_1 = require("../../../../../domain/common/wbs-item/wbs-item.entity");
-const logger = new common_1.Logger('ProjectWbsUtils');
-async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, projectAssignmentRepository, wbsAssignmentRepository, wbsItemRepository, criteriaRepository, selfEvaluationRepository, downwardEvaluationRepository, evaluationLineMappingRepository, deliverableRepository) {
+const logger = { log: () => { }, warn: () => { }, error: () => { }, debug: () => { } };
+async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, projectAssignmentRepository, wbsAssignmentRepository, wbsItemRepository, criteriaRepository, selfEvaluationRepository, downwardEvaluationRepository, evaluationLineMappingRepository, deliverableRepository, employeeRepository) {
     const projectAssignments = await projectAssignmentRepository
         .createQueryBuilder('assignment')
         .leftJoin(project_entity_1.Project, 'project', 'project.id = assignment.projectId AND project.deletedAt IS NULL')
@@ -254,6 +253,43 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             .andWhere('downward.wbsId IN (:...wbsItemIds)', { wbsItemIds })
             .andWhere('downward.deletedAt IS NULL')
             .getRawMany();
+        const allEvaluatorIds = new Set();
+        for (const row of downwardEvaluationRows) {
+            const evaluatorId = row.downward_evaluator_id;
+            if (evaluatorId) {
+                allEvaluatorIds.add(evaluatorId);
+            }
+        }
+        const evaluatorNameMap = new Map();
+        if (allEvaluatorIds.size > 0) {
+            const evaluators = await employeeRepository
+                .createQueryBuilder('employee')
+                .select(['employee.id AS employee_id', 'employee.name AS employee_name'])
+                .where('employee.id IN (:...ids)', {
+                ids: Array.from(allEvaluatorIds),
+            })
+                .andWhere('employee.deletedAt IS NULL')
+                .getRawMany();
+            for (const emp of evaluators) {
+                evaluatorNameMap.set(emp.employee_id, emp.employee_name);
+            }
+            const evaluatorsByExternalId = await employeeRepository
+                .createQueryBuilder('employee')
+                .select([
+                'employee.externalId AS employee_id',
+                'employee.name AS employee_name',
+            ])
+                .where('employee.externalId IN (:...ids)', {
+                ids: Array.from(allEvaluatorIds),
+            })
+                .andWhere('employee.deletedAt IS NULL')
+                .getRawMany();
+            for (const emp of evaluatorsByExternalId) {
+                if (emp.employee_id) {
+                    evaluatorNameMap.set(emp.employee_id, emp.employee_name);
+                }
+            }
+        }
         for (const row of downwardEvaluationRows) {
             const wbsId = row.downward_wbs_id;
             if (!wbsId)
@@ -267,11 +303,18 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             const evalData = downwardEvaluationMap.get(wbsId);
             const primaryEvaluator = primaryEvaluatorMap.get(wbsId);
             const secondaryEvaluator = secondaryEvaluatorMap.get(wbsId);
-            const evaluationContent = typeof row.downward_evaluation_content === 'string'
+            let evaluationContent = typeof row.downward_evaluation_content === 'string'
                 ? row.downward_evaluation_content
                 : row.downward_evaluation_content
                     ? JSON.stringify(row.downward_evaluation_content)
                     : undefined;
+            if (row.downward_is_completed && !evaluationContent?.trim()) {
+                const actualEvaluatorId = row.downward_evaluator_id;
+                const actualEvaluatorName = actualEvaluatorId
+                    ? evaluatorNameMap.get(actualEvaluatorId) || '평가자'
+                    : '평가자';
+                evaluationContent = `${actualEvaluatorName}님이 미입력 상태에서 제출하였습니다.`;
+            }
             const score = typeof row.downward_score === 'number'
                 ? row.downward_score
                 : row.downward_score !== null && row.downward_score !== undefined
@@ -282,26 +325,28 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 : row.downward_completed_at
                     ? new Date(row.downward_completed_at)
                     : undefined;
-            if (row.downward_evaluation_type === 'primary' &&
-                primaryEvaluator &&
-                row.downward_evaluator_id === primaryEvaluator.evaluatorId) {
+            const actualEvaluatorId = row.downward_evaluator_id;
+            const actualEvaluatorName = actualEvaluatorId
+                ? evaluatorNameMap.get(actualEvaluatorId) || undefined
+                : undefined;
+            if (row.downward_evaluation_type === 'primary') {
                 evalData.primary = {
-                    downwardEvaluationId: row.downward_id,
-                    evaluatorId: primaryEvaluator.evaluatorId,
-                    evaluatorName: primaryEvaluator.evaluatorName,
+                    evaluatorId: actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
+                    evaluatorName: actualEvaluatorName ||
+                        primaryEvaluator?.evaluatorName ||
+                        '알 수 없음',
                     evaluationContent,
                     score,
                     isCompleted: row.downward_is_completed || false,
                     submittedAt,
                 };
             }
-            else if (row.downward_evaluation_type === 'secondary' &&
-                secondaryEvaluator &&
-                row.downward_evaluator_id === secondaryEvaluator.evaluatorId) {
+            else if (row.downward_evaluation_type === 'secondary') {
                 evalData.secondary = {
-                    downwardEvaluationId: row.downward_id,
-                    evaluatorId: secondaryEvaluator.evaluatorId,
-                    evaluatorName: secondaryEvaluator.evaluatorName,
+                    evaluatorId: actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
+                    evaluatorName: actualEvaluatorName ||
+                        secondaryEvaluator?.evaluatorName ||
+                        '알 수 없음',
                     evaluationContent,
                     score,
                     isCompleted: row.downward_is_completed || false,
@@ -412,19 +457,30 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             };
             const deliverables = deliverablesMap.get(wbsItemId) || [];
             let secondaryEval = downwardEvalData.secondary;
-            if (secondaryEval &&
-                !secondaryEval.evaluatorName &&
-                projectManager &&
-                secondaryEval.evaluatorId === projectManager.id) {
-                logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+            if (secondaryEval) {
+                if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+                    logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
+                        wbsId: wbsItemId,
+                        evaluatorId: secondaryEval.evaluatorId,
+                        pmId: projectManager.id,
+                        pmName: projectManager.name,
+                    });
+                    secondaryEval = {
+                        ...secondaryEval,
+                        evaluatorName: projectManager.name,
+                    };
+                }
+            }
+            else if (projectManager) {
+                logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
                     wbsId: wbsItemId,
-                    evaluatorId: secondaryEval.evaluatorId,
                     pmId: projectManager.id,
                     pmName: projectManager.name,
                 });
                 secondaryEval = {
-                    ...secondaryEval,
+                    evaluatorId: projectManager.id,
                     evaluatorName: projectManager.name,
+                    isCompleted: false,
                 };
             }
             wbsList.push({

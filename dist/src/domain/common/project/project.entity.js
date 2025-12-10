@@ -21,7 +21,8 @@ let Project = Project_1 = class Project extends base_entity_1.BaseEntity {
     startDate;
     endDate;
     managerId;
-    constructor(name, projectCode, status, startDate, endDate, managerId) {
+    parentProjectId;
+    constructor(name, projectCode, status, startDate, endDate, managerId, parentProjectId) {
         super();
         if (name)
             this.name = name;
@@ -35,6 +36,8 @@ let Project = Project_1 = class Project extends base_entity_1.BaseEntity {
             this.endDate = endDate;
         if (managerId)
             this.managerId = managerId;
+        if (parentProjectId)
+            this.parentProjectId = parentProjectId;
         this.status = status || project_types_1.ProjectStatus.ACTIVE;
     }
     DTO로_변환한다() {
@@ -48,6 +51,7 @@ let Project = Project_1 = class Project extends base_entity_1.BaseEntity {
             status: this.status,
             startDate: this.startDate,
             endDate: this.endDate,
+            parentProjectId: this.parentProjectId,
             get isDeleted() {
                 return this.deletedAt !== null && this.deletedAt !== undefined;
             },
@@ -126,13 +130,22 @@ __decorate([
         type: 'varchar',
         length: 255,
         nullable: true,
-        comment: '프로젝트 매니저 ID',
+        comment: '프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정)',
     }),
     __metadata("design:type", String)
 ], Project.prototype, "managerId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'uuid',
+        nullable: true,
+        comment: '상위 프로젝트 ID (하위 프로젝트인 경우)',
+    }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Project.prototype, "parentProjectId", void 0);
 exports.Project = Project = Project_1 = __decorate([
     (0, typeorm_1.Entity)('project'),
     __metadata("design:paramtypes", [String, String, String, Date,
-        Date, String])
+        Date, String, String])
 ], Project);
 //# sourceMappingURL=project.entity.js.map

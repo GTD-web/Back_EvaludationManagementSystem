@@ -29,7 +29,7 @@ let DatabaseConfigService = class DatabaseConfigService {
             database: this.configService.get('DB_DATABASE', 'lumir_project_management'),
             migrations: ['dist/migrations/*{.ts,.js}'],
             migrationsRun: false,
-            synchronize: isDevelopment,
+            synchronize: false,
             logging: isDevelopment ? ['query', 'error', 'warn'] : ['error'],
             extra: {
                 connectionLimit: 10,

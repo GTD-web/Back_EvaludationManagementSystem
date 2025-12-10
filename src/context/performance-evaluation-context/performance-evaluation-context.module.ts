@@ -5,6 +5,8 @@ import { DatabaseModule } from '@libs/database/database.module';
 import { CoreDomainModule } from '../../domain/core/core-domain.module';
 import { CommonDomainModule } from '../../domain/common/common-domain.module';
 import { SubDomainModule } from '../../domain/sub/sub-domain.module';
+import { StepApprovalContextModule } from '../step-approval-context/step-approval-context.module';
+import { EvaluationActivityLogContextModule } from '../evaluation-activity-log-context/evaluation-activity-log-context.module';
 
 // 엔티티 imports
 import { WbsSelfEvaluation } from '../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
@@ -36,6 +38,8 @@ import { QueryHandlers } from './handlers/query-handlers';
     CoreDomainModule,
     CommonDomainModule,
     SubDomainModule,
+    StepApprovalContextModule,
+    EvaluationActivityLogContextModule,
     TypeOrmModule.forFeature([
       WbsSelfEvaluation,
       DownwardEvaluation,

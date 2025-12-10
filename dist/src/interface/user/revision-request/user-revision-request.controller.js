@@ -16,6 +16,7 @@ exports.UserRevisionRequestController = void 0;
 const revision_request_business_service_1 = require("../../../business/revision-request/revision-request-business.service");
 const revision_request_context_1 = require("../../../context/revision-request-context");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const revision_request_api_decorators_1 = require("../../common/decorators/revision-request/revision-request-api.decorators");
 const complete_revision_request_dto_1 = require("../../common/dto/revision-request/complete-revision-request.dto");
 const get_revision_requests_query_dto_1 = require("../../common/dto/revision-request/get-revision-requests-query.dto");
@@ -28,12 +29,12 @@ let UserRevisionRequestController = class UserRevisionRequestController {
         this.revisionRequestBusinessService = revisionRequestBusinessService;
         this.revisionRequestContextService = revisionRequestContextService;
     }
-    async getMyRevisionRequests(query, isRead, isCompleted, recipientId) {
+    async getMyRevisionRequests(query, recipientId) {
         const requests = await this.revisionRequestContextService.내_재작성요청목록을_조회한다(recipientId, {
             evaluationPeriodId: query.evaluationPeriodId,
             employeeId: query.employeeId,
-            isRead: isRead,
-            isCompleted: isCompleted,
+            isRead: query.isRead ?? false,
+            isCompleted: query.isCompleted ?? false,
             step: query.step,
         });
         return requests.map((req) => ({
@@ -69,11 +70,9 @@ exports.UserRevisionRequestController = UserRevisionRequestController;
 __decorate([
     (0, revision_request_api_decorators_1.GetMyRevisionRequests)(),
     __param(0, (0, common_1.Query)()),
-    __param(1, (0, common_1.Query)('isRead', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
-    __param(2, (0, common_1.Query)('isCompleted', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
-    __param(3, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto, Boolean, Boolean, String]),
+    __metadata("design:paramtypes", [get_revision_requests_query_dto_1.GetRevisionRequestsQueryDto, String]),
     __metadata("design:returntype", Promise)
 ], UserRevisionRequestController.prototype, "getMyRevisionRequests", null);
 __decorate([
@@ -103,6 +102,7 @@ __decorate([
 exports.UserRevisionRequestController = UserRevisionRequestController = __decorate([
     (0, swagger_1.ApiTags)('A-0-4. 사용자 - 재작성 요청'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('user'),
     (0, common_1.Controller)('user/revision-requests'),
     __metadata("design:paramtypes", [revision_request_business_service_1.RevisionRequestBusinessService,
         revision_request_context_1.RevisionRequestContextService])

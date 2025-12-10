@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { IsOptional, IsUUID, IsEnum, IsBoolean } from 'class-validator';
+import { OptionalToBoolean } from '@interface/common/decorators';
 
 /**
  * 재작성 요청 단계 enum
@@ -41,6 +42,28 @@ export class GetRevisionRequestsQueryDto {
   @IsOptional()
   @IsUUID()
   requestedBy?: string;
+
+  @ApiPropertyOptional({
+    description:
+      '읽음 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
+    type: String,
+    example: 'false',
+  })
+  @IsOptional()
+  @OptionalToBoolean()
+  @IsBoolean()
+  isRead?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      '재작성 완료 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
+    type: String,
+    example: 'false',
+  })
+  @IsOptional()
+  @OptionalToBoolean()
+  @IsBoolean()
+  isCompleted?: boolean;
 
   @ApiPropertyOptional({
     description: '단계',

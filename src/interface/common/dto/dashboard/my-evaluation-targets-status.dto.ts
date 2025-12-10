@@ -8,7 +8,8 @@ import { Type } from 'class-transformer';
  */
 export class MyEvaluationStatusDetailDto {
   @ApiProperty({
-    description: '평가 상태 (할당수 = 완료수 = 0: none, 할당수 > 완료수: in_progress, 할당수 = 완료수 > 0: complete)',
+    description:
+      '평가 상태 (할당수 = 완료수 = 0: none, 할당수 > 완료수: in_progress, 할당수 = 완료수 > 0: complete)',
     enum: ['none', 'in_progress', 'complete'],
     example: 'in_progress',
   })
@@ -40,6 +41,13 @@ export class MyEvaluationStatusDetailDto {
     nullable: true,
   })
   grade: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      '2차 평가자가 1차평가 제출을 확인했는지 여부 (1차 평가 제출 시에만 제공)',
+    example: false,
+  })
+  primaryEvaluationViewed?: boolean;
 }
 
 /**
@@ -172,6 +180,33 @@ export class MyTargetEvaluationLineDto {
 }
 
 /**
+ * 평가기준 설정 통합 상태 DTO
+ * (평가항목 + WBS 평가기준 상태 + 제출/승인 상태를 통합)
+ */
+export class SetupStatusDto {
+  @ApiProperty({
+    description:
+      '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria 상태 + 제출/승인 상태 통합)',
+    enum: [
+      'none',
+      'in_progress',
+      'pending',
+      'approved',
+      'revision_requested',
+      'revision_completed',
+    ],
+    example: 'approved',
+  })
+  status:
+    | 'none'
+    | 'in_progress'
+    | 'pending'
+    | 'approved'
+    | 'revision_requested'
+    | 'revision_completed';
+}
+
+/**
  * 성과 입력 정보 DTO
  */
 export class PerformanceInputDto {
@@ -261,6 +296,20 @@ export class MyTargetSelfEvaluationDto {
     nullable: true,
   })
   grade: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      '1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
+    example: false,
+  })
+  viewedByPrimaryEvaluator?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      '2차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',
+    example: false,
+  })
+  viewedBySecondaryEvaluator?: boolean;
 }
 
 /**
@@ -306,6 +355,14 @@ export class MyEvaluationTargetStatusResponseDto {
   })
   @Type(() => MyTargetEvaluationLineDto)
   evaluationLine: MyTargetEvaluationLineDto;
+
+  @ApiProperty({
+    description:
+      '평가기준 설정 통합 상태 (evaluationCriteria, wbsCriteria, evaluationLine 통합)',
+    type: () => SetupStatusDto,
+  })
+  @Type(() => SetupStatusDto)
+  setup: SetupStatusDto;
 
   @ApiProperty({
     description: '성과 입력 정보',

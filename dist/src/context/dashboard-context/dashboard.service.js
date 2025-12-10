@@ -30,8 +30,8 @@ let DashboardService = class DashboardService {
         const query = new queries_1.GetMyEvaluationTargetsStatusQuery(evaluationPeriodId, evaluatorId);
         return await this.queryBus.execute(query);
     }
-    async 사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId) {
-        const query = new queries_1.GetEmployeeAssignedDataQuery(evaluationPeriodId, employeeId);
+    async 사용자_할당_정보를_조회한다(evaluationPeriodId, employeeId, viewerId) {
+        const query = new queries_1.GetEmployeeAssignedDataQuery(evaluationPeriodId, employeeId, viewerId);
         return await this.queryBus.execute(query);
     }
     async 담당자의_피평가자_할당_정보를_조회한다(evaluationPeriodId, evaluatorId, employeeId) {

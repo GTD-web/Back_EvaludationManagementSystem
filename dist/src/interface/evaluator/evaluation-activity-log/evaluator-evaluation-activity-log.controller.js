@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluatorEvaluationActivityLogController = void 0;
 const evaluation_activity_log_context_service_1 = require("../../../context/evaluation-activity-log-context/evaluation-activity-log-context.service");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_activity_log_response_dto_1 = require("../../common/dto/evaluation-activity-log/evaluation-activity-log-response.dto");
@@ -87,6 +88,7 @@ __decorate([
 exports.EvaluatorEvaluationActivityLogController = EvaluatorEvaluationActivityLogController = __decorate([
     (0, swagger_1.ApiTags)('A-0-6. 평가자 - 평가 활동 내역'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/evaluation-activity-logs'),
     __metadata("design:paramtypes", [evaluation_activity_log_context_service_1.EvaluationActivityLogContextService])
 ], EvaluatorEvaluationActivityLogController);

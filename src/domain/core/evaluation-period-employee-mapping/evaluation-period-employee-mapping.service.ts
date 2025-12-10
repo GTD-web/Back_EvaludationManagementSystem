@@ -589,10 +589,6 @@ export class EvaluationPeriodEmployeeMappingService
     employeeId: string,
     submittedBy: string,
   ): Promise<EvaluationPeriodEmployeeMappingDto> {
-    this.logger.log(
-      `평가기준 제출 시작 - 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
-    );
-
     const mapping = await this.맵핑을_조회한다(evaluationPeriodId, employeeId);
     if (!mapping) {
       throw new EvaluationPeriodEmployeeMappingNotFoundException(
@@ -612,9 +608,6 @@ export class EvaluationPeriodEmployeeMappingService
       mapping.평가기준을_제출한다(submittedBy);
       const saved = await this.repository.save(mapping);
 
-      this.logger.log(
-        `평가기준 제출 완료 - 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
-      );
       return saved.DTO로_변환한다();
     } catch (error) {
       this.logger.error(
@@ -633,10 +626,6 @@ export class EvaluationPeriodEmployeeMappingService
     employeeId: string,
     updatedBy: string,
   ): Promise<EvaluationPeriodEmployeeMappingDto> {
-    this.logger.log(
-      `평가기준 제출 초기화 시작 - 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
-    );
-
     const mapping = await this.맵핑을_조회한다(evaluationPeriodId, employeeId);
     if (!mapping) {
       throw new EvaluationPeriodEmployeeMappingNotFoundException(
@@ -656,9 +645,6 @@ export class EvaluationPeriodEmployeeMappingService
       mapping.평가기준_제출을_초기화한다(updatedBy);
       const saved = await this.repository.save(mapping);
 
-      this.logger.log(
-        `평가기준 제출 초기화 완료 - 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
-      );
       return saved.DTO로_변환한다();
     } catch (error) {
       this.logger.error(

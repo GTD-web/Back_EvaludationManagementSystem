@@ -4,6 +4,7 @@ export declare class MyEvaluationStatusDetailDto {
     completedEvaluationCount: number;
     totalScore: number | null;
     grade: string | null;
+    primaryEvaluationViewed?: boolean;
 }
 export declare class MyDownwardEvaluationStatusDto {
     isPrimary: boolean;
@@ -31,6 +32,9 @@ export declare class MyTargetEvaluationLineDto {
     hasPrimaryEvaluator: boolean;
     hasSecondaryEvaluator: boolean;
 }
+export declare class SetupStatusDto {
+    status: 'none' | 'in_progress' | 'pending' | 'approved' | 'revision_requested' | 'revision_completed';
+}
 export declare class PerformanceInputDto {
     status: 'complete' | 'in_progress' | 'none';
     totalWbsCount: number;
@@ -47,6 +51,8 @@ export declare class MyTargetSelfEvaluationDto {
     isSubmittedToManager: boolean;
     totalScore: number | null;
     grade: string | null;
+    viewedByPrimaryEvaluator?: boolean;
+    viewedBySecondaryEvaluator?: boolean;
 }
 export declare class MyEvaluationTargetStatusResponseDto {
     employeeId: string;
@@ -55,6 +61,7 @@ export declare class MyEvaluationTargetStatusResponseDto {
     evaluationCriteria: MyTargetEvaluationCriteriaDto;
     wbsCriteria: MyTargetWbsCriteriaDto;
     evaluationLine: MyTargetEvaluationLineDto;
+    setup: SetupStatusDto;
     performanceInput: PerformanceInputDto;
     myEvaluatorTypes: string[];
     selfEvaluation: MyTargetSelfEvaluationDto;

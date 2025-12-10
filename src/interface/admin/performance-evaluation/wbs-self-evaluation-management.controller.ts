@@ -6,7 +6,7 @@ import { PerformanceEvaluationService } from '@context/performance-evaluation-co
 import { WbsSelfEvaluationBusinessService } from '@business/wbs-self-evaluation/wbs-self-evaluation-business.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -50,6 +50,7 @@ import {
  */
 @ApiTags('C-1. 관리자 - 성과평가 - WBS 자기평가')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/performance-evaluation/wbs-self-evaluations')
 export class WbsSelfEvaluationManagementController {
   constructor(

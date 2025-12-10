@@ -27,7 +27,10 @@ import {
 import {
   ExcludeEmployeeFromListCommand,
   IncludeEmployeeInListCommand,
-  UpdateEmployeeAccessibilityCommand,
+  UpdateEmployeeAdminCommand,
+  BulkUpdateEmployeeAdminCommand,
+  SyncAdminPermissionsCommand,
+  SyncAdminPermissionsResult,
 } from './commands';
 import { Inject } from '@nestjs/common';
 import { SSOService } from '../../domain/common/sso';
@@ -162,19 +165,34 @@ export class OrganizationManagementService
   }
 
   /**
-   * 직원의 접근 가능 여부를 변경합니다
+   * 직원의 관리자 권한 여부를 변경합니다
    */
-  async 직원접근가능여부변경(
+  async 직원관리자권한변경(
     employeeId: string,
-    isAccessible: boolean,
+    isAdmin: boolean,
     updatedBy: string,
   ): Promise<EmployeeDto> {
     return await this.commandBus.execute(
-      new UpdateEmployeeAccessibilityCommand(
-        employeeId,
-        isAccessible,
-        updatedBy,
-      ),
+      new UpdateEmployeeAdminCommand(employeeId, isAdmin, updatedBy),
+    );
+  }
+
+  /**
+   * 여러 직원의 관리자 권한 여부를 일괄 변경합니다
+   */
+  async 여러직원관리자권한변경(
+    employeeIds: string[],
+    isAdmin: boolean,
+    updatedBy: string,
+  ): Promise<{
+    totalProcessed: number;
+    succeeded: number;
+    failed: number;
+    failedIds: string[];
+    errors: string[];
+  }> {
+    return await this.commandBus.execute(
+      new BulkUpdateEmployeeAdminCommand(employeeIds, isAdmin, updatedBy),
     );
   }
 
@@ -238,11 +256,24 @@ export class OrganizationManagementService
   }
 
   /**
-   * 사번으로 직원의 접근 가능 여부를 확인합니다 (2중 보안용)
+   * 사번으로 직원의 관리자 권한 여부를 확인합니다
    * @param employeeNumber 직원 번호
-   * @returns 접근 가능 여부 (직원이 존재하고 접근 가능한 경우 true)
+   * @returns 관리자 권한 여부 (직원이 존재하고 관리자 권한이 있는 경우 true)
    */
-  async 사번으로_접근가능한가(employeeNumber: string): Promise<boolean> {
-    return await this.employeeService.사번으로_접근가능한가(employeeNumber);
+  async 사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean> {
+    return await this.employeeService.사번으로_관리자권한있는가(employeeNumber);
+  }
+
+  /**
+   * 관리자 권한을 동기화합니다
+   * 특정 직원만 isAccessible = true로 설정하고, 나머지는 false로 설정합니다.
+   *
+   * @param updatedBy 변경자 ID
+   * @returns 동기화 결과
+   */
+  async 관리자권한동기화(updatedBy: string): Promise<SyncAdminPermissionsResult> {
+    return await this.commandBus.execute(
+      new SyncAdminPermissionsCommand(updatedBy),
+    );
   }
 }

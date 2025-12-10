@@ -11,6 +11,7 @@ import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-period.entity';
+import { EvaluationActivityLog } from '@domain/core/evaluation-activity-log/evaluation-activity-log.entity';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
 import {
   MyEvaluationTargetStatusDto,
@@ -32,6 +33,8 @@ import {
   평가라인_지정_여부를_확인한다,
   평가라인_상태를_계산한다,
 } from '../queries/get-employee-evaluation-period-status/evaluation-line.utils';
+import { 평가기준설정_상태를_계산한다 } from '../queries/get-employee-evaluation-period-status/evaluation-criteria.utils';
+import { EmployeeEvaluationStepApprovalService } from '@domain/sub/employee-evaluation-step-approval/employee-evaluation-step-approval.service';
 
 /**
  * 내가 담당하는 평가 대상자 현황 조회 쿼리
@@ -75,16 +78,15 @@ export class GetMyEvaluationTargetsStatusHandler
     private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
+    @InjectRepository(EvaluationActivityLog)
+    private readonly activityLogRepository: Repository<EvaluationActivityLog>,
+    private readonly stepApprovalService: EmployeeEvaluationStepApprovalService,
   ) {}
 
   async execute(
     query: GetMyEvaluationTargetsStatusQuery,
   ): Promise<MyEvaluationTargetStatusDto[]> {
     const { evaluationPeriodId, evaluatorId } = query;
-
-    this.logger.debug(
-      `내가 담당하는 평가 대상자 현황 조회 시작 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}`,
-    );
 
     try {
       // 1. 내가 평가자로 지정된 매핑 조회 (평가라인 정보 포함)
@@ -278,6 +280,84 @@ export class GetMyEvaluationTargetsStatusHandler
               evaluatorTypes,
             );
 
+          // setup 상태 계산 (평가기준 설정 + 제출/승인 상태 통합)
+          // stepApproval 조회
+          const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(
+            mapping.id,
+          );
+
+          const setupStatus = 평가기준설정_상태를_계산한다(
+            evaluationCriteriaStatus,
+            wbsCriteriaStatus,
+            stepApproval?.criteriaSettingStatus ?? null,
+            mapping.isCriteriaSubmitted || false,
+          );
+
+          // 1차 평가 제출 여부 확인
+          const primaryEvaluationSubmitted =
+            await this.일차평가_제출_여부를_확인한다(
+              evaluationPeriodId,
+              employeeId,
+            );
+
+          // 평가자 확인 여부 계산 (자기평가 또는 1차 평가가 제출된 경우)
+          let viewedStatus: {
+            viewedByPrimaryEvaluator: boolean;
+            viewedBySecondaryEvaluator: boolean;
+            primaryEvaluationViewed: boolean;
+            hasSelfEvaluationSubmitted: boolean;
+            hasPrimaryEvaluationSubmitted: boolean;
+          } | null = null;
+
+          if (
+            selfEvaluationStatus.isSubmittedToEvaluator ||
+            primaryEvaluationSubmitted
+          ) {
+            viewedStatus = await this.평가자_확인여부를_계산한다(
+              evaluationPeriodId,
+              employeeId,
+              evaluatorId,
+              evaluatorTypes,
+            );
+          }
+
+          // selfEvaluation 객체 생성 (자기평가 제출 시에만 viewedBy 필드 포함)
+          const selfEvaluationResult: any = {
+            status: selfEvaluationStatusType,
+            totalMappingCount: selfEvaluationStatus.totalMappingCount,
+            completedMappingCount: selfEvaluationStatus.completedMappingCount,
+            totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
+            submittedToEvaluatorCount:
+              selfEvaluationStatus.submittedToEvaluatorCount,
+            isSubmittedToEvaluator: selfEvaluationStatus.isSubmittedToEvaluator,
+            submittedToManagerCount:
+              selfEvaluationStatus.submittedToManagerCount,
+            isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
+            totalScore: selfEvaluationStatus.totalScore,
+            grade: selfEvaluationStatus.grade,
+          };
+
+          // 평가자 유형에 따라 조건부로 viewedBy 필드 추가
+          if (viewedStatus) {
+            // 1차 평가자인 경우: 자기평가가 제출된 경우에만 viewedByPrimaryEvaluator 추가
+            if (
+              evaluatorTypes.includes(EvaluatorType.PRIMARY) &&
+              viewedStatus.hasSelfEvaluationSubmitted
+            ) {
+              selfEvaluationResult.viewedByPrimaryEvaluator =
+                viewedStatus.viewedByPrimaryEvaluator;
+            }
+
+            // 2차 평가자인 경우: 1차 평가가 제출된 경우에만 viewedBySecondaryEvaluator 추가
+            if (
+              evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+              viewedStatus.hasPrimaryEvaluationSubmitted
+            ) {
+              selfEvaluationResult.viewedBySecondaryEvaluator =
+                viewedStatus.viewedBySecondaryEvaluator;
+            }
+          }
+
           results.push({
             employeeId,
             isEvaluationTarget: !mapping.isExcluded,
@@ -296,29 +376,27 @@ export class GetMyEvaluationTargetsStatusHandler
               hasPrimaryEvaluator,
               hasSecondaryEvaluator,
             },
+            setup: {
+              status: setupStatus,
+            },
             performanceInput: {
               status: performanceInputStatus,
               totalWbsCount: perfTotalWbsCount,
               inputCompletedCount,
             },
             myEvaluatorTypes: evaluatorTypes,
-            selfEvaluation: {
-              status: selfEvaluationStatusType,
-              totalMappingCount: selfEvaluationStatus.totalMappingCount,
-              completedMappingCount: selfEvaluationStatus.completedMappingCount,
-              totalSelfEvaluations: selfEvaluationStatus.totalMappingCount,
-              submittedToEvaluatorCount:
-                selfEvaluationStatus.submittedToEvaluatorCount,
-              isSubmittedToEvaluator:
-                selfEvaluationStatus.isSubmittedToEvaluator,
-              submittedToManagerCount:
-                selfEvaluationStatus.submittedToManagerCount,
-              isSubmittedToManager:
-                selfEvaluationStatus.isSubmittedToManager,
-              totalScore: selfEvaluationStatus.totalScore,
-              grade: selfEvaluationStatus.grade,
+            selfEvaluation: selfEvaluationResult,
+            downwardEvaluation: {
+              ...downwardEvaluationStatus,
+              secondaryStatus: downwardEvaluationStatus.secondaryStatus
+                ? this.이차평가_상태에_일차평가확인여부를_추가한다(
+                    downwardEvaluationStatus.secondaryStatus,
+                    viewedStatus,
+                    primaryEvaluationSubmitted,
+                    evaluatorTypes,
+                  )
+                : null,
             },
-            downwardEvaluation: downwardEvaluationStatus,
           });
         } catch (error) {
           this.logger.error(
@@ -328,10 +406,6 @@ export class GetMyEvaluationTargetsStatusHandler
           continue;
         }
       }
-
-      this.logger.debug(
-        `내가 담당하는 평가 대상자 현황 조회 완료 - 평가기간: ${evaluationPeriodId}, 평가자: ${evaluatorId}, 대상자 수: ${results.length}`,
-      );
 
       return results;
     } catch (error) {
@@ -662,4 +736,183 @@ export class GetMyEvaluationTargetsStatusHandler
     }
   }
 
+  /**
+   * 1차 평가 제출 여부를 확인한다
+   *
+   * @param evaluationPeriodId 평가기간 ID
+   * @param employeeId 피평가자 ID
+   * @returns 1차 평가가 제출되었는지 여부
+   */
+  private async 일차평가_제출_여부를_확인한다(
+    evaluationPeriodId: string,
+    employeeId: string,
+  ): Promise<boolean> {
+    const primaryEvaluation = await this.downwardEvaluationRepository
+      .createQueryBuilder('de')
+      .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('de.employeeId = :employeeId', { employeeId })
+      .andWhere('de.evaluationType = :type', { type: 'primary' })
+      .andWhere('de.isCompleted = true')
+      .andWhere('de.completedAt IS NOT NULL')
+      .andWhere('de.deletedAt IS NULL')
+      .limit(1)
+      .getOne();
+
+    return !!primaryEvaluation;
+  }
+
+  /**
+   * 2차 평가 상태에 1차 평가 확인 여부를 추가한다
+   *
+   * 2차 평가자이고 1차 평가가 제출된 경우에만 primaryEvaluationViewed 필드를 포함합니다.
+   *
+   * @param secondaryStatus 2차 평가 상태
+   * @param viewedStatus 확인 여부 정보 (없으면 필드 미포함)
+   * @param primaryEvaluationSubmitted 1차 평가 제출 여부
+   * @param evaluatorTypes 평가자 유형 배열
+   * @returns primaryEvaluationViewed가 조건부로 포함된 2차 평가 상태
+   */
+  private 이차평가_상태에_일차평가확인여부를_추가한다(
+    secondaryStatus: {
+      status: 'none' | 'in_progress' | 'complete';
+      assignedWbsCount: number;
+      completedEvaluationCount: number;
+      totalScore: number | null;
+      grade: string | null;
+    },
+    viewedStatus: {
+      viewedByPrimaryEvaluator: boolean;
+      viewedBySecondaryEvaluator: boolean;
+      primaryEvaluationViewed: boolean;
+    } | null,
+    primaryEvaluationSubmitted: boolean,
+    evaluatorTypes: string[],
+  ): any {
+    const result: any = { ...secondaryStatus };
+
+    // 2차 평가자이고, viewedStatus가 있고, 1차 평가가 제출된 경우에만 primaryEvaluationViewed 포함
+    if (
+      evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+      viewedStatus &&
+      primaryEvaluationSubmitted
+    ) {
+      result.primaryEvaluationViewed = viewedStatus.primaryEvaluationViewed;
+    }
+
+    return result;
+  }
+
+  /**
+   * 평가자의 확인 여부를 계산한다
+   *
+   * @param evaluationPeriodId 평가기간 ID
+   * @param employeeId 피평가자 ID
+   * @param evaluatorId 평가자 ID
+   * @param evaluatorTypes 평가자 유형 배열 (PRIMARY, SECONDARY 등)
+   * @returns 확인 여부 정보
+   */
+  private async 평가자_확인여부를_계산한다(
+    evaluationPeriodId: string,
+    employeeId: string,
+    evaluatorId: string,
+    evaluatorTypes: string[],
+  ): Promise<{
+    viewedByPrimaryEvaluator: boolean;
+    viewedBySecondaryEvaluator: boolean;
+    primaryEvaluationViewed: boolean;
+    hasSelfEvaluationSubmitted: boolean;
+    hasPrimaryEvaluationSubmitted: boolean;
+  }> {
+    // 1. 피평가자의 마지막 자기평가 제출 시간 조회 (1차 평가자에게 제출)
+    const lastSelfEvaluationSubmitTime = await this.wbsSelfEvaluationRepository
+      .createQueryBuilder('self')
+      .where('self.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self.employeeId = :employeeId', { employeeId })
+      .andWhere('self.submittedToEvaluator = true')
+      .andWhere('self.submittedToEvaluatorAt IS NOT NULL')
+      .andWhere('self.deletedAt IS NULL')
+      .orderBy('self.submittedToEvaluatorAt', 'DESC')
+      .limit(1)
+      .getOne();
+
+    // 2. 1차 평가자의 마지막 1차평가 제출 시간 조회
+    const lastPrimaryEvaluationSubmitTime =
+      await this.downwardEvaluationRepository
+        .createQueryBuilder('de')
+        .where('de.periodId = :periodId', { periodId: evaluationPeriodId })
+        .andWhere('de.employeeId = :employeeId', { employeeId })
+        .andWhere('de.evaluationType = :type', { type: 'primary' })
+        .andWhere('de.isCompleted = true')
+        .andWhere('de.completedAt IS NOT NULL')
+        .andWhere('de.deletedAt IS NULL')
+        .orderBy('de.completedAt', 'DESC')
+        .limit(1)
+        .getOne();
+
+    // 3. 평가자의 마지막 'viewed' 활동 시간 조회
+    const lastViewedActivity = await this.activityLogRepository
+      .createQueryBuilder('log')
+      .where('log.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('log.employeeId = :employeeId', { employeeId })
+      .andWhere('log.performedBy = :evaluatorId', { evaluatorId })
+      .andWhere('log.activityAction = :action', { action: 'viewed' })
+      .andWhere('log.activityType = :activityType', {
+        activityType: 'downward_evaluation',
+      })
+      .andWhere('log.deletedAt IS NULL')
+      .orderBy('log.activityDate', 'DESC')
+      .limit(1)
+      .getOne();
+
+    const lastViewedTime = lastViewedActivity?.activityDate;
+    // Activity Log에 기록된 평가자 타입 (현재 사용자가 1차, 2차 평가자 모두인 경우 모두 포함)
+    const viewedAsEvaluatorTypes =
+      (lastViewedActivity?.activityMetadata as any)?.evaluatorTypes || [];
+
+    // 4. 확인 여부 계산
+    let viewedByPrimaryEvaluator = false;
+    let viewedBySecondaryEvaluator = false;
+    let primaryEvaluationViewed = false;
+
+    if (lastViewedTime) {
+      // 1차 평가자인 경우: 자기평가 제출 확인
+      // Activity Log에 PRIMARY로 기록되어 있고, 현재 사용자도 PRIMARY 평가자인 경우
+      if (
+        evaluatorTypes.includes(EvaluatorType.PRIMARY) &&
+        viewedAsEvaluatorTypes.includes(EvaluatorType.PRIMARY)
+      ) {
+        if (
+          lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt &&
+          lastViewedTime >= lastSelfEvaluationSubmitTime.submittedToEvaluatorAt
+        ) {
+          viewedByPrimaryEvaluator = true;
+        }
+      }
+
+      // 2차 평가자인 경우: 1차평가 제출 후에만 확인 가능
+      // Activity Log에 SECONDARY로 기록되어 있고, 현재 사용자도 SECONDARY 평가자인 경우
+      if (
+        evaluatorTypes.includes(EvaluatorType.SECONDARY) &&
+        viewedAsEvaluatorTypes.includes(EvaluatorType.SECONDARY)
+      ) {
+        // 1차평가가 제출되었는지 먼저 확인
+        if (lastPrimaryEvaluationSubmitTime?.completedAt) {
+          // 1차평가가 제출된 경우에만 viewed 확인
+          // (2차 평가자는 1차평가 제출 후에만 피평가자 데이터를 볼 수 있음)
+          if (lastViewedTime >= lastPrimaryEvaluationSubmitTime.completedAt) {
+            viewedBySecondaryEvaluator = true;
+            primaryEvaluationViewed = true;
+          }
+        }
+      }
+    }
+
+    return {
+      viewedByPrimaryEvaluator,
+      viewedBySecondaryEvaluator,
+      primaryEvaluationViewed,
+      hasSelfEvaluationSubmitted: !!lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt,
+      hasPrimaryEvaluationSubmitted: !!lastPrimaryEvaluationSubmitTime?.completedAt,
+    };
+  }
 }

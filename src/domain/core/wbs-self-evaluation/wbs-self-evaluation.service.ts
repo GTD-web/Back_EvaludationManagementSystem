@@ -46,8 +46,6 @@ export class WbsSelfEvaluationService {
     manager?: EntityManager,
   ): Promise<WbsSelfEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.log(`WBS 자가평가 생성 시작`);
-
       // 유효성 검사
       this.유효성을_검사한다(createData);
 
@@ -68,7 +66,6 @@ export class WbsSelfEvaluationService {
       const wbsSelfEvaluation = new WbsSelfEvaluation(createData);
       const saved = await repository.save(wbsSelfEvaluation);
 
-      this.logger.log(`WBS 자가평가 생성 완료 - ID: ${saved.id}`);
       return saved;
     }, '생성한다');
   }
@@ -83,8 +80,6 @@ export class WbsSelfEvaluationService {
     manager?: EntityManager,
   ): Promise<WbsSelfEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.log(`WBS 자가평가 수정 시작 - ID: ${id}`);
-
       const repository = this.transactionManager.getRepository(
         WbsSelfEvaluation,
         this.wbsSelfEvaluationRepository,
@@ -146,7 +141,6 @@ export class WbsSelfEvaluationService {
 
       const saved = await repository.save(wbsSelfEvaluation);
 
-      this.logger.log(`WBS 자가평가 수정 완료 - ID: ${id}`);
       return saved;
     }, '수정한다');
   }
@@ -306,8 +300,6 @@ export class WbsSelfEvaluationService {
     manager?: EntityManager,
   ): Promise<WbsSelfEvaluation | null> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.debug(`WBS 자가평가 조회 - ID: ${id}`);
-
       const repository = this.transactionManager.getRepository(
         WbsSelfEvaluation,
         this.wbsSelfEvaluationRepository,
@@ -333,6 +325,9 @@ export class WbsSelfEvaluationService {
       );
 
       let queryBuilder = repository.createQueryBuilder('evaluation');
+
+      // Soft Delete 필터 (삭제되지 않은 항목만 조회)
+      queryBuilder.andWhere('evaluation.deletedAt IS NULL');
 
       // 필터 적용
       if (filter.periodId) {

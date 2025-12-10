@@ -109,6 +109,7 @@ let EvaluationWbsAssignmentService = EvaluationWbsAssignmentService_1 = class Ev
         return this.executeSafeDomainOperation(async () => {
             const repository = this.transactionManager.getRepository(evaluation_wbs_assignment_entity_1.EvaluationWbsAssignment, this.evaluationWbsAssignmentRepository, manager);
             const queryBuilder = repository.createQueryBuilder('assignment');
+            queryBuilder.andWhere('assignment.deletedAt IS NULL');
             if (filter.periodId) {
                 queryBuilder.andWhere('assignment.periodId = :periodId', {
                     periodId: filter.periodId,

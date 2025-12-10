@@ -16,6 +16,7 @@ exports.EvaluatorEmployeeManagementController = void 0;
 const organization_management_service_1 = require("../../../context/organization-management-context/organization-management.service");
 const employee_management_api_decorators_1 = require("../../common/decorators/employee-management/employee-management-api.decorators");
 const employee_management_dto_1 = require("../../common/dto/employee-management/employee-management.dto");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 let EvaluatorEmployeeManagementController = class EvaluatorEmployeeManagementController {
@@ -56,6 +57,7 @@ __decorate([
 exports.EvaluatorEmployeeManagementController = EvaluatorEmployeeManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-1. 평가자 - 조직 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/employees'),
     __metadata("design:paramtypes", [organization_management_service_1.OrganizationManagementService])
 ], EvaluatorEmployeeManagementController);

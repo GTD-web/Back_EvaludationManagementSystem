@@ -2,6 +2,8 @@ import { BaseE2ETest } from '../base-e2e.spec';
 import { ProjectStatus } from '../../src/domain/common/project/project.types';
 import { SSOService } from '../../src/domain/common/sso/sso.module';
 import type { ISSOService } from '../../src/domain/common/sso/interfaces';
+import { SeedDataScenario } from '../usecase/scenarios/seed-data.scenario';
+import { ProjectAssignmentScenario } from '../usecase/scenarios/project-assignment/project-assignment.scenario';
 
 /**
  * 프로젝트 관리 API E2E 테스트
@@ -570,6 +572,519 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         .delete(`/admin/projects/${projectId}`)
         .expect(404);
     });
+
+    it('할당이 있는 프로젝트는 삭제할 수 없다 (409 Conflict)', async () => {
+      // Given - 시드 데이터 생성 (프로젝트, 직원, 평가기간, 할당 포함)
+      // with_period 시나리오는 이미 프로젝트 할당을 포함하여 생성됨
+      const seedDataScenario = new SeedDataScenario(testSuite);
+
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'with_period',
+        clearExisting: false,
+        projectCount: 1,
+        wbsPerProject: 1,
+        departmentCount: 1,
+        employeeCount: 1,
+      });
+
+      const seedProjectId = seedResult.projectIds?.[0];
+
+      expect(seedProjectId).toBeDefined();
+
+      // When - 할당이 있는 프로젝트 삭제 시도
+      const response = await testSuite
+        .request()
+        .delete(`/admin/projects/${seedProjectId}`)
+        .expect(409);
+
+      // Then - 409 Conflict 에러와 함께 할당 개수 정보 확인
+      expect(response.body.message).toContain('할당이 있어 삭제할 수 없습니다');
+
+      // 프로젝트가 여전히 존재하는지 확인
+      const projectResponse = await testSuite
+        .request()
+        .get(`/admin/projects/${seedProjectId}`)
+        .expect(200);
+
+      expect(projectResponse.body.id).toBe(seedProjectId);
+    });
+
+    it('할당이 취소된 프로젝트는 삭제할 수 있다', async () => {
+      // Given - 시드 데이터 생성 (프로젝트, 직원, 평가기간, 할당 포함)
+      // with_period 시나리오는 이미 프로젝트 할당을 포함하여 생성됨
+      const seedDataScenario = new SeedDataScenario(testSuite);
+      const projectAssignmentScenario = new ProjectAssignmentScenario(testSuite);
+
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'with_period',
+        clearExisting: false,
+        projectCount: 1,
+        wbsPerProject: 1,
+        departmentCount: 1,
+        employeeCount: 1,
+      });
+
+      const seedProjectId = seedResult.projectIds?.[0];
+      const employeeId = seedResult.employeeIds?.[0];
+      const periodId = seedResult.evaluationPeriodId;
+
+      expect(seedProjectId).toBeDefined();
+      expect(employeeId).toBeDefined();
+      expect(periodId).toBeDefined();
+
+      // 기존 할당 취소 (소프트 삭제)
+      await projectAssignmentScenario.프로젝트_할당을_프로젝트_ID로_취소한다({
+        employeeId: employeeId!,
+        projectId: seedProjectId!,
+        periodId: periodId!,
+      });
+
+      // When - 할당이 취소된 프로젝트 삭제
+      await testSuite
+        .request()
+        .delete(`/admin/projects/${seedProjectId}`)
+        .expect(204);
+
+      // Then - 프로젝트가 삭제되었는지 확인
+      await testSuite
+        .request()
+        .get(`/admin/projects/${seedProjectId}`)
+        .expect(404);
+    });
+  });
+
+  describe('프로젝트 일괄 생성 (POST /admin/projects/bulk)', () => {
+    it('여러 프로젝트를 한 번에 생성할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '일괄 프로젝트 1',
+            projectCode: 'BULK-001',
+            status: ProjectStatus.ACTIVE,
+            startDate: '2024-01-01',
+            endDate: '2024-12-31',
+            managerId: MOCK_MANAGER_ID_1,
+          },
+          {
+            name: '일괄 프로젝트 2',
+            projectCode: 'BULK-002',
+            status: ProjectStatus.ACTIVE,
+            startDate: '2024-02-01',
+            endDate: '2024-11-30',
+            managerId: MOCK_MANAGER_ID_2,
+          },
+          {
+            name: '일괄 프로젝트 3',
+            projectCode: 'BULK-003',
+            status: ProjectStatus.COMPLETED,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body).toHaveProperty('success');
+      expect(response.body).toHaveProperty('failed');
+      expect(response.body).toHaveProperty('successCount');
+      expect(response.body).toHaveProperty('failedCount');
+      expect(response.body).toHaveProperty('totalCount');
+
+      expect(response.body.successCount).toBe(3);
+      expect(response.body.failedCount).toBe(0);
+      expect(response.body.totalCount).toBe(3);
+      expect(response.body.success).toHaveLength(3);
+      expect(response.body.failed).toHaveLength(0);
+
+      // 생성된 프로젝트 ID 저장 (cleanup용)
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 각 프로젝트 데이터 검증
+      expect(response.body.success[0]).toMatchObject({
+        name: '일괄 프로젝트 1',
+        projectCode: 'BULK-001',
+        status: ProjectStatus.ACTIVE,
+      });
+      expect(response.body.success[1]).toMatchObject({
+        name: '일괄 프로젝트 2',
+        projectCode: 'BULK-002',
+        status: ProjectStatus.ACTIVE,
+      });
+      expect(response.body.success[2]).toMatchObject({
+        name: '일괄 프로젝트 3',
+        projectCode: 'BULK-003',
+        status: ProjectStatus.COMPLETED,
+      });
+    });
+
+    it('각 프로젝트별로 다른 PM을 지정할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: 'PM1 프로젝트',
+            projectCode: 'PM1-001',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_1,
+          },
+          {
+            name: 'PM2 프로젝트',
+            projectCode: 'PM2-002',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_2,
+          },
+          {
+            name: 'PM 없는 프로젝트',
+            projectCode: 'NO-PM-003',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(3);
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // PM 정보 확인 (manager 정보는 Employee 테이블에 해당 externalId가 있을 때만 포함됨)
+      expect(response.body.success[0]).toHaveProperty('managerId');
+      expect(response.body.success[1]).toHaveProperty('managerId');
+    });
+
+    it('일부 프로젝트에 필수 필드가 누락된 경우 해당 항목만 실패한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '정상 프로젝트 1',
+            projectCode: 'VALID-001',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            // name 누락!
+            projectCode: 'INVALID-002',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '정상 프로젝트 2',
+            projectCode: 'VALID-003',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData);
+
+      // 전체 요청 자체가 validation 에러로 실패할 수 있음
+      // ValidationPipe가 배열 내 각 항목을 검증하므로 400 에러 반환
+      expect(response.status).toBe(400);
+    });
+
+    it('빈 배열로 일괄 생성 시 빈 결과를 반환한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData);
+
+      // Then
+      // 빈 배열도 유효한 요청이므로 201 또는 400 (최소 1개 이상 필요한 경우)
+      // 현재 구현은 빈 배열도 허용하므로 201
+      if (response.status === 201) {
+        expect(response.body.successCount).toBe(0);
+        expect(response.body.failedCount).toBe(0);
+        expect(response.body.totalCount).toBe(0);
+      }
+    });
+
+    it('잘못된 상태 값이 있는 경우 validation 에러를 반환한다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '정상 프로젝트',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '잘못된 상태 프로젝트',
+            status: 'INVALID_STATUS', // 잘못된 상태
+          },
+        ],
+      };
+
+      // When & Then
+      await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(400);
+    });
+
+    it('대량의 프로젝트를 일괄 생성할 수 있다', async () => {
+      // Given - 10개의 프로젝트 데이터
+      const projects = Array.from({ length: 10 }, (_, i) => ({
+        name: `대량 프로젝트 ${i + 1}`,
+        projectCode: `BULK-LARGE-${String(i + 1).padStart(3, '0')}`,
+        status: i % 2 === 0 ? ProjectStatus.ACTIVE : ProjectStatus.COMPLETED,
+        managerId: i % 2 === 0 ? MOCK_MANAGER_ID_1 : MOCK_MANAGER_ID_2,
+      }));
+
+      const bulkData = { projects };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(10);
+      expect(response.body.failedCount).toBe(0);
+      expect(response.body.success).toHaveLength(10);
+
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 모든 프로젝트가 정상 생성되었는지 확인
+      for (let i = 0; i < 10; i++) {
+        expect(response.body.success[i]).toMatchObject({
+          name: `대량 프로젝트 ${i + 1}`,
+          projectCode: `BULK-LARGE-${String(i + 1).padStart(3, '0')}`,
+        });
+      }
+    });
+
+    it('생성된 프로젝트들을 목록에서 조회할 수 있다', async () => {
+      // Given & When - 일괄 생성
+      const bulkData = {
+        projects: [
+          {
+            name: '조회 테스트 1',
+            projectCode: 'LIST-001',
+            status: ProjectStatus.ACTIVE,
+          },
+          {
+            name: '조회 테스트 2',
+            projectCode: 'LIST-002',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      const createResponse = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      createResponse.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // Then - 목록 조회
+      const listResponse = await testSuite
+        .request()
+        .get('/admin/projects')
+        .expect(200);
+
+      expect(listResponse.body.total).toBeGreaterThanOrEqual(2);
+
+      // 생성된 프로젝트들이 목록에 포함되어 있는지 확인
+      const createdIds = createResponse.body.success.map((p: any) => p.id);
+      const listedIds = listResponse.body.projects.map((p: any) => p.id);
+
+      createdIds.forEach((id: string) => {
+        expect(listedIds).toContain(id);
+      });
+    });
+
+    it('하위 프로젝트를 포함하여 일괄 생성할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: 'EMS 프로젝트',
+            projectCode: 'BULK-EMS-001',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_1,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: 'EMS 프로젝트 - 백엔드',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+              {
+                orderLevel: 1,
+                name: 'EMS 프로젝트 - 프론트엔드',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+              {
+                orderLevel: 2,
+                name: 'EMS 프로젝트 - API 개발',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+          {
+            name: 'HRM 프로젝트',
+            projectCode: 'BULK-HRM-002',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_2,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: 'HRM 프로젝트 - 인사관리',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+              {
+                orderLevel: 1,
+                name: 'HRM 프로젝트 - 급여관리',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+            ],
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(2);
+      expect(response.body.failedCount).toBe(0);
+      expect(response.body.totalCount).toBe(2);
+
+      // 생성된 프로젝트 ID 저장 (cleanup용)
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 첫 번째 프로젝트 검증
+      expect(response.body.success[0]).toMatchObject({
+        name: 'EMS 프로젝트',
+        projectCode: 'BULK-EMS-001',
+        status: ProjectStatus.ACTIVE,
+      });
+
+      // 두 번째 프로젝트 검증
+      expect(response.body.success[1]).toMatchObject({
+        name: 'HRM 프로젝트',
+        projectCode: 'BULK-HRM-002',
+        status: ProjectStatus.ACTIVE,
+      });
+
+      // 하위 프로젝트 확인 - 첫 번째 프로젝트 상세 조회
+      const emsProjectId = response.body.success[0].id;
+      const emsDetailResponse = await testSuite
+        .request()
+        .get(`/admin/projects/${emsProjectId}`)
+        .expect(200);
+
+      expect(emsDetailResponse.body.childProjects).toBeDefined();
+      expect(emsDetailResponse.body.childProjects.length).toBeGreaterThan(0);
+
+      // 하위 프로젝트 확인 - 두 번째 프로젝트 상세 조회
+      const hrmProjectId = response.body.success[1].id;
+      const hrmDetailResponse = await testSuite
+        .request()
+        .get(`/admin/projects/${hrmProjectId}`)
+        .expect(200);
+
+      expect(hrmDetailResponse.body.childProjects).toBeDefined();
+      expect(hrmDetailResponse.body.childProjects.length).toBeGreaterThan(0);
+    });
+
+    it('일괄 생성 시 일부는 하위 포함, 일부는 하위 없이 생성할 수 있다', async () => {
+      // Given
+      const bulkData = {
+        projects: [
+          {
+            name: '하위 있는 프로젝트',
+            projectCode: 'WITH-CHILD-001',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '하위 1',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+          {
+            name: '하위 없는 프로젝트',
+            projectCode: 'NO-CHILD-002',
+            status: ProjectStatus.ACTIVE,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(2);
+
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // 첫 번째 프로젝트는 하위가 있어야 함
+      const withChildId = response.body.success[0].id;
+      const withChildDetail = await testSuite
+        .request()
+        .get(`/admin/projects/${withChildId}`)
+        .expect(200);
+
+      expect(withChildDetail.body.childProjects).toBeDefined();
+      expect(withChildDetail.body.childProjects.length).toBeGreaterThan(0);
+
+      // 두 번째 프로젝트는 하위가 없어야 함
+      const noChildId = response.body.success[1].id;
+      const noChildDetail = await testSuite
+        .request()
+        .get(`/admin/projects/${noChildId}`)
+        .expect(200);
+
+      expect(
+        !noChildDetail.body.childProjects ||
+          noChildDetail.body.childProjects.length === 0,
+      ).toBe(true);
+    });
   });
 
   describe('PM 목록 조회 (GET /admin/projects/managers)', () => {
@@ -601,7 +1116,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
 
       // Then
       const manager = response.body.managers[0];
-      expect(manager).toHaveProperty('id');
+      expect(manager).toHaveProperty('managerId');
       expect(manager).toHaveProperty('employeeNumber');
       expect(manager).toHaveProperty('name');
       expect(manager).toHaveProperty('email');
@@ -673,7 +1188,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
 
       // Then
       const hasNonManager = response.body.managers.some(
-        (manager: any) => manager.id === 'emp-003',
+        (manager: any) => manager.managerId === 'emp-003',
       );
       expect(hasNonManager).toBe(false);
     });
@@ -773,7 +1288,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
           name: 'PM 선택 프로젝트',
           projectCode: 'PM-SELECT-2024',
           status: ProjectStatus.ACTIVE,
-          managerId: selectedManager.id,
+          managerId: selectedManager.managerId,
         })
         .expect(201);
 
@@ -787,6 +1302,445 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         .expect(200);
 
       expect(detailResponse.body.id).toBe(projectResponse.body.id);
+    });
+  });
+
+  describe('프로젝트 계층 구조 (Hierarchy)', () => {
+    describe('하위 프로젝트 포함 생성', () => {
+      it('하위 프로젝트와 함께 프로젝트를 생성할 수 있다', async () => {
+        // Given
+        const projectData = {
+          name: 'EMS 프로젝트',
+          projectCode: 'EMS-2024',
+          status: ProjectStatus.ACTIVE,
+          managerId: MOCK_MANAGER_ID_1,
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: 'EMS 프로젝트 - 1차 하위 A',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+            {
+              orderLevel: 1,
+              name: 'EMS 프로젝트 - 1차 하위 B',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 2,
+              name: 'EMS 프로젝트 - 2차 하위',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        expect(response.body.name).toBe(projectData.name);
+        createdProjectIds.push(response.body.id);
+
+        // 상세 조회로 하위 프로젝트 확인
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${response.body.id}`)
+          .expect(200);
+
+        expect(detailResponse.body.childProjects).toBeDefined();
+        expect(detailResponse.body.childProjects.length).toBeGreaterThan(0);
+      });
+
+      it('같은 orderLevel에 여러 하위 프로젝트를 생성할 수 있다', async () => {
+        // Given - orderLevel=1이 3개
+        const projectData = {
+          name: '다중 하위 테스트',
+          status: ProjectStatus.ACTIVE,
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '1차 하위 A',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 1,
+              name: '1차 하위 B',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+            {
+              orderLevel: 1,
+              name: '1차 하위 C',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        createdProjectIds.push(response.body.id);
+
+        // 목록 조회로 하위 프로젝트 확인
+        const listResponse = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'parent' })
+          .expect(200);
+
+        const createdProject = listResponse.body.projects.find(
+          (p: any) => p.id === response.body.id,
+        );
+        expect(createdProject).toBeDefined();
+        expect(createdProject.childProjects).toBeDefined();
+      });
+
+      it('각 하위 프로젝트마다 다른 PM을 지정할 수 있다', async () => {
+        // Given
+        const projectData = {
+          name: 'PM 다른 하위 테스트',
+          status: ProjectStatus.ACTIVE,
+          managerId: MOCK_MANAGER_ID_1, // 상위 PM
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '1차 - PM1',
+              managerId: MOCK_MANAGER_ID_1, // 다른 PM
+            },
+            {
+              orderLevel: 1,
+              name: '1차 - PM2',
+              managerId: MOCK_MANAGER_ID_2, // 또 다른 PM
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        createdProjectIds.push(response.body.id);
+      });
+
+      it('childProjects 없이 생성하면 단일 프로젝트만 생성된다', async () => {
+        // Given
+        const projectData = {
+          name: '단일 프로젝트',
+          status: ProjectStatus.ACTIVE,
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send(projectData)
+          .expect(201);
+
+        // Then
+        expect(response.body.id).toBeDefined();
+        createdProjectIds.push(response.body.id);
+
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${response.body.id}`)
+          .expect(200);
+
+        expect(
+          !detailResponse.body.childProjects ||
+            detailResponse.body.childProjects.length === 0,
+        ).toBe(true);
+      });
+    });
+
+    describe('하위 프로젝트 수정', () => {
+      let parentProjectId: string;
+
+      beforeEach(async () => {
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send({
+            name: '수정 테스트 프로젝트',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '기존 1차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          })
+          .expect(201);
+
+        parentProjectId = response.body.id;
+        createdProjectIds.push(parentProjectId);
+      });
+
+      it('childProjects를 제공하여 하위 프로젝트를 재생성할 수 있다', async () => {
+        // Given
+        const updateData = {
+          name: '수정된 프로젝트',
+          childProjects: [
+            {
+              orderLevel: 1,
+              name: '새 1차 A',
+              managerId: MOCK_MANAGER_ID_1,
+            },
+            {
+              orderLevel: 1,
+              name: '새 1차 B',
+              managerId: MOCK_MANAGER_ID_2,
+            },
+          ],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        expect(response.body.name).toBe(updateData.name);
+
+        // 상세 조회로 하위 확인
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(detailResponse.body.childProjects).toBeDefined();
+      });
+
+      it('childProjects=[]로 모든 하위 프로젝트를 삭제할 수 있다', async () => {
+        // Given
+        const updateData = {
+          childProjects: [],
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(
+          !detailResponse.body.childProjects ||
+            detailResponse.body.childProjects.length === 0,
+        ).toBe(true);
+      });
+
+      it('childProjects를 생략하면 하위 프로젝트가 유지된다', async () => {
+        // Given
+        const updateData = {
+          name: '이름만 수정',
+        };
+
+        // When
+        const response = await testSuite
+          .request()
+          .put(`/admin/projects/${parentProjectId}`)
+          .send(updateData)
+          .expect(200);
+
+        // Then
+        const detailResponse = await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(200);
+
+        expect(detailResponse.body.name).toBe(updateData.name);
+        // 하위 프로젝트는 그대로 유지됨
+        expect(detailResponse.body.childProjects).toBeDefined();
+      });
+    });
+
+    describe('하위 프로젝트 CASCADE 삭제', () => {
+      let parentProjectId: string;
+
+      beforeEach(async () => {
+        const response = await testSuite
+          .request()
+          .post('/admin/projects')
+          .send({
+            name: 'CASCADE 삭제 테스트',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '1차 하위',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+              {
+                orderLevel: 2,
+                name: '2차 하위',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+            ],
+          })
+          .expect(201);
+
+        parentProjectId = response.body.id;
+        createdProjectIds.push(parentProjectId);
+      });
+
+      it('상위 프로젝트 삭제 시 모든 하위도 함께 삭제된다', async () => {
+        // When
+        await testSuite
+          .request()
+          .delete(`/admin/projects/${parentProjectId}`)
+          .expect(204);
+
+        // Then - 상위 조회 시 404
+        await testSuite
+          .request()
+          .get(`/admin/projects/${parentProjectId}`)
+          .expect(404);
+
+        // 목록에서도 제외됨
+        const listResponse = await testSuite.request().get('/admin/projects');
+
+        const found = listResponse.body.projects.find(
+          (p: any) => p.id === parentProjectId,
+        );
+        expect(found).toBeUndefined();
+      });
+
+      it('하위에 할당이 있으면 상위 삭제가 실패한다', async () => {
+        // Given - 하위 프로젝트에 할당 추가
+        const seedDataScenario = new SeedDataScenario(testSuite);
+        const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+          scenario: 'with_period',
+          clearExisting: false,
+          projectCount: 1,
+          wbsPerProject: 1,
+          departmentCount: 1,
+          employeeCount: 1,
+        });
+
+        const assignedProjectId = seedResult.projectIds?.[0];
+
+        // When & Then - 할당이 있는 프로젝트 삭제 시도
+        await testSuite
+          .request()
+          .delete(`/admin/projects/${assignedProjectId}`)
+          .expect(409);
+      });
+    });
+
+    describe('계층 구조 조회', () => {
+      beforeEach(async () => {
+        // 여러 계층 구조 프로젝트 생성
+        const projects = [
+          {
+            name: '상위 A',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '상위 A - 1차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+          {
+            name: '상위 B',
+            status: ProjectStatus.ACTIVE,
+            childProjects: [
+              {
+                orderLevel: 1,
+                name: '상위 B - 1차',
+                managerId: MOCK_MANAGER_ID_2,
+              },
+              {
+                orderLevel: 2,
+                name: '상위 B - 2차',
+                managerId: MOCK_MANAGER_ID_1,
+              },
+            ],
+          },
+        ];
+
+        for (const project of projects) {
+          const response = await testSuite
+            .request()
+            .post('/admin/projects')
+            .send(project)
+            .expect(201);
+
+          createdProjectIds.push(response.body.id);
+        }
+      });
+
+      it('hierarchyLevel=parent로 상위 프로젝트만 조회할 수 있다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'parent' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects).toBeInstanceOf(Array);
+        // 모든 프로젝트의 parentProjectId가 null이어야 함
+        response.body.projects.forEach((project: any) => {
+          expect(project.parentProjectId).toBeNull();
+        });
+      });
+
+      it('hierarchyLevel=child로 하위 프로젝트만 조회할 수 있다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ hierarchyLevel: 'child' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects).toBeInstanceOf(Array);
+        // 모든 프로젝트의 parentProjectId가 있어야 함
+        response.body.projects.forEach((project: any) => {
+          expect(project.parentProjectId).toBeDefined();
+          expect(project.parentProjectId).not.toBeNull();
+        });
+      });
+
+      it('search로 프로젝트명 검색이 가능하다', async () => {
+        // When
+        const response = await testSuite
+          .request()
+          .get('/admin/projects')
+          .query({ search: '상위 A' })
+          .expect(200);
+
+        // Then
+        expect(response.body.projects.length).toBeGreaterThan(0);
+        const project = response.body.projects.find((p: any) =>
+          p.name.includes('상위 A'),
+        );
+        expect(project).toBeDefined();
+      });
     });
   });
 });

@@ -1,6 +1,7 @@
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import { Body, Controller, Param } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UpsertWbsEvaluationCriteria } from '@interface/common/decorators/evaluation-criteria/wbs-evaluation-criteria-api.decorators';
@@ -16,6 +17,7 @@ import {
  */
 @ApiTags('A-5. 사용자 - 평가 설정 - WBS 평가기준')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/evaluation-criteria/wbs-evaluation-criteria')
 export class UserWbsEvaluationCriteriaManagementController {
   constructor(

@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluatorPeerEvaluationManagementController = void 0;
 const peer_evaluation_business_service_1 = require("../../../business/peer-evaluation/peer-evaluation-business.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
-const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const peer_evaluation_api_decorators_1 = require("../../common/decorators/performance-evaluation/peer-evaluation-api.decorators");
@@ -24,6 +24,16 @@ let EvaluatorPeerEvaluationManagementController = class EvaluatorPeerEvaluationM
     peerEvaluationBusinessService;
     constructor(peerEvaluationBusinessService) {
         this.peerEvaluationBusinessService = peerEvaluationBusinessService;
+    }
+    async getPeerEvaluations(filter) {
+        return await this.peerEvaluationBusinessService.동료평가_목록을_조회한다({
+            evaluatorId: filter.evaluatorId,
+            evaluateeId: filter.evaluateeId,
+            periodId: filter.periodId,
+            status: filter.status,
+            page: filter.page || 1,
+            limit: filter.limit || 10,
+        });
     }
     async getEvaluatorAssignedEvaluatees(evaluatorId, query) {
         return await this.peerEvaluationBusinessService.평가자에게_할당된_피평가자_목록을_조회한다({
@@ -63,8 +73,15 @@ let EvaluatorPeerEvaluationManagementController = class EvaluatorPeerEvaluationM
 };
 exports.EvaluatorPeerEvaluationManagementController = EvaluatorPeerEvaluationManagementController;
 __decorate([
+    (0, peer_evaluation_api_decorators_1.GetPeerEvaluations)(),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [peer_evaluation_dto_1.PeerEvaluationFilterDto]),
+    __metadata("design:returntype", Promise)
+], EvaluatorPeerEvaluationManagementController.prototype, "getPeerEvaluations", null);
+__decorate([
     (0, peer_evaluation_api_decorators_1.GetEvaluatorAssignedEvaluatees)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluatorId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluatorId')),
     __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, peer_evaluation_dto_1.GetEvaluatorAssignedEvaluateesQueryDto]),
@@ -72,7 +89,7 @@ __decorate([
 ], EvaluatorPeerEvaluationManagementController.prototype, "getEvaluatorAssignedEvaluatees", null);
 __decorate([
     (0, peer_evaluation_api_decorators_1.GetPeerEvaluationDetail)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
@@ -87,7 +104,7 @@ __decorate([
 ], EvaluatorPeerEvaluationManagementController.prototype, "upsertPeerEvaluationAnswers", null);
 __decorate([
     (0, peer_evaluation_api_decorators_1.SubmitPeerEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -96,6 +113,7 @@ __decorate([
 exports.EvaluatorPeerEvaluationManagementController = EvaluatorPeerEvaluationManagementController = __decorate([
     (0, swagger_1.ApiTags)('C-5. 평가자 - 성과평가 - 동료평가'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/performance-evaluation/peer-evaluations'),
     __metadata("design:paramtypes", [peer_evaluation_business_service_1.PeerEvaluationBusinessService])
 ], EvaluatorPeerEvaluationManagementController);

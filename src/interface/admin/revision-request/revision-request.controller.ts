@@ -1,6 +1,7 @@
 import { RevisionRequestBusinessService } from '@business/revision-request/revision-request-business.service';
 import { RevisionRequestContextService } from '@context/revision-request-context';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   CompleteRevisionRequest,
   CompleteRevisionRequestByEvaluator,
@@ -21,9 +22,7 @@ import { StepApprovalStatusEnum } from '@interface/common/dto/step-approval/upda
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
@@ -35,6 +34,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-0-4. 관리자 - 재작성 요청')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/revision-requests')
 export class RevisionRequestController {
   constructor(
@@ -48,18 +48,14 @@ export class RevisionRequestController {
   @GetRevisionRequests()
   async getRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', new DefaultValuePipe(false), ParseBoolPipe)
-    isRead: boolean,
-    @Query('isCompleted', new DefaultValuePipe(false), ParseBoolPipe)
-    isCompleted: boolean,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
       await this.revisionRequestContextService.전체_재작성요청목록을_조회한다({
         evaluationPeriodId: query.evaluationPeriodId,
         employeeId: query.employeeId,
         requestedBy: query.requestedBy,
-        isRead: isRead,
-        isCompleted: isCompleted,
+        isRead: query.isRead,
+        isCompleted: query.isCompleted,
         step: query.step as any,
       });
 
@@ -88,10 +84,6 @@ export class RevisionRequestController {
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', new DefaultValuePipe(false), ParseBoolPipe)
-    isRead: boolean,
-    @Query('isCompleted', new DefaultValuePipe(false), ParseBoolPipe)
-    isCompleted: boolean,
     @CurrentUser('id') recipientId: string,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
@@ -100,8 +92,8 @@ export class RevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: isRead,
-          isCompleted: isCompleted,
+          isRead: query.isRead,
+          isCompleted: query.isCompleted,
           step: query.step as any,
         },
       );

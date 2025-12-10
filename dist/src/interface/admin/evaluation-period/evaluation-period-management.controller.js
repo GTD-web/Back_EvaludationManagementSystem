@@ -18,21 +18,34 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_management_service_1 = require("../../../context/evaluation-period-management-context/evaluation-period-management.service");
 const evaluation_period_business_service_1 = require("../../../business/evaluation-period/evaluation-period-business.service");
+const wbs_evaluation_criteria_service_1 = require("../../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.service");
+const evaluation_line_service_1 = require("../../../domain/core/evaluation-line/evaluation-line.service");
+const evaluation_line_mapping_service_1 = require("../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
-const default_grade_ranges_constant_1 = require("../../common/constants/default-grade-ranges.constant");
+const system_setting_service_1 = require("../../../domain/common/system-setting/system-setting.service");
 let EvaluationPeriodManagementController = EvaluationPeriodManagementController_1 = class EvaluationPeriodManagementController {
     evaluationPeriodBusinessService;
     evaluationPeriodManagementService;
+    systemSettingService;
+    wbsEvaluationCriteriaService;
+    evaluationLineService;
+    evaluationLineMappingService;
     logger = new common_1.Logger(EvaluationPeriodManagementController_1.name);
-    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService) {
+    constructor(evaluationPeriodBusinessService, evaluationPeriodManagementService, systemSettingService, wbsEvaluationCriteriaService, evaluationLineService, evaluationLineMappingService) {
         this.evaluationPeriodBusinessService = evaluationPeriodBusinessService;
         this.evaluationPeriodManagementService = evaluationPeriodManagementService;
+        this.systemSettingService = systemSettingService;
+        this.wbsEvaluationCriteriaService = wbsEvaluationCriteriaService;
+        this.evaluationLineService = evaluationLineService;
+        this.evaluationLineMappingService = evaluationLineMappingService;
     }
     async getDefaultGradeRanges() {
-        return (0, default_grade_ranges_constant_1.getDefaultGradeRanges)();
+        const gradeRanges = await this.systemSettingService.기본등급구간_조회한다();
+        return gradeRanges;
     }
     async updateDefaultGradeRanges(updateData) {
         const gradeRanges = updateData.gradeRanges.map((range) => ({
@@ -64,8 +77,8 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
                 throw new common_1.BadRequestException('등급 구간이 겹칩니다.');
             }
         }
-        (0, default_grade_ranges_constant_1.setDefaultGradeRanges)(gradeRanges);
-        return (0, default_grade_ranges_constant_1.getDefaultGradeRanges)();
+        const updatedRanges = await this.systemSettingService.기본등급구간_변경한다(gradeRanges);
+        return updatedRanges;
     }
     async getActiveEvaluationPeriods() {
         return await this.evaluationPeriodManagementService.활성평가기간_조회한다();
@@ -76,6 +89,40 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
     }
     async getEvaluationPeriodDetail(periodId) {
         return await this.evaluationPeriodManagementService.평가기간상세_조회한다(periodId);
+    }
+    async getEmployeePeriodAssignments(periodId, employeeId) {
+        return await this.evaluationPeriodManagementService.직원_평가기간별_할당정보_조회한다(periodId, employeeId);
+    }
+    async getEvaluationPeriodForCopy(periodId) {
+        const evaluationPeriod = await this.evaluationPeriodManagementService.평가기간상세_조회한다(periodId);
+        if (!evaluationPeriod) {
+            throw new common_1.BadRequestException(`평가 기간을 찾을 수 없습니다. (ID: ${periodId})`);
+        }
+        const evaluationLines = await this.evaluationLineService.전체_조회한다();
+        const evaluationLineMappings = await this.evaluationLineMappingService.필터_조회한다({
+            evaluationPeriodId: periodId,
+        });
+        const wbsItemIds = [
+            ...new Set(evaluationLineMappings
+                .map((m) => m.wbsItemId)
+                .filter((id) => id !== null && id !== undefined)),
+        ];
+        let evaluationCriteria = [];
+        if (wbsItemIds.length > 0) {
+            const criteriaPromises = wbsItemIds.map((wbsItemId) => this.wbsEvaluationCriteriaService.WBS항목별_조회한다(wbsItemId));
+            const criteriaResults = await Promise.all(criteriaPromises);
+            evaluationCriteria = criteriaResults
+                .flat()
+                .map((c) => c.DTO로_변환한다());
+        }
+        return {
+            evaluationPeriod,
+            evaluationCriteria,
+            evaluationLines: {
+                lines: evaluationLines.map((line) => line.DTO로_변환한다()),
+                mappings: evaluationLineMappings.map((mapping) => mapping.DTO로_변환한다()),
+            },
+        };
     }
     async createEvaluationPeriod(createData, user) {
         const createdBy = user.id;
@@ -92,7 +139,84 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
             })) || [],
         };
         const result = await this.evaluationPeriodBusinessService.평가기간을_생성한다(contextDto, createdBy);
+        if (createData.sourcePeriodId) {
+            await this.평가항목과_평가라인을_복사한다(createData.sourcePeriodId, result.evaluationPeriod.id, createdBy);
+        }
         return result.evaluationPeriod;
+    }
+    async 평가항목과_평가라인을_복사한다(sourcePeriodId, targetPeriodId, createdBy) {
+        this.logger.log(`평가항목과 평가라인 복사 시작 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}`);
+        try {
+            const sourceLineMappings = await this.evaluationLineMappingService.필터_조회한다({
+                evaluationPeriodId: sourcePeriodId,
+            });
+            if (sourceLineMappings.length === 0) {
+                this.logger.warn(`원본 평가기간에 복사할 평가라인이 없습니다: ${sourcePeriodId}`);
+                return;
+            }
+            this.logger.log(`${sourceLineMappings.length}개의 평가라인 매핑을 복사합니다`);
+            const wbsItemIds = [
+                ...new Set(sourceLineMappings
+                    .map((m) => m.wbsItemId)
+                    .filter((id) => id !== null && id !== undefined)),
+            ];
+            let criteriaCopyCount = 0;
+            let criteriaSkipCount = 0;
+            for (const wbsItemId of wbsItemIds) {
+                const sourceCriteria = await this.wbsEvaluationCriteriaService.WBS항목별_조회한다(wbsItemId);
+                if (sourceCriteria.length > 0) {
+                    this.logger.log(`WBS ${wbsItemId}의 ${sourceCriteria.length}개 평가 기준을 복사합니다`);
+                    for (const criteria of sourceCriteria) {
+                        try {
+                            await this.wbsEvaluationCriteriaService.생성한다({
+                                wbsItemId: criteria.wbsItemId,
+                                criteria: criteria.criteria,
+                                importance: criteria.importance,
+                            });
+                            criteriaCopyCount++;
+                        }
+                        catch (error) {
+                            if (error.code === 'DUPLICATE_WBS_EVALUATION_CRITERIA') {
+                                this.logger.log(`평가 기준 건너뜀 (이미 존재): WBS=${wbsItemId}, criteria="${criteria.criteria}"`);
+                                criteriaSkipCount++;
+                            }
+                            else {
+                                throw error;
+                            }
+                        }
+                    }
+                }
+            }
+            let mappingCopyCount = 0;
+            let mappingSkipCount = 0;
+            for (const mapping of sourceLineMappings) {
+                try {
+                    await this.evaluationLineMappingService.생성한다({
+                        evaluationPeriodId: targetPeriodId,
+                        evaluationLineId: mapping.evaluationLineId,
+                        employeeId: mapping.employeeId,
+                        evaluatorId: mapping.evaluatorId,
+                        wbsItemId: mapping.wbsItemId,
+                        createdBy,
+                    });
+                    mappingCopyCount++;
+                }
+                catch (error) {
+                    if (error.code === 'EVALUATION_LINE_MAPPING_DUPLICATE') {
+                        this.logger.log(`평가라인 매핑 건너뜀 (이미 존재): employee=${mapping.employeeId}, evaluator=${mapping.evaluatorId}`);
+                        mappingSkipCount++;
+                    }
+                    else {
+                        throw error;
+                    }
+                }
+            }
+            this.logger.log(`평가항목과 평가라인 복사 완료 - WBS 평가기준: ${criteriaCopyCount}개 복사, ${criteriaSkipCount}개 건너뜀, 평가라인 매핑: ${mappingCopyCount}개 복사, ${mappingSkipCount}개 건너뜀`);
+        }
+        catch (error) {
+            this.logger.error(`평가항목과 평가라인 복사 실패 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}`, error.stack);
+            throw error;
+        }
     }
     async startEvaluationPeriod(periodId, user) {
         const startedBy = user.id;
@@ -200,6 +324,10 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
         };
         return await this.evaluationPeriodManagementService.전체수동허용설정_변경한다(periodId, contextDto, changedBy);
     }
+    async copyEvaluationPeriod(targetPeriodId, sourcePeriodId, user) {
+        const updatedBy = user.id;
+        return await this.evaluationPeriodManagementService.평가기간_복제한다(targetPeriodId, sourcePeriodId, updatedBy);
+    }
     async deleteEvaluationPeriod(periodId, user) {
         const deletedBy = user.id;
         const result = await this.evaluationPeriodManagementService.평가기간_삭제한다(periodId, deletedBy);
@@ -217,6 +345,19 @@ let EvaluationPeriodManagementController = EvaluationPeriodManagementController_
             success: true,
             transitionedCount: result,
             message: `${result}개의 평가기간이 자동 단계 전이되었습니다.`,
+        };
+    }
+    async copyPreviousPeriodData(targetPeriodId, employeeId, sourcePeriodId, body, user) {
+        const copiedBy = user.id;
+        this.logger.log(`이전 평가기간 데이터 복사 요청 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 수행자: ${copiedBy}`);
+        const result = await this.evaluationPeriodManagementService.이전_평가기간_데이터를_복사한다(targetPeriodId, sourcePeriodId, employeeId, copiedBy, body.projects);
+        return {
+            success: true,
+            message: '이전 평가기간 데이터를 성공적으로 복사했습니다.',
+            copiedProjectAssignments: result.copiedProjectAssignments,
+            copiedWbsAssignments: result.copiedWbsAssignments,
+            copiedEvaluationLineMappings: result.copiedEvaluationLineMappings,
+            copiedWbsEvaluationCriteria: result.copiedWbsEvaluationCriteria,
         };
     }
 };
@@ -254,6 +395,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EvaluationPeriodManagementController.prototype, "getEvaluationPeriodDetail", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.GetEmployeePeriodAssignments)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "getEmployeePeriodAssignments", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.GetEvaluationPeriodForCopy)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "getEvaluationPeriodForCopy", null);
 __decorate([
     (0, evaluation_period_api_decorators_1.CreateEvaluationPeriod)(),
     __param(0, (0, common_1.Body)()),
@@ -387,6 +543,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EvaluationPeriodManagementController.prototype, "updateManualSettingPermissions", null);
 __decorate([
+    (0, evaluation_period_api_decorators_1.CopyEvaluationPeriod)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('targetId')),
+    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('sourceId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "copyEvaluationPeriod", null);
+__decorate([
     (0, evaluation_period_api_decorators_1.DeleteEvaluationPeriod)(),
     __param(0, (0, parse_uuid_decorator_1.ParseId)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -409,11 +574,27 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], EvaluationPeriodManagementController.prototype, "triggerAutoPhaseTransition", null);
+__decorate([
+    (0, evaluation_period_api_decorators_1.CopyPreviousPeriodData)(),
+    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('targetPeriodId')),
+    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
+    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('sourcePeriodId')),
+    __param(3, (0, common_1.Body)()),
+    __param(4, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, evaluation_management_dto_1.CopyPreviousPeriodDataApiDto, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluationPeriodManagementController.prototype, "copyPreviousPeriodData", null);
 exports.EvaluationPeriodManagementController = EvaluationPeriodManagementController = EvaluationPeriodManagementController_1 = __decorate([
     (0, swagger_1.ApiTags)('A-2. 관리자 - 평가기간'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_business_service_1.EvaluationPeriodBusinessService,
-        evaluation_period_management_service_1.EvaluationPeriodManagementContextService])
+        evaluation_period_management_service_1.EvaluationPeriodManagementContextService,
+        system_setting_service_1.SystemSettingService,
+        wbs_evaluation_criteria_service_1.WbsEvaluationCriteriaService,
+        evaluation_line_service_1.EvaluationLineService,
+        evaluation_line_mapping_service_1.EvaluationLineMappingService])
 ], EvaluationPeriodManagementController);
 //# sourceMappingURL=evaluation-period-management.controller.js.map

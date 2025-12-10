@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PartLeadersResponseDto = exports.GetPartLeadersQueryDto = exports.EmployeeResponseDto = exports.GetEmployeesQueryDto = exports.UpdateEmployeeAccessibilityQueryDto = exports.IncludeEmployeeInListDto = exports.ExcludeEmployeeFromListDto = void 0;
+exports.PartLeadersResponseDto = exports.GetPartLeadersQueryDto = exports.EmployeeResponseDto = exports.GetEmployeesQueryDto = exports.UpdateEmployeeAdminQueryDto = exports.IncludeEmployeeInListDto = exports.ExcludeEmployeeFromListDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
@@ -32,20 +32,20 @@ __decorate([
 class IncludeEmployeeInListDto {
 }
 exports.IncludeEmployeeInListDto = IncludeEmployeeInListDto;
-class UpdateEmployeeAccessibilityQueryDto {
-    isAccessible;
+class UpdateEmployeeAdminQueryDto {
+    isAdmin;
 }
-exports.UpdateEmployeeAccessibilityQueryDto = UpdateEmployeeAccessibilityQueryDto;
+exports.UpdateEmployeeAdminQueryDto = UpdateEmployeeAdminQueryDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '접근 가능 여부 (가능값: "true", "false", "1", "0")',
+        description: '관리자 권한 여부 (가능값: "true", "false", "1", "0")',
         example: 'true',
         type: String,
     }),
-    (0, class_validator_1.IsNotEmpty)({ message: 'isAccessible 쿼리 파라미터는 필수입니다.' }),
-    (0, decorators_1.ToBooleanStrict)(undefined, 'isAccessible'),
+    (0, class_validator_1.IsNotEmpty)({ message: 'isAdmin 쿼리 파라미터는 필수입니다.' }),
+    (0, decorators_1.ToBooleanStrict)(undefined, 'isAdmin'),
     __metadata("design:type", String)
-], UpdateEmployeeAccessibilityQueryDto.prototype, "isAccessible", void 0);
+], UpdateEmployeeAdminQueryDto.prototype, "isAdmin", void 0);
 class GetEmployeesQueryDto {
     departmentId;
     includeExcluded;
@@ -212,7 +212,7 @@ __decorate([
 ], EmployeeResponseDto.prototype, "updatedAt", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '시스템 접근 가능 여부 (2중 보안용)',
+        description: '시스템 접근 가능 여부 (관리자 기능 접근 가능 여부)',
         example: true,
     }),
     __metadata("design:type", Boolean)

@@ -2,6 +2,7 @@ import { StepApprovalStatusEnum } from '@interface/common/dto/step-approval/upda
 import { RevisionRequestBusinessService } from '@business/revision-request/revision-request-business.service';
 import { RevisionRequestContextService } from '@context/revision-request-context';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   CompleteRevisionRequest,
   GetMyRevisionRequests,
@@ -17,9 +18,7 @@ import {
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
@@ -31,6 +30,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-0-4. 사용자 - 재작성 요청')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/revision-requests')
 export class UserRevisionRequestController {
   constructor(
@@ -44,10 +44,6 @@ export class UserRevisionRequestController {
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
     @Query() query: GetRevisionRequestsQueryDto,
-    @Query('isRead', new DefaultValuePipe(false), ParseBoolPipe)
-    isRead: boolean,
-    @Query('isCompleted', new DefaultValuePipe(false), ParseBoolPipe)
-    isCompleted: boolean,
     @CurrentUser('id') recipientId: string,
   ): Promise<RevisionRequestResponseDto[]> {
     const requests =
@@ -56,8 +52,8 @@ export class UserRevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: isRead,
-          isCompleted: isCompleted,
+          isRead: query.isRead ?? false,
+          isCompleted: query.isCompleted ?? false,
           step: query.step as any,
         },
       );

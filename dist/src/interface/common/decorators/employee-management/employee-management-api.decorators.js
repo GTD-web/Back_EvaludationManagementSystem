@@ -7,7 +7,9 @@ exports.GetExcludedEmployees = GetExcludedEmployees;
 exports.GetPartLeaders = GetPartLeaders;
 exports.ExcludeEmployeeFromList = ExcludeEmployeeFromList;
 exports.IncludeEmployeeInList = IncludeEmployeeInList;
-exports.UpdateEmployeeAccessibility = UpdateEmployeeAccessibility;
+exports.UpdateEmployeeAdmin = UpdateEmployeeAdmin;
+exports.BulkUpdateEmployeeAdmin = BulkUpdateEmployeeAdmin;
+exports.SyncAdminPermissions = SyncAdminPermissions;
 exports.SyncEmployees = SyncEmployees;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
@@ -252,49 +254,158 @@ function IncludeEmployeeInList() {
         description: '직원을 찾을 수 없습니다.',
     }), (0, swagger_1.ApiResponse)({ status: 500, description: '서버 내부 오류' }));
 }
-function UpdateEmployeeAccessibility() {
-    return (0, common_1.applyDecorators)((0, common_1.Patch)(':id/accessibility'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
-        summary: '직원의 접근 가능 여부 변경',
-        description: `**중요**: 직원의 시스템 접근 가능 여부를 변경합니다. 이는 2중 보안을 위한 설정입니다.
+function UpdateEmployeeAdmin() {
+    return (0, common_1.applyDecorators)((0, common_1.Patch)(':id/admin'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+        summary: '직원의 관리자 권한 변경',
+        description: `**중요**: 직원의 관리자 권한 여부를 변경합니다. 관리자 기능 접근 가능 여부를 제어합니다.
 
 **동작 방식:**
-- 직원의 isAccessible 필드를 변경
-- SSO에서 역할을 받았더라도 이 시스템에서 접근 가능 여부를 별도로 관리
-- admin 역할을 가진 사용자도 isAccessible=false이면 접근 불가
+- 직원의 isAdmin 필드를 변경
+- SSO에서 역할을 받았더라도 이 시스템에서 관리자 권한을 별도로 관리
+- admin 역할을 가진 사용자도 isAdmin=false이면 관리자 기능 접근 불가
 - 변경 후 즉시 적용됨
 - 처리자 정보는 JWT 토큰의 인증된 사용자에서 자동으로 추출
 
 **테스트 케이스:**
-- 접근 가능으로 변경: isAccessible=false인 직원을 true로 변경 (200)
-- 접근 불가로 변경: isAccessible=true인 직원을 false로 변경 (200)
-- 접근 가능 여부 반영 확인: 변경 후 응답에 isAccessible 필드가 변경된 값으로 반환됨
+- 관리자 권한 부여: isAdmin=false인 직원을 true로 변경 (200)
+- 관리자 권한 제거: isAdmin=true인 직원을 false로 변경 (200)
+- 관리자 권한 반영 확인: 변경 후 응답에 isAdmin 필드가 변경된 값으로 반환됨
 - 이미 같은 값으로 변경: 이미 해당 상태인 직원도 정상 처리 (200)
 - 멱등성 보장: 동일한 값으로 여러 번 요청해도 에러 없이 정상 동작
 - 존재하지 않는 직원 ID: 유효한 UUID이지만 존재하지 않는 ID로 요청 시 404 에러
 - 잘못된 UUID 형식: 잘못된 UUID 형식의 직원 ID로 요청 시 400 에러
-- isAccessible 쿼리 파라미터 누락: isAccessible 쿼리 파라미터가 없을 때 400 에러
-- 잘못된 값: isAccessible이 "true", "false", "1", "0" 외의 값일 때 400 에러
-- 응답 데이터 검증: 변경된 isAccessible 값이 응답에 포함됨`,
+- isAdmin 쿼리 파라미터 누락: isAdmin 쿼리 파라미터가 없을 때 400 에러
+- 잘못된 값: isAdmin이 "true", "false", "1", "0" 외의 값일 때 400 에러
+- 응답 데이터 검증: 변경된 isAdmin 값이 응답에 포함됨`,
     }), (0, swagger_1.ApiParam)({
         name: 'id',
         description: '직원 ID (UUID 형식)',
         example: '123e4567-e89b-12d3-a456-426614174000',
     }), (0, swagger_1.ApiQuery)({
-        name: 'isAccessible',
+        name: 'isAdmin',
         required: true,
-        description: '접근 가능 여부 (가능값: "true", "false", "1", "0")',
+        description: '관리자 권한 여부 (가능값: "true", "false", "1", "0")',
         type: String,
         example: 'true',
     }), (0, swagger_1.ApiResponse)({
         status: 200,
-        description: '직원의 접근 가능 여부가 변경되었습니다.',
+        description: '직원의 관리자 권한이 변경되었습니다.',
         type: employee_management_dto_1.EmployeeResponseDto,
     }), (0, swagger_1.ApiResponse)({
         status: 400,
-        description: '잘못된 요청 데이터 (isAccessible 쿼리 파라미터 누락, 잘못된 값 또는 잘못된 UUID 형식)',
+        description: '잘못된 요청 데이터 (isAdmin 쿼리 파라미터 누락, 잘못된 값 또는 잘못된 UUID 형식)',
     }), (0, swagger_1.ApiResponse)({
         status: 404,
         description: '직원을 찾을 수 없습니다.',
+    }), (0, swagger_1.ApiResponse)({ status: 500, description: '서버 내부 오류' }));
+}
+function BulkUpdateEmployeeAdmin() {
+    return (0, common_1.applyDecorators)((0, common_1.Patch)('bulk/admin'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+        summary: '여러 직원의 관리자 권한 일괄 변경',
+        description: `**중요**: 여러 직원의 관리자 권한 여부를 한 번에 변경합니다.
+
+**동작 방식:**
+- 요청 body의 employeeIds 배열에 포함된 모든 직원의 isAdmin 필드를 변경
+- isAdmin query 파라미터 값으로 일괄 설정
+- 일부 직원 처리 실패 시에도 나머지 직원은 정상 처리
+- 처리 결과에 성공/실패 개수 및 실패한 직원 ID 목록 포함
+- 처리자 정보는 JWT 토큰의 인증된 사용자에서 자동으로 추출
+
+**테스트 케이스:**
+- 기본 일괄 변경: 3명의 직원 ID를 전달하여 모두 isAdmin=false로 변경 (200)
+- 성공 건수 확인: totalProcessed=3, succeeded=3, failed=0
+- 일괄 권한 부여: 여러 직원에게 동시에 관리자 권한 부여 (isAdmin=true)
+- 일괄 권한 제거: 여러 직원의 관리자 권한 제거 (isAdmin=false)
+- 부분 실패 처리: 일부 직원 ID가 잘못되었을 때 나머지는 정상 처리
+- 실패 정보 포함: failed 개수와 failedIds 배열에 실패한 직원 ID 포함
+- 에러 메시지 포함: errors 배열에 실패 사유 포함
+- 존재하지 않는 직원 ID 포함: 유효한 UUID지만 존재하지 않는 ID 포함 시 해당 ID만 실패
+- 잘못된 UUID 형식: 배열에 잘못된 UUID 포함 시 400 에러
+- employeeIds 빈 배열: 빈 배열 전달 시 400 에러
+- employeeIds 누락: body에 employeeIds 필드 없을 때 400 에러
+- isAdmin 쿼리 파라미터 누락: isAdmin 쿼리 파라미터가 없을 때 400 에러
+- 단일 직원도 처리 가능: 1명만 포함된 배열로도 정상 처리
+- 응답 구조 검증: success, totalProcessed, succeeded, failed, failedIds, errors, processedAt 필드 모두 포함`,
+    }), (0, swagger_1.ApiQuery)({
+        name: 'isAdmin',
+        required: true,
+        description: '관리자 권한 여부 (가능값: "true", "false", "1", "0")',
+        type: String,
+        example: 'false',
+    }), (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '여러 직원의 관리자 권한 일괄 변경이 완료되었습니다.',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                totalProcessed: { type: 'number', example: 5 },
+                succeeded: { type: 'number', example: 4 },
+                failed: { type: 'number', example: 1 },
+                failedIds: { type: 'array', items: { type: 'string' }, example: ['invalid-uuid'] },
+                errors: { type: 'array', items: { type: 'string' }, example: ['직원을 찾을 수 없습니다: invalid-uuid'] },
+                processedAt: { type: 'string', format: 'date-time', example: '2024-01-15T09:30:00.000Z' },
+            },
+        },
+    }), (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '잘못된 요청 데이터 (employeeIds 누락/빈 배열, 잘못된 UUID, isAdmin 파라미터 누락 등)',
+    }), (0, swagger_1.ApiResponse)({ status: 500, description: '서버 내부 오류' }));
+}
+function SyncAdminPermissions() {
+    return (0, common_1.applyDecorators)((0, common_1.Post)('sync-admin-permissions'), (0, common_1.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+        summary: '관리자 권한 동기화',
+        description: `특정 직원만 관리자 권한을 부여하고, 나머지 직원의 관리자 권한을 제거합니다.
+
+**동작:**
+- 지정된 직원(남명용, 이봉은, 우은진, 전무현, 우창욱, 김종식)의 isAccessible을 true로 설정
+- 그 외 모든 직원의 isAccessible을 false로 설정
+- 전체 직원을 순회하며 권한 상태를 동기화
+- 변경된 직원 수와 관리자 직원 목록 반환
+
+**사용 시나리오:**
+- 관리자 권한이 있는 직원 목록이 변경되었을 때
+- 권한 상태를 일괄로 초기화하고 싶을 때
+- 동기화 후 권한 설정이 정확한지 확인하고 싶을 때
+
+**테스트 케이스:**
+- 기본 동기화: 모든 직원의 관리자 권한을 정의된 목록에 따라 동기화 (200)
+- 권한 부여 확인: 지정된 6명의 직원은 isAccessible=true
+- 권한 제거 확인: 그 외 직원은 isAccessible=false
+- 변경 건수 반환: updated 필드에 실제 변경된 직원 수 포함
+- 관리자 목록 반환: adminEmployees 배열에 6명의 이름 포함
+- 총 처리 건수: totalProcessed가 전체 직원 수와 일치
+- 멱등성: 여러 번 호출해도 안전하게 동작
+- 메시지 반환: 처리 결과 메시지 포함`,
+    }), (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '관리자 권한 동기화가 완료되었습니다.',
+        schema: {
+            type: 'object',
+            properties: {
+                totalProcessed: {
+                    type: 'number',
+                    description: '총 처리된 직원 수',
+                    example: 50,
+                },
+                updated: {
+                    type: 'number',
+                    description: '권한이 변경된 직원 수',
+                    example: 10,
+                },
+                adminEmployees: {
+                    type: 'array',
+                    description: '관리자 권한을 가진 직원 이름 목록',
+                    items: { type: 'string' },
+                    example: ['남명용', '이봉은', '우은진', '전무현', '우창욱', '김종식'],
+                },
+                message: {
+                    type: 'string',
+                    description: '처리 결과 메시지',
+                    example: '총 50명 중 10명의 관리자 권한을 업데이트했습니다.',
+                },
+            },
+        },
     }), (0, swagger_1.ApiResponse)({ status: 500, description: '서버 내부 오류' }));
 }
 function SyncEmployees() {

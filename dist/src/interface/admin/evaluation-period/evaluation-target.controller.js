@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_management_service_1 = require("../../../context/evaluation-period-management-context/evaluation-period-management.service");
 const evaluation_target_business_service_1 = require("../../../business/evaluation-target/evaluation-target-business.service");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_target_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-target-api.decorators");
 const evaluation_target_dto_1 = require("../../common/dto/evaluation-period/evaluation-target.dto");
@@ -190,6 +191,7 @@ __decorate([
 exports.EvaluationTargetController = EvaluationTargetController = __decorate([
     (0, swagger_1.ApiTags)('A-3. 관리자 - 평가 대상'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_management_service_1.EvaluationPeriodManagementContextService,
         evaluation_target_business_service_1.EvaluationTargetBusinessService])

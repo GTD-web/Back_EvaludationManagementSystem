@@ -3,8 +3,8 @@ export declare class ExcludeEmployeeFromListDto {
 }
 export declare class IncludeEmployeeInListDto {
 }
-export declare class UpdateEmployeeAccessibilityQueryDto {
-    isAccessible: string;
+export declare class UpdateEmployeeAdminQueryDto {
+    isAdmin: string;
 }
 export declare class GetEmployeesQueryDto {
     departmentId?: string;

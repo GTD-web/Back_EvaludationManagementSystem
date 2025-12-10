@@ -34,7 +34,6 @@ export interface WbsPerformance {
     completedAt?: Date;
 }
 export interface WbsDownwardEvaluationInfo {
-    downwardEvaluationId?: string;
     evaluatorId?: string;
     evaluatorName?: string;
     evaluationContent?: string;

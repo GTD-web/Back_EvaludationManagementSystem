@@ -521,6 +521,11 @@ export interface MyDownwardEvaluationStatus {
      * 평가기간 등급 기준에 따른 2차 하향평가 등급 (예: S, A, B, C, D, F 등)
      */
     grade: string | null;
+
+    /**
+     * 2차 평가자가 1차평가 제출을 확인했는지 여부 (1차 평가 제출 시에만 제공)
+     */
+    primaryEvaluationViewed?: boolean;
   } | null;
 }
 
@@ -574,6 +579,20 @@ export interface MyEvaluationTargetStatusDto {
   };
 
   /**
+   * 평가기준 설정 통합 상태
+   * (evaluationCriteria, wbsCriteria 상태 + 제출/승인 상태 통합)
+   */
+  setup: {
+    status:
+      | 'none'
+      | 'in_progress'
+      | 'pending'
+      | 'approved'
+      | 'revision_requested'
+      | 'revision_completed';
+  };
+
+  /**
    * 성과 입력 정보
    */
   performanceInput: {
@@ -612,6 +631,10 @@ export interface MyEvaluationTargetStatusDto {
     totalScore: number | null;
     /** 평가기간 등급 기준에 따른 자기평가 등급 (예: S+, A-, B 등) */
     grade: string | null;
+    /** 1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공) */
+    viewedByPrimaryEvaluator?: boolean;
+    /** 2차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공) */
+    viewedBySecondaryEvaluator?: boolean;
   };
 
   /**

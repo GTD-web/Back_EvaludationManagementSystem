@@ -14,13 +14,15 @@ const downward_evaluation_score_utils_1 = require("../get-employee-evaluation-pe
 async function calculateSelfEvaluationScore(evaluationPeriodId, employeeId, completedSelfEvaluations, selfEvaluationRepository, wbsAssignmentRepository, evaluationPeriodRepository) {
     let selfEvaluationScore = null;
     let selfEvaluationGrade = null;
-    const totalSelfEvaluations = await selfEvaluationRepository.count({
-        where: {
-            periodId: evaluationPeriodId,
-            employeeId: employeeId,
-            deletedAt: null,
-        },
-    });
+    const totalSelfEvaluations = await selfEvaluationRepository
+        .createQueryBuilder('self_eval')
+        .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+        .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+        .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+        .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+        .andWhere('self_eval.deletedAt IS NULL')
+        .andWhere('project_assignment.id IS NOT NULL')
+        .getCount();
     if (totalSelfEvaluations > 0 &&
         completedSelfEvaluations === totalSelfEvaluations) {
         selfEvaluationScore = await (0, self_evaluation_utils_1.가중치_기반_자기평가_점수를_계산한다)(evaluationPeriodId, employeeId, selfEvaluationRepository, wbsAssignmentRepository, evaluationPeriodRepository);

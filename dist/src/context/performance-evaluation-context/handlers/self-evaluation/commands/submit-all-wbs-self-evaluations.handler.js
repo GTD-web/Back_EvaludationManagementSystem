@@ -61,9 +61,30 @@ let SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = SubmitAllWbsSelfEvaluat
                 throw new common_1.BadRequestException(`평가기간을 찾을 수 없습니다. (periodId: ${periodId})`);
             }
             const maxScore = evaluationPeriod.자기평가_달성률_최대값();
-            const evaluations = await this.wbsSelfEvaluationService.필터_조회한다({
+            const allEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
                 employeeId,
                 periodId,
+            });
+            const evaluations = await this.transactionManager.executeTransaction(async (manager) => {
+                const wbsItemIds = allEvaluations.map((e) => e.wbsItemId);
+                if (wbsItemIds.length === 0) {
+                    return [];
+                }
+                const validWbsIds = await manager
+                    .createQueryBuilder()
+                    .select('DISTINCT wbs_assignment.wbsItemId', 'wbsItemId')
+                    .from('evaluation_wbs_assignments', 'wbs_assignment')
+                    .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+                    .where('wbs_assignment.periodId = :periodId', { periodId })
+                    .andWhere('wbs_assignment.employeeId = :employeeId', { employeeId })
+                    .andWhere('wbs_assignment.wbsItemId IN (:...wbsItemIds)', {
+                    wbsItemIds,
+                })
+                    .andWhere('wbs_assignment.deletedAt IS NULL')
+                    .andWhere('project_assignment.id IS NOT NULL')
+                    .getRawMany();
+                const validWbsIdSet = new Set(validWbsIds.map((row) => row.wbsItemId));
+                return allEvaluations.filter((e) => validWbsIdSet.has(e.wbsItemId));
             });
             if (evaluations.length === 0) {
                 throw new common_1.BadRequestException('제출할 자기평가가 존재하지 않습니다.');

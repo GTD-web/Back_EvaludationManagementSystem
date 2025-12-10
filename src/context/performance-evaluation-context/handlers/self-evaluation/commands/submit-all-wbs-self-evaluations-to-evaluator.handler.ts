@@ -108,10 +108,46 @@ export class SubmitAllWbsSelfEvaluationsToEvaluatorHandler
       const maxScore = evaluationPeriod.자기평가_달성률_최대값();
 
       // 해당 직원의 해당 기간 모든 자기평가 조회
-      const evaluations = await this.wbsSelfEvaluationService.필터_조회한다({
+      // 소프트 딜리트된 프로젝트 할당에 속한 WBS 자기평가 제외
+      const allEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
         employeeId,
         periodId,
       });
+
+      // WBS 할당 및 프로젝트 할당이 유효한 자기평가만 필터링
+      const evaluations = await this.transactionManager.executeTransaction(
+        async (manager) => {
+          const wbsItemIds = allEvaluations.map((e) => e.wbsItemId);
+          if (wbsItemIds.length === 0) {
+            return [];
+          }
+
+          // WBS 할당과 프로젝트 할당이 모두 유효한 WBS ID 조회
+          const validWbsIds = await manager
+            .createQueryBuilder()
+            .select('DISTINCT wbs_assignment.wbsItemId', 'wbsItemId')
+            .from('evaluation_wbs_assignments', 'wbs_assignment')
+            .leftJoin(
+              'evaluation_project_assignments',
+              'project_assignment',
+              'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+            )
+            .where('wbs_assignment.periodId = :periodId', { periodId })
+            .andWhere('wbs_assignment.employeeId = :employeeId', { employeeId })
+            .andWhere('wbs_assignment.wbsItemId IN (:...wbsItemIds)', {
+              wbsItemIds,
+            })
+            .andWhere('wbs_assignment.deletedAt IS NULL')
+            .andWhere('project_assignment.id IS NOT NULL')
+            .getRawMany();
+
+          const validWbsIdSet = new Set(
+            validWbsIds.map((row: any) => row.wbsItemId),
+          );
+
+          return allEvaluations.filter((e) => validWbsIdSet.has(e.wbsItemId));
+        },
+      );
 
       if (evaluations.length === 0) {
         throw new BadRequestException('제출할 자기평가가 존재하지 않습니다.');

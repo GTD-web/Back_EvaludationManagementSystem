@@ -128,29 +128,39 @@ let GetEmployeeAssignedDataHandler = class GetEmployeeAssignedDataHandler {
             });
             return sum + project.wbsList.length;
         }, 0);
-        const totalSelfEvaluations = await this.selfEvaluationRepository.count({
-            where: {
-                periodId: evaluationPeriodId,
-                employeeId: employeeId,
-                deletedAt: null,
-            },
-        });
-        const submittedToEvaluatorCount = await this.selfEvaluationRepository.count({
-            where: {
-                periodId: evaluationPeriodId,
-                employeeId: employeeId,
-                submittedToEvaluator: true,
-                deletedAt: null,
-            },
-        });
-        const submittedToManagerCount = await this.selfEvaluationRepository.count({
-            where: {
-                periodId: evaluationPeriodId,
-                employeeId: employeeId,
-                submittedToManager: true,
-                deletedAt: null,
-            },
-        });
+        const totalSelfEvaluations = await this.selfEvaluationRepository
+            .createQueryBuilder('self_eval')
+            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+            .andWhere('self_eval.deletedAt IS NULL')
+            .andWhere('project_assignment.id IS NOT NULL')
+            .getCount();
+        const submittedToEvaluatorCount = await this.selfEvaluationRepository
+            .createQueryBuilder('self_eval')
+            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+            .andWhere('self_eval.submittedToEvaluator = :submittedToEvaluator', {
+            submittedToEvaluator: true,
+        })
+            .andWhere('self_eval.deletedAt IS NULL')
+            .andWhere('project_assignment.id IS NOT NULL')
+            .getCount();
+        const submittedToManagerCount = await this.selfEvaluationRepository
+            .createQueryBuilder('self_eval')
+            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+            .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+            .andWhere('self_eval.submittedToManager = :submittedToManager', {
+            submittedToManager: true,
+        })
+            .andWhere('self_eval.deletedAt IS NULL')
+            .andWhere('project_assignment.id IS NOT NULL')
+            .getCount();
         const completedSelfEvaluations = submittedToManagerCount;
         const selfEvaluationScore = await (0, summary_calculation_utils_1.calculateSelfEvaluationScore)(evaluationPeriodId, employeeId, completedSelfEvaluations, this.selfEvaluationRepository, this.wbsAssignmentRepository, this.evaluationPeriodRepository);
         const isSubmittedToEvaluator = totalSelfEvaluations > 0 &&

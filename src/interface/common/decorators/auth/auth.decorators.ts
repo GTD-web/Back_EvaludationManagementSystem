@@ -46,7 +46,8 @@ export function Login() {
 - 잘못된 이메일 형식: 400 에러
 - 필수 필드 누락: email 또는 password 누락 시 400 에러
 - 잘못된 인증 정보: 이메일 또는 패스워드 불일치 시 401 에러 (SSO 서버에서 검증)
-- 권한 없음: EMS-PROD 시스템 역할이 없는 경우 403 에러`,
+- 권한 없음: EMS-PROD 시스템 역할이 없는 경우 403 에러
+- admin 역할 접근 제한: admin 역할이 있는 사용자가 isAccessible이 false인 경우 403 에러`,
     }),
     ApiBody({
       type: LoginDto,
@@ -78,12 +79,26 @@ export function Login() {
       },
     }),
     ApiForbiddenResponse({
-      description: '권한 없음 (EMS-PROD 시스템 역할 없음)',
+      description:
+        '권한 없음 (EMS-PROD 시스템 역할 없음 또는 admin 역할이 있으나 isAccessible이 false)',
       schema: {
-        example: {
-          message: '이 시스템에 대한 접근 권한이 없습니다.',
-          error: 'Forbidden',
-          statusCode: 403,
+        examples: {
+          noSystemRole: {
+            summary: 'EMS-PROD 시스템 역할 없음',
+            value: {
+              message: '이 시스템에 대한 접근 권한이 없습니다.',
+              error: 'Forbidden',
+              statusCode: 403,
+            },
+          },
+          notAccessible: {
+            summary: 'admin 역할이지만 시스템 접근 불가',
+            value: {
+              message: '시스템 접근 권한이 없습니다. 관리자에게 문의하세요.',
+              error: 'Forbidden',
+              statusCode: 403,
+            },
+          },
         },
       },
     }),

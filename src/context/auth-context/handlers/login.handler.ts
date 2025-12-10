@@ -144,6 +144,16 @@ export class LoginHandler {
     );
     this.logger.log(`추출된 EMS-PROD roles: [${roles.join(', ')}]`);
 
+    // 3-1. admin 역할이 있는 경우 isAccessible 체크
+    if (roles.includes('admin') && !employee.isAccessible) {
+      this.logger.warn(
+        `접근 권한이 없는 관리자의 로그인 시도: ${employee.employeeNumber} (${employee.email})`,
+      );
+      throw new ForbiddenException(
+        '시스템 접근 권한이 없습니다. 관리자에게 문의하세요.',
+      );
+    }
+
     // 4. Employee의 roles 업데이트
     try {
       await this.employeeService.updateRoles(employee.id, roles);

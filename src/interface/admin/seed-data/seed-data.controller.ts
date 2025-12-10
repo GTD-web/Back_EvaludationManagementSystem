@@ -12,6 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Roles } from '@interface/common/decorators';
 import { SeedDataService } from '@context/seed-data-context/seed-data.service';
 import {
   SeedDataConfigDto,
@@ -39,6 +40,7 @@ import { faker } from '@faker-js/faker/locale/ko';
 
 @ApiTags('A-0-1. Seed Data')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/seed')
 export class SeedDataController {
   private readonly logger = new Logger(SeedDataController.name);

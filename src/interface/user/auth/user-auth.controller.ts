@@ -4,7 +4,7 @@ import { AuthService } from '@context/auth-context/auth.service';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import {
-  GetMe,
+  GetMeAsUser,
   Login,
 } from '@interface/common/decorators/auth/auth.decorators';
 import { LoginDto } from '@interface/common/dto/auth/login.dto';
@@ -49,7 +49,7 @@ export class UserAuthController {
   /**
    * 현재 로그인한 사용자 정보 조회
    */
-  @GetMe()
+  @GetMeAsUser()
   async getMe(@CurrentUser() user: AuthenticatedUser): Promise<UserInfoDto> {
     // JWT 가드를 통해 검증된 사용자 정보 반환
     // AuthenticatedUser는 기본 필드만 포함하므로,

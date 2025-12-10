@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserEvaluationPeriodManagementController = void 0;
 const evaluation_period_management_service_1 = require("../../../context/evaluation-period-management-context/evaluation-period-management.service");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
@@ -95,6 +96,7 @@ __decorate([
 exports.UserEvaluationPeriodManagementController = UserEvaluationPeriodManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-2. 사용자 - 평가기간'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('user'),
     (0, common_1.Controller)('user/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_management_service_1.EvaluationPeriodManagementContextService])
 ], UserEvaluationPeriodManagementController);

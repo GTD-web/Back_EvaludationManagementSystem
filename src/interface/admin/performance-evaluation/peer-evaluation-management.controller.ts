@@ -4,7 +4,7 @@ import { EmployeeSyncService } from '@context/organization-management-context/em
 import { PeerEvaluationDetailResult } from '@context/performance-evaluation-context/handlers/peer-evaluation';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import {
   CancelPeerEvaluation,
   CancelPeerEvaluationsByPeriod,
@@ -44,6 +44,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('C-5. 관리자 - 성과평가 - 동료평가')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/performance-evaluation/peer-evaluations')
 export class PeerEvaluationManagementController {
   constructor(

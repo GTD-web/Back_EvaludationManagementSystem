@@ -22,6 +22,7 @@ const generate_child_projects_dto_1 = require("../../common/dto/project/generate
 const delete_child_projects_dto_1 = require("../../common/dto/project/delete-child-projects.dto");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const decorators_1 = require("../../common/decorators");
 const sso_module_1 = require("../../../domain/common/sso/sso.module");
 const employee_service_1 = require("../../../domain/common/employee/employee.service");
 let ProjectManagementController = class ProjectManagementController {
@@ -451,6 +452,7 @@ __decorate([
 exports.ProjectManagementController = ProjectManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-0. 관리자 - 프로젝트 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/projects'),
     __param(1, (0, common_1.Inject)(sso_module_1.SSOService)),
     __metadata("design:paramtypes", [project_service_1.ProjectService, Object, employee_service_1.EmployeeService])

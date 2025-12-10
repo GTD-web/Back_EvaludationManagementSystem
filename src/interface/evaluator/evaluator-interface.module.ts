@@ -81,9 +81,8 @@ import { NotificationController } from '../common/controllers/notification.contr
     {
       provide: ROLES_GUARD_OPTIONS,
       useValue: {
-        // admin 역할에 대해서만 접근 가능 여부 확인 수행
-        // user, evaluator 역할은 접근 가능 여부 확인 없이 허용
-        rolesRequiringAccessibilityCheck: ['admin', 'evaluator'],
+        // evaluator 역할에 대해 접근 가능 여부 확인 수행
+        rolesRequiringAccessibilityCheck: ['evaluator'],
       },
     },
     {

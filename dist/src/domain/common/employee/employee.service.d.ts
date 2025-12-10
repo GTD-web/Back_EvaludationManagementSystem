@@ -24,9 +24,16 @@ export declare class EmployeeService {
     조회에서_제외한다(id: string, excludeReason: string, excludedBy: string): Promise<EmployeeDto | null>;
     조회에_포함한다(id: string, updatedBy: string): Promise<EmployeeDto | null>;
     조회에서_제외되었는가(id: string): Promise<boolean>;
-    사번으로_접근가능한가(employeeNumber: string): Promise<boolean>;
-    접근가능한가(id: string): Promise<boolean>;
-    접근가능여부변경한다(id: string, isAccessible: boolean, updatedBy: string): Promise<EmployeeDto | null>;
+    사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean>;
+    관리자권한있는가(id: string): Promise<boolean>;
+    관리자권한변경한다(id: string, isAdmin: boolean, updatedBy: string): Promise<EmployeeDto | null>;
+    여러직원관리자권한변경한다(ids: string[], isAdmin: boolean, updatedBy: string): Promise<{
+        totalProcessed: number;
+        succeeded: number;
+        failed: number;
+        failedIds: string[];
+        errors: string[];
+    }>;
     findById(id: string): Promise<Employee | null>;
     findByEmployeeNumber(employeeNumber: string): Promise<Employee | null>;
     create(data: Partial<Employee>): Promise<Employee>;

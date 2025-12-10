@@ -17,6 +17,7 @@ const organization_management_context_1 = require("../../../context/organization
 const decorators_1 = require("../../common/decorators");
 const employee_management_api_decorators_1 = require("../../common/decorators/employee-management/employee-management-api.decorators");
 const employee_management_dto_1 = require("../../common/dto/employee-management/employee-management.dto");
+const bulk_update_employee_admin_dto_1 = require("../../common/dto/employee-management/bulk-update-employee-admin.dto");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 let EmployeeManagementController = class EmployeeManagementController {
@@ -60,6 +61,7 @@ let EmployeeManagementController = class EmployeeManagementController {
                 excludedAt: dto.excludedAt ?? undefined,
                 createdAt: dto.createdAt,
                 updatedAt: dto.updatedAt,
+                isAccessible: dto.isAccessible,
             };
         });
         return {
@@ -73,8 +75,20 @@ let EmployeeManagementController = class EmployeeManagementController {
     async includeEmployeeInList(employeeId, user) {
         return await this.organizationManagementService.직원조회포함(employeeId, user.id);
     }
-    async updateEmployeeAccessibility(employeeId, isAccessible, user) {
-        return await this.organizationManagementService.직원접근가능여부변경(employeeId, isAccessible, user.id);
+    async updateEmployeeAdmin(employeeId, isAdmin, user) {
+        return await this.organizationManagementService.직원관리자권한변경(employeeId, isAdmin, user.id);
+    }
+    async bulkUpdateEmployeeAdmin(bulkUpdateData, isAdmin, user) {
+        const result = await this.organizationManagementService.여러직원관리자권한변경(bulkUpdateData.employeeIds, isAdmin, user.id);
+        return {
+            success: result.failed === 0,
+            totalProcessed: result.totalProcessed,
+            succeeded: result.succeeded,
+            failed: result.failed,
+            failedIds: result.failedIds,
+            errors: result.errors,
+            processedAt: new Date(),
+        };
     }
     async syncEmployees(forceSync) {
         return await this.employeeSyncService.syncEmployees(forceSync);
@@ -132,14 +146,23 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmployeeManagementController.prototype, "includeEmployeeInList", null);
 __decorate([
-    (0, employee_management_api_decorators_1.UpdateEmployeeAccessibility)(),
+    (0, employee_management_api_decorators_1.UpdateEmployeeAdmin)(),
     __param(0, (0, decorators_1.ParseId)()),
-    __param(1, (0, common_1.Query)('isAccessible', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
+    __param(1, (0, common_1.Query)('isAdmin', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
     __param(2, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Boolean, Object]),
     __metadata("design:returntype", Promise)
-], EmployeeManagementController.prototype, "updateEmployeeAccessibility", null);
+], EmployeeManagementController.prototype, "updateEmployeeAdmin", null);
+__decorate([
+    (0, employee_management_api_decorators_1.BulkUpdateEmployeeAdmin)(),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Query)('isAdmin', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
+    __param(2, (0, decorators_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [bulk_update_employee_admin_dto_1.BulkUpdateEmployeeAdminDto, Boolean, Object]),
+    __metadata("design:returntype", Promise)
+], EmployeeManagementController.prototype, "bulkUpdateEmployeeAdmin", null);
 __decorate([
     (0, employee_management_api_decorators_1.SyncEmployees)(),
     __param(0, (0, common_1.Query)('forceSync', new common_1.DefaultValuePipe(false), common_1.ParseBoolPipe)),
@@ -150,6 +173,7 @@ __decorate([
 exports.EmployeeManagementController = EmployeeManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-1. 관리자 - 조직 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/employees'),
     __metadata("design:paramtypes", [organization_management_context_1.OrganizationManagementService,
         organization_management_context_1.EmployeeSyncService])

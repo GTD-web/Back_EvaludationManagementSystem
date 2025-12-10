@@ -2,7 +2,7 @@ import { DeliverableBusinessService } from '@business/deliverable/deliverable-bu
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -34,6 +34,7 @@ import {
  */
 @ApiTags('C-2. 평가자 - 성과평가 - 산출물')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/performance-evaluation/deliverables')
 export class EvaluatorDeliverableManagementController {
   constructor(

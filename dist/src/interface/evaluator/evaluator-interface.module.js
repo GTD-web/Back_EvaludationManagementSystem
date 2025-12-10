@@ -87,7 +87,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             {
                 provide: guards_1.ROLES_GUARD_OPTIONS,
                 useValue: {
-                    rolesRequiringAccessibilityCheck: ['admin', 'evaluator'],
+                    rolesRequiringAccessibilityCheck: ['evaluator'],
                 },
             },
             {

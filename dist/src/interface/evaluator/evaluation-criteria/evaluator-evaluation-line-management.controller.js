@@ -16,6 +16,7 @@ exports.EvaluatorEvaluationLineManagementController = void 0;
 const evaluation_criteria_management_service_1 = require("../../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const evaluation_line_business_service_1 = require("../../../business/evaluation-line/evaluation-line-business.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const evaluation_line_api_decorators_1 = require("../../common/decorators/evaluation-criteria/evaluation-line-api.decorators");
 const evaluation_line_dto_1 = require("../../common/dto/evaluation-criteria/evaluation-line.dto");
 const common_1 = require("@nestjs/common");
@@ -58,6 +59,7 @@ __decorate([
 exports.EvaluatorEvaluationLineManagementController = EvaluatorEvaluationLineManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-4. 평가자 - 평가 설정 - 평가라인'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/evaluation-criteria/evaluation-lines'),
     __metadata("design:paramtypes", [evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         evaluation_line_business_service_1.EvaluationLineBusinessService])

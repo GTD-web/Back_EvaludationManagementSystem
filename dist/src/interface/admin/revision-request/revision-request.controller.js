@@ -16,6 +16,7 @@ exports.RevisionRequestController = void 0;
 const revision_request_business_service_1 = require("../../../business/revision-request/revision-request-business.service");
 const revision_request_context_1 = require("../../../context/revision-request-context");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const revision_request_api_decorators_1 = require("../../common/decorators/revision-request/revision-request-api.decorators");
 const complete_revision_request_by_evaluator_query_dto_1 = require("../../common/dto/revision-request/complete-revision-request-by-evaluator-query.dto");
 const complete_revision_request_by_evaluator_dto_1 = require("../../common/dto/revision-request/complete-revision-request-by-evaluator.dto");
@@ -152,6 +153,7 @@ __decorate([
 exports.RevisionRequestController = RevisionRequestController = __decorate([
     (0, swagger_1.ApiTags)('A-0-4. 관리자 - 재작성 요청'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/revision-requests'),
     __metadata("design:paramtypes", [revision_request_business_service_1.RevisionRequestBusinessService,
         revision_request_context_1.RevisionRequestContextService])

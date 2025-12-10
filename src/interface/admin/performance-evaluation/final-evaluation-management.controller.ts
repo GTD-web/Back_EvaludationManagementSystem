@@ -2,7 +2,7 @@ import { PerformanceEvaluationService } from '@context/performance-evaluation-co
 import { FinalEvaluationBusinessService } from '@business/final-evaluation/final-evaluation-business.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -33,6 +33,7 @@ import {
  */
 @ApiTags('C-6. 관리자 - 성과평가 - 최종평가')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/performance-evaluation/final-evaluations')
 export class FinalEvaluationManagementController {
   constructor(

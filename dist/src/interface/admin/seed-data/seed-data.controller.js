@@ -16,6 +16,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SeedDataController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const decorators_1 = require("../../common/decorators");
 const seed_data_service_1 = require("../../../context/seed-data-context/seed-data.service");
 const seed_data_1 = require("../../common/dto/seed-data");
 const clear_seed_data_decorator_1 = require("../../common/decorators/seed-data/clear-seed-data.decorator");
@@ -339,6 +340,7 @@ __decorate([
 exports.SeedDataController = SeedDataController = SeedDataController_1 = __decorate([
     (0, swagger_1.ApiTags)('A-0-1. Seed Data'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/seed'),
     __param(3, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
     __metadata("design:paramtypes", [seed_data_service_1.SeedDataService,

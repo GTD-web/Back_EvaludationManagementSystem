@@ -62,6 +62,20 @@ export class BaseE2ETest {
   }
 
   /**
+   * OrganizationManagementService 접근을 위한 public 메서드
+   */
+  getOrganizationManagementService(): OrganizationManagementService {
+    return this.app.get(OrganizationManagementService);
+  }
+
+  /**
+   * 액세스 토큰 반환 (하위 호환성)
+   */
+  getAccessToken(): string {
+    return this.TEST_TOKEN.replace('Bearer ', '');
+  }
+
+  /**
    * 테스트 애플리케이션 초기화
    */
   async initializeApp(): Promise<void> {
@@ -116,7 +130,7 @@ export class BaseE2ETest {
       // AuthService를 mock으로 대체 - 항상 성공하는 인증 반환
       .overrideProvider(AuthService)
       .useValue(this.mockAuthService)
-      // OrganizationManagementService를 부분 모킹 - 사번으로_접근가능한가만 모킹
+      // OrganizationManagementService를 부분 모킹 - 사번으로_관리자권한있는가만 모킹
       .overrideProvider(OrganizationManagementService)
       .useFactory({
         factory: (
@@ -131,8 +145,8 @@ export class BaseE2ETest {
             ssoService,
             employeeService,
           );
-          // 사번으로_접근가능한가만 모킹
-          service.사번으로_접근가능한가 = jest.fn().mockResolvedValue(true);
+          // 사번으로_관리자권한있는가만 모킹
+          service.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(true);
           return service;
         },
         inject: [QueryBus, CommandBus, SSOService, EmployeeService],
@@ -477,6 +491,20 @@ export class BaseE2ETest {
     // 필요한 경우 기본 테스트 데이터 삽입
     // 예: 기본 사용자, 기본 설정 등
     return {};
+  }
+
+  /**
+   * 테스트 스위트 시작 전 초기화
+   */
+  async beforeAll(): Promise<void> {
+    await this.initializeApp();
+  }
+
+  /**
+   * 테스트 스위트 종료 후 정리
+   */
+  async afterAll(): Promise<void> {
+    await this.closeApp();
   }
 
   /**

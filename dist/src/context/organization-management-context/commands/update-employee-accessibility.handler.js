@@ -9,38 +9,38 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateEmployeeAccessibilityHandler = exports.UpdateEmployeeAccessibilityCommand = void 0;
+exports.UpdateEmployeeAdminHandler = exports.UpdateEmployeeAdminCommand = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
 const employee_service_1 = require("../../../domain/common/employee/employee.service");
 const common_1 = require("@nestjs/common");
-class UpdateEmployeeAccessibilityCommand {
+class UpdateEmployeeAdminCommand {
     employeeId;
-    isAccessible;
+    isAdmin;
     updatedBy;
-    constructor(employeeId, isAccessible, updatedBy) {
+    constructor(employeeId, isAdmin, updatedBy) {
         this.employeeId = employeeId;
-        this.isAccessible = isAccessible;
+        this.isAdmin = isAdmin;
         this.updatedBy = updatedBy;
     }
 }
-exports.UpdateEmployeeAccessibilityCommand = UpdateEmployeeAccessibilityCommand;
-let UpdateEmployeeAccessibilityHandler = class UpdateEmployeeAccessibilityHandler {
+exports.UpdateEmployeeAdminCommand = UpdateEmployeeAdminCommand;
+let UpdateEmployeeAdminHandler = class UpdateEmployeeAdminHandler {
     employeeService;
     constructor(employeeService) {
         this.employeeService = employeeService;
     }
     async execute(command) {
-        const { employeeId, isAccessible, updatedBy } = command;
-        const result = await this.employeeService.접근가능여부변경한다(employeeId, isAccessible, updatedBy);
+        const { employeeId, isAdmin, updatedBy } = command;
+        const result = await this.employeeService.관리자권한변경한다(employeeId, isAdmin, updatedBy);
         if (!result) {
             throw new common_1.NotFoundException(`직원을 찾을 수 없습니다. ID: ${employeeId}`);
         }
         return result;
     }
 };
-exports.UpdateEmployeeAccessibilityHandler = UpdateEmployeeAccessibilityHandler;
-exports.UpdateEmployeeAccessibilityHandler = UpdateEmployeeAccessibilityHandler = __decorate([
-    (0, cqrs_1.CommandHandler)(UpdateEmployeeAccessibilityCommand),
+exports.UpdateEmployeeAdminHandler = UpdateEmployeeAdminHandler;
+exports.UpdateEmployeeAdminHandler = UpdateEmployeeAdminHandler = __decorate([
+    (0, cqrs_1.CommandHandler)(UpdateEmployeeAdminCommand),
     __metadata("design:paramtypes", [employee_service_1.EmployeeService])
-], UpdateEmployeeAccessibilityHandler);
+], UpdateEmployeeAdminHandler);
 //# sourceMappingURL=update-employee-accessibility.handler.js.map

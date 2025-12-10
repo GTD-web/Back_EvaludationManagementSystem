@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditLogController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const decorators_1 = require("../../common/decorators");
 const audit_log_context_service_1 = require("../../../context/audit-log-context/audit-log-context.service");
 const audit_log_response_dto_1 = require("../../common/dto/audit-log/audit-log-response.dto");
 const get_audit_log_list_query_dto_1 = require("../../common/dto/audit-log/get-audit-log-list-query.dto");
@@ -130,6 +131,7 @@ __decorate([
 exports.AuditLogController = AuditLogController = __decorate([
     (0, swagger_1.ApiTags)('A-0-5. 관리자 - 감사 로그'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/audit-logs'),
     __metadata("design:paramtypes", [audit_log_context_service_1.AuditLogContextService])
 ], AuditLogController);

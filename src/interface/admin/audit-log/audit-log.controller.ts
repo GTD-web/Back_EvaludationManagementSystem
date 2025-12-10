@@ -12,6 +12,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Roles } from '@interface/common/decorators';
 import { AuditLogContextService } from '@context/audit-log-context/audit-log-context.service';
 import { AuditLogListResponseDto } from '@interface/common/dto/audit-log/audit-log-response.dto';
 import { GetAuditLogListQueryDto } from '@interface/common/dto/audit-log/get-audit-log-list-query.dto';
@@ -19,6 +20,7 @@ import { AuditLogResponseDto } from '@interface/common/dto/audit-log/audit-log-r
 
 @ApiTags('A-0-5. 관리자 - 감사 로그')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/audit-logs')
 export class AuditLogController {
   constructor(

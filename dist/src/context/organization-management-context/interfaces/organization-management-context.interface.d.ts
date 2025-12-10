@@ -14,8 +14,15 @@ export interface IOrganizationManagementContext {
     활성직원목록조회(): Promise<EmployeeDto[]>;
     부서하이라키조회(): Promise<DepartmentHierarchyDto[]>;
     부서하이라키_직원포함_조회(): Promise<DepartmentHierarchyWithEmployeesDto[]>;
-    사번으로_접근가능한가(employeeNumber: string): Promise<boolean>;
-    직원접근가능여부변경(employeeId: string, isAccessible: boolean, updatedBy: string): Promise<EmployeeDto>;
+    사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean>;
+    직원관리자권한변경(employeeId: string, isAdmin: boolean, updatedBy: string): Promise<EmployeeDto>;
+    여러직원관리자권한변경(employeeIds: string[], isAdmin: boolean, updatedBy: string): Promise<{
+        totalProcessed: number;
+        succeeded: number;
+        failed: number;
+        failedIds: string[];
+        errors: string[];
+    }>;
 }
 export interface OrganizationChartDto {
     departments: DepartmentWithEmployeesDto[];

@@ -3,6 +3,7 @@ import {
   ParseId,
   ParseUUID,
 } from '@interface/common/decorators/parse-uuid.decorator';
+import { Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { EvaluationPeriodDto } from '@domain/core/evaluation-period/evaluation-period.types';
@@ -30,6 +31,7 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
  */
 @ApiTags('A-2. 사용자 - 평가기간')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/evaluation-periods')
 export class UserEvaluationPeriodManagementController {
   constructor(

@@ -24,6 +24,7 @@ import {
   ParseId,
   ParseUUID,
 } from '@interface/common/decorators/parse-uuid.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   ChangeEvaluationPeriodPhase,
   CompleteEvaluationPeriod,
@@ -78,6 +79,7 @@ import { SystemSettingService } from '@domain/common/system-setting/system-setti
  */
 @ApiTags('A-2. 평가자 - 평가기간')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/evaluation-periods')
 export class EvaluatorEvaluationPeriodManagementController {
   constructor(

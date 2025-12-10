@@ -1,7 +1,7 @@
 import { Controller, Query, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { DashboardService } from '@context/dashboard-context/dashboard.service';
-import { ParseUUID } from '@interface/common/decorators';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
@@ -42,6 +42,7 @@ import { EmployeeCompleteStatusResponseDto } from '@interface/common/dto/dashboa
  */
 @ApiTags('A-0-2. 관리자 - 대시보드')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/dashboard')
 export class DashboardController {
   constructor(

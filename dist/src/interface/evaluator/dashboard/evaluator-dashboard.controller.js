@@ -122,6 +122,7 @@ __decorate([
 exports.EvaluatorDashboardController = EvaluatorDashboardController = __decorate([
     (0, swagger_1.ApiTags)('A-0-2. 평가자 - 대시보드'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService])
 ], EvaluatorDashboardController);

@@ -2,6 +2,7 @@ import { EvaluationCriteriaManagementService } from '@context/evaluation-criteri
 import { EvaluationLineBusinessService } from '@business/evaluation-line/evaluation-line-business.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import { Body, Controller, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -34,6 +35,7 @@ import {
  */
 @ApiTags('B-4. 관리자 - 평가 설정 - 평가라인')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/evaluation-criteria/evaluation-lines')
 export class EvaluationLineManagementController {
   constructor(

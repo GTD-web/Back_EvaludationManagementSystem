@@ -1,4 +1,5 @@
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
+import { Roles } from '@interface/common/decorators';
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,6 +17,7 @@ import { GetEvaluationActivityLogListQueryDto } from '@interface/common/dto/eval
  */
 @ApiTags('A-0-6. 평가자 - 평가 활동 내역')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/evaluation-activity-logs')
 export class EvaluatorEvaluationActivityLogController {
   constructor(

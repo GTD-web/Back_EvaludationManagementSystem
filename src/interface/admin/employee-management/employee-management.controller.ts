@@ -5,7 +5,7 @@ import {
   OrganizationManagementService,
 } from '@context/organization-management-context';
 import { EmployeeDto } from '@domain/common/employee/employee.types';
-import { CurrentUser, ParseId } from '@interface/common/decorators';
+import { CurrentUser, ParseId, Roles } from '@interface/common/decorators';
 import {
   ExcludeEmployeeFromList,
   GetAllEmployees,
@@ -15,7 +15,8 @@ import {
   GetPartLeaders,
   IncludeEmployeeInList,
   SyncEmployees,
-  UpdateEmployeeAccessibility,
+  UpdateEmployeeAdmin,
+  BulkUpdateEmployeeAdmin,
 } from '@interface/common/decorators/employee-management/employee-management-api.decorators';
 import {
   EmployeeResponseDto,
@@ -24,6 +25,10 @@ import {
   GetPartLeadersQueryDto,
   PartLeadersResponseDto,
 } from '@interface/common/dto/employee-management/employee-management.dto';
+import {
+  BulkUpdateEmployeeAdminDto,
+  BulkUpdateEmployeeAdminResponseDto,
+} from '@interface/common/dto/employee-management/bulk-update-employee-admin.dto';
 import type { AuthenticatedUser } from '@interface/common/guards';
 import {
   Body,
@@ -43,6 +48,7 @@ import type { EmployeeSyncResult } from '@domain/common/employee/employee.types'
  */
 @ApiTags('A-1. 관리자 - 조직 관리')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/employees')
 export class EmployeeManagementController {
   constructor(
@@ -126,6 +132,7 @@ export class EmployeeManagementController {
         excludedAt: dto.excludedAt ?? undefined,
         createdAt: dto.createdAt,
         updatedAt: dto.updatedAt,
+        isAccessible: dto.isAccessible,
       };
     });
     return {
@@ -167,20 +174,48 @@ export class EmployeeManagementController {
   }
 
   /**
-   * 직원의 접근 가능 여부를 변경합니다.
+   * 직원의 관리자 권한을 변경합니다.
    */
-  @UpdateEmployeeAccessibility()
-  async updateEmployeeAccessibility(
+  @UpdateEmployeeAdmin()
+  async updateEmployeeAdmin(
     @ParseId() employeeId: string,
-    @Query('isAccessible', new DefaultValuePipe(false), ParseBoolPipe)
-    isAccessible: boolean,
+    @Query('isAdmin', new DefaultValuePipe(false), ParseBoolPipe)
+    isAdmin: boolean,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<EmployeeDto> {
-    return await this.organizationManagementService.직원접근가능여부변경(
+    return await this.organizationManagementService.직원관리자권한변경(
       employeeId,
-      isAccessible,
+      isAdmin,
       user.id,
     );
+  }
+
+  /**
+   * 여러 직원의 관리자 권한을 일괄 변경합니다.
+   */
+  @BulkUpdateEmployeeAdmin()
+  async bulkUpdateEmployeeAdmin(
+    @Body() bulkUpdateData: BulkUpdateEmployeeAdminDto,
+    @Query('isAdmin', new DefaultValuePipe(false), ParseBoolPipe)
+    isAdmin: boolean,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<BulkUpdateEmployeeAdminResponseDto> {
+    const result =
+      await this.organizationManagementService.여러직원관리자권한변경(
+        bulkUpdateData.employeeIds,
+        isAdmin,
+        user.id,
+      );
+
+    return {
+      success: result.failed === 0,
+      totalProcessed: result.totalProcessed,
+      succeeded: result.succeeded,
+      failed: result.failed,
+      failedIds: result.failedIds,
+      errors: result.errors,
+      processedAt: new Date(),
+    };
   }
 
   // ==================== POST: 생성/동기화 ====================

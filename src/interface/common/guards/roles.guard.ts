@@ -163,27 +163,42 @@ export class RolesGuard implements CanActivate {
       }
     }
 
-    // 접근 가능 여부 확인이 필요한 역할인지 확인 (admin에 대한 2중 보안)
-    const needsAccessibilityCheck =
-      this.rolesRequiringAccessibilityCheck.some((role) =>
-        userRoles.includes(role),
-      );
+    // 접근 가능 여부 확인이 필요한 역할인지 확인 (2중 보안)
+    const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter(
+      (role) => userRoles.includes(role),
+    );
 
-    if (needsAccessibilityCheck) {
-      // 사번으로 접근 가능 여부 확인
+    if (rolesNeedingCheck.length > 0) {
+      // 사번으로 관리자 권한 확인
       const isAccessible =
-        await this.organizationManagementService.사번으로_접근가능한가(
+        await this.organizationManagementService.사번으로_관리자권한있는가(
           user.employeeNumber,
         );
 
       if (!isAccessible) {
+        // 체크하고 있는 역할에 맞는 메시지 생성
+        const roleLabels = rolesNeedingCheck.map((role) => {
+          switch (role) {
+            case 'admin':
+              return '관리자';
+            case 'evaluator':
+              return '평가자';
+            case 'user':
+              return '유저';
+            default:
+              return role;
+          }
+        });
+
+        const roleLabel = roleLabels.join('/');
+
         this.logger.warn(
           `접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-            `역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다. ` +
+            `역할을 가지고 있지만 ${roleLabel} 권한이 없습니다. ` +
             `역할: [${userRoles.join(', ')}]`,
         );
         throw new ForbiddenException(
-          'EMS 시스템 접근 권한이 없습니다. EMS 관리자에게 문의하세요.',
+          `EMS ${roleLabel} 권한이 없습니다. EMS 관리자에게 문의하세요.`,
         );
       }
     }

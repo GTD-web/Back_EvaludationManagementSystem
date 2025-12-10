@@ -2,6 +2,7 @@ import { StepApprovalStatusEnum } from '@interface/common/dto/step-approval/upda
 import { RevisionRequestBusinessService } from '@business/revision-request/revision-request-business.service';
 import { RevisionRequestContextService } from '@context/revision-request-context';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   CompleteRevisionRequest,
   GetMyRevisionRequests,
@@ -29,6 +30,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-0-4. 평가자 - 재작성 요청')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/revision-requests')
 export class EvaluatorRevisionRequestController {
   constructor(

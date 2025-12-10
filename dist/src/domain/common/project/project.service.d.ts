@@ -18,6 +18,7 @@ export declare class ProjectService {
     }>;
     수정한다(id: string, data: UpdateProjectDto, updatedBy: string): Promise<ProjectDto>;
     삭제한다(id: string, deletedBy: string): Promise<void>;
+    private 최상단_프로젝트_조회한다;
     private 모든_하위_프로젝트_조회한다;
     ID로_조회한다(id: string, includeChildren?: boolean): Promise<ProjectDto | null>;
     프로젝트코드로_조회한다(projectCode: string): Promise<ProjectDto | null>;

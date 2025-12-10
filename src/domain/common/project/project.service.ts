@@ -41,6 +41,14 @@ export class ProjectService {
     data: CreateProjectDto,
     createdBy: string,
   ): Promise<ProjectDto> {
+    console.log('\n🚀 [생성한다] 프로젝트 생성 시작');
+    console.log('📋 data.name:', data.name);
+    console.log('📋 data.managerId (입력값):', data.managerId);
+    console.log('📋 data.parentProjectId:', data.parentProjectId);
+    console.log('📋 data.childProjects:', data.childProjects ? `${data.childProjects.length}개` : '없음');
+    
+    let finalManagerId = data.managerId;
+    
     // 하위 프로젝트 생성 시 상위 프로젝트 존재 확인
     if (data.parentProjectId) {
       const parentProject = await this.projectRepository.findOne({
@@ -52,14 +60,34 @@ export class ProjectService {
           `상위 프로젝트 ID ${data.parentProjectId}를 찾을 수 없습니다.`,
         );
       }
+
+      // managerId가 없으면 최상단 프로젝트의 PM 사용
+      if (!finalManagerId) {
+        console.log('🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
+        const topLevelProject = await this.최상단_프로젝트_조회한다(data.parentProjectId);
+        finalManagerId = topLevelProject.managerId;
+        console.log('✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
+      }
     }
 
-    // 상위 프로젝트 생성
-    const project = Project.생성한다(data, createdBy);
+    console.log('📋 최종 사용할 managerId:', finalManagerId);
+
+    // 프로젝트 생성 (managerId 자동 설정)
+    const project = Project.생성한다(
+      {
+        ...data,
+        managerId: finalManagerId,
+      },
+      createdBy,
+    );
     const savedProject = await this.projectRepository.save(project);
+    console.log('✅ 프로젝트 생성 완료 - ID:', savedProject.id, ', managerId:', savedProject.managerId);
 
     // 하위 프로젝트 생성 (childProjects가 있는 경우)
     if (data.childProjects && data.childProjects.length > 0) {
+      console.log('\n📦 하위 프로젝트 생성 시작');
+      console.log('  - 전달할 defaultManagerId:', finalManagerId);
+      
       await this.하위_프로젝트들_생성한다(
         savedProject.id,
         savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
@@ -67,7 +95,7 @@ export class ProjectService {
         data.status,
         data.startDate,
         data.endDate,
-        data.managerId,
+        finalManagerId, // 최종 managerId 전달
         createdBy,
       );
     }
@@ -88,6 +116,8 @@ export class ProjectService {
    * - orderLevel=1 (3개): 모두 상위 프로젝트를 부모로
    * - orderLevel=2 (2개): orderLevel=1의 마지막 프로젝트를 부모로
    * - orderLevel=3 (1개): orderLevel=2의 마지막 프로젝트를 부모로
+   * 
+   * @param defaultManagerId 최상단 프로젝트의 PM ID (모든 하위 프로젝트는 이 ID로 설정됨, child.managerId는 무시됨)
    */
   private async 하위_프로젝트들_생성한다(
     topLevelProjectId: string,
@@ -96,7 +126,7 @@ export class ProjectService {
       orderLevel: number;
       name: string;
       projectCode?: string;
-      managerId: string;
+      managerId?: string;
     }>,
     status: ProjectStatus,
     startDate?: Date,
@@ -104,6 +134,11 @@ export class ProjectService {
     defaultManagerId?: string,
     createdBy: string = 'system',
   ): Promise<void> {
+    console.log('🔍 [하위_프로젝트들_생성한다] 시작');
+    console.log('📋 defaultManagerId (최상단 PM):', defaultManagerId);
+    console.log('📋 childProjects 개수:', childProjects.length);
+    console.log('📋 childProjects 상세:', JSON.stringify(childProjects, null, 2));
+
     // orderLevel별로 그룹화
     const groupedByLevel = new Map<number, typeof childProjects>();
     for (const child of childProjects) {
@@ -127,10 +162,18 @@ export class ProjectService {
       for (let index = 0; index < childrenInLevel.length; index++) {
         const child = childrenInLevel[index];
         
+        console.log(`\n🔹 Level ${level}, Index ${index} 처리 중`);
+        console.log('  - child.name:', child.name);
+        console.log('  - child.managerId (입력값):', child.managerId);
+        console.log('  - defaultManagerId (최상단 PM):', defaultManagerId);
+        console.log('  - 최종 사용할 managerId (무조건 최상단):', defaultManagerId);
+        
         // 프로젝트 코드 자동 생성 (미입력 시)
         const childProjectCode =
           child.projectCode ||
           `${topLevelProjectCode}-SUB${level}-${String.fromCharCode(65 + index)}`; // A, B, C...
+
+        console.log('  - 실제 저장될 managerId:', defaultManagerId);
 
         const createdChild = await this.projectRepository.save(
           Project.생성한다(
@@ -140,12 +183,14 @@ export class ProjectService {
               status,
               startDate,
               endDate,
-              managerId: child.managerId, // 각 프로젝트마다 다른 PM
+              managerId: defaultManagerId, // 무조건 최상단 프로젝트의 PM 사용 (child.managerId 무시)
               parentProjectId: lastCreatedIdOfPreviousLevel, // 이전 레벨의 마지막 프로젝트
             },
             createdBy,
           ),
         );
+
+        console.log('  ✅ 생성 완료 - ID:', createdChild.id, ', managerId:', createdChild.managerId);
 
         lastCreatedInThisLevel = createdChild;
       }
@@ -170,6 +215,8 @@ export class ProjectService {
     success: ProjectDto[];
     failed: Array<{ index: number; data: CreateProjectDto; error: string }>;
   }> {
+    console.log('\n🚀 [일괄_생성한다] 일괄 생성 시작 - 총', dataList.length, '개');
+    
     const success: ProjectDto[] = [];
     const failed: Array<{
       index: number;
@@ -179,12 +226,36 @@ export class ProjectService {
 
     // 각 프로젝트 생성 시도
     for (let i = 0; i < dataList.length; i++) {
+      console.log(`\n📦 [${i + 1}/${dataList.length}] 프로젝트 생성 중`);
+      console.log('  - name:', dataList[i].name);
+      console.log('  - managerId (입력값):', dataList[i].managerId);
+      console.log('  - parentProjectId:', dataList[i].parentProjectId);
+      console.log('  - childProjects:', dataList[i].childProjects ? `${dataList[i].childProjects!.length}개` : '없음');
+      
       try {
-        const project = Project.생성한다(dataList[i], createdBy);
+        let finalManagerId = dataList[i].managerId;
+
+        // 하위 프로젝트이고 managerId가 없으면 최상단 프로젝트의 PM 사용
+        if (dataList[i].parentProjectId && !finalManagerId) {
+          console.log('  🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
+          const topLevelProject = await this.최상단_프로젝트_조회한다(dataList[i].parentProjectId!);
+          finalManagerId = topLevelProject.managerId;
+          console.log('  ✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
+        }
+
+        console.log('  📋 최종 사용할 managerId:', finalManagerId);
+
+        const project = Project.생성한다({
+          ...dataList[i],
+          managerId: finalManagerId,
+        }, createdBy);
         const savedProject = await this.projectRepository.save(project);
+        console.log('  ✅ 프로젝트 생성 완료 - managerId:', savedProject.managerId);
 
         // 하위 프로젝트 생성 (childProjects가 있는 경우)
         if (dataList[i].childProjects && dataList[i].childProjects!.length > 0) {
+          console.log('  📦 하위 프로젝트 생성 - defaultManagerId:', finalManagerId);
+          
           await this.하위_프로젝트들_생성한다(
             savedProject.id,
             savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
@@ -192,7 +263,7 @@ export class ProjectService {
             dataList[i].status,
             dataList[i].startDate,
             dataList[i].endDate,
-            dataList[i].managerId,
+            finalManagerId,
             createdBy,
           );
         }
@@ -336,6 +407,38 @@ export class ProjectService {
     // 상위 프로젝트 삭제
     project.삭제한다(deletedBy);
     await this.projectRepository.save(project);
+  }
+
+  /**
+   * 주어진 프로젝트 ID의 최상단 프로젝트를 조회한다
+   * @param projectId 프로젝트 ID
+   * @returns 최상단 프로젝트
+   */
+  private async 최상단_프로젝트_조회한다(projectId: string): Promise<Project> {
+    let currentProject = await this.projectRepository.findOne({
+      where: { id: projectId, deletedAt: IsNull() },
+    });
+
+    if (!currentProject) {
+      throw new NotFoundException(`프로젝트 ID ${projectId}를 찾을 수 없습니다.`);
+    }
+
+    // parentProjectId가 없을 때까지 계속 올라감
+    while (currentProject.parentProjectId) {
+      const parentProject = await this.projectRepository.findOne({
+        where: { id: currentProject.parentProjectId, deletedAt: IsNull() },
+      });
+
+      if (!parentProject) {
+        // 상위 프로젝트가 없으면 현재 프로젝트가 최상단
+        break;
+      }
+
+      currentProject = parentProject;
+    }
+
+    console.log('  🔝 최상단 프로젝트 찾음 - ID:', currentProject.id, ', name:', currentProject.name, ', managerId:', currentProject.managerId);
+    return currentProject;
   }
 
   /**

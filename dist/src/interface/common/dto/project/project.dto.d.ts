@@ -3,7 +3,7 @@ export declare class ChildProjectInputDto {
     orderLevel: number;
     name: string;
     projectCode?: string;
-    managerId: string;
+    managerId?: string;
 }
 export declare class CreateProjectDto {
     name: string;

@@ -20,6 +20,7 @@ import { ProjectStatus } from '@domain/common/project/project.types';
  * 하위 프로젝트 생성 DTO
  * orderLevel로 계층 순서를 지정합니다.
  * 같은 orderLevel의 프로젝트들은 같은 부모를 가집니다.
+ * 하위 프로젝트의 매니저는 항상 최상단 프로젝트의 PM으로 자동 설정됩니다.
  */
 export class ChildProjectInputDto {
   @ApiProperty({
@@ -58,18 +59,19 @@ export class ChildProjectInputDto {
   @IsString()
   projectCode?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      '하위 프로젝트 매니저 ID (DPM)\n' +
-      '• 각 하위 프로젝트마다 다른 PM 지정 가능\n' +
-      '• 필수 입력',
+      '하위 프로젝트 매니저 ID\n' +
+      '⚠️ 이 필드는 사용되지 않습니다\n' +
+      '• 하위 프로젝트는 항상 최상단 프로젝트의 PM으로 자동 설정됩니다\n' +
+      '• 값을 입력해도 무시됩니다',
     example: '660e9500-f30c-52e5-b827-557766551111',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
     message: 'managerId must be a valid UUID format',
   })
-  managerId: string;
+  managerId?: string;
 }
 
 /**

@@ -60,13 +60,14 @@ __decorate([
     __metadata("design:type", String)
 ], ChildProjectInputDto.prototype, "projectCode", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({
-        description: '하위 프로젝트 매니저 ID (DPM)\n' +
-            '• 각 하위 프로젝트마다 다른 PM 지정 가능\n' +
-            '• 필수 입력',
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 프로젝트 매니저 ID\n' +
+            '⚠️ 이 필드는 사용되지 않습니다\n' +
+            '• 하위 프로젝트는 항상 최상단 프로젝트의 PM으로 자동 설정됩니다\n' +
+            '• 값을 입력해도 무시됩니다',
         example: '660e9500-f30c-52e5-b827-557766551111',
     }),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Matches)(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, {
         message: 'managerId must be a valid UUID format',
     }),

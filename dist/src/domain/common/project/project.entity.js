@@ -130,7 +130,7 @@ __decorate([
         type: 'varchar',
         length: 255,
         nullable: true,
-        comment: '프로젝트 매니저 ID (상위 프로젝트: PM, 하위 프로젝트: DPM)',
+        comment: '프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정)',
     }),
     __metadata("design:type", String)
 ], Project.prototype, "managerId", void 0);

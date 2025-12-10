@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-10T07:12:52.395Z",
+  "timestamp": "2025-12-10T07:16:52.155Z",
   "testResults": [
     {
       "testName": "isCompleted=false로 요청했을 때 false로 필터링되어야 한다",
@@ -46,6 +46,15 @@
       }
     },
     {
+      "testName": "[전체] 파라미터 없이 요청했을 때 모든 상태의 요청이 반환되어야 한다",
+      "result": {
+        "requestParams": {},
+        "resultCount": 0,
+        "isArray": true,
+        "passed": true
+      }
+    },
+    {
       "testName": "isCompleted=false로 요청했을 때 false로 필터링되어야 한다",
       "result": {
         "requestParams": {
@@ -57,13 +66,196 @@
       }
     },
     {
-      "testName": "isCompleted=true로 요청했을 때 true로 필터링되어야 한다",
+      "testName": "[전체] isCompleted=true로 요청했을 때 true로 필터링되어야 한다",
       "result": {
         "requestParams": {
           "isCompleted": true
         },
         "resultCount": 0,
         "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=false로 요청했을 때 false로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=true로 요청했을 때 true로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true,
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true,
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false,
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] isRead=false와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false,
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] isRead=true로 요청했을 때 true로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] isRead=false로 요청했을 때 false로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] isRead=true와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true,
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] isRead=true와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": true,
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadTrue": true,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] isRead=false와 isCompleted=true를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false,
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] employeeId와 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] step과 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
+        "passed": true
+      }
+    },
+    {
+      "testName": "[전체] 여러 필터(evaluationPeriodId, isRead, isCompleted)를 동시에 사용할 때 모두 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] evaluationPeriodId와 isCompleted=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
+        "passed": true
+      }
+    },
+    {
+      "testName": "[내꺼] step과 isRead=false를 함께 사용할 때 올바르게 필터링되어야 한다",
+      "result": {
+        "skipped": true,
+        "reason": "테스트 데이터 없음",
         "passed": true
       }
     }

@@ -40,6 +40,9 @@ function GetRevisionRequests() {
 - 필터 적용: evaluationPeriodId로 특정 평가기간의 요청만 조회
 - employeeId 필터: 특정 피평가자의 요청만 조회
 - requestedBy 필터: 특정 요청자가 생성한 요청만 조회
+- isRead 필터: isRead=true 또는 isRead=false로 읽음 상태 필터링
+- isCompleted 필터: isCompleted=true 또는 isCompleted=false로 완료 상태 필터링
+- 파라미터 미지정: isRead, isCompleted 미지정 시 모든 상태의 요청 반환
 - 여러 필터 조합: 여러 필터를 동시에 적용하여 조회
 - 빈 목록: 조건에 맞는 요청이 없는 경우 빈 배열 반환
 - 잘못된 UUID 형식: employeeId가 UUID 형식이 아닌 경우 400 에러
@@ -65,13 +68,13 @@ function GetRevisionRequests() {
     }), (0, swagger_1.ApiQuery)({
         name: 'isRead',
         required: false,
-        description: '읽음 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '읽음 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }), (0, swagger_1.ApiQuery)({
         name: 'isCompleted',
         required: false,
-        description: '재작성 완료 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '재작성 완료 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }), (0, swagger_1.ApiQuery)({
@@ -107,7 +110,10 @@ function GetMyRevisionRequests() {
 
 **테스트 케이스:**
 - 정상 조회: 내가 수신한 재작성 요청 목록 반환
-- 필터 적용: isRead=false로 읽지 않은 요청만 조회
+- isRead 필터: isRead=false로 읽지 않은 요청만 조회
+- isCompleted 필터: isCompleted=false로 미완료 요청만 조회
+- 파라미터 미지정: isRead, isCompleted 미지정 시 모든 상태의 요청 반환
+- 여러 필터 조합: isRead와 isCompleted를 동시에 필터링
 - 빈 목록: 수신한 요청이 없는 경우 빈 배열 반환`,
     }), (0, swagger_1.ApiQuery)({
         name: 'evaluationPeriodId',
@@ -118,13 +124,13 @@ function GetMyRevisionRequests() {
     }), (0, swagger_1.ApiQuery)({
         name: 'isRead',
         required: false,
-        description: '읽음 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '읽음 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }), (0, swagger_1.ApiQuery)({
         name: 'isCompleted',
         required: false,
-        description: '재작성 완료 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '재작성 완료 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }), (0, swagger_1.ApiQuery)({

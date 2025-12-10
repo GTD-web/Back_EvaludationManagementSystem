@@ -61,23 +61,23 @@ __decorate([
 ], GetRevisionRequestsQueryDto.prototype, "requestedBy", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '읽음 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '읽음 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, decorators_1.ToBoolean)(false),
+    (0, decorators_1.OptionalToBoolean)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], GetRevisionRequestsQueryDto.prototype, "isRead", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '재작성 완료 여부 (기본값: false, 가능값: "true", "false", "1", "0")',
+        description: '재작성 완료 여부 필터 (선택사항, 가능값: "true", "false", "1", "0", 미지정 시 모든 상태 조회)',
         type: String,
         example: 'false',
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, decorators_1.ToBoolean)(false),
+    (0, decorators_1.OptionalToBoolean)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], GetRevisionRequestsQueryDto.prototype, "isCompleted", void 0);

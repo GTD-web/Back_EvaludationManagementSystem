@@ -1,6 +1,7 @@
 import { RevisionRequestBusinessService } from '@business/revision-request/revision-request-business.service';
 import { RevisionRequestContextService } from '@context/revision-request-context';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   CompleteRevisionRequest,
   CompleteRevisionRequestByEvaluator,
@@ -33,6 +34,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-0-4. 관리자 - 재작성 요청')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/revision-requests')
 export class RevisionRequestController {
   constructor(

@@ -73,7 +73,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserAuthController.prototype, "login", null);
 __decorate([
-    (0, auth_decorators_1.GetMe)(),
+    (0, auth_decorators_1.GetMeAsUser)(),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

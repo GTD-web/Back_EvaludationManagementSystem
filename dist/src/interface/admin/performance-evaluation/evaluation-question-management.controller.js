@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluationQuestionManagementController = void 0;
 const evaluation_question_management_service_1 = require("../../../context/evaluation-question-management-context/evaluation-question-management.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const evaluation_question_api_decorators_1 = require("../../common/decorators/performance-evaluation/evaluation-question-api.decorators");
@@ -316,6 +317,7 @@ __decorate([
 exports.EvaluationQuestionManagementController = EvaluationQuestionManagementController = __decorate([
     (0, swagger_1.ApiTags)('C-4. 관리자 - 성과평가 - 평가 질문 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/performance-evaluation/evaluation-questions'),
     __metadata("design:paramtypes", [evaluation_question_management_service_1.EvaluationQuestionManagementService])
 ], EvaluationQuestionManagementController);

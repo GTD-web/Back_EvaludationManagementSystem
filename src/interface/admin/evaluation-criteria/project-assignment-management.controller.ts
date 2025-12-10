@@ -2,6 +2,7 @@ import { ProjectAssignmentBusinessService } from '@business/project-assignment/p
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
+import { Roles } from '@interface/common/decorators';
 import {
   BulkCreateProjectAssignments,
   CancelProjectAssignmentByProject,
@@ -38,6 +39,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('B-1. 관리자 - 평가 설정 - 프로젝트 할당')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/evaluation-criteria/project-assignments')
 export class ProjectAssignmentManagementController {
   constructor(

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluatorWbsAssignmentManagementController = void 0;
 const wbs_assignment_business_service_1 = require("../../../business/wbs-assignment/wbs-assignment-business.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 const wbs_assignment_api_decorators_1 = require("../../common/decorators/evaluation-criteria/wbs-assignment-api.decorators");
 const wbs_assignment_dto_1 = require("../../common/dto/evaluation-criteria/wbs-assignment.dto");
 const common_1 = require("@nestjs/common");
@@ -103,6 +104,7 @@ __decorate([
 exports.EvaluatorWbsAssignmentManagementController = EvaluatorWbsAssignmentManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-2. 평가자 - 평가 설정 - WBS 할당'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('evaluator'),
     (0, common_1.Controller)('evaluator/evaluation-criteria/wbs-assignments'),
     __metadata("design:paramtypes", [wbs_assignment_business_service_1.WbsAssignmentBusinessService])
 ], EvaluatorWbsAssignmentManagementController);

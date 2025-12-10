@@ -75,7 +75,7 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             {
                 provide: guards_1.ROLES_GUARD_OPTIONS,
                 useValue: {
-                    rolesRequiringAccessibilityCheck: ['admin', 'evaluator', 'user'],
+                    rolesRequiringAccessibilityCheck: ['user'],
                 },
             },
             {

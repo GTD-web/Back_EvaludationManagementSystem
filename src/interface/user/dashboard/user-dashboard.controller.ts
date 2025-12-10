@@ -1,5 +1,5 @@
 import { GetMyAssignedData } from '@interface/common/decorators/dashboard/dashboard-api.decorators';
-import { CurrentUser, ParseUUID } from '@interface/common/decorators';
+import { CurrentUser, ParseUUID, Roles } from '@interface/common/decorators';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { EmployeeAssignedDataResponseDto } from '@interface/common/dto/dashboard/employee-assigned-data.dto';
 import { Controller } from '@nestjs/common';
@@ -14,6 +14,7 @@ import { DashboardService } from '../../../context/dashboard-context/dashboard.s
  */
 @ApiTags('A-0-2. 사용자 - 대시보드')
 @ApiBearerAuth('Bearer')
+@Roles('user')
 @Controller('user/dashboard')
 export class UserDashboardController {
   constructor(private readonly dashboardService: DashboardService) {}

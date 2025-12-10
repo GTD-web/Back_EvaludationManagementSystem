@@ -69,6 +69,7 @@ __decorate([
 exports.UserDashboardController = UserDashboardController = __decorate([
     (0, swagger_1.ApiTags)('A-0-2. 사용자 - 대시보드'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('user'),
     (0, common_1.Controller)('user/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService])
 ], UserDashboardController);

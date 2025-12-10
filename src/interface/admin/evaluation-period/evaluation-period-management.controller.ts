@@ -32,6 +32,7 @@ import {
   ParseId,
   ParseUUID,
 } from '@interface/common/decorators/parse-uuid.decorator';
+import { Roles } from '@interface/common/decorators';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -92,6 +93,7 @@ import { SystemSettingService } from '@domain/common/system-setting/system-setti
  */
 @ApiTags('A-2. 관리자 - 평가기간')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/evaluation-periods')
 export class EvaluationPeriodManagementController {
   private readonly logger = new Logger(

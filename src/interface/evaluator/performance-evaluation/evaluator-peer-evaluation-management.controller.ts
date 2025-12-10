@@ -2,7 +2,7 @@ import { PeerEvaluationBusinessService } from '@business/peer-evaluation/peer-ev
 import { PeerEvaluationDetailResult } from '@context/performance-evaluation-context/handlers/peer-evaluation';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -28,6 +28,7 @@ import {
  */
 @ApiTags('C-5. 평가자 - 성과평가 - 동료평가')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/performance-evaluation/peer-evaluations')
 export class EvaluatorPeerEvaluationManagementController {
   constructor(

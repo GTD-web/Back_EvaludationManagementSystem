@@ -173,6 +173,7 @@ __decorate([
 exports.EmployeeManagementController = EmployeeManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-1. 관리자 - 조직 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/employees'),
     __metadata("design:paramtypes", [organization_management_context_1.OrganizationManagementService,
         organization_management_context_1.EmployeeSyncService])

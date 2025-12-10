@@ -25,6 +25,7 @@ const step_approval_api_decorators_1 = require("../../common/decorators/step-app
 const step_approval_enums_api_decorators_1 = require("../../common/decorators/step-approval/step-approval-enums-api.decorators");
 const update_step_approval_dto_2 = require("../../common/dto/step-approval/update-step-approval.dto");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const decorators_1 = require("../../common/decorators");
 let StepApprovalController = class StepApprovalController {
     stepApprovalContextService;
     wbsSelfEvaluationBusinessService;
@@ -220,6 +221,7 @@ __decorate([
 exports.StepApprovalController = StepApprovalController = __decorate([
     (0, swagger_1.ApiTags)('A-0-3. 관리자 - 단계 승인'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/step-approvals'),
     __metadata("design:paramtypes", [step_approval_context_1.StepApprovalContextService,
         wbs_self_evaluation_business_service_1.WbsSelfEvaluationBusinessService,

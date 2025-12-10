@@ -15,7 +15,7 @@ var DownwardEvaluationManagementController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DownwardEvaluationManagementController = void 0;
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
-const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const downward_evaluation_1 = require("../../../context/performance-evaluation-context/handlers/downward-evaluation");
@@ -152,9 +152,9 @@ let DownwardEvaluationManagementController = DownwardEvaluationManagementControl
 exports.DownwardEvaluationManagementController = DownwardEvaluationManagementController;
 __decorate([
     (0, downward_evaluation_api_decorators_1.UpsertPrimaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -163,9 +163,9 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "upsertPrimaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.UpsertSecondaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -174,9 +174,9 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "upsertSecondaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.SubmitPrimaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Query)()),
     __param(4, (0, common_1.Body)()),
     __param(5, (0, current_user_decorator_1.CurrentUser)()),
@@ -187,9 +187,9 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "submitPrimaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.SubmitSecondaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Query)()),
     __param(4, (0, common_1.Body)()),
     __param(5, (0, current_user_decorator_1.CurrentUser)()),
@@ -200,9 +200,9 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "submitSecondaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.ResetPrimaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -211,9 +211,9 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "resetPrimaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.ResetSecondaryDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('wbsId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('wbsId')),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -222,7 +222,7 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "resetSecondaryDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.SubmitDownwardEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -230,8 +230,8 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "submitDownwardEvaluation", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.BulkSubmitDownwardEvaluations)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __param(2, (0, common_1.Query)()),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
@@ -242,8 +242,8 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "bulkSubmitDownwardEvaluations", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.BulkResetDownwardEvaluations)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluateeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluateeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __param(2, (0, common_1.Query)()),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
@@ -254,7 +254,7 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "bulkResetDownwardEvaluations", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.GetEvaluatorDownwardEvaluations)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('evaluatorId')),
+    __param(0, (0, decorators_1.ParseUUID)('evaluatorId')),
     __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, downward_evaluation_dto_1.DownwardEvaluationFilterDto]),
@@ -262,7 +262,7 @@ __decorate([
 ], DownwardEvaluationManagementController.prototype, "getEvaluatorDownwardEvaluations", null);
 __decorate([
     (0, downward_evaluation_api_decorators_1.GetDownwardEvaluationDetail)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
@@ -270,6 +270,7 @@ __decorate([
 exports.DownwardEvaluationManagementController = DownwardEvaluationManagementController = DownwardEvaluationManagementController_1 = __decorate([
     (0, swagger_1.ApiTags)('C-3. 관리자 - 성과평가 - 하향평가'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/performance-evaluation/downward-evaluations'),
     __metadata("design:paramtypes", [performance_evaluation_service_1.PerformanceEvaluationService,
         downward_evaluation_business_service_1.DownwardEvaluationBusinessService])

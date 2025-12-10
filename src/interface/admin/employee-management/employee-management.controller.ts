@@ -5,7 +5,7 @@ import {
   OrganizationManagementService,
 } from '@context/organization-management-context';
 import { EmployeeDto } from '@domain/common/employee/employee.types';
-import { CurrentUser, ParseId } from '@interface/common/decorators';
+import { CurrentUser, ParseId, Roles } from '@interface/common/decorators';
 import {
   ExcludeEmployeeFromList,
   GetAllEmployees,
@@ -48,6 +48,7 @@ import type { EmployeeSyncResult } from '@domain/common/employee/employee.types'
  */
 @ApiTags('A-1. 관리자 - 조직 관리')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/employees')
 export class EmployeeManagementController {
   constructor(

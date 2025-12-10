@@ -60,14 +60,27 @@ let RolesGuard = RolesGuard_1 = class RolesGuard {
                 throw new common_1.ForbiddenException(`이 작업을 수행할 권한이 없습니다. 필요한 역할: ${requiredRoles.join(', ')}`);
             }
         }
-        const needsAccessibilityCheck = this.rolesRequiringAccessibilityCheck.some((role) => userRoles.includes(role));
-        if (needsAccessibilityCheck) {
+        const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter((role) => userRoles.includes(role));
+        if (rolesNeedingCheck.length > 0) {
             const isAccessible = await this.organizationManagementService.사번으로_관리자권한있는가(user.employeeNumber);
             if (!isAccessible) {
+                const roleLabels = rolesNeedingCheck.map((role) => {
+                    switch (role) {
+                        case 'admin':
+                            return '관리자';
+                        case 'evaluator':
+                            return '평가자';
+                        case 'user':
+                            return '유저';
+                        default:
+                            return role;
+                    }
+                });
+                const roleLabel = roleLabels.join('/');
                 this.logger.warn(`접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-                    `역할을 가지고 있지만 관리자 권한이 없습니다. ` +
+                    `역할을 가지고 있지만 ${roleLabel} 권한이 없습니다. ` +
                     `역할: [${userRoles.join(', ')}]`);
-                throw new common_1.ForbiddenException('EMS 관리자 권한이 없습니다. EMS 관리자에게 문의하세요.');
+                throw new common_1.ForbiddenException(`EMS ${roleLabel} 권한이 없습니다. EMS 관리자에게 문의하세요.`);
             }
         }
         return true;

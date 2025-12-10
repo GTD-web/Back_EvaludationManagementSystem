@@ -1,6 +1,6 @@
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
-import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import { Body, Controller, Logger, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -42,6 +42,7 @@ import { BulkSubmitDownwardEvaluationQueryDto } from '@interface/common/dto/perf
  */
 @ApiTags('C-3. 관리자 - 성과평가 - 하향평가')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/performance-evaluation/downward-evaluations')
 export class DownwardEvaluationManagementController {
   private readonly logger = new Logger(

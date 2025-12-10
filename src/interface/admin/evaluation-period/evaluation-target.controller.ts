@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { EvaluationPeriodManagementContextService } from '@context/evaluation-period-management-context/evaluation-period-management.service';
 import { EvaluationTargetBusinessService } from '@business/evaluation-target/evaluation-target-business.service';
 import { ParseUUID } from '@interface/common/decorators/parse-uuid.decorator';
+import { Roles } from '@interface/common/decorators';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -35,6 +36,7 @@ import {
  */
 @ApiTags('A-3. 관리자 - 평가 대상')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/evaluation-periods')
 export class EvaluationTargetController {
   constructor(

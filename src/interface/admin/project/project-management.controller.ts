@@ -44,6 +44,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Roles } from '@interface/common/decorators';
 import { SSOService } from '@domain/common/sso/sso.module';
 import type { ISSOService } from '@domain/common/sso/interfaces';
 import { EmployeeService } from '@domain/common/employee/employee.service';
@@ -56,6 +57,7 @@ import { EmployeeService } from '@domain/common/employee/employee.service';
  */
 @ApiTags('B-0. 관리자 - 프로젝트 관리')
 @ApiBearerAuth('Bearer')
+@Roles('admin')
 @Controller('admin/projects')
 export class ProjectManagementController {
   constructor(

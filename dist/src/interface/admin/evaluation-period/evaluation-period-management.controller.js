@@ -22,6 +22,7 @@ const wbs_evaluation_criteria_service_1 = require("../../../domain/core/wbs-eval
 const evaluation_line_service_1 = require("../../../domain/core/evaluation-line/evaluation-line.service");
 const evaluation_line_mapping_service_1 = require("../../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_api_decorators_1 = require("../../common/decorators/evaluation-period/evaluation-period-api.decorators");
 const evaluation_management_dto_1 = require("../../common/dto/evaluation-period/evaluation-management.dto");
@@ -587,6 +588,7 @@ __decorate([
 exports.EvaluationPeriodManagementController = EvaluationPeriodManagementController = EvaluationPeriodManagementController_1 = __decorate([
     (0, swagger_1.ApiTags)('A-2. 관리자 - 평가기간'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/evaluation-periods'),
     __metadata("design:paramtypes", [evaluation_period_business_service_1.EvaluationPeriodBusinessService,
         evaluation_period_management_service_1.EvaluationPeriodManagementContextService,

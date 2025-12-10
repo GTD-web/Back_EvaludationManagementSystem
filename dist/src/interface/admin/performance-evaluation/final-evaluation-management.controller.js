@@ -16,7 +16,7 @@ exports.FinalEvaluationManagementController = void 0;
 const performance_evaluation_service_1 = require("../../../context/performance-evaluation-context/performance-evaluation.service");
 const final_evaluation_business_service_1 = require("../../../business/final-evaluation/final-evaluation-business.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
-const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const final_evaluation_1 = require("../../../context/performance-evaluation-context/handlers/final-evaluation");
@@ -65,8 +65,8 @@ let FinalEvaluationManagementController = class FinalEvaluationManagementControl
 exports.FinalEvaluationManagementController = FinalEvaluationManagementController;
 __decorate([
     (0, final_evaluation_api_decorators_1.UpsertFinalEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __param(2, (0, common_1.Body)()),
     __param(3, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -75,7 +75,7 @@ __decorate([
 ], FinalEvaluationManagementController.prototype, "upsertFinalEvaluation", null);
 __decorate([
     (0, final_evaluation_api_decorators_1.ConfirmFinalEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -83,7 +83,7 @@ __decorate([
 ], FinalEvaluationManagementController.prototype, "confirmFinalEvaluation", null);
 __decorate([
     (0, final_evaluation_api_decorators_1.CancelConfirmationFinalEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -91,7 +91,7 @@ __decorate([
 ], FinalEvaluationManagementController.prototype, "cancelConfirmationFinalEvaluation", null);
 __decorate([
     (0, final_evaluation_api_decorators_1.GetFinalEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
@@ -105,8 +105,8 @@ __decorate([
 ], FinalEvaluationManagementController.prototype, "getFinalEvaluationList", null);
 __decorate([
     (0, final_evaluation_api_decorators_1.GetFinalEvaluationByEmployeePeriod)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
@@ -114,6 +114,7 @@ __decorate([
 exports.FinalEvaluationManagementController = FinalEvaluationManagementController = __decorate([
     (0, swagger_1.ApiTags)('C-6. 관리자 - 성과평가 - 최종평가'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/performance-evaluation/final-evaluations'),
     __metadata("design:paramtypes", [performance_evaluation_service_1.PerformanceEvaluationService,
         final_evaluation_business_service_1.FinalEvaluationBusinessService])

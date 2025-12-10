@@ -1,5 +1,5 @@
 import { DashboardService } from '@context/dashboard-context/dashboard.service';
-import { ParseUUID } from '@interface/common/decorators';
+import { ParseUUID, Roles } from '@interface/common/decorators';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -26,6 +26,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
  */
 @ApiTags('A-0-2. 평가자 - 대시보드')
 @ApiBearerAuth('Bearer')
+@Roles('evaluator')
 @Controller('evaluator/dashboard')
 export class EvaluatorDashboardController {
   constructor(private readonly dashboardService: DashboardService) {}

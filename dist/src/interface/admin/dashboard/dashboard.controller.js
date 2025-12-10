@@ -397,6 +397,7 @@ __decorate([
 exports.DashboardController = DashboardController = __decorate([
     (0, swagger_1.ApiTags)('A-0-2. 관리자 - 대시보드'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService,
         evaluation_period_service_1.EvaluationPeriodService,

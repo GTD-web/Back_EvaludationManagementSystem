@@ -16,7 +16,7 @@ exports.UserWbsSelfEvaluationManagementController = void 0;
 const wbs_self_evaluation_business_service_1 = require("../../../business/wbs-self-evaluation/wbs-self-evaluation-business.service");
 const performance_evaluation_service_1 = require("../../../context/performance-evaluation-context/performance-evaluation.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
-const parse_uuid_decorator_1 = require("../../common/decorators/parse-uuid.decorator");
+const decorators_1 = require("../../common/decorators");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const wbs_self_evaluation_api_decorators_1 = require("../../common/decorators/performance-evaluation/wbs-self-evaluation-api.decorators");
@@ -82,9 +82,9 @@ let UserWbsSelfEvaluationManagementController = class UserWbsSelfEvaluationManag
 exports.UserWbsSelfEvaluationManagementController = UserWbsSelfEvaluationManagementController;
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.UpsertWbsSelfEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('wbsItemId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('wbsItemId')),
+    __param(2, (0, decorators_1.ParseUUID)('periodId')),
     __param(3, (0, common_1.Body)()),
     __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -93,7 +93,7 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "upsertWbsSelfEvaluation", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.SubmitWbsSelfEvaluationToEvaluator)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -101,8 +101,8 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "submitWbsSelfEvaluationToEvaluator", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.SubmitAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, Object]),
@@ -110,9 +110,9 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "submitAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.SubmitWbsSelfEvaluationsToEvaluatorByProject)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('projectId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('projectId')),
     __param(3, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String, Object]),
@@ -120,7 +120,7 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "submitWbsSelfEvaluationsToEvaluatorByProject", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.ClearWbsSelfEvaluation)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('id')),
+    __param(0, (0, decorators_1.ParseUUID)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -128,8 +128,8 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "clearWbsSelfEvaluation", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.ClearAllWbsSelfEvaluationsByEmployeePeriod)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, Object]),
@@ -137,9 +137,9 @@ __decorate([
 ], UserWbsSelfEvaluationManagementController.prototype, "clearAllWbsSelfEvaluationsByEmployeePeriod", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.ClearWbsSelfEvaluationsByProject)(),
-    __param(0, (0, parse_uuid_decorator_1.ParseUUID)('employeeId')),
-    __param(1, (0, parse_uuid_decorator_1.ParseUUID)('periodId')),
-    __param(2, (0, parse_uuid_decorator_1.ParseUUID)('projectId')),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, decorators_1.ParseUUID)('projectId')),
     __param(3, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String, Object]),
@@ -148,6 +148,7 @@ __decorate([
 exports.UserWbsSelfEvaluationManagementController = UserWbsSelfEvaluationManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-6. 사용자 - 성과평가 - WBS 자기평가'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
+    (0, decorators_1.Roles)('user'),
     (0, common_1.Controller)('user/performance-evaluation/wbs-self-evaluations'),
     __metadata("design:paramtypes", [performance_evaluation_service_1.PerformanceEvaluationService,
         wbs_self_evaluation_business_service_1.WbsSelfEvaluationBusinessService])

@@ -34,6 +34,7 @@ export function CreateProject() {
 - 프로젝트 기본 정보를 등록합니다
 - 상위 프로젝트: PM(Project Manager)을 설정할 수 있습니다
 - childProjects 배열로 하위 프로젝트를 함께 생성할 수 있습니다
+- ⭐ **모든 하위 프로젝트는 최상위 프로젝트의 PM으로 자동 설정됩니다**
 - orderLevel 순서대로 재귀 체인 구조를 만듭니다
 - 프로젝트 코드 중복을 검사합니다
 - 생성자 정보를 자동으로 기록합니다
@@ -42,35 +43,38 @@ export function CreateProject() {
 \`\`\`json
 {
   "name": "EMS 프로젝트",
+  "managerId": "pm-top",
   "childProjects": [
-    { "orderLevel": 1, "name": "1차 A", "managerId": "pm-1" },
-    { "orderLevel": 1, "name": "1차 B", "managerId": "pm-2" },
-    { "orderLevel": 1, "name": "1차 C", "managerId": "pm-3" },
-    { "orderLevel": 2, "name": "2차 A", "managerId": "pm-4" },
-    { "orderLevel": 2, "name": "2차 B", "managerId": "pm-5" }
+    { "orderLevel": 1, "name": "1차 A" },
+    { "orderLevel": 1, "name": "1차 B" },
+    { "orderLevel": 1, "name": "1차 C" },
+    { "orderLevel": 2, "name": "2차 A" },
+    { "orderLevel": 2, "name": "2차 B" }
   ]
 }
 \`\`\`
-**결과 구조:**
+**결과 구조 (모든 하위가 pm-top 상속):**
 \`\`\`
-EMS 프로젝트
-  ├─ 1차 A (pm-1)
-  ├─ 1차 B (pm-2)
-  └─ 1차 C (pm-3)
-      ├─ 2차 A (pm-4)
-      └─ 2차 B (pm-5)
+EMS 프로젝트 (pm-top)
+  ├─ 1차 A (pm-top) ← 최상위 PM 상속
+  ├─ 1차 B (pm-top) ← 최상위 PM 상속
+  └─ 1차 C (pm-top) ← 최상위 PM 상속
+      ├─ 2차 A (pm-top) ← 최상위 PM 상속
+      └─ 2차 B (pm-top) ← 최상위 PM 상속
 \`\`\`
 • 같은 orderLevel은 형제 관계
 • 다음 레벨은 이전 레벨의 마지막 프로젝트 아래
+• 하위 프로젝트의 managerId는 입력해도 무시됨
 
 **반환 데이터:**
 - manager.managerId: SSO의 매니저 ID
 - manager.employeeId: 로컬 DB의 직원 ID
-- childProjects: 생성된 하위 프로젝트 (재귀 구조)
+- childProjects: 생성된 하위 프로젝트 (재귀 구조, 모두 동일한 PM)
 
 **테스트 케이스:**
 - 단일 프로젝트 생성: childProjects 없이 생성
 - 하위 포함 생성: childProjects 배열로 재귀 체인 생성
+- PM 자동 상속: 모든 하위가 최상위 PM으로 설정됨
 - orderLevel 자동 정렬: 순서 상관없이 orderLevel로 정렬됨
 - 프로젝트 코드 자동 생성: 하위 코드 미입력 시 자동 생성
 - 프로젝트 코드 중복: 중복 코드 사용 시 400 에러
@@ -102,8 +106,9 @@ export function CreateProjectsBulk() {
 
 **동작:**
 - 여러 프로젝트를 배열로 받아 일괄 생성합니다
-- 각 프로젝트별로 PM을 개별 설정할 수 있습니다
+- 각 최상위 프로젝트별로 PM을 개별 설정할 수 있습니다
 - 각 프로젝트마다 childProjects 배열로 하위 프로젝트를 함께 생성할 수 있습니다
+- ⭐ **모든 하위 프로젝트는 해당 최상위 프로젝트의 PM으로 자동 설정됩니다**
 - orderLevel 순서대로 재귀 체인 구조를 만듭니다
 - 프로젝트 코드 중복을 사전 검사합니다
 - 일부 프로젝트 생성 실패 시에도 성공한 프로젝트는 저장됩니다
@@ -117,49 +122,53 @@ export function CreateProjectsBulk() {
   "projects": [
     {
       "name": "EMS 프로젝트",
+      "managerId": "pm-ems",
       "childProjects": [
-        { "orderLevel": 1, "name": "1차 A", "managerId": "pm-1" },
-        { "orderLevel": 1, "name": "1차 B", "managerId": "pm-2" },
-        { "orderLevel": 2, "name": "2차 A", "managerId": "pm-3" }
+        { "orderLevel": 1, "name": "1차 A" },
+        { "orderLevel": 1, "name": "1차 B" },
+        { "orderLevel": 2, "name": "2차 A" }
       ]
     },
     {
       "name": "HRM 프로젝트",
+      "managerId": "pm-hrm",
       "childProjects": [
-        { "orderLevel": 1, "name": "인사", "managerId": "pm-4" },
-        { "orderLevel": 1, "name": "급여", "managerId": "pm-5" }
+        { "orderLevel": 1, "name": "인사" },
+        { "orderLevel": 1, "name": "급여" }
       ]
     }
   ]
 }
 \`\`\`
-**결과 구조:**
+**결과 구조 (하위는 각 최상위 PM 상속):**
 \`\`\`
-EMS 프로젝트
-  ├─ 1차 A (pm-1)
-  └─ 1차 B (pm-2)
-      └─ 2차 A (pm-3)
+EMS 프로젝트 (pm-ems)
+  ├─ 1차 A (pm-ems) ← 최상위 PM 상속
+  └─ 1차 B (pm-ems) ← 최상위 PM 상속
+      └─ 2차 A (pm-ems) ← 최상위 PM 상속
 
-HRM 프로젝트
-  ├─ 인사 (pm-4)
-  └─ 급여 (pm-5)
+HRM 프로젝트 (pm-hrm)
+  ├─ 인사 (pm-hrm) ← 최상위 PM 상속
+  └─ 급여 (pm-hrm) ← 최상위 PM 상속
 \`\`\`
 • 같은 orderLevel은 형제 관계
 • 다음 레벨은 이전 레벨의 마지막 프로젝트 아래
+• 하위 프로젝트의 managerId는 입력해도 무시됨
 
 **반환 데이터:**
 - manager.managerId: SSO의 매니저 ID
 - manager.employeeId: 로컬 DB의 직원 ID (Employee 테이블의 id)
-- childProjects: 생성된 하위 프로젝트 (재귀 구조)
+- childProjects: 생성된 하위 프로젝트 (재귀 구조, 각 트리마다 동일한 PM)
 
 **테스트 케이스:**
 - 전체 성공: 모든 프로젝트가 정상적으로 생성됨
 - 매니저 정보 포함: 각 프로젝트의 managerId와 employeeId 반환
 - 하위 포함 일괄 생성: 각 프로젝트마다 childProjects로 재귀 체인 생성
+- PM 자동 상속: 각 트리의 하위들이 최상위 PM으로 설정됨
 - orderLevel 자동 정렬: 순서 상관없이 orderLevel로 정렬됨
 - 프로젝트 코드 자동 생성: 하위 코드 미입력 시 자동 생성
 - 부분 성공: 일부 프로젝트만 생성 성공하고 나머지는 실패
-- PM 포함 생성: 각 프로젝트별로 다른 PM 지정
+- 최상위별 PM: 각 최상위 프로젝트별로 다른 PM 지정
 - 프로젝트 코드 중복: 중복된 코드가 있는 프로젝트는 실패 처리
 - 빈 배열: 프로젝트 배열이 비어있는 경우
 - 필수 필드 누락: 일부 프로젝트의 필수 필드 누락 시 해당 항목만 실패
@@ -320,6 +329,7 @@ export function UpdateProject() {
 **동작:**
 - 프로젝트 기본 정보를 수정합니다
 - 프로젝트 매니저를 변경할 수 있습니다
+- ⭐ **PM 변경 시 모든 하위 프로젝트의 PM도 함께 변경됩니다**
 - childProjects를 제공하면 기존 하위를 삭제하고 새로 생성합니다
 - childProjects를 생략하면 기존 하위 프로젝트는 유지됩니다
 - 프로젝트 코드 변경 시 중복을 검사합니다
@@ -329,15 +339,16 @@ export function UpdateProject() {
 \`\`\`json
 {
   "name": "수정된 프로젝트명",
+  "managerId": "pm-new",
   "childProjects": [
-    { "orderLevel": 1, "name": "새 1차 A", "managerId": "pm-1" },
-    { "orderLevel": 1, "name": "새 1차 B", "managerId": "pm-2" },
-    { "orderLevel": 2, "name": "새 2차", "managerId": "pm-3" }
+    { "orderLevel": 1, "name": "새 1차 A" },
+    { "orderLevel": 1, "name": "새 1차 B" },
+    { "orderLevel": 2, "name": "새 2차" }
   ]
 }
 \`\`\`
-**결과:** 기존 하위 삭제 → 새 트리 생성
-• 각 하위마다 다른 PM 지정 가능
+**결과:** 기존 하위 삭제 → 새 트리 생성 (모두 pm-new로 설정)
+• 하위 프로젝트의 managerId는 입력해도 무시됨
 
 **주의사항:**
 - childProjects=[] (빈 배열): 모든 하위 프로젝트 삭제
@@ -346,10 +357,11 @@ export function UpdateProject() {
 **반환 데이터:**
 - manager.managerId: SSO의 매니저 ID
 - manager.employeeId: 로컬 DB의 직원 ID
-- childProjects: 재생성된 하위 프로젝트
+- childProjects: 재생성된 하위 프로젝트 (모두 동일한 PM)
 
 **테스트 케이스:**
 - 기본 정보만 수정: childProjects 생략
+- PM 변경: 모든 하위의 PM도 함께 변경
 - 하위 재생성: childProjects로 새 하위 생성
 - 하위 삭제: childProjects=[]로 모두 삭제
 - 프로젝트 코드 중복: 400 에러

@@ -28,6 +28,12 @@ let ProjectService = class ProjectService {
         this.evaluationProjectAssignmentRepository = evaluationProjectAssignmentRepository;
     }
     async 생성한다(data, createdBy) {
+        console.log('\n🚀 [생성한다] 프로젝트 생성 시작');
+        console.log('📋 data.name:', data.name);
+        console.log('📋 data.managerId (입력값):', data.managerId);
+        console.log('📋 data.parentProjectId:', data.parentProjectId);
+        console.log('📋 data.childProjects:', data.childProjects ? `${data.childProjects.length}개` : '없음');
+        let finalManagerId = data.managerId;
         if (data.parentProjectId) {
             const parentProject = await this.projectRepository.findOne({
                 where: { id: data.parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
@@ -35,11 +41,24 @@ let ProjectService = class ProjectService {
             if (!parentProject) {
                 throw new common_1.NotFoundException(`상위 프로젝트 ID ${data.parentProjectId}를 찾을 수 없습니다.`);
             }
+            if (!finalManagerId) {
+                console.log('🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
+                const topLevelProject = await this.최상단_프로젝트_조회한다(data.parentProjectId);
+                finalManagerId = topLevelProject.managerId;
+                console.log('✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
+            }
         }
-        const project = project_entity_1.Project.생성한다(data, createdBy);
+        console.log('📋 최종 사용할 managerId:', finalManagerId);
+        const project = project_entity_1.Project.생성한다({
+            ...data,
+            managerId: finalManagerId,
+        }, createdBy);
         const savedProject = await this.projectRepository.save(project);
+        console.log('✅ 프로젝트 생성 완료 - ID:', savedProject.id, ', managerId:', savedProject.managerId);
         if (data.childProjects && data.childProjects.length > 0) {
-            await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, data.childProjects, data.status, data.startDate, data.endDate, data.managerId, createdBy);
+            console.log('\n📦 하위 프로젝트 생성 시작');
+            console.log('  - 전달할 defaultManagerId:', finalManagerId);
+            await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, data.childProjects, data.status, data.startDate, data.endDate, finalManagerId, createdBy);
         }
         const result = await this.ID로_조회한다(savedProject.id, true);
         if (!result) {
@@ -48,6 +67,10 @@ let ProjectService = class ProjectService {
         return result;
     }
     async 하위_프로젝트들_생성한다(topLevelProjectId, topLevelProjectCode, childProjects, status, startDate, endDate, defaultManagerId, createdBy = 'system') {
+        console.log('🔍 [하위_프로젝트들_생성한다] 시작');
+        console.log('📋 defaultManagerId (최상단 PM):', defaultManagerId);
+        console.log('📋 childProjects 개수:', childProjects.length);
+        console.log('📋 childProjects 상세:', JSON.stringify(childProjects, null, 2));
         const groupedByLevel = new Map();
         for (const child of childProjects) {
             const existing = groupedByLevel.get(child.orderLevel) || [];
@@ -61,17 +84,24 @@ let ProjectService = class ProjectService {
             let lastCreatedInThisLevel = null;
             for (let index = 0; index < childrenInLevel.length; index++) {
                 const child = childrenInLevel[index];
+                console.log(`\n🔹 Level ${level}, Index ${index} 처리 중`);
+                console.log('  - child.name:', child.name);
+                console.log('  - child.managerId (입력값):', child.managerId);
+                console.log('  - defaultManagerId (최상단 PM):', defaultManagerId);
+                console.log('  - 최종 사용할 managerId (무조건 최상단):', defaultManagerId);
                 const childProjectCode = child.projectCode ||
                     `${topLevelProjectCode}-SUB${level}-${String.fromCharCode(65 + index)}`;
+                console.log('  - 실제 저장될 managerId:', defaultManagerId);
                 const createdChild = await this.projectRepository.save(project_entity_1.Project.생성한다({
                     name: child.name,
                     projectCode: childProjectCode,
                     status,
                     startDate,
                     endDate,
-                    managerId: child.managerId,
+                    managerId: defaultManagerId,
                     parentProjectId: lastCreatedIdOfPreviousLevel,
                 }, createdBy));
+                console.log('  ✅ 생성 완료 - ID:', createdChild.id, ', managerId:', createdChild.managerId);
                 lastCreatedInThisLevel = createdChild;
             }
             if (lastCreatedInThisLevel) {
@@ -80,14 +110,33 @@ let ProjectService = class ProjectService {
         }
     }
     async 일괄_생성한다(dataList, createdBy) {
+        console.log('\n🚀 [일괄_생성한다] 일괄 생성 시작 - 총', dataList.length, '개');
         const success = [];
         const failed = [];
         for (let i = 0; i < dataList.length; i++) {
+            console.log(`\n📦 [${i + 1}/${dataList.length}] 프로젝트 생성 중`);
+            console.log('  - name:', dataList[i].name);
+            console.log('  - managerId (입력값):', dataList[i].managerId);
+            console.log('  - parentProjectId:', dataList[i].parentProjectId);
+            console.log('  - childProjects:', dataList[i].childProjects ? `${dataList[i].childProjects.length}개` : '없음');
             try {
-                const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
+                let finalManagerId = dataList[i].managerId;
+                if (dataList[i].parentProjectId && !finalManagerId) {
+                    console.log('  🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
+                    const topLevelProject = await this.최상단_프로젝트_조회한다(dataList[i].parentProjectId);
+                    finalManagerId = topLevelProject.managerId;
+                    console.log('  ✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
+                }
+                console.log('  📋 최종 사용할 managerId:', finalManagerId);
+                const project = project_entity_1.Project.생성한다({
+                    ...dataList[i],
+                    managerId: finalManagerId,
+                }, createdBy);
                 const savedProject = await this.projectRepository.save(project);
+                console.log('  ✅ 프로젝트 생성 완료 - managerId:', savedProject.managerId);
                 if (dataList[i].childProjects && dataList[i].childProjects.length > 0) {
-                    await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, dataList[i].childProjects, dataList[i].status, dataList[i].startDate, dataList[i].endDate, dataList[i].managerId, createdBy);
+                    console.log('  📦 하위 프로젝트 생성 - defaultManagerId:', finalManagerId);
+                    await this.하위_프로젝트들_생성한다(savedProject.id, savedProject.projectCode || savedProject.id, dataList[i].childProjects, dataList[i].status, dataList[i].startDate, dataList[i].endDate, finalManagerId, createdBy);
                 }
                 const result = await this.ID로_조회한다(savedProject.id, true);
                 if (result) {
@@ -154,6 +203,25 @@ let ProjectService = class ProjectService {
         }
         project.삭제한다(deletedBy);
         await this.projectRepository.save(project);
+    }
+    async 최상단_프로젝트_조회한다(projectId) {
+        let currentProject = await this.projectRepository.findOne({
+            where: { id: projectId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        if (!currentProject) {
+            throw new common_1.NotFoundException(`프로젝트 ID ${projectId}를 찾을 수 없습니다.`);
+        }
+        while (currentProject.parentProjectId) {
+            const parentProject = await this.projectRepository.findOne({
+                where: { id: currentProject.parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
+            });
+            if (!parentProject) {
+                break;
+            }
+            currentProject = parentProject;
+        }
+        console.log('  🔝 최상단 프로젝트 찾음 - ID:', currentProject.id, ', name:', currentProject.name, ', managerId:', currentProject.managerId);
+        return currentProject;
     }
     async 모든_하위_프로젝트_조회한다(parentId) {
         const allChildren = [];

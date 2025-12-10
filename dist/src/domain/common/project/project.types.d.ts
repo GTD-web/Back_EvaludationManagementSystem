@@ -37,7 +37,7 @@ export interface ChildProjectInput {
     orderLevel: number;
     name: string;
     projectCode?: string;
-    managerId: string;
+    managerId?: string;
 }
 export interface CreateProjectDto {
     name: string;

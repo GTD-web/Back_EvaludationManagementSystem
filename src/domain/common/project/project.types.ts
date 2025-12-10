@@ -35,7 +35,7 @@ export interface ManagerInfo {
  *
  * 계층 구조:
  * - parentProjectId가 없는 경우: 상위 프로젝트 (PM 관리)
- * - parentProjectId가 있는 경우: 하위 프로젝트 (DPM 관리)
+ * - parentProjectId가 있는 경우: 하위 프로젝트 (기본적으로 최상단 프로젝트의 PM으로 설정)
  */
 export interface ProjectDto {
   // BaseEntity 필드들
@@ -61,7 +61,7 @@ export interface ProjectDto {
   endDate?: Date;
 
   // 조인된 정보 필드들
-  /** 프로젝트 매니저 ID (상위: PM, 하위: DPM) */
+  /** 프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정) */
   managerId?: string;
   /** 프로젝트 매니저 정보 */
   manager?: ManagerInfo;
@@ -90,6 +90,7 @@ export interface ProjectDto {
 /**
  * 하위 프로젝트 입력 데이터
  * 같은 orderLevel의 프로젝트들은 같은 부모를 가집니다 (형제 관계)
+ * 하위 프로젝트의 매니저는 항상 최상단 프로젝트의 PM으로 자동 설정됩니다.
  */
 export interface ChildProjectInput {
   /** 계층 레벨 (1~10, 같은 레벨은 형제 관계) */
@@ -98,8 +99,8 @@ export interface ChildProjectInput {
   name: string;
   /** 하위 프로젝트 코드 (미입력 시 자동 생성) */
   projectCode?: string;
-  /** 하위 프로젝트 매니저 ID (필수) */
-  managerId: string;
+  /** 하위 프로젝트 매니저 ID (사용되지 않음, 항상 최상단 프로젝트의 PM으로 설정됨) */
+  managerId?: string;
 }
 
 // 프로젝트 생성 DTO (평가 시스템 전용)

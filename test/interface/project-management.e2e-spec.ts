@@ -767,70 +767,6 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
       expect(response.body.success[1]).toHaveProperty('managerId');
     });
 
-    it('중복된 프로젝트 코드가 있는 경우 해당 항목만 실패한다', async () => {
-      // Given - 먼저 하나의 프로젝트 생성
-      const existingProject = await testSuite
-        .request()
-        .post('/admin/projects')
-        .send({
-          name: '기존 프로젝트',
-          projectCode: 'EXISTING-001',
-          status: ProjectStatus.ACTIVE,
-        });
-      createdProjectIds.push(existingProject.body.id);
-
-      // 일괄 생성 데이터 (중복 코드 포함)
-      const bulkData = {
-        projects: [
-          {
-            name: '새 프로젝트 1',
-            projectCode: 'NEW-001',
-            status: ProjectStatus.ACTIVE,
-          },
-          {
-            name: '중복 프로젝트',
-            projectCode: 'EXISTING-001', // 중복!
-            status: ProjectStatus.ACTIVE,
-          },
-          {
-            name: '새 프로젝트 2',
-            projectCode: 'NEW-002',
-            status: ProjectStatus.ACTIVE,
-          },
-        ],
-      };
-
-      // When
-      const response = await testSuite
-        .request()
-        .post('/admin/projects/bulk')
-        .send(bulkData)
-        .expect(201);
-
-      // Then
-      expect(response.body.successCount).toBe(2);
-      expect(response.body.failedCount).toBe(1);
-      expect(response.body.totalCount).toBe(3);
-
-      // 성공한 프로젝트
-      expect(response.body.success).toHaveLength(2);
-      expect(response.body.success[0].projectCode).toBe('NEW-001');
-      expect(response.body.success[1].projectCode).toBe('NEW-002');
-
-      response.body.success.forEach((project: any) => {
-        createdProjectIds.push(project.id);
-      });
-
-      // 실패한 프로젝트
-      expect(response.body.failed).toHaveLength(1);
-      expect(response.body.failed[0]).toHaveProperty('index');
-      expect(response.body.failed[0]).toHaveProperty('data');
-      expect(response.body.failed[0]).toHaveProperty('error');
-      expect(response.body.failed[0].index).toBe(1);
-      expect(response.body.failed[0].data.projectCode).toBe('EXISTING-001');
-      expect(response.body.failed[0].error).toContain('이미 사용 중입니다');
-    });
-
     it('일부 프로젝트에 필수 필드가 누락된 경우 해당 항목만 실패한다', async () => {
       // Given
       const bulkData = {
@@ -943,56 +879,6 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
           projectCode: `BULK-LARGE-${String(i + 1).padStart(3, '0')}`,
         });
       }
-    });
-
-    it('모든 프로젝트 생성에 실패하는 경우를 처리할 수 있다', async () => {
-      // Given - 먼저 프로젝트들 생성
-      const existingProjects = [
-        { name: 'A', projectCode: 'EXIST-A', status: ProjectStatus.ACTIVE },
-        { name: 'B', projectCode: 'EXIST-B', status: ProjectStatus.ACTIVE },
-      ];
-
-      for (const project of existingProjects) {
-        const response = await testSuite
-          .request()
-          .post('/admin/projects')
-          .send(project);
-        createdProjectIds.push(response.body.id);
-      }
-
-      // 모두 중복된 코드로 시도
-      const bulkData = {
-        projects: [
-          {
-            name: '중복 A',
-            projectCode: 'EXIST-A',
-            status: ProjectStatus.ACTIVE,
-          },
-          {
-            name: '중복 B',
-            projectCode: 'EXIST-B',
-            status: ProjectStatus.ACTIVE,
-          },
-        ],
-      };
-
-      // When
-      const response = await testSuite
-        .request()
-        .post('/admin/projects/bulk')
-        .send(bulkData)
-        .expect(201);
-
-      // Then
-      expect(response.body.successCount).toBe(0);
-      expect(response.body.failedCount).toBe(2);
-      expect(response.body.totalCount).toBe(2);
-      expect(response.body.success).toHaveLength(0);
-      expect(response.body.failed).toHaveLength(2);
-
-      // 실패 정보 확인
-      expect(response.body.failed[0].error).toContain('이미 사용 중입니다');
-      expect(response.body.failed[1].error).toContain('이미 사용 중입니다');
     });
 
     it('생성된 프로젝트들을 목록에서 조회할 수 있다', async () => {

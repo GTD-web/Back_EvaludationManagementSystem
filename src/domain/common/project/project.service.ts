@@ -41,19 +41,6 @@ export class ProjectService {
     data: CreateProjectDto,
     createdBy: string,
   ): Promise<ProjectDto> {
-    // 프로젝트 코드 중복 검사 (코드가 있는 경우)
-    if (data.projectCode) {
-      const existingProject = await this.projectRepository.findOne({
-        where: { projectCode: data.projectCode, deletedAt: IsNull() },
-      });
-
-      if (existingProject) {
-        throw new BadRequestException(
-          `프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`,
-        );
-      }
-    }
-
     // 하위 프로젝트 생성 시 상위 프로젝트 존재 확인
     if (data.parentProjectId) {
       const parentProject = await this.projectRepository.findOne({
@@ -190,46 +177,8 @@ export class ProjectService {
       error: string;
     }> = [];
 
-    // 프로젝트 코드 중복 사전 검사
-    const projectCodes = dataList
-      .map((data) => data.projectCode)
-      .filter((code): code is string => !!code);
-
-    if (projectCodes.length > 0) {
-      const existingProjects = await this.projectRepository.find({
-        where: projectCodes.map((code) => ({
-          projectCode: code,
-          deletedAt: IsNull(),
-        })),
-      });
-
-      const existingCodes = new Set(
-        existingProjects.map((p) => p.projectCode),
-      );
-
-      // 중복 코드가 있는 항목은 실패 처리
-      for (let i = 0; i < dataList.length; i++) {
-        if (
-          dataList[i].projectCode &&
-          existingCodes.has(dataList[i].projectCode!)
-        ) {
-          failed.push({
-            index: i,
-            data: dataList[i],
-            error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
-          });
-        }
-      }
-    }
-
-    // 실패 처리된 인덱스를 제외하고 생성
-    const failedIndices = new Set(failed.map((f) => f.index));
-
+    // 각 프로젝트 생성 시도
     for (let i = 0; i < dataList.length; i++) {
-      if (failedIndices.has(i)) {
-        continue;
-      }
-
       try {
         const project = Project.생성한다(dataList[i], createdBy);
         const savedProject = await this.projectRepository.save(project);
@@ -295,19 +244,6 @@ export class ProjectService {
       throw new NotFoundException(
         `ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`,
       );
-    }
-
-    // 프로젝트 코드 중복 검사 (코드가 변경되는 경우)
-    if (data.projectCode && data.projectCode !== project.projectCode) {
-      const existingProject = await this.projectRepository.findOne({
-        where: { projectCode: data.projectCode, deletedAt: IsNull() },
-      });
-
-      if (existingProject && existingProject.id !== id) {
-        throw new BadRequestException(
-          `프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`,
-        );
-      }
     }
 
     // 프로젝트 기본 정보 수정

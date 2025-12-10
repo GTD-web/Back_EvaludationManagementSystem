@@ -28,14 +28,6 @@ let ProjectService = class ProjectService {
         this.evaluationProjectAssignmentRepository = evaluationProjectAssignmentRepository;
     }
     async 생성한다(data, createdBy) {
-        if (data.projectCode) {
-            const existingProject = await this.projectRepository.findOne({
-                where: { projectCode: data.projectCode, deletedAt: (0, typeorm_2.IsNull)() },
-            });
-            if (existingProject) {
-                throw new common_1.BadRequestException(`프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`);
-            }
-        }
         if (data.parentProjectId) {
             const parentProject = await this.projectRepository.findOne({
                 where: { id: data.parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
@@ -90,33 +82,7 @@ let ProjectService = class ProjectService {
     async 일괄_생성한다(dataList, createdBy) {
         const success = [];
         const failed = [];
-        const projectCodes = dataList
-            .map((data) => data.projectCode)
-            .filter((code) => !!code);
-        if (projectCodes.length > 0) {
-            const existingProjects = await this.projectRepository.find({
-                where: projectCodes.map((code) => ({
-                    projectCode: code,
-                    deletedAt: (0, typeorm_2.IsNull)(),
-                })),
-            });
-            const existingCodes = new Set(existingProjects.map((p) => p.projectCode));
-            for (let i = 0; i < dataList.length; i++) {
-                if (dataList[i].projectCode &&
-                    existingCodes.has(dataList[i].projectCode)) {
-                    failed.push({
-                        index: i,
-                        data: dataList[i],
-                        error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
-                    });
-                }
-            }
-        }
-        const failedIndices = new Set(failed.map((f) => f.index));
         for (let i = 0; i < dataList.length; i++) {
-            if (failedIndices.has(i)) {
-                continue;
-            }
             try {
                 const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
                 const savedProject = await this.projectRepository.save(project);
@@ -146,14 +112,6 @@ let ProjectService = class ProjectService {
         });
         if (!project) {
             throw new common_1.NotFoundException(`ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`);
-        }
-        if (data.projectCode && data.projectCode !== project.projectCode) {
-            const existingProject = await this.projectRepository.findOne({
-                where: { projectCode: data.projectCode, deletedAt: (0, typeorm_2.IsNull)() },
-            });
-            if (existingProject && existingProject.id !== id) {
-                throw new common_1.BadRequestException(`프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`);
-            }
         }
         project.업데이트한다(data, updatedBy);
         await this.projectRepository.save(project);

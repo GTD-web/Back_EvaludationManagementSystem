@@ -11,6 +11,7 @@ import {
   GetProjectManagers,
   GenerateChildProjects,
 } from '@interface/common/decorators/project/project-api.decorators';
+import { DeleteChildProjects } from '@interface/common/decorators/project/delete-child-projects-api.decorator';
 import {
   CreateProjectDto,
   CreateProjectsBulkDto,
@@ -28,6 +29,10 @@ import {
   GenerateChildProjectsResultDto,
   GenerateChildProjectDetailDto,
 } from '@interface/common/dto/project/generate-child-projects.dto';
+import {
+  DeleteChildProjectsDto,
+  DeleteChildProjectsResultDto,
+} from '@interface/common/dto/project/delete-child-projects.dto';
 import {
   Body,
   Controller,
@@ -554,5 +559,25 @@ export class ProjectManagementController {
         duration,
       };
     }
+  }
+
+  /**
+   * 하위 프로젝트 일괄 삭제
+   * 자동 생성된 모든 하위 프로젝트를 일괄 삭제합니다.
+   */
+  @DeleteChildProjects()
+  async deleteChildProjects(
+    @Body() dto: DeleteChildProjectsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<DeleteChildProjectsResultDto> {
+    const deletedBy = user.id;
+
+    const result = await this.projectService.하위_프로젝트들_일괄_삭제한다(
+      dto.forceDelete ?? false,
+      dto.hardDelete ?? false,
+      deletedBy,
+    );
+
+    return result;
   }
 }

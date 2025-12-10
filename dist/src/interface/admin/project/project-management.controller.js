@@ -16,8 +16,10 @@ exports.ProjectManagementController = void 0;
 const project_service_1 = require("../../../domain/common/project/project.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const project_api_decorators_1 = require("../../common/decorators/project/project-api.decorators");
+const delete_child_projects_api_decorator_1 = require("../../common/decorators/project/delete-child-projects-api.decorator");
 const project_dto_1 = require("../../common/dto/project/project.dto");
 const generate_child_projects_dto_1 = require("../../common/dto/project/generate-child-projects.dto");
+const delete_child_projects_dto_1 = require("../../common/dto/project/delete-child-projects.dto");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const sso_module_1 = require("../../../domain/common/sso/sso.module");
@@ -369,6 +371,11 @@ let ProjectManagementController = class ProjectManagementController {
             };
         }
     }
+    async deleteChildProjects(dto, user) {
+        const deletedBy = user.id;
+        const result = await this.projectService.하위_프로젝트들_일괄_삭제한다(dto.forceDelete ?? false, dto.hardDelete ?? false, deletedBy);
+        return result;
+    }
 };
 exports.ProjectManagementController = ProjectManagementController;
 __decorate([
@@ -433,6 +440,14 @@ __decorate([
     __metadata("design:paramtypes", [generate_child_projects_dto_1.GenerateChildProjectsDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProjectManagementController.prototype, "generateChildProjects", null);
+__decorate([
+    (0, delete_child_projects_api_decorator_1.DeleteChildProjects)(),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [delete_child_projects_dto_1.DeleteChildProjectsDto, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "deleteChildProjects", null);
 exports.ProjectManagementController = ProjectManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-0. 관리자 - 프로젝트 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),

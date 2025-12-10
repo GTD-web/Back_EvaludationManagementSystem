@@ -45,4 +45,16 @@ export declare class ProjectService {
         page: number;
         limit: number;
     }>;
+    하위_프로젝트들_일괄_삭제한다(forceDelete: boolean | undefined, hardDelete: boolean | undefined, deletedBy: string): Promise<{
+        deletedCount: number;
+        deleteType: 'soft' | 'hard';
+        assignmentCheckPerformed: boolean;
+        deletedProjects: Array<{
+            id: string;
+            name: string;
+            projectCode: string;
+            parentProjectId: string | null;
+        }>;
+        executionTimeSeconds: number;
+    }>;
 }

@@ -67,8 +67,11 @@ let OrganizationManagementService = class OrganizationManagementService {
     async 직원조회포함(employeeId, updatedBy) {
         return await this.commandBus.execute(new commands_1.IncludeEmployeeInListCommand(employeeId, updatedBy));
     }
-    async 직원접근가능여부변경(employeeId, isAccessible, updatedBy) {
-        return await this.commandBus.execute(new commands_1.UpdateEmployeeAccessibilityCommand(employeeId, isAccessible, updatedBy));
+    async 직원관리자권한변경(employeeId, isAdmin, updatedBy) {
+        return await this.commandBus.execute(new commands_1.UpdateEmployeeAdminCommand(employeeId, isAdmin, updatedBy));
+    }
+    async 여러직원관리자권한변경(employeeIds, isAdmin, updatedBy) {
+        return await this.commandBus.execute(new commands_1.BulkUpdateEmployeeAdminCommand(employeeIds, isAdmin, updatedBy));
     }
     async 부서하이라키조회() {
         return await this.queryBus.execute(new queries_1.GetDepartmentHierarchyQuery());
@@ -91,8 +94,8 @@ let OrganizationManagementService = class OrganizationManagementService {
     async 부서장조회(employeeId) {
         return await this.queryBus.execute(new queries_1.FindDepartmentManagerQuery(employeeId));
     }
-    async 사번으로_접근가능한가(employeeNumber) {
-        return await this.employeeService.사번으로_접근가능한가(employeeNumber);
+    async 사번으로_관리자권한있는가(employeeNumber) {
+        return await this.employeeService.사번으로_관리자권한있는가(employeeNumber);
     }
 };
 exports.OrganizationManagementService = OrganizationManagementService;

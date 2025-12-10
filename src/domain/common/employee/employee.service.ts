@@ -407,11 +407,11 @@ export class EmployeeService {
   }
 
   /**
-   * 사번으로 직원의 접근 가능 여부를 확인한다
+   * 사번으로 직원의 관리자 권한 여부를 확인한다
    * @param employeeNumber 직원 번호
-   * @returns 접근 가능 여부 (직원이 존재하고 접근 가능한 경우 true)
+   * @returns 관리자 권한 여부 (직원이 존재하고 관리자 권한이 있는 경우 true)
    */
-  async 사번으로_접근가능한가(employeeNumber: string): Promise<boolean> {
+  async 사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean> {
     const employee = await this.employeeRepository.findOne({
       where: { employeeNumber, deletedAt: IsNull() },
     });
@@ -420,11 +420,11 @@ export class EmployeeService {
   }
 
   /**
-   * ID로 직원의 접근 가능 여부를 확인한다
+   * ID로 직원의 관리자 권한 여부를 확인한다
    * @param id 직원 ID
-   * @returns 접근 가능 여부 (직원이 존재하고 접근 가능한 경우 true)
+   * @returns 관리자 권한 여부 (직원이 존재하고 관리자 권한이 있는 경우 true)
    */
-  async 접근가능한가(id: string): Promise<boolean> {
+  async 관리자권한있는가(id: string): Promise<boolean> {
     const employee = await this.employeeRepository.findOne({
       where: { id, deletedAt: IsNull() },
     });
@@ -433,15 +433,15 @@ export class EmployeeService {
   }
 
   /**
-   * 직원의 접근 가능 여부를 변경한다
+   * 직원의 관리자 권한 여부를 변경한다
    * @param id 직원 ID
-   * @param isAccessible 접근 가능 여부
+   * @param isAdmin 관리자 권한 여부
    * @param updatedBy 변경 설정자
    * @returns 업데이트된 직원 정보
    */
-  async 접근가능여부변경한다(
+  async 관리자권한변경한다(
     id: string,
-    isAccessible: boolean,
+    isAdmin: boolean,
     updatedBy: string,
   ): Promise<EmployeeDto | null> {
     const employee = await this.employeeRepository.findOne({
@@ -452,11 +452,67 @@ export class EmployeeService {
       return null;
     }
 
-    employee.isAccessible = isAccessible;
+    employee.isAccessible = isAdmin;
     employee.updatedBy = updatedBy;
 
     const updated = await this.employeeRepository.save(employee);
     return updated.DTO로_변환한다();
+  }
+
+  /**
+   * 여러 직원의 관리자 권한 여부를 일괄 변경한다
+   * @param ids 직원 ID 목록
+   * @param isAdmin 관리자 권한 여부
+   * @param updatedBy 변경 설정자
+   * @returns 처리 결과 (성공/실패 개수 및 실패한 ID 목록)
+   */
+  async 여러직원관리자권한변경한다(
+    ids: string[],
+    isAdmin: boolean,
+    updatedBy: string,
+  ): Promise<{
+    totalProcessed: number;
+    succeeded: number;
+    failed: number;
+    failedIds: string[];
+    errors: string[];
+  }> {
+    const result = {
+      totalProcessed: ids.length,
+      succeeded: 0,
+      failed: 0,
+      failedIds: [] as string[],
+      errors: [] as string[],
+    };
+
+    for (const id of ids) {
+      try {
+        const employee = await this.employeeRepository.findOne({
+          where: { id, deletedAt: IsNull() },
+        });
+
+        if (!employee) {
+          result.failed++;
+          result.failedIds.push(id);
+          result.errors.push(`직원을 찾을 수 없습니다: ${id}`);
+          continue;
+        }
+
+        employee.isAccessible = isAdmin;
+        employee.updatedBy = updatedBy;
+
+        await this.employeeRepository.save(employee);
+        result.succeeded++;
+      } catch (error) {
+        result.failed++;
+        result.failedIds.push(id);
+        result.errors.push(
+          `직원 ${id} 처리 중 오류 발생: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    return result;
   }
 
   // ======================================

@@ -43,4 +43,4 @@ exports.UpdateEmployeeAdminHandler = UpdateEmployeeAdminHandler = __decorate([
     (0, cqrs_1.CommandHandler)(UpdateEmployeeAdminCommand),
     __metadata("design:paramtypes", [employee_service_1.EmployeeService])
 ], UpdateEmployeeAdminHandler);
-//# sourceMappingURL=update-employee-accessibility.handler.js.map
+//# sourceMappingURL=update-employee-admin.handler.js.map

@@ -389,7 +389,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'boolean',
         default: true,
-        comment: '시스템 접근 가능 여부 (2중 보안용)',
+        comment: '시스템 접근 가능 여부 (관리자 기능 접근 가능 여부)',
     }),
     __metadata("design:type", Boolean)
 ], Employee.prototype, "isAccessible", void 0);

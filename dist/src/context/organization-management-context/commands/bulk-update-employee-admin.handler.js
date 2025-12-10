@@ -9,38 +9,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateEmployeeAdminHandler = exports.UpdateEmployeeAdminCommand = void 0;
+exports.BulkUpdateEmployeeAdminHandler = exports.BulkUpdateEmployeeAdminCommand = void 0;
 const cqrs_1 = require("@nestjs/cqrs");
 const employee_service_1 = require("../../../domain/common/employee/employee.service");
-const common_1 = require("@nestjs/common");
-class UpdateEmployeeAdminCommand {
-    employeeId;
+class BulkUpdateEmployeeAdminCommand {
+    employeeIds;
     isAdmin;
     updatedBy;
-    constructor(employeeId, isAdmin, updatedBy) {
-        this.employeeId = employeeId;
+    constructor(employeeIds, isAdmin, updatedBy) {
+        this.employeeIds = employeeIds;
         this.isAdmin = isAdmin;
         this.updatedBy = updatedBy;
     }
 }
-exports.UpdateEmployeeAdminCommand = UpdateEmployeeAdminCommand;
-let UpdateEmployeeAdminHandler = class UpdateEmployeeAdminHandler {
+exports.BulkUpdateEmployeeAdminCommand = BulkUpdateEmployeeAdminCommand;
+let BulkUpdateEmployeeAdminHandler = class BulkUpdateEmployeeAdminHandler {
     employeeService;
     constructor(employeeService) {
         this.employeeService = employeeService;
     }
     async execute(command) {
-        const { employeeId, isAdmin, updatedBy } = command;
-        const result = await this.employeeService.관리자권한변경한다(employeeId, isAdmin, updatedBy);
-        if (!result) {
-            throw new common_1.NotFoundException(`직원을 찾을 수 없습니다. ID: ${employeeId}`);
-        }
-        return result;
+        const { employeeIds, isAdmin, updatedBy } = command;
+        return await this.employeeService.여러직원관리자권한변경한다(employeeIds, isAdmin, updatedBy);
     }
 };
-exports.UpdateEmployeeAdminHandler = UpdateEmployeeAdminHandler;
-exports.UpdateEmployeeAdminHandler = UpdateEmployeeAdminHandler = __decorate([
-    (0, cqrs_1.CommandHandler)(UpdateEmployeeAdminCommand),
+exports.BulkUpdateEmployeeAdminHandler = BulkUpdateEmployeeAdminHandler;
+exports.BulkUpdateEmployeeAdminHandler = BulkUpdateEmployeeAdminHandler = __decorate([
+    (0, cqrs_1.CommandHandler)(BulkUpdateEmployeeAdminCommand),
     __metadata("design:paramtypes", [employee_service_1.EmployeeService])
-], UpdateEmployeeAdminHandler);
-//# sourceMappingURL=update-employee-accessibility.handler.js.map
+], BulkUpdateEmployeeAdminHandler);
+//# sourceMappingURL=bulk-update-employee-admin.handler.js.map

@@ -62,12 +62,12 @@ let RolesGuard = RolesGuard_1 = class RolesGuard {
         }
         const needsAccessibilityCheck = this.rolesRequiringAccessibilityCheck.some((role) => userRoles.includes(role));
         if (needsAccessibilityCheck) {
-            const isAccessible = await this.organizationManagementService.사번으로_접근가능한가(user.employeeNumber);
+            const isAccessible = await this.organizationManagementService.사번으로_관리자권한있는가(user.employeeNumber);
             if (!isAccessible) {
                 this.logger.warn(`접근 거부: 사용자 ${user.email}(${user.employeeNumber})은(는) ` +
-                    `역할을 가지고 있지만 시스템 접근이 허용되지 않았습니다. ` +
+                    `역할을 가지고 있지만 관리자 권한이 없습니다. ` +
                     `역할: [${userRoles.join(', ')}]`);
-                throw new common_1.ForbiddenException('EMS 시스템 접근 권한이 없습니다. EMS 관리자에게 문의하세요.');
+                throw new common_1.ForbiddenException('EMS 관리자 권한이 없습니다. EMS 관리자에게 문의하세요.');
             }
         }
         return true;

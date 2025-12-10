@@ -95,6 +95,10 @@ let LoginHandler = LoginHandler_1 = class LoginHandler {
         const roles = loginResult.systemRoles?.['EMS-PROD'] || [];
         this.logger.log(`로그인 결과의 systemRoles: ${JSON.stringify(loginResult.systemRoles)}`);
         this.logger.log(`추출된 EMS-PROD roles: [${roles.join(', ')}]`);
+        if (roles.includes('admin') && !employee.isAccessible) {
+            this.logger.warn(`접근 권한이 없는 관리자의 로그인 시도: ${employee.employeeNumber} (${employee.email})`);
+            throw new common_1.ForbiddenException('시스템 접근 권한이 없습니다. 관리자에게 문의하세요.');
+        }
         try {
             await this.employeeService.updateRoles(employee.id, roles);
             this.logger.log(`직원 ${employee.employeeNumber}의 역할 정보를 업데이트했습니다.`);

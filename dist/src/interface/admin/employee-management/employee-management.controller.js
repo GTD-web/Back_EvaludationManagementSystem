@@ -93,6 +93,9 @@ let EmployeeManagementController = class EmployeeManagementController {
     async syncEmployees(forceSync) {
         return await this.employeeSyncService.syncEmployees(forceSync);
     }
+    async syncAdminPermissions(user) {
+        return await this.organizationManagementService.관리자권한동기화(user.id);
+    }
 };
 exports.EmployeeManagementController = EmployeeManagementController;
 __decorate([
@@ -170,6 +173,13 @@ __decorate([
     __metadata("design:paramtypes", [Boolean]),
     __metadata("design:returntype", Promise)
 ], EmployeeManagementController.prototype, "syncEmployees", null);
+__decorate([
+    (0, employee_management_api_decorators_1.SyncAdminPermissions)(),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], EmployeeManagementController.prototype, "syncAdminPermissions", null);
 exports.EmployeeManagementController = EmployeeManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-1. 관리자 - 조직 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),

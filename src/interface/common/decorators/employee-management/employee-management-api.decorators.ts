@@ -466,6 +466,72 @@ export function BulkUpdateEmployeeAdmin() {
 // ==================== POST 엔드포인트 데코레이터 ====================
 
 /**
+ * 관리자 권한 동기화 엔드포인트 데코레이터
+ */
+export function SyncAdminPermissions() {
+  return applyDecorators(
+    Post('sync-admin-permissions'),
+    HttpCode(HttpStatus.OK),
+    ApiOperation({
+      summary: '관리자 권한 동기화',
+      description: `특정 직원만 관리자 권한을 부여하고, 나머지 직원의 관리자 권한을 제거합니다.
+
+**동작:**
+- 지정된 직원(남명용, 이봉은, 우은진, 전무현, 우창욱, 김종식)의 isAccessible을 true로 설정
+- 그 외 모든 직원의 isAccessible을 false로 설정
+- 전체 직원을 순회하며 권한 상태를 동기화
+- 변경된 직원 수와 관리자 직원 목록 반환
+
+**사용 시나리오:**
+- 관리자 권한이 있는 직원 목록이 변경되었을 때
+- 권한 상태를 일괄로 초기화하고 싶을 때
+- 동기화 후 권한 설정이 정확한지 확인하고 싶을 때
+
+**테스트 케이스:**
+- 기본 동기화: 모든 직원의 관리자 권한을 정의된 목록에 따라 동기화 (200)
+- 권한 부여 확인: 지정된 6명의 직원은 isAccessible=true
+- 권한 제거 확인: 그 외 직원은 isAccessible=false
+- 변경 건수 반환: updated 필드에 실제 변경된 직원 수 포함
+- 관리자 목록 반환: adminEmployees 배열에 6명의 이름 포함
+- 총 처리 건수: totalProcessed가 전체 직원 수와 일치
+- 멱등성: 여러 번 호출해도 안전하게 동작
+- 메시지 반환: 처리 결과 메시지 포함`,
+    }),
+    ApiResponse({
+      status: 200,
+      description: '관리자 권한 동기화가 완료되었습니다.',
+      schema: {
+        type: 'object',
+        properties: {
+          totalProcessed: {
+            type: 'number',
+            description: '총 처리된 직원 수',
+            example: 50,
+          },
+          updated: {
+            type: 'number',
+            description: '권한이 변경된 직원 수',
+            example: 10,
+          },
+          adminEmployees: {
+            type: 'array',
+            description: '관리자 권한을 가진 직원 이름 목록',
+            items: { type: 'string' },
+            example: ['남명용', '이봉은', '우은진', '전무현', '우창욱', '김종식'],
+          },
+          message: {
+            type: 'string',
+            description: '처리 결과 메시지',
+            example: '총 50명 중 10명의 관리자 권한을 업데이트했습니다.',
+          },
+        },
+      },
+    }),
+    ApiResponse({ status: 500, description: '서버 내부 오류' }),
+  );
+}
+
+/**
  * 직원 동기화 엔드포인트 데코레이터
  */
 export function SyncEmployees() {

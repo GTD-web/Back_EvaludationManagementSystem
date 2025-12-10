@@ -97,6 +97,9 @@ let OrganizationManagementService = class OrganizationManagementService {
     async 사번으로_관리자권한있는가(employeeNumber) {
         return await this.employeeService.사번으로_관리자권한있는가(employeeNumber);
     }
+    async 관리자권한동기화(updatedBy) {
+        return await this.commandBus.execute(new commands_1.SyncAdminPermissionsCommand(updatedBy));
+    }
 };
 exports.OrganizationManagementService = OrganizationManagementService;
 exports.OrganizationManagementService = OrganizationManagementService = __decorate([

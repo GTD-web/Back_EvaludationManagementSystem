@@ -52,8 +52,8 @@ export class RevisionRequestController {
         evaluationPeriodId: query.evaluationPeriodId,
         employeeId: query.employeeId,
         requestedBy: query.requestedBy,
-        isRead: query.isRead ?? false,
-        isCompleted: query.isCompleted ?? false,
+        isRead: query.isRead,
+        isCompleted: query.isCompleted,
         step: query.step as any,
       });
 
@@ -90,8 +90,8 @@ export class RevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: query.isRead ?? false,
-          isCompleted: query.isCompleted ?? false,
+          isRead: query.isRead,
+          isCompleted: query.isCompleted,
           step: query.step as any,
         },
       );

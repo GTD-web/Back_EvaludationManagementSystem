@@ -35,8 +35,8 @@ let RevisionRequestController = class RevisionRequestController {
             evaluationPeriodId: query.evaluationPeriodId,
             employeeId: query.employeeId,
             requestedBy: query.requestedBy,
-            isRead: query.isRead ?? false,
-            isCompleted: query.isCompleted ?? false,
+            isRead: query.isRead,
+            isCompleted: query.isCompleted,
             step: query.step,
         });
         return requests.map((req) => ({
@@ -61,8 +61,8 @@ let RevisionRequestController = class RevisionRequestController {
         const requests = await this.revisionRequestContextService.내_재작성요청목록을_조회한다(recipientId, {
             evaluationPeriodId: query.evaluationPeriodId,
             employeeId: query.employeeId,
-            isRead: query.isRead ?? false,
-            isCompleted: query.isCompleted ?? false,
+            isRead: query.isRead,
+            isCompleted: query.isCompleted,
             step: query.step,
         });
         return requests.map((req) => ({

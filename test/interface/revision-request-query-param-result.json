@@ -1,4 +1,71 @@
 {
-  "timestamp": "2025-11-15T09:42:35.891Z",
-  "testResults": []
+  "timestamp": "2025-12-10T07:12:52.395Z",
+  "testResults": [
+    {
+      "testName": "isCompleted=false로 요청했을 때 false로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "isCompleted=true로 요청했을 때 true로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "isCompleted 파라미터 없이 요청했을 때 모든 상태의 요청이 반환되어야 한다",
+      "result": {
+        "requestParams": {},
+        "resultCount": 0,
+        "isArray": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "isRead=false와 isCompleted=false를 함께 사용할 때도 올바르게 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isRead": false,
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsReadFalse": true,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "isCompleted=false로 요청했을 때 false로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isCompleted": false
+        },
+        "resultCount": 0,
+        "allItemsHaveIsCompletedFalse": true,
+        "passed": true
+      }
+    },
+    {
+      "testName": "isCompleted=true로 요청했을 때 true로 필터링되어야 한다",
+      "result": {
+        "requestParams": {
+          "isCompleted": true
+        },
+        "resultCount": 0,
+        "allItemsHaveIsCompletedTrue": true,
+        "passed": true
+      }
+    }
+  ]
 }

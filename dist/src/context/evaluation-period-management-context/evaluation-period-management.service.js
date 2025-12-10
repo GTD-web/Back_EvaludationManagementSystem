@@ -545,13 +545,8 @@ let EvaluationPeriodManagementContextService = EvaluationPeriodManagementContext
             order: { level: 'ASC', wbsCode: 'ASC' },
         });
         this.logger.log(`조회된 WBS 아이템 ${assignedWbsList.length}개`);
-        const projectIdsFromAssignments = new Set(projectAssignments.map((assignment) => assignment.projectId));
         const projectWbsMap = new Map();
         for (const wbs of assignedWbsList) {
-            if (!projectIdsFromAssignments.has(wbs.projectId)) {
-                this.logger.log(`WBS ${wbs.id}는 프로젝트 할당이 없어서 제외 (projectId: ${wbs.projectId})`);
-                continue;
-            }
             if (!projectWbsMap.has(wbs.projectId)) {
                 projectWbsMap.set(wbs.projectId, []);
             }

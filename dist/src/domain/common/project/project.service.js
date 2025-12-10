@@ -28,14 +28,6 @@ let ProjectService = class ProjectService {
         this.evaluationProjectAssignmentRepository = evaluationProjectAssignmentRepository;
     }
     async 생성한다(data, createdBy) {
-        if (data.projectCode) {
-            const existingProject = await this.projectRepository.findOne({
-                where: { projectCode: data.projectCode, deletedAt: (0, typeorm_2.IsNull)() },
-            });
-            if (existingProject) {
-                throw new common_1.BadRequestException(`프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`);
-            }
-        }
         if (data.parentProjectId) {
             const parentProject = await this.projectRepository.findOne({
                 where: { id: data.parentProjectId, deletedAt: (0, typeorm_2.IsNull)() },
@@ -90,33 +82,7 @@ let ProjectService = class ProjectService {
     async 일괄_생성한다(dataList, createdBy) {
         const success = [];
         const failed = [];
-        const projectCodes = dataList
-            .map((data) => data.projectCode)
-            .filter((code) => !!code);
-        if (projectCodes.length > 0) {
-            const existingProjects = await this.projectRepository.find({
-                where: projectCodes.map((code) => ({
-                    projectCode: code,
-                    deletedAt: (0, typeorm_2.IsNull)(),
-                })),
-            });
-            const existingCodes = new Set(existingProjects.map((p) => p.projectCode));
-            for (let i = 0; i < dataList.length; i++) {
-                if (dataList[i].projectCode &&
-                    existingCodes.has(dataList[i].projectCode)) {
-                    failed.push({
-                        index: i,
-                        data: dataList[i],
-                        error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
-                    });
-                }
-            }
-        }
-        const failedIndices = new Set(failed.map((f) => f.index));
         for (let i = 0; i < dataList.length; i++) {
-            if (failedIndices.has(i)) {
-                continue;
-            }
             try {
                 const project = project_entity_1.Project.생성한다(dataList[i], createdBy);
                 const savedProject = await this.projectRepository.save(project);
@@ -146,14 +112,6 @@ let ProjectService = class ProjectService {
         });
         if (!project) {
             throw new common_1.NotFoundException(`ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`);
-        }
-        if (data.projectCode && data.projectCode !== project.projectCode) {
-            const existingProject = await this.projectRepository.findOne({
-                where: { projectCode: data.projectCode, deletedAt: (0, typeorm_2.IsNull)() },
-            });
-            if (existingProject && existingProject.id !== id) {
-                throw new common_1.BadRequestException(`프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`);
-            }
         }
         project.업데이트한다(data, updatedBy);
         await this.projectRepository.save(project);
@@ -1001,6 +959,71 @@ let ProjectService = class ProjectService {
             total: parentProjects.total,
             page: parentProjects.page,
             limit: parentProjects.limit,
+        };
+    }
+    async 하위_프로젝트들_일괄_삭제한다(forceDelete = false, hardDelete = false, deletedBy) {
+        const startTime = Date.now();
+        const childProjects = await this.projectRepository
+            .createQueryBuilder('project')
+            .select([
+            'project.id',
+            'project.name',
+            'project.projectCode',
+            'project.parentProjectId',
+        ])
+            .where('project.deletedAt IS NULL')
+            .andWhere(`(
+          project.parentProjectId IS NOT NULL
+          OR project.projectCode LIKE '%-SUB%'
+          OR project.name LIKE '%하위%'
+          OR project.name LIKE '% - 1차%'
+          OR project.name LIKE '% - 2차%'
+          OR project.name LIKE '% - 3차%'
+          OR project.name LIKE '% - 4차%'
+          OR project.name LIKE '% - 5차%'
+          OR project.name LIKE '% - 6차%'
+          OR project.name LIKE '% - 7차%'
+          OR project.name LIKE '% - 8차%'
+          OR project.name LIKE '% - 9차%'
+          OR project.name LIKE '% - 10차%'
+        )`)
+            .getMany();
+        if (childProjects.length === 0) {
+            throw new common_1.NotFoundException('삭제할 하위 프로젝트를 찾을 수 없습니다');
+        }
+        const assignmentCheckPerformed = !forceDelete;
+        if (!forceDelete) {
+            const projectIds = childProjects.map((p) => p.id);
+            const assignmentsExist = await this.evaluationProjectAssignmentRepository.count({
+                where: { projectId: projectIds },
+            });
+            if (assignmentsExist > 0) {
+                throw new project_exceptions_1.ProjectHasAssignmentsException(childProjects[0].id, assignmentsExist, `${assignmentsExist}개의 할당이 있는 하위 프로젝트가 포함되어 있어 삭제할 수 없습니다`);
+            }
+        }
+        const deletedProjectsInfo = childProjects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            projectCode: p.projectCode || '',
+            parentProjectId: p.parentProjectId ?? null,
+        }));
+        if (hardDelete) {
+            const projectIds = childProjects.map((p) => p.id);
+            await this.projectRepository.delete(projectIds);
+        }
+        else {
+            for (const project of childProjects) {
+                project.삭제한다(deletedBy);
+                await this.projectRepository.save(project);
+            }
+        }
+        const executionTimeSeconds = (Date.now() - startTime) / 1000;
+        return {
+            deletedCount: childProjects.length,
+            deleteType: hardDelete ? 'hard' : 'soft',
+            assignmentCheckPerformed,
+            deletedProjects: deletedProjectsInfo,
+            executionTimeSeconds,
         };
     }
 };

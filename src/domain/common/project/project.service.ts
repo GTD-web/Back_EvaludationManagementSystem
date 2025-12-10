@@ -41,19 +41,6 @@ export class ProjectService {
     data: CreateProjectDto,
     createdBy: string,
   ): Promise<ProjectDto> {
-    // 프로젝트 코드 중복 검사 (코드가 있는 경우)
-    if (data.projectCode) {
-      const existingProject = await this.projectRepository.findOne({
-        where: { projectCode: data.projectCode, deletedAt: IsNull() },
-      });
-
-      if (existingProject) {
-        throw new BadRequestException(
-          `프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`,
-        );
-      }
-    }
-
     // 하위 프로젝트 생성 시 상위 프로젝트 존재 확인
     if (data.parentProjectId) {
       const parentProject = await this.projectRepository.findOne({
@@ -190,46 +177,8 @@ export class ProjectService {
       error: string;
     }> = [];
 
-    // 프로젝트 코드 중복 사전 검사
-    const projectCodes = dataList
-      .map((data) => data.projectCode)
-      .filter((code): code is string => !!code);
-
-    if (projectCodes.length > 0) {
-      const existingProjects = await this.projectRepository.find({
-        where: projectCodes.map((code) => ({
-          projectCode: code,
-          deletedAt: IsNull(),
-        })),
-      });
-
-      const existingCodes = new Set(
-        existingProjects.map((p) => p.projectCode),
-      );
-
-      // 중복 코드가 있는 항목은 실패 처리
-      for (let i = 0; i < dataList.length; i++) {
-        if (
-          dataList[i].projectCode &&
-          existingCodes.has(dataList[i].projectCode!)
-        ) {
-          failed.push({
-            index: i,
-            data: dataList[i],
-            error: `프로젝트 코드 ${dataList[i].projectCode}는 이미 사용 중입니다.`,
-          });
-        }
-      }
-    }
-
-    // 실패 처리된 인덱스를 제외하고 생성
-    const failedIndices = new Set(failed.map((f) => f.index));
-
+    // 각 프로젝트 생성 시도
     for (let i = 0; i < dataList.length; i++) {
-      if (failedIndices.has(i)) {
-        continue;
-      }
-
       try {
         const project = Project.생성한다(dataList[i], createdBy);
         const savedProject = await this.projectRepository.save(project);
@@ -295,19 +244,6 @@ export class ProjectService {
       throw new NotFoundException(
         `ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`,
       );
-    }
-
-    // 프로젝트 코드 중복 검사 (코드가 변경되는 경우)
-    if (data.projectCode && data.projectCode !== project.projectCode) {
-      const existingProject = await this.projectRepository.findOne({
-        where: { projectCode: data.projectCode, deletedAt: IsNull() },
-      });
-
-      if (existingProject && existingProject.id !== id) {
-        throw new BadRequestException(
-          `프로젝트 코드 ${data.projectCode}는 이미 사용 중입니다.`,
-        );
-      }
     }
 
     // 프로젝트 기본 정보 수정
@@ -1473,6 +1409,120 @@ export class ProjectService {
       total: parentProjects.total,
       page: parentProjects.page,
       limit: parentProjects.limit,
+    };
+  }
+
+  /**
+   * 자동 생성된 모든 하위 프로젝트를 일괄 삭제한다
+   * 
+   * 삭제 대상:
+   * - parentProjectId가 NULL이 아닌 프로젝트
+   * - projectCode에 '-SUB' 패턴이 포함된 프로젝트
+   * - 이름에 "하위 프로젝트" 또는 "N차" 패턴이 포함된 프로젝트
+   * 
+   * @param forceDelete 할당 체크를 건너뛸지 여부 (기본값: false)
+   * @param hardDelete 영구 삭제 여부 (기본값: false, soft delete)
+   * @param deletedBy 삭제자 ID
+   * @returns 삭제 결과
+   */
+  async 하위_프로젝트들_일괄_삭제한다(
+    forceDelete: boolean = false,
+    hardDelete: boolean = false,
+    deletedBy: string,
+  ): Promise<{
+    deletedCount: number;
+    deleteType: 'soft' | 'hard';
+    assignmentCheckPerformed: boolean;
+    deletedProjects: Array<{
+      id: string;
+      name: string;
+      projectCode: string;
+      parentProjectId: string | null;
+    }>;
+    executionTimeSeconds: number;
+  }> {
+    const startTime = Date.now();
+
+    // 1. 삭제 대상 하위 프로젝트 조회
+    const childProjects = await this.projectRepository
+      .createQueryBuilder('project')
+      .select([
+        'project.id',
+        'project.name',
+        'project.projectCode',
+        'project.parentProjectId',
+      ])
+      .where('project.deletedAt IS NULL')
+      .andWhere(
+        `(
+          project.parentProjectId IS NOT NULL
+          OR project.projectCode LIKE '%-SUB%'
+          OR project.name LIKE '%하위%'
+          OR project.name LIKE '% - 1차%'
+          OR project.name LIKE '% - 2차%'
+          OR project.name LIKE '% - 3차%'
+          OR project.name LIKE '% - 4차%'
+          OR project.name LIKE '% - 5차%'
+          OR project.name LIKE '% - 6차%'
+          OR project.name LIKE '% - 7차%'
+          OR project.name LIKE '% - 8차%'
+          OR project.name LIKE '% - 9차%'
+          OR project.name LIKE '% - 10차%'
+        )`,
+      )
+      .getMany();
+
+    if (childProjects.length === 0) {
+      throw new NotFoundException('삭제할 하위 프로젝트를 찾을 수 없습니다');
+    }
+
+    // 2. 할당 체크 (forceDelete가 false인 경우)
+    const assignmentCheckPerformed = !forceDelete;
+    if (!forceDelete) {
+      const projectIds = childProjects.map((p) => p.id);
+      const assignmentsExist =
+        await this.evaluationProjectAssignmentRepository.count({
+          where: { projectId: projectIds as any },
+        });
+
+      if (assignmentsExist > 0) {
+        // 첫 번째 하위 프로젝트 ID를 대표로 사용 (일괄 삭제이므로)
+        throw new ProjectHasAssignmentsException(
+          childProjects[0].id,
+          assignmentsExist,
+          `${assignmentsExist}개의 할당이 있는 하위 프로젝트가 포함되어 있어 삭제할 수 없습니다`,
+        );
+      }
+    }
+
+    // 3. 삭제 실행
+    const deletedProjectsInfo = childProjects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      projectCode: p.projectCode || '',
+      parentProjectId: p.parentProjectId ?? null, // undefined를 null로 변환
+    }));
+
+    if (hardDelete) {
+      // Hard Delete: 영구 삭제
+      const projectIds = childProjects.map((p) => p.id);
+      await this.projectRepository.delete(projectIds);
+    } else {
+      // Soft Delete: deletedAt만 업데이트
+      for (const project of childProjects) {
+        project.삭제한다(deletedBy);
+        await this.projectRepository.save(project);
+      }
+    }
+
+    const executionTimeSeconds = (Date.now() - startTime) / 1000;
+
+    return {
+      deletedCount: childProjects.length,
+      deleteType: hardDelete ? 'hard' : 'soft',
+      assignmentCheckPerformed,
+      deletedProjects: deletedProjectsInfo,
+      executionTimeSeconds,
     };
   }
 }

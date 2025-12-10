@@ -18,4 +18,10 @@ export declare class EmployeeManagementController {
     updateEmployeeAdmin(employeeId: string, isAdmin: boolean, user: AuthenticatedUser): Promise<EmployeeDto>;
     bulkUpdateEmployeeAdmin(bulkUpdateData: BulkUpdateEmployeeAdminDto, isAdmin: boolean, user: AuthenticatedUser): Promise<BulkUpdateEmployeeAdminResponseDto>;
     syncEmployees(forceSync: boolean): Promise<EmployeeSyncResult>;
+    syncAdminPermissions(user: AuthenticatedUser): Promise<{
+        totalProcessed: number;
+        updated: number;
+        adminEmployees: string[];
+        message: string;
+    }>;
 }

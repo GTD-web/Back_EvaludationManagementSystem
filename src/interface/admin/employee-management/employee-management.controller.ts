@@ -15,6 +15,7 @@ import {
   GetPartLeaders,
   IncludeEmployeeInList,
   SyncEmployees,
+  SyncAdminPermissions,
   UpdateEmployeeAdmin,
   BulkUpdateEmployeeAdmin,
 } from '@interface/common/decorators/employee-management/employee-management-api.decorators';
@@ -229,5 +230,21 @@ export class EmployeeManagementController {
     forceSync: boolean,
   ): Promise<EmployeeSyncResult> {
     return await this.employeeSyncService.syncEmployees(forceSync);
+  }
+
+  /**
+   * 관리자 권한을 동기화합니다.
+   * 특정 직원만 isAccessible = true로 설정하고, 나머지는 false로 설정합니다.
+   */
+  @SyncAdminPermissions()
+  async syncAdminPermissions(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{
+    totalProcessed: number;
+    updated: number;
+    adminEmployees: string[];
+    message: string;
+  }> {
+    return await this.organizationManagementService.관리자권한동기화(user.id);
   }
 }

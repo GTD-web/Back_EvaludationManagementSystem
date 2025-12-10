@@ -29,6 +29,8 @@ import {
   IncludeEmployeeInListCommand,
   UpdateEmployeeAdminCommand,
   BulkUpdateEmployeeAdminCommand,
+  SyncAdminPermissionsCommand,
+  SyncAdminPermissionsResult,
 } from './commands';
 import { Inject } from '@nestjs/common';
 import { SSOService } from '../../domain/common/sso';
@@ -260,5 +262,18 @@ export class OrganizationManagementService
    */
   async 사번으로_관리자권한있는가(employeeNumber: string): Promise<boolean> {
     return await this.employeeService.사번으로_관리자권한있는가(employeeNumber);
+  }
+
+  /**
+   * 관리자 권한을 동기화합니다
+   * 특정 직원만 isAccessible = true로 설정하고, 나머지는 false로 설정합니다.
+   *
+   * @param updatedBy 변경자 ID
+   * @returns 동기화 결과
+   */
+  async 관리자권한동기화(updatedBy: string): Promise<SyncAdminPermissionsResult> {
+    return await this.commandBus.execute(
+      new SyncAdminPermissionsCommand(updatedBy),
+    );
   }
 }

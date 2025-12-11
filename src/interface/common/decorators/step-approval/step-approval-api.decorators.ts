@@ -25,8 +25,9 @@ export function UpdateCriteriaStepApproval() {
 
 **동작:**
 - 평가기준 설정 단계의 승인 상태를 변경합니다
-- 상태가 \`revision_requested\`인 경우 재작성 요청이 자동으로 생성됩니다
+- 상태가 \`revision_requested\`인 경우 평가기준 설정에 대한 재작성 요청만 생성됩니다
 - 재작성 요청은 피평가자 + 1차평가자에게 전송됩니다
+- 다른 평가 단계(자기평가, 1차/2차 하향평가)에는 영향을 주지 않습니다
 
 **승인 상태:**
 - \`pending\`: 대기 (미확인)
@@ -36,7 +37,7 @@ export function UpdateCriteriaStepApproval() {
 
 **테스트 케이스:**
 - 평가기준 설정을 approved로 변경: 평가기준 설정 상태가 approved로 변경됨
-- 평가기준 설정을 revision_requested로 변경하고 재작성 요청 생성: 상태 변경 및 재작성 요청 생성 확인
+- 평가기준 설정을 revision_requested로 변경하고 재작성 요청 생성: 상태 변경 및 재작성 요청 생성 확인 (평가기준만)
 - 평가기준 설정을 pending으로 변경: 평가기준 설정 상태가 pending으로 변경됨
 - 잘못된 evaluationPeriodId UUID 형식: UUID 형식이 아닌 평가기간 ID 입력 시 400 에러
 - 잘못된 employeeId UUID 형식: UUID 형식이 아닌 직원 ID 입력 시 400 에러

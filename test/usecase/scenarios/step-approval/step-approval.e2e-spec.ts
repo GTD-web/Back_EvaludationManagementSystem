@@ -210,6 +210,177 @@ describe('단계 승인 관리 E2E 테스트', () => {
   });
 
   describe('단계 승인 기본 관리', () => {
+    describe('평가기준 설정 단계 승인 상태 변경', () => {
+      it('평가기준 설정을 pending에서 approved로 변경한다', async () => {
+        let statusData: any;
+        let error: any;
+        const testName = '평가기준 설정을 pending에서 approved로 변경한다';
+
+        try {
+          // Given - 평가기준 제출
+          await stepApprovalScenario.평가기준을_제출한다({
+            evaluationPeriodId,
+            employeeId: employeeIds[0],
+          });
+
+          // When - 평가기준 설정 단계 승인 상태를 approved로 변경
+          await stepApprovalScenario.평가기준설정_단계승인_상태를_변경한다({
+            evaluationPeriodId,
+            employeeId: employeeIds[0],
+            status: 'approved',
+          });
+
+          // Then - 대시보드 API로 승인 상태 확인
+          statusData =
+            await stepApprovalScenario.평가기준_제출상태를_대시보드에서_조회한다(
+              {
+                evaluationPeriodId,
+                employeeId: employeeIds[0],
+              },
+            );
+
+          expect(statusData).toBeDefined();
+          expect(statusData.stepApproval).toBeDefined();
+          expect(statusData.stepApproval.criteriaSettingStatus).toBe(
+            'approved',
+          );
+
+          // 테스트 결과 저장 (성공)
+          testResults.push({
+            testName,
+            result: {
+              employeeId: employeeIds[0],
+              criteriaSettingStatus:
+                statusData.stepApproval.criteriaSettingStatus,
+              passed: true,
+            },
+          });
+        } catch (e) {
+          error = e;
+          // 테스트 결과 저장 (실패)
+          testResults.push({
+            testName,
+            result: {
+              employeeId: employeeIds[0],
+              criteriaSettingStatus:
+                statusData?.stepApproval?.criteriaSettingStatus,
+              passed: false,
+              error: extractErrorMessage(error),
+            },
+          });
+          throw e;
+        }
+      });
+
+      it('평가기준 설정을 revision_requested로 변경하고 평가기준만 재작성 요청이 생성된다', async () => {
+        let statusData: any;
+        let 재작성요청목록: any;
+        let error: any;
+        const testName =
+          '평가기준 설정을 revision_requested로 변경하고 평가기준만 재작성 요청이 생성된다';
+
+        try {
+          // Given - 평가기준 제출
+          await stepApprovalScenario.평가기준을_제출한다({
+            evaluationPeriodId,
+            employeeId: employeeIds[0],
+          });
+
+          // When - 평가기준 설정 단계 승인 상태를 revision_requested로 변경
+          await stepApprovalScenario.평가기준설정_단계승인_상태를_변경한다({
+            evaluationPeriodId,
+            employeeId: employeeIds[0],
+            status: 'revision_requested',
+            revisionComment: '평가기준 재작성 요청 코멘트입니다.',
+          });
+
+          // Then - 대시보드 API로 승인 상태 확인
+          statusData =
+            await stepApprovalScenario.평가기준_제출상태를_대시보드에서_조회한다(
+              {
+                evaluationPeriodId,
+                employeeId: employeeIds[0],
+              },
+            );
+
+          expect(statusData.stepApproval.criteriaSettingStatus).toBe(
+            'revision_requested',
+          );
+
+          // Then - 평가기준(criteria)에 대한 재작성 요청만 생성되었는지 확인
+          재작성요청목록 = await stepApprovalScenario.재작성요청_목록을_조회한다({
+            evaluationPeriodId,
+            employeeId: employeeIds[0],
+          });
+
+          const 평가기준_재작성요청 = 재작성요청목록.find(
+            (req: any) => req.step === 'criteria',
+          );
+          const 자기평가_재작성요청 = 재작성요청목록.find(
+            (req: any) => req.step === 'self',
+          );
+          const 일차하향평가_재작성요청 = 재작성요청목록.find(
+            (req: any) => req.step === 'primary',
+          );
+          const 이차하향평가_재작성요청 = 재작성요청목록.find(
+            (req: any) => req.step === 'secondary',
+          );
+
+          // 평가기준 재작성 요청만 생성되어야 함
+          expect(평가기준_재작성요청).toBeDefined();
+          expect(평가기준_재작성요청.comment).toBe(
+            '평가기준 재작성 요청 코멘트입니다.',
+          );
+          expect(평가기준_재작성요청.isCompleted).toBe(false);
+
+          // 다른 단계의 재작성 요청은 생성되지 않아야 함
+          expect(자기평가_재작성요청).toBeUndefined();
+          expect(일차하향평가_재작성요청).toBeUndefined();
+          expect(이차하향평가_재작성요청).toBeUndefined();
+
+          // 테스트 결과 저장 (성공)
+          testResults.push({
+            testName,
+            result: {
+              employeeId: employeeIds[0],
+              criteriaSettingStatus:
+                statusData.stepApproval.criteriaSettingStatus,
+              평가기준_재작성요청: 평가기준_재작성요청
+                ? {
+                    step: 평가기준_재작성요청.step,
+                    comment: 평가기준_재작성요청.comment,
+                    isCompleted: 평가기준_재작성요청.isCompleted,
+                  }
+                : null,
+              자기평가_재작성요청: 자기평가_재작성요청 ? '생성됨' : '없음',
+              일차하향평가_재작성요청: 일차하향평가_재작성요청
+                ? '생성됨'
+                : '없음',
+              이차하향평가_재작성요청: 이차하향평가_재작성요청
+                ? '생성됨'
+                : '없음',
+              passed: true,
+            },
+          });
+        } catch (e) {
+          error = e;
+          // 테스트 결과 저장 (실패)
+          testResults.push({
+            testName,
+            result: {
+              employeeId: employeeIds[0],
+              criteriaSettingStatus:
+                statusData?.stepApproval?.criteriaSettingStatus,
+              재작성요청목록: 재작성요청목록 ? 재작성요청목록.length : 0,
+              passed: false,
+              error: extractErrorMessage(error),
+            },
+          });
+          throw e;
+        }
+      });
+    });
+
     describe('단계 승인 Enum 목록 조회', () => {
       it('단계 승인 Enum 목록을 조회한다', async () => {
         let result: any;

@@ -260,7 +260,7 @@ export class StepApprovalBusinessService {
   /**
    * 평가기준 설정 재작성 요청 생성 및 제출 상태 초기화
    * 평가기준 설정 단계에서 재작성 요청(REVISION_REQUESTED) 생성 시 제출 상태를 초기화합니다.
-   * 평가기준 단계에서 재작성 요청 시 자기평가, 1차 하향평가, 2차 하향평가도 모두 revision_requested로 변경합니다.
+   * 평가기준 설정 단계에서는 평가기준만 재작성 요청을 보냅니다.
    *
    * @param evaluationPeriodId 평가기간 ID
    * @param employeeId 피평가자 ID
@@ -297,6 +297,7 @@ export class StepApprovalBusinessService {
     }
 
     // 2. 단계 승인 상태를 재작성 요청으로 변경
+    // stepApprovalContextService에서 재작성 요청 생성까지 처리됨
     await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
       evaluationPeriodId,
       employeeId,
@@ -305,81 +306,7 @@ export class StepApprovalBusinessService {
       updatedBy,
     });
 
-    // 3. 자기평가 재작성 요청 생성 및 제출 상태 초기화
-    try {
-      await this.wbsSelfEvaluationBusinessService.자기평가_재작성요청_생성_및_제출상태_초기화(
-        evaluationPeriodId,
-        employeeId,
-        revisionComment,
-        updatedBy,
-      );
-      this.logger.log(
-        `자기평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-      );
-    } catch (error) {
-      // 자기평가가 없을 수도 있으므로 에러를 무시하고 계속 진행
-      this.logger.warn(
-        `자기평가 재작성 요청 생성 실패 (자기평가가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-        error,
-      );
-    }
-
-    // 4. 1차 하향평가 재작성 요청 생성 및 제출 상태 초기화
-    try {
-      await this.downwardEvaluationBusinessService.일차_하향평가_재작성요청_생성_및_제출상태_초기화(
-        evaluationPeriodId,
-        employeeId,
-        revisionComment,
-        updatedBy,
-      );
-      this.logger.log(
-        `1차 하향평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-      );
-    } catch (error) {
-      // 1차 하향평가가 없을 수도 있으므로 에러를 무시하고 계속 진행
-      this.logger.warn(
-        `1차 하향평가 재작성 요청 생성 실패 (1차 하향평가가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-        error,
-      );
-    }
-
-    // 5. 2차 하향평가 재작성 요청 생성 및 제출 상태 초기화 (모든 평가자에 대해)
-    try {
-      const secondaryEvaluators =
-        await this.stepApprovalContextService.이차평가자들을_조회한다(
-          evaluationPeriodId,
-          employeeId,
-        );
-
-      for (const evaluatorId of secondaryEvaluators) {
-        try {
-          await this.downwardEvaluationBusinessService.이차_하향평가_재작성요청_생성_및_제출상태_초기화(
-            evaluationPeriodId,
-            employeeId,
-            evaluatorId,
-            revisionComment,
-            updatedBy,
-          );
-          this.logger.log(
-            `2차 하향평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가자: ${evaluatorId}, 평가기간: ${evaluationPeriodId}`,
-          );
-        } catch (error) {
-          // 개별 평가자 재작성 요청 생성 실패 시에도 다른 평가자는 계속 처리
-          this.logger.warn(
-            `2차 하향평가 재작성 요청 생성 실패 - 직원: ${employeeId}, 평가자: ${evaluatorId}`,
-            error,
-          );
-        }
-      }
-    } catch (error) {
-      // 2차 평가자가 없을 수도 있으므로 에러를 무시하고 계속 진행
-      this.logger.warn(
-        `2차 하향평가 재작성 요청 생성 실패 (2차 평가자가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
-        error,
-      );
-    }
-
-    // 6. 활동 내역 기록
+    // 3. 활동 내역 기록
     try {
       await this.activityLogContextService.단계승인_상태변경_활동내역을_기록한다(
         {

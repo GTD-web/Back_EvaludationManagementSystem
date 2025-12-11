@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-12-11T07:33:16.445Z",
+  "testResults": [
+    {
+      "testName": "WBS 할당에 연결된 자기평가를 삭제할 수 있어야 한다",
+      "result": {
+        "deletedCount": 1,
+        "deletedEvaluationIds": [
+          "8617d47c-9175-4716-968a-4a27d7409973"
+        ]
+      }
+    },
+    {
+      "testName": "삭제할 자기평가가 없으면 빈 결과를 반환해야 한다",
+      "result": {
+        "deletedCount": 0,
+        "deletedEvaluations": []
+      }
+    },
+    {
+      "testName": "여러 개의 자기평가를 가진 WBS 항목의 평가를 모두 삭제해야 한다",
+      "result": {
+        "deletedCount": 3,
+        "deletedEvaluationIds": [
+          "9caa435e-a687-489c-86c8-c2d1d251e146",
+          "cf3b6a81-2bc4-44eb-af38-955e37793bd1",
+          "7a8c1ef3-fbd0-4431-aafa-daad2761ed32"
+        ]
+      }
+    },
+    {
+      "testName": "특정 직원의 특정 WBS만 삭제하고 다른 WBS는 영향받지 않아야 한다",
+      "result": {
+        "deletedWbsId": "ccb364dc-c0a4-481b-b016-add0afd50a51",
+        "deletedCount": 1,
+        "remainingWbs2Count": 1,
+        "remainingWbs3Count": 1
+      }
+    },
+    {
+      "testName": "다른 직원의 같은 WBS 항목 자기평가는 영향받지 않아야 한다",
+      "result": {
+        "deletedEmployeeId": "94173ed3-4d33-408b-9c73-de5f5d9aefc2",
+        "deletedCount": 1,
+        "anotherEmployeeId": "815a02d8-adcf-4a38-9151-5a82f5a534eb",
+        "anotherEmployeeEvaluationCount": 1
+      }
+    },
+    {
+      "testName": "다른 평가기간의 자기평가는 영향받지 않아야 한다",
+      "result": {
+        "deletedPeriodId": "54f1f2ea-21c7-48fd-ac3b-40e4d202eb2d",
+        "deletedCount": 1,
+        "anotherPeriodId": "18c325b2-d540-4a86-a7a0-6c7c32f3942b",
+        "anotherPeriodEvaluationCount": 1
+      }
+    },
+    {
+      "testName": "존재하지 않는 직원 ID로 삭제 시도 시 빈 결과를 반환해야 한다",
+      "result": {
+        "nonExistentEmployeeId": "99999999-9999-9999-9999-999999999999",
+        "deletedCount": 0
+      }
+    },
+    {
+      "testName": "존재하지 않는 평가기간 ID로 삭제 시도 시 빈 결과를 반환해야 한다",
+      "result": {
+        "nonExistentPeriodId": "99999999-9999-9999-9999-999999999999",
+        "deletedCount": 0
+      }
+    },
+    {
+      "testName": "이미 삭제된 자기평가는 다시 삭제되지 않아야 한다",
+      "result": {
+        "firstDeleteCount": 1,
+        "secondDeleteCount": 0
+      }
+    }
+  ]
+}

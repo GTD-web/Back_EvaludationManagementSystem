@@ -16,6 +16,7 @@ export interface CreateDownwardEvaluationData {
     createdBy: string;
 }
 export interface UpdateDownwardEvaluationData {
+    evaluatorId?: string;
     selfEvaluationId?: string;
     downwardEvaluationContent?: string;
     downwardEvaluationScore?: number;

@@ -14,6 +14,7 @@ exports.WbsAssignmentBusinessService = void 0;
 const common_1 = require("@nestjs/common");
 const evaluation_criteria_management_service_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const evaluation_activity_log_context_service_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.service");
+const performance_evaluation_service_1 = require("../../context/performance-evaluation-context/performance-evaluation.service");
 const employee_service_1 = require("../../domain/common/employee/employee.service");
 const project_service_1 = require("../../domain/common/project/project.service");
 const evaluation_line_service_1 = require("../../domain/core/evaluation-line/evaluation-line.service");
@@ -24,15 +25,17 @@ const wbs_item_types_1 = require("../../domain/common/wbs-item/wbs-item.types");
 let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAssignmentBusinessService {
     evaluationCriteriaManagementService;
     activityLogContextService;
+    performanceEvaluationService;
     employeeService;
     projectService;
     evaluationLineService;
     evaluationLineMappingService;
     evaluationWbsAssignmentService;
     logger = new common_1.Logger(WbsAssignmentBusinessService_1.name);
-    constructor(evaluationCriteriaManagementService, activityLogContextService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService) {
+    constructor(evaluationCriteriaManagementService, activityLogContextService, performanceEvaluationService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService) {
         this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
         this.activityLogContextService = activityLogContextService;
+        this.performanceEvaluationService = performanceEvaluationService;
         this.employeeService = employeeService;
         this.projectService = projectService;
         this.evaluationLineService = evaluationLineService;
@@ -116,15 +119,83 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         const employeeId = assignment.employeeId;
         const wbsItemId = assignment.wbsItemId;
         const periodId = assignment.periodId;
-        await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(params.assignmentId, params.cancelledBy);
-        await this.평가라인_매핑을_삭제한다(employeeId, wbsItemId, periodId, params.cancelledBy);
+        this.logger.log('🔵 [STEP 1] WBS 할당 정보 확인 완료, 자기평가 삭제 시작', {
+            employeeId,
+            wbsItemId,
+            periodId,
+            hasPerformanceEvaluationService: !!this.performanceEvaluationService,
+        });
+        let deletionResult = {
+            deletedCount: 0,
+            deletedEvaluations: [],
+        };
+        try {
+            this.logger.log('🔵 [STEP 1-1] 자기평가 삭제 호출 시작');
+            deletionResult =
+                await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+                    employeeId,
+                    periodId,
+                    wbsItemId,
+                    deletedBy: params.cancelledBy,
+                });
+            this.logger.log('🔵 [STEP 1-2] 자기평가 삭제 호출 완료', {
+                deletedCount: deletionResult.deletedCount,
+                deletedEvaluations: deletionResult.deletedEvaluations,
+            });
+            if (deletionResult.deletedCount > 0) {
+                this.logger.log(`✅ 자기평가 ${deletionResult.deletedCount}개 삭제 완료`, {
+                    assignmentId: params.assignmentId,
+                    wbsItemId,
+                    deletedEvaluations: deletionResult.deletedEvaluations,
+                });
+            }
+            else {
+                this.logger.log('ℹ️ 삭제할 자기평가가 없습니다', {
+                    employeeId,
+                    periodId,
+                    wbsItemId,
+                });
+            }
+        }
+        catch (error) {
+            this.logger.error('❌ 자기평가 삭제 중 에러 발생', {
+                error: error.message,
+                stack: error.stack,
+                employeeId,
+                periodId,
+                wbsItemId,
+            });
+        }
+        this.logger.log('🔵 [STEP 2] 남은 WBS 할당 확인 시작', { wbsItemId });
         const remainingAssignments = await this.evaluationCriteriaManagementService.특정_평가기간에_WBS_항목에_할당된_직원을_조회한다(wbsItemId, periodId);
         if (!remainingAssignments || remainingAssignments.length === 0) {
-            this.logger.log('마지막 WBS 할당이 취소되어 평가기준을 삭제합니다', {
+            this.logger.log('🔵 [STEP 3] 마지막 WBS 할당이므로 평가기준 삭제 시작', {
                 wbsItemId,
             });
             await this.evaluationCriteriaManagementService.WBS_항목의_평가기준을_전체삭제한다(wbsItemId, params.cancelledBy);
+            this.logger.log('✅ 평가기준 삭제 완료', { wbsItemId });
         }
+        else {
+            this.logger.log('ℹ️ 남은 WBS 할당이 있어 평가기준은 유지합니다', {
+                wbsItemId,
+                remainingCount: remainingAssignments.length,
+            });
+        }
+        this.logger.log('🔵 [STEP 4] 평가라인 매핑 삭제 시작', {
+            employeeId,
+            wbsItemId,
+            periodId,
+        });
+        await this.평가라인_매핑을_삭제한다(employeeId, wbsItemId, periodId, params.cancelledBy);
+        this.logger.log('✅ 평가라인 매핑 삭제 완료');
+        this.logger.log('🔵 [STEP 5] WBS 할당 취소 시작', {
+            assignmentId: params.assignmentId,
+        });
+        await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(params.assignmentId, params.cancelledBy);
+        this.logger.log('✅ WBS 할당 취소 완료', {
+            assignmentId: params.assignmentId,
+        });
+        this.logger.log('🔵 [STEP 6] 활동 내역 기록 시작');
         try {
             await this.activityLogContextService.활동내역을_기록한다({
                 periodId,
@@ -140,16 +211,18 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
                     projectId: assignment.projectId,
                 },
             });
+            this.logger.log('✅ 활동 내역 기록 완료');
         }
         catch (error) {
-            this.logger.warn('WBS 할당 취소 활동 내역 기록 실패', {
+            this.logger.warn('⚠️ 활동 내역 기록 실패 (계속 진행)', {
                 assignmentId: params.assignmentId,
                 error: error.message,
             });
         }
-        this.logger.log('WBS 할당 취소, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
+        this.logger.log('🎉 WBS 할당 취소 프로세스 완료', {
             assignmentId: params.assignmentId,
-            criteriaDeleted: !remainingAssignments || remainingAssignments.length === 0,
+            자기평가_삭제: deletionResult.deletedCount,
+            평가기준_삭제: !remainingAssignments || remainingAssignments.length === 0,
         });
     }
     async WBS_할당을_WBS_ID로_취소한다(params) {
@@ -480,7 +553,8 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
             employeeId,
             wbsItemId,
             primaryEvaluator: employee.managerId,
-            secondaryEvaluator: projectManagerEmployeeId && projectManagerEmployeeId !== employee.managerId
+            secondaryEvaluator: projectManagerEmployeeId &&
+                projectManagerEmployeeId !== employee.managerId
                 ? projectManagerEmployeeId
                 : null,
         });
@@ -584,6 +658,7 @@ exports.WbsAssignmentBusinessService = WbsAssignmentBusinessService = WbsAssignm
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         evaluation_activity_log_context_service_1.EvaluationActivityLogContextService,
+        performance_evaluation_service_1.PerformanceEvaluationService,
         employee_service_1.EmployeeService,
         project_service_1.ProjectService,
         evaluation_line_service_1.EvaluationLineService,

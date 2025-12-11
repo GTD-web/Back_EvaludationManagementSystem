@@ -59,11 +59,11 @@ export class UpsertDownwardEvaluationHandler
     });
 
     return await this.transactionManager.executeTransaction(async () => {
-      // 기존 하향평가 조회 (employeeId, evaluatorId, periodId, wbsId, evaluationType로 찾기)
+      // 기존 하향평가 조회
+      // evaluatorId 없이 조회하여 잘못된 evaluatorId로 저장된 평가도 찾을 수 있도록 함
       const existingEvaluations =
         await this.downwardEvaluationService.필터_조회한다({
           employeeId: evaluateeId,
-          evaluatorId,
           periodId,
           wbsId,
           evaluationType: evaluationType as DownwardEvaluationType,
@@ -76,11 +76,17 @@ export class UpsertDownwardEvaluationHandler
         // 기존 하향평가 수정
         this.logger.log('기존 하향평가 수정', {
           evaluationId: existingEvaluation.id,
+          oldEvaluatorId: existingEvaluation.evaluatorId,
+          newEvaluatorId: evaluatorId,
         });
 
         await this.downwardEvaluationService.수정한다(
           existingEvaluation.id,
           {
+            evaluatorId:
+              evaluatorId !== existingEvaluation.evaluatorId
+                ? evaluatorId
+                : undefined,
             downwardEvaluationContent,
             downwardEvaluationScore,
             selfEvaluationId:

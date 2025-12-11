@@ -34,6 +34,7 @@ import {
   ClearWbsSelfEvaluationsByProjectCommand,
   UpdateWbsSelfEvaluationCommand,
   UpsertWbsSelfEvaluationCommand,
+  DeleteWbsSelfEvaluationsByAssignmentCommand,
 } from './handlers/self-evaluation';
 import type {
   SubmitAllWbsSelfEvaluationsResponse,
@@ -47,6 +48,7 @@ import type {
   ResetWbsSelfEvaluationsToEvaluatorByProjectResponse,
   ClearAllWbsSelfEvaluationsResponse,
   ClearWbsSelfEvaluationsByProjectResponse,
+  DeleteWbsSelfEvaluationsByAssignmentResponse,
 } from './handlers/self-evaluation';
 // 평가 수정 가능 상태 관련 커맨드
 import { UpdatePeriodAllEvaluationEditableStatusCommand } from './handlers/evaluation-editable-status';
@@ -719,9 +721,9 @@ export class PerformanceEvaluationService
     });
     const submitterName = submitter?.name || '관리자';
 
-    // 실제 평가자 ID로 1차 하향평가를 조회
+    // 1차 하향평가를 조회 (evaluatorId 조건 없이 조회하여 기존 평가자 유지)
     const query = new GetDownwardEvaluationListQuery(
-      actualPrimaryEvaluatorId,
+      undefined, // evaluatorId를 undefined로 설정하여 모든 평가자의 평가 조회
       evaluateeId,
       periodId,
       wbsId,
@@ -772,11 +774,20 @@ export class PerformanceEvaluationService
 
     const evaluation = result.evaluations[0];
 
-    // 평가가 있지만 content가 비어있으면 기본 메시지 추가
-    if (!evaluation.downwardEvaluationContent?.trim()) {
-      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+    // 평가가 있지만 evaluatorId가 잘못되었거나 content가 비어있으면 수정
+    const needsUpdate =
+      !evaluation.downwardEvaluationContent?.trim() ||
+      evaluation.evaluatorId !== actualPrimaryEvaluatorId;
+
+    if (needsUpdate) {
+      const defaultContent =
+        evaluation.downwardEvaluationContent?.trim() ||
+        `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+
+      // Upsert를 호출하면 evaluatorId 없이 조회하므로 기존 평가를 찾아서 수정함
+      // evaluatorId도 올바른 값으로 업데이트됨
       await this.하향평가를_저장한다(
-        actualPrimaryEvaluatorId,
+        actualPrimaryEvaluatorId, // 올바른 1차 평가자 ID
         evaluateeId,
         periodId,
         wbsId,
@@ -837,9 +848,9 @@ export class PerformanceEvaluationService
     });
     const submitterName = submitter?.name || '관리자';
 
-    // 실제 평가자 ID로 2차 하향평가를 조회
+    // 2차 하향평가를 조회 (evaluatorId 조건 없이 조회하여 기존 평가자 유지)
     const query = new GetDownwardEvaluationListQuery(
-      actualSecondaryEvaluatorId,
+      undefined, // evaluatorId를 undefined로 설정하여 모든 평가자의 평가 조회
       evaluateeId,
       periodId,
       wbsId,
@@ -890,11 +901,20 @@ export class PerformanceEvaluationService
 
     const evaluation = result.evaluations[0];
 
-    // 평가가 있지만 content가 비어있으면 기본 메시지 추가
-    if (!evaluation.downwardEvaluationContent?.trim()) {
-      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+    // 평가가 있지만 evaluatorId가 잘못되었거나 content가 비어있으면 수정
+    const needsUpdate =
+      !evaluation.downwardEvaluationContent?.trim() ||
+      evaluation.evaluatorId !== actualSecondaryEvaluatorId;
+
+    if (needsUpdate) {
+      const defaultContent =
+        evaluation.downwardEvaluationContent?.trim() ||
+        `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+
+      // Upsert를 호출하면 evaluatorId 없이 조회하므로 기존 평가를 찾아서 수정함
+      // evaluatorId도 올바른 값으로 업데이트됨
       await this.하향평가를_저장한다(
-        actualSecondaryEvaluatorId,
+        actualSecondaryEvaluatorId, // 올바른 2차 평가자 ID
         evaluateeId,
         periodId,
         wbsId,
@@ -1347,6 +1367,27 @@ export class PerformanceEvaluationService
       data.periodId,
       data.projectId,
       data.clearedBy,
+    );
+
+    const result = await this.commandBus.execute(command);
+    return result;
+  }
+
+  /**
+   * WBS 할당에 연결된 자기평가를 삭제한다
+   * WBS 할당 취소 시 관련 자기평가 데이터를 정리하는 용도로 사용합니다.
+   */
+  async WBS할당_자기평가를_삭제한다(data: {
+    employeeId: string;
+    periodId: string;
+    wbsItemId: string;
+    deletedBy: string;
+  }): Promise<DeleteWbsSelfEvaluationsByAssignmentResponse> {
+    const command = new DeleteWbsSelfEvaluationsByAssignmentCommand(
+      data.employeeId,
+      data.periodId,
+      data.wbsItemId,
+      data.deletedBy,
     );
 
     const result = await this.commandBus.execute(command);

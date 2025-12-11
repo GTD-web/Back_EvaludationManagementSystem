@@ -20,6 +20,7 @@ const reset_wbs_self_evaluations_to_evaluator_by_project_handler_1 = require("./
 const clear_wbs_self_evaluation_handler_1 = require("./self-evaluation/commands/clear-wbs-self-evaluation.handler");
 const clear_all_wbs_self_evaluations_handler_1 = require("./self-evaluation/commands/clear-all-wbs-self-evaluations.handler");
 const clear_wbs_self_evaluations_by_project_handler_1 = require("./self-evaluation/commands/clear-wbs-self-evaluations-by-project.handler");
+const delete_wbs_self_evaluations_by_assignment_handler_1 = require("./self-evaluation/commands/delete-wbs-self-evaluations-by-assignment.handler");
 const peer_evaluation_1 = require("./peer-evaluation");
 const downward_evaluation_1 = require("./downward-evaluation");
 const final_evaluation_1 = require("./final-evaluation");
@@ -45,6 +46,7 @@ exports.CommandHandlers = [
     clear_wbs_self_evaluation_handler_1.ClearWbsSelfEvaluationHandler,
     clear_all_wbs_self_evaluations_handler_1.ClearAllWbsSelfEvaluationsByEmployeePeriodHandler,
     clear_wbs_self_evaluations_by_project_handler_1.ClearWbsSelfEvaluationsByProjectHandler,
+    delete_wbs_self_evaluations_by_assignment_handler_1.DeleteWbsSelfEvaluationsByAssignmentHandler,
     peer_evaluation_1.CreatePeerEvaluationHandler,
     peer_evaluation_1.UpdatePeerEvaluationHandler,
     peer_evaluation_1.SubmitPeerEvaluationHandler,

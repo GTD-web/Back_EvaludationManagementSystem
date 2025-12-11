@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { EvaluationCriteriaManagementContextModule } from '@context/evaluation-criteria-management-context/evaluation-criteria-management-context.module';
 import { EvaluationActivityLogContextModule } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.module';
+import { PerformanceEvaluationContextModule } from '@context/performance-evaluation-context/performance-evaluation-context.module';
 import { EmployeeModule } from '@domain/common/employee/employee.module';
 import { ProjectModule } from '@domain/common/project/project.module';
 import { EvaluationLineModule } from '@domain/core/evaluation-line/evaluation-line.module';
@@ -15,6 +16,7 @@ import { WbsAssignmentBusinessService } from './wbs-assignment-business.service'
   imports: [
     EvaluationCriteriaManagementContextModule,
     EvaluationActivityLogContextModule,
+    PerformanceEvaluationContextModule,
     EmployeeModule,
     ProjectModule,
     EvaluationLineModule,

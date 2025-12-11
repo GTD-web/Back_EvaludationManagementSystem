@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
+import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
+import { DeleteWbsSelfEvaluationsByAssignmentResponse } from '@context/performance-evaluation-context/handlers/self-evaluation';
 import { EmployeeService } from '@domain/common/employee/employee.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
@@ -29,6 +31,7 @@ export class WbsAssignmentBusinessService {
   constructor(
     private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
+    private readonly performanceEvaluationService: PerformanceEvaluationService,
     private readonly employeeService: EmployeeService,
     private readonly projectService: ProjectService,
     private readonly evaluationLineService: EvaluationLineService,
@@ -163,14 +166,19 @@ export class WbsAssignmentBusinessService {
   }
 
   /**
-   * WBS 할당을 취소하고 관련 평가기준을 정리한다
+   * WBS 할당을 취소하고 관련 데이터를 정리한다
    *
-   * 비즈니스 규칙:
-   * - 마지막 할당 취소 시 해당 WBS의 평가기준도 자동 삭제
+   * 실행 순서:
+   * 1. 자기평가 삭제 (해당 직원의 해당 WBS 항목 자기평가 모두 삭제)
+   * 2. 남은 할당 확인
+   * 3. 평가기준 삭제 (마지막 할당인 경우에만)
+   * 4. 평가라인 매핑 삭제 (2차 평가자 연결 해제)
+   * 5. WBS 할당 삭제 (실제 할당 레코드 삭제)
+   * 6. 활동 내역 기록
    *
    * 참고:
    * - 컨텍스트 레벨에서 멱등성 보장 (할당이 없어도 성공 처리)
-   * - 비즈니스 서비스는 평가기준 정리만 수행하므로, 할당이 없으면 조기 반환
+   * - 비즈니스 서비스는 관련 데이터 정리를 수행하므로, 할당이 없으면 조기 반환
    */
   async WBS_할당을_취소한다(params: {
     assignmentId: string;
@@ -202,30 +210,72 @@ export class WbsAssignmentBusinessService {
     const wbsItemId = assignment.wbsItemId;
     const periodId = assignment.periodId;
 
-    // 2. WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)
-    await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(
-      params.assignmentId,
-      params.cancelledBy,
-    );
-
-    // 3. 해당 WBS에 대한 평가라인 매핑 삭제 (2차 평가자)
-    await this.평가라인_매핑을_삭제한다(
+    this.logger.log('🔵 [STEP 1] WBS 할당 정보 확인 완료, 자기평가 삭제 시작', {
       employeeId,
       wbsItemId,
       periodId,
-      params.cancelledBy,
-    );
+      hasPerformanceEvaluationService: !!this.performanceEvaluationService,
+    });
 
-    // 4. 해당 WBS 항목에 다른 할당이 있는지 확인
+    // STEP 1: 해당 WBS 항목의 자기평가 삭제
+    let deletionResult: DeleteWbsSelfEvaluationsByAssignmentResponse = {
+      deletedCount: 0,
+      deletedEvaluations: [],
+    };
+
+    try {
+      this.logger.log('🔵 [STEP 1-1] 자기평가 삭제 호출 시작');
+      deletionResult =
+        await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+          employeeId,
+          periodId,
+          wbsItemId,
+          deletedBy: params.cancelledBy,
+        });
+
+      this.logger.log('🔵 [STEP 1-2] 자기평가 삭제 호출 완료', {
+        deletedCount: deletionResult.deletedCount,
+        deletedEvaluations: deletionResult.deletedEvaluations,
+      });
+
+      if (deletionResult.deletedCount > 0) {
+        this.logger.log(
+          `✅ 자기평가 ${deletionResult.deletedCount}개 삭제 완료`,
+          {
+            assignmentId: params.assignmentId,
+            wbsItemId,
+            deletedEvaluations: deletionResult.deletedEvaluations,
+          },
+        );
+      } else {
+        this.logger.log('ℹ️ 삭제할 자기평가가 없습니다', {
+          employeeId,
+          periodId,
+          wbsItemId,
+        });
+      }
+    } catch (error) {
+      this.logger.error('❌ 자기평가 삭제 중 에러 발생', {
+        error: error.message,
+        stack: error.stack,
+        employeeId,
+        periodId,
+        wbsItemId,
+      });
+      // 에러가 발생해도 WBS 할당 취소는 계속 진행
+    }
+
+    // STEP 2: 해당 WBS 항목에 다른 할당이 있는지 확인
+    this.logger.log('🔵 [STEP 2] 남은 WBS 할당 확인 시작', { wbsItemId });
     const remainingAssignments =
       await this.evaluationCriteriaManagementService.특정_평가기간에_WBS_항목에_할당된_직원을_조회한다(
         wbsItemId,
         periodId,
       );
 
-    // 5. 마지막 할당이었다면 평가기준 삭제
+    // STEP 3: 마지막 할당이었다면 평가기준 삭제
     if (!remainingAssignments || remainingAssignments.length === 0) {
-      this.logger.log('마지막 WBS 할당이 취소되어 평가기준을 삭제합니다', {
+      this.logger.log('🔵 [STEP 3] 마지막 WBS 할당이므로 평가기준 삭제 시작', {
         wbsItemId,
       });
 
@@ -233,9 +283,42 @@ export class WbsAssignmentBusinessService {
         wbsItemId,
         params.cancelledBy,
       );
+      this.logger.log('✅ 평가기준 삭제 완료', { wbsItemId });
+    } else {
+      this.logger.log('ℹ️ 남은 WBS 할당이 있어 평가기준은 유지합니다', {
+        wbsItemId,
+        remainingCount: remainingAssignments.length,
+      });
     }
 
-    // 6. 활동 내역 기록
+    // STEP 4: 해당 WBS에 대한 평가라인 매핑 삭제 (2차 평가자)
+    this.logger.log('🔵 [STEP 4] 평가라인 매핑 삭제 시작', {
+      employeeId,
+      wbsItemId,
+      periodId,
+    });
+    await this.평가라인_매핑을_삭제한다(
+      employeeId,
+      wbsItemId,
+      periodId,
+      params.cancelledBy,
+    );
+    this.logger.log('✅ 평가라인 매핑 삭제 완료');
+
+    // STEP 5: WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)
+    this.logger.log('🔵 [STEP 5] WBS 할당 취소 시작', {
+      assignmentId: params.assignmentId,
+    });
+    await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(
+      params.assignmentId,
+      params.cancelledBy,
+    );
+    this.logger.log('✅ WBS 할당 취소 완료', {
+      assignmentId: params.assignmentId,
+    });
+
+    // STEP 6: 활동 내역 기록
+    this.logger.log('🔵 [STEP 6] 활동 내역 기록 시작');
     try {
       await this.activityLogContextService.활동내역을_기록한다({
         periodId,
@@ -251,15 +334,16 @@ export class WbsAssignmentBusinessService {
           projectId: assignment.projectId,
         },
       });
+      this.logger.log('✅ 활동 내역 기록 완료');
     } catch (error) {
       // 활동 내역 기록 실패 시에도 WBS 할당 취소는 정상 처리
-      this.logger.warn('WBS 할당 취소 활동 내역 기록 실패', {
+      this.logger.warn('⚠️ 활동 내역 기록 실패 (계속 진행)', {
         assignmentId: params.assignmentId,
         error: error.message,
       });
     }
 
-    // 7. 알림 발송 (추후 구현)
+    // STEP 7: 알림 발송 (추후 구현)
     // TODO: WBS 할당 취소 알림 발송
     // await this.notificationService.send({
     //   type: 'WBS_ASSIGNMENT_CANCELLED',
@@ -269,15 +353,23 @@ export class WbsAssignmentBusinessService {
     //   },
     // });
 
-    this.logger.log('WBS 할당 취소, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
+    this.logger.log('🎉 WBS 할당 취소 프로세스 완료', {
       assignmentId: params.assignmentId,
-      criteriaDeleted:
-        !remainingAssignments || remainingAssignments.length === 0,
+      자기평가_삭제: deletionResult.deletedCount,
+      평가기준_삭제: !remainingAssignments || remainingAssignments.length === 0,
     });
   }
 
   /**
-   * WBS ID를 사용하여 WBS 할당을 취소하고 관련 평가기준을 정리한다
+   * WBS ID를 사용하여 WBS 할당을 취소하고 관련 데이터를 정리한다
+   *
+   * 실행 순서:
+   * 1. WBS 할당 상세 조회 (할당 ID 확인)
+   * 2. WBS_할당을_취소한다 메서드 호출 (내부에서 순차적으로 처리)
+   *    - 자기평가 삭제
+   *    - 평가기준 삭제 (마지막 할당인 경우)
+   *    - 평가라인 매핑 삭제
+   *    - WBS 할당 삭제
    */
   async WBS_할당을_WBS_ID로_취소한다(params: {
     employeeId: string;
@@ -1026,7 +1118,8 @@ export class WbsAssignmentBusinessService {
       wbsItemId,
       primaryEvaluator: employee.managerId,
       secondaryEvaluator:
-        projectManagerEmployeeId && projectManagerEmployeeId !== employee.managerId
+        projectManagerEmployeeId &&
+        projectManagerEmployeeId !== employee.managerId
           ? projectManagerEmployeeId
           : null,
     });

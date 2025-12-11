@@ -331,9 +331,9 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 : undefined;
             if (row.downward_evaluation_type === 'primary') {
                 evalData.primary = {
-                    evaluatorId: actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
-                    evaluatorName: actualEvaluatorName ||
-                        primaryEvaluator?.evaluatorName ||
+                    evaluatorId: primaryEvaluator?.evaluatorId || actualEvaluatorId || undefined,
+                    evaluatorName: primaryEvaluator?.evaluatorName ||
+                        actualEvaluatorName ||
                         '알 수 없음',
                     evaluationContent,
                     score,
@@ -343,9 +343,9 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             }
             else if (row.downward_evaluation_type === 'secondary') {
                 evalData.secondary = {
-                    evaluatorId: actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
-                    evaluatorName: actualEvaluatorName ||
-                        secondaryEvaluator?.evaluatorName ||
+                    evaluatorId: secondaryEvaluator?.evaluatorId || actualEvaluatorId || undefined,
+                    evaluatorName: secondaryEvaluator?.evaluatorName ||
+                        actualEvaluatorName ||
                         '알 수 없음',
                     evaluationContent,
                     score,

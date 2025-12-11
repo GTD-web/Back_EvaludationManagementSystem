@@ -132,9 +132,9 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
             if (!criteria) {
                 throw new wbs_evaluation_criteria_exceptions_1.WbsEvaluationCriteriaNotFoundException(id);
             }
-            criteria.deletedAt = new Date();
             criteria.수정자를_설정한다(deletedBy);
             await repository.save(criteria);
+            await repository.softDelete(id);
             this.logger.log(`WBS 평가 기준 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}`);
         }, '삭제한다');
     }
@@ -158,9 +158,9 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
                 where: { wbsItemId },
             });
             for (const criteria of criteriaList) {
-                criteria.deletedAt = new Date();
                 criteria.수정자를_설정한다(deletedBy);
                 await repository.save(criteria);
+                await repository.softDelete(criteria.id);
             }
             this.logger.log(`WBS 항목 평가 기준 전체 삭제 완료 - WBS 항목 ID: ${wbsItemId}, 삭제자: ${deletedBy}, 삭제된 기준 수: ${criteriaList.length}`);
         }, 'WBS항목_평가기준_전체삭제한다');

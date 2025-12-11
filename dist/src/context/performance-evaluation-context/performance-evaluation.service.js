@@ -189,7 +189,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             where: { id: submittedBy, deletedAt: null },
         });
         const submitterName = submitter?.name || '관리자';
-        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
+        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(undefined, evaluateeId, periodId, wbsId, 'primary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
             const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
@@ -204,8 +204,11 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             return;
         }
         const evaluation = result.evaluations[0];
-        if (!evaluation.downwardEvaluationContent?.trim()) {
-            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+        const needsUpdate = !evaluation.downwardEvaluationContent?.trim() ||
+            evaluation.evaluatorId !== actualPrimaryEvaluatorId;
+        if (needsUpdate) {
+            const defaultContent = evaluation.downwardEvaluationContent?.trim() ||
+                `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'primary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
@@ -223,7 +226,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             where: { id: submittedBy, deletedAt: null },
         });
         const submitterName = submitter?.name || '관리자';
-        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
+        const query = new downward_evaluation_1.GetDownwardEvaluationListQuery(undefined, evaluateeId, periodId, wbsId, 'secondary', undefined, 1, 1);
         const result = await this.queryBus.execute(query);
         if (!result.evaluations || result.evaluations.length === 0) {
             const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
@@ -238,8 +241,11 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
             return;
         }
         const evaluation = result.evaluations[0];
-        if (!evaluation.downwardEvaluationContent?.trim()) {
-            const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+        const needsUpdate = !evaluation.downwardEvaluationContent?.trim() ||
+            evaluation.evaluatorId !== actualSecondaryEvaluatorId;
+        if (needsUpdate) {
+            const defaultContent = evaluation.downwardEvaluationContent?.trim() ||
+                `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'secondary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
@@ -388,6 +394,11 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
     }
     async 프로젝트별_WBS자기평가_내용을_초기화한다(data) {
         const command = new self_evaluation_1.ClearWbsSelfEvaluationsByProjectCommand(data.employeeId, data.periodId, data.projectId, data.clearedBy);
+        const result = await this.commandBus.execute(command);
+        return result;
+    }
+    async WBS할당_자기평가를_삭제한다(data) {
+        const command = new self_evaluation_1.DeleteWbsSelfEvaluationsByAssignmentCommand(data.employeeId, data.periodId, data.wbsItemId, data.deletedBy);
         const result = await this.commandBus.execute(command);
         return result;
     }

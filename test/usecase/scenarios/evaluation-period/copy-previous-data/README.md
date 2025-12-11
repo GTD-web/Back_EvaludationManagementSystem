@@ -219,3 +219,4 @@ npm run test:e2e -- test/usecase/scenarios/evaluation-period/copy-previous-data/
 
 **이 테스트는 실제 사용 시나리오를 정확히 반영하며, 모든 케이스가 검증되었습니다.**
 
+

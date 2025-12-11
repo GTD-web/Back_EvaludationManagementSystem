@@ -132,35 +132,6 @@ let StepApprovalBusinessService = StepApprovalBusinessService_1 = class StepAppr
             updatedBy,
         });
         try {
-            await this.wbsSelfEvaluationBusinessService.자기평가_재작성요청_생성_및_제출상태_초기화(evaluationPeriodId, employeeId, revisionComment, updatedBy);
-            this.logger.log(`자기평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
-        }
-        catch (error) {
-            this.logger.warn(`자기평가 재작성 요청 생성 실패 (자기평가가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
-        }
-        try {
-            await this.downwardEvaluationBusinessService.일차_하향평가_재작성요청_생성_및_제출상태_초기화(evaluationPeriodId, employeeId, revisionComment, updatedBy);
-            this.logger.log(`1차 하향평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
-        }
-        catch (error) {
-            this.logger.warn(`1차 하향평가 재작성 요청 생성 실패 (1차 하향평가가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
-        }
-        try {
-            const secondaryEvaluators = await this.stepApprovalContextService.이차평가자들을_조회한다(evaluationPeriodId, employeeId);
-            for (const evaluatorId of secondaryEvaluators) {
-                try {
-                    await this.downwardEvaluationBusinessService.이차_하향평가_재작성요청_생성_및_제출상태_초기화(evaluationPeriodId, employeeId, evaluatorId, revisionComment, updatedBy);
-                    this.logger.log(`2차 하향평가 재작성 요청 생성 완료 - 직원: ${employeeId}, 평가자: ${evaluatorId}, 평가기간: ${evaluationPeriodId}`);
-                }
-                catch (error) {
-                    this.logger.warn(`2차 하향평가 재작성 요청 생성 실패 - 직원: ${employeeId}, 평가자: ${evaluatorId}`, error);
-                }
-            }
-        }
-        catch (error) {
-            this.logger.warn(`2차 하향평가 재작성 요청 생성 실패 (2차 평가자가 없을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
-        }
-        try {
             await this.activityLogContextService.단계승인_상태변경_활동내역을_기록한다({
                 evaluationPeriodId,
                 employeeId,

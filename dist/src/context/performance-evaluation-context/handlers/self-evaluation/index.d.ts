@@ -28,5 +28,7 @@ export { ClearAllWbsSelfEvaluationsByEmployeePeriodCommand, ClearAllWbsSelfEvalu
 export type { ClearAllWbsSelfEvaluationsResponse, ClearedWbsSelfEvaluationDetail, } from './commands/clear-all-wbs-self-evaluations.handler';
 export { ClearWbsSelfEvaluationsByProjectCommand, ClearWbsSelfEvaluationsByProjectHandler, } from './commands/clear-wbs-self-evaluations-by-project.handler';
 export type { ClearWbsSelfEvaluationsByProjectResponse, ClearedWbsSelfEvaluationByProjectDetail, } from './commands/clear-wbs-self-evaluations-by-project.handler';
+export { DeleteWbsSelfEvaluationsByAssignmentCommand, DeleteWbsSelfEvaluationsByAssignmentHandler, } from './commands/delete-wbs-self-evaluations-by-assignment.handler';
+export type { DeleteWbsSelfEvaluationsByAssignmentResponse, DeletedWbsSelfEvaluationDetail, } from './commands/delete-wbs-self-evaluations-by-assignment.handler';
 export { GetEmployeeSelfEvaluationsQuery, GetEmployeeSelfEvaluationsHandler, } from './queries/get-employee-self-evaluations.handler';
 export { GetWbsSelfEvaluationDetailQuery, GetWbsSelfEvaluationDetailHandler, } from './queries/get-wbs-self-evaluation-detail.handler';

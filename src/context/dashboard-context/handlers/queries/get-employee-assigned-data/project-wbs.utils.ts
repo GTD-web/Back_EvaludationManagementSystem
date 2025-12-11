@@ -483,14 +483,14 @@ export async function getProjectsWithWbs(
         : undefined;
 
       // 1차 평가: 평가자 ID와 무관하게 PRIMARY 타입 평가가 완료되었는지 확인
-      // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
+      // 항상 평가라인의 평가자 정보를 우선 사용 (DB에 잘못 저장된 경우 대응)
       if (row.downward_evaluation_type === 'primary') {
         evalData.primary = {
           evaluatorId:
-            actualEvaluatorId || primaryEvaluator?.evaluatorId || undefined,
+            primaryEvaluator?.evaluatorId || actualEvaluatorId || undefined,
           evaluatorName:
-            actualEvaluatorName ||
             primaryEvaluator?.evaluatorName ||
+            actualEvaluatorName ||
             '알 수 없음',
           evaluationContent,
           score,
@@ -499,14 +499,14 @@ export async function getProjectsWithWbs(
         };
       }
       // 2차 평가: 평가자 ID와 무관하게 SECONDARY 타입 평가가 완료되었는지 확인
-      // 실제 제출한 평가자의 정보 우선 사용, 없으면 평가라인의 평가자 정보 사용
+      // 항상 평가라인의 평가자 정보를 우선 사용 (DB에 잘못 저장된 경우 대응)
       else if (row.downward_evaluation_type === 'secondary') {
         evalData.secondary = {
           evaluatorId:
-            actualEvaluatorId || secondaryEvaluator?.evaluatorId || undefined,
+            secondaryEvaluator?.evaluatorId || actualEvaluatorId || undefined,
           evaluatorName:
-            actualEvaluatorName ||
             secondaryEvaluator?.evaluatorName ||
+            actualEvaluatorName ||
             '알 수 없음',
           evaluationContent,
           score,

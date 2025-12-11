@@ -6,7 +6,7 @@ import { SecondaryEvaluationStepApprovalService } from '@domain/sub/secondary-ev
 import { StepApprovalContextService } from '../step-approval-context/step-approval-context.service';
 import { Employee } from '@domain/common/employee/employee.entity';
 import { GetEmployeeSelfEvaluationsQuery, GetWbsSelfEvaluationDetailQuery } from './handlers/self-evaluation';
-import type { SubmitAllWbsSelfEvaluationsResponse, SubmitAllWbsSelfEvaluationsToEvaluatorResponse, SubmitAllWbsSelfEvaluationsForApprovalResponse, ResetAllWbsSelfEvaluationsResponse, SubmitWbsSelfEvaluationsByProjectResponse, SubmitWbsSelfEvaluationsToEvaluatorByProjectResponse, ResetWbsSelfEvaluationsByProjectResponse, ResetAllWbsSelfEvaluationsToEvaluatorResponse, ResetWbsSelfEvaluationsToEvaluatorByProjectResponse, ClearAllWbsSelfEvaluationsResponse, ClearWbsSelfEvaluationsByProjectResponse } from './handlers/self-evaluation';
+import type { SubmitAllWbsSelfEvaluationsResponse, SubmitAllWbsSelfEvaluationsToEvaluatorResponse, SubmitAllWbsSelfEvaluationsForApprovalResponse, ResetAllWbsSelfEvaluationsResponse, SubmitWbsSelfEvaluationsByProjectResponse, SubmitWbsSelfEvaluationsToEvaluatorByProjectResponse, ResetWbsSelfEvaluationsByProjectResponse, ResetAllWbsSelfEvaluationsToEvaluatorResponse, ResetWbsSelfEvaluationsToEvaluatorByProjectResponse, ClearAllWbsSelfEvaluationsResponse, ClearWbsSelfEvaluationsByProjectResponse, DeleteWbsSelfEvaluationsByAssignmentResponse } from './handlers/self-evaluation';
 import { GetPeerEvaluationDetailQuery, GetPeerEvaluationListQuery, GetEvaluatorAssignedEvaluateesQuery, type PeerEvaluationQuestionDetail } from './handlers/peer-evaluation';
 import { GetDownwardEvaluationDetailQuery, GetDownwardEvaluationListQuery } from './handlers/downward-evaluation';
 import { GetFinalEvaluationByEmployeePeriodQuery, GetFinalEvaluationListQuery, GetFinalEvaluationQuery } from './handlers/final-evaluation';
@@ -110,6 +110,12 @@ export declare class PerformanceEvaluationService implements IPerformanceEvaluat
         projectId: string;
         clearedBy?: string;
     }): Promise<ClearWbsSelfEvaluationsByProjectResponse>;
+    WBS할당_자기평가를_삭제한다(data: {
+        employeeId: string;
+        periodId: string;
+        wbsItemId: string;
+        deletedBy: string;
+    }): Promise<DeleteWbsSelfEvaluationsByAssignmentResponse>;
     동료평가에_질문그룹을_추가한다(peerEvaluationId: string, questionGroupId: string, startDisplayOrder: number, createdBy: string): Promise<string[]>;
     동료평가에_질문을_추가한다(peerEvaluationId: string, questionId: string, displayOrder: number, questionGroupId: string | undefined, createdBy: string): Promise<string>;
     동료평가에_질문을_매핑한다(peerEvaluationId: string, questionIds: string[], createdBy: string): Promise<string[]>;

@@ -287,17 +287,24 @@ export class SubmitAllWbsSelfEvaluationsToEvaluatorHandler
       };
 
       // 알림 전송 (새로 제출된 평가가 있을 경우에만)
+      // 서버리스 환경에서도 알림이 제대로 전송되도록 await 처리
       if (notSubmittedYet.length > 0) {
-        this.일차평가자에게_알림을전송한다(
-          employeeId,
-          periodId,
-          evaluationPeriod.name,
-        ).catch((error) => {
+        try {
+          await this.일차평가자에게_알림을전송한다(
+            employeeId,
+            periodId,
+            evaluationPeriod.name,
+          );
+          this.logger.log(
+            `WBS 자기평가 일괄 제출 알림 전송 완료 - employeeId: ${employeeId}, periodId: ${periodId}`,
+          );
+        } catch (error) {
           this.logger.error(
             'WBS 자기평가 일괄 제출 알림 전송 실패 (무시됨)',
             error.stack,
           );
-        });
+          // 알림 전송 실패는 전체 작업 실패로 간주하지 않음
+        }
       }
 
       return result;

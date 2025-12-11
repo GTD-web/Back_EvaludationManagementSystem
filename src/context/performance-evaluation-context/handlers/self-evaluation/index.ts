@@ -142,6 +142,15 @@ export type {
   ClearedWbsSelfEvaluationByProjectDetail,
 } from './commands/clear-wbs-self-evaluations-by-project.handler';
 
+export {
+  DeleteWbsSelfEvaluationsByAssignmentCommand,
+  DeleteWbsSelfEvaluationsByAssignmentHandler,
+} from './commands/delete-wbs-self-evaluations-by-assignment.handler';
+export type {
+  DeleteWbsSelfEvaluationsByAssignmentResponse,
+  DeletedWbsSelfEvaluationDetail,
+} from './commands/delete-wbs-self-evaluations-by-assignment.handler';
+
 // Queries
 export {
   GetEmployeeSelfEvaluationsQuery,

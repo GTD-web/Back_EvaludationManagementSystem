@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
+import { DeleteWbsSelfEvaluationsByAssignmentResponse } from '@context/performance-evaluation-context/handlers/self-evaluation';
 import { EmployeeService } from '@domain/common/employee/employee.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
@@ -206,24 +207,59 @@ export class WbsAssignmentBusinessService {
     const wbsItemId = assignment.wbsItemId;
     const periodId = assignment.periodId;
 
+    this.logger.log('WBS 할당 정보 확인 완료, 자기평가 삭제 시작', {
+      employeeId,
+      wbsItemId,
+      periodId,
+      hasPerformanceEvaluationService: !!this.performanceEvaluationService,
+    });
+
     // 2. 해당 WBS 항목의 자기평가 삭제
-    const deletionResult =
-      await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+    let deletionResult: DeleteWbsSelfEvaluationsByAssignmentResponse = {
+      deletedCount: 0,
+      deletedEvaluations: [],
+    };
+
+    try {
+      this.logger.log('자기평가 삭제 호출 시작');
+      deletionResult =
+        await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+          employeeId,
+          periodId,
+          wbsItemId,
+          deletedBy: params.cancelledBy,
+        });
+
+      this.logger.log('자기평가 삭제 호출 완료', {
+        deletedCount: deletionResult.deletedCount,
+        deletedEvaluations: deletionResult.deletedEvaluations,
+      });
+
+      if (deletionResult.deletedCount > 0) {
+        this.logger.log(
+          `WBS 할당 취소 시 자기평가 ${deletionResult.deletedCount}개 삭제`,
+          {
+            assignmentId: params.assignmentId,
+            wbsItemId,
+            deletedEvaluations: deletionResult.deletedEvaluations,
+          },
+        );
+      } else {
+        this.logger.log('삭제할 자기평가가 없습니다', {
+          employeeId,
+          periodId,
+          wbsItemId,
+        });
+      }
+    } catch (error) {
+      this.logger.error('자기평가 삭제 중 에러 발생', {
+        error: error.message,
+        stack: error.stack,
         employeeId,
         periodId,
         wbsItemId,
-        deletedBy: params.cancelledBy,
       });
-
-    if (deletionResult.deletedCount > 0) {
-      this.logger.log(
-        `WBS 할당 취소 시 자기평가 ${deletionResult.deletedCount}개 삭제`,
-        {
-          assignmentId: params.assignmentId,
-          wbsItemId,
-          deletedEvaluations: deletionResult.deletedEvaluations,
-        },
-      );
+      // 에러가 발생해도 WBS 할당 취소는 계속 진행
     }
 
     // 3. WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)

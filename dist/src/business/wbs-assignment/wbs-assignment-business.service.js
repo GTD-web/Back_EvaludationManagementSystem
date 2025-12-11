@@ -119,17 +119,51 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         const employeeId = assignment.employeeId;
         const wbsItemId = assignment.wbsItemId;
         const periodId = assignment.periodId;
-        const deletionResult = await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+        this.logger.log('WBS 할당 정보 확인 완료, 자기평가 삭제 시작', {
             employeeId,
-            periodId,
             wbsItemId,
-            deletedBy: params.cancelledBy,
+            periodId,
+            hasPerformanceEvaluationService: !!this.performanceEvaluationService,
         });
-        if (deletionResult.deletedCount > 0) {
-            this.logger.log(`WBS 할당 취소 시 자기평가 ${deletionResult.deletedCount}개 삭제`, {
-                assignmentId: params.assignmentId,
-                wbsItemId,
+        let deletionResult = {
+            deletedCount: 0,
+            deletedEvaluations: [],
+        };
+        try {
+            this.logger.log('자기평가 삭제 호출 시작');
+            deletionResult =
+                await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+                    employeeId,
+                    periodId,
+                    wbsItemId,
+                    deletedBy: params.cancelledBy,
+                });
+            this.logger.log('자기평가 삭제 호출 완료', {
+                deletedCount: deletionResult.deletedCount,
                 deletedEvaluations: deletionResult.deletedEvaluations,
+            });
+            if (deletionResult.deletedCount > 0) {
+                this.logger.log(`WBS 할당 취소 시 자기평가 ${deletionResult.deletedCount}개 삭제`, {
+                    assignmentId: params.assignmentId,
+                    wbsItemId,
+                    deletedEvaluations: deletionResult.deletedEvaluations,
+                });
+            }
+            else {
+                this.logger.log('삭제할 자기평가가 없습니다', {
+                    employeeId,
+                    periodId,
+                    wbsItemId,
+                });
+            }
+        }
+        catch (error) {
+            this.logger.error('자기평가 삭제 중 에러 발생', {
+                error: error.message,
+                stack: error.stack,
+                employeeId,
+                periodId,
+                wbsItemId,
             });
         }
         await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(params.assignmentId, params.cancelledBy);

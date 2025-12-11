@@ -130,8 +130,8 @@ let GetEmployeeAssignedDataHandler = class GetEmployeeAssignedDataHandler {
         }, 0);
         const totalSelfEvaluations = await this.selfEvaluationRepository
             .createQueryBuilder('self_eval')
-            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
-            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_wbs_assignment', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignment', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
             .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
             .andWhere('self_eval.employeeId = :employeeId', { employeeId })
             .andWhere('self_eval.deletedAt IS NULL')
@@ -139,8 +139,8 @@ let GetEmployeeAssignedDataHandler = class GetEmployeeAssignedDataHandler {
             .getCount();
         const submittedToEvaluatorCount = await this.selfEvaluationRepository
             .createQueryBuilder('self_eval')
-            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
-            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_wbs_assignment', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignment', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
             .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
             .andWhere('self_eval.employeeId = :employeeId', { employeeId })
             .andWhere('self_eval.submittedToEvaluator = :submittedToEvaluator', {
@@ -151,8 +151,8 @@ let GetEmployeeAssignedDataHandler = class GetEmployeeAssignedDataHandler {
             .getCount();
         const submittedToManagerCount = await this.selfEvaluationRepository
             .createQueryBuilder('self_eval')
-            .leftJoin('evaluation_wbs_assignments', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
-            .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_wbs_assignment', 'wbs_assignment', 'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL')
+            .leftJoin('evaluation_project_assignment', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
             .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
             .andWhere('self_eval.employeeId = :employeeId', { employeeId })
             .andWhere('self_eval.submittedToManager = :submittedToManager', {

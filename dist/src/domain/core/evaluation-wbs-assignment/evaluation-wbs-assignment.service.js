@@ -110,7 +110,7 @@ let EvaluationWbsAssignmentService = EvaluationWbsAssignmentService_1 = class Ev
             const repository = this.transactionManager.getRepository(evaluation_wbs_assignment_entity_1.EvaluationWbsAssignment, this.evaluationWbsAssignmentRepository, manager);
             const queryBuilder = repository.createQueryBuilder('assignment');
             queryBuilder.andWhere('assignment.deletedAt IS NULL');
-            queryBuilder.leftJoin('evaluation_project_assignments', 'projectAssignment', 'projectAssignment.projectId = assignment.projectId AND projectAssignment.periodId = assignment.periodId AND projectAssignment.employeeId = assignment.employeeId AND projectAssignment.deletedAt IS NULL');
+            queryBuilder.leftJoin('evaluation_project_assignment', 'projectAssignment', 'projectAssignment.projectId = assignment.projectId AND projectAssignment.periodId = assignment.periodId AND projectAssignment.employeeId = assignment.employeeId AND projectAssignment.deletedAt IS NULL');
             queryBuilder.andWhere('projectAssignment.id IS NOT NULL');
             if (filter.periodId) {
                 queryBuilder.andWhere('assignment.periodId = :periodId', {

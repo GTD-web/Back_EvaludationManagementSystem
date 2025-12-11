@@ -117,9 +117,9 @@ export class SubmitAllWbsSelfEvaluationsForApprovalHandler
           const validWbsIds = await manager
             .createQueryBuilder()
             .select('DISTINCT wbs_assignment.wbsItemId', 'wbsItemId')
-            .from('evaluation_wbs_assignments', 'wbs_assignment')
+            .from('evaluation_wbs_assignment', 'wbs_assignment')
             .leftJoin(
-              'evaluation_project_assignments',
+              'evaluation_project_assignment',
               'project_assignment',
               'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
             )

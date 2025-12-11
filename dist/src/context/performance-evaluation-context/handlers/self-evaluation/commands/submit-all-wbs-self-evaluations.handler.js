@@ -73,8 +73,8 @@ let SubmitAllWbsSelfEvaluationsByEmployeePeriodHandler = SubmitAllWbsSelfEvaluat
                 const validWbsIds = await manager
                     .createQueryBuilder()
                     .select('DISTINCT wbs_assignment.wbsItemId', 'wbsItemId')
-                    .from('evaluation_wbs_assignments', 'wbs_assignment')
-                    .leftJoin('evaluation_project_assignments', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+                    .from('evaluation_wbs_assignment', 'wbs_assignment')
+                    .leftJoin('evaluation_project_assignment', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
                     .where('wbs_assignment.periodId = :periodId', { periodId })
                     .andWhere('wbs_assignment.employeeId = :employeeId', { employeeId })
                     .andWhere('wbs_assignment.wbsItemId IN (:...wbsItemIds)', {

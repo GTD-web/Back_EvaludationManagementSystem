@@ -42,12 +42,12 @@ export async function calculateSelfEvaluationScore(
   const totalSelfEvaluations = await selfEvaluationRepository
     .createQueryBuilder('self_eval')
     .leftJoin(
-      'evaluation_wbs_assignments',
+      'evaluation_wbs_assignment',
       'wbs_assignment',
       'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
     )
     .leftJoin(
-      'evaluation_project_assignments',
+      'evaluation_project_assignment',
       'project_assignment',
       'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
     )

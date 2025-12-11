@@ -1,12 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
+import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { EmployeeService } from '@domain/common/employee/employee.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
-import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
 import { WbsItemStatus } from '@domain/common/wbs-item/wbs-item.types';
 import type {
@@ -30,12 +30,12 @@ export class WbsAssignmentBusinessService {
   constructor(
     private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
+    private readonly performanceEvaluationService: PerformanceEvaluationService,
     private readonly employeeService: EmployeeService,
     private readonly projectService: ProjectService,
     private readonly evaluationLineService: EvaluationLineService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
-    private readonly wbsSelfEvaluationService: WbsSelfEvaluationService,
     // private readonly notificationService: NotificationService, // TODO: 알림 서비스 추가 시 주입
     // private readonly organizationManagementService: OrganizationManagementService, // TODO: 조직 관리 서비스 추가 시 주입
   ) {}
@@ -206,29 +206,24 @@ export class WbsAssignmentBusinessService {
     const wbsItemId = assignment.wbsItemId;
     const periodId = assignment.periodId;
 
-    // 2. 해당 WBS 항목의 자기평가 조회 및 삭제
-    const selfEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
-      employeeId,
-      periodId,
-      wbsItemId,
-    });
-
-    // 2-1. 자기평가 삭제
-    for (const evaluation of selfEvaluations) {
-      await this.wbsSelfEvaluationService.삭제한다(
-        evaluation.id,
-        params.cancelledBy,
-      );
-      this.logger.debug(
-        `자기평가 삭제: ${evaluation.id} (WBS: ${wbsItemId})`,
-      );
-    }
-
-    if (selfEvaluations.length > 0) {
-      this.logger.log(`WBS 할당 취소 시 자기평가 ${selfEvaluations.length}개 삭제`, {
-        assignmentId: params.assignmentId,
+    // 2. 해당 WBS 항목의 자기평가 삭제
+    const deletionResult =
+      await this.performanceEvaluationService.WBS할당_자기평가를_삭제한다({
+        employeeId,
+        periodId,
         wbsItemId,
+        deletedBy: params.cancelledBy,
       });
+
+    if (deletionResult.deletedCount > 0) {
+      this.logger.log(
+        `WBS 할당 취소 시 자기평가 ${deletionResult.deletedCount}개 삭제`,
+        {
+          assignmentId: params.assignmentId,
+          wbsItemId,
+          deletedEvaluations: deletionResult.deletedEvaluations,
+        },
+      );
     }
 
     // 3. WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)
@@ -298,17 +293,20 @@ export class WbsAssignmentBusinessService {
     //   },
     // });
 
-    this.logger.log('WBS 할당 취소, 자기평가 삭제, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
-      assignmentId: params.assignmentId,
-      selfEvaluationsDeleted: selfEvaluations.length,
-      criteriaDeleted:
-        !remainingAssignments || remainingAssignments.length === 0,
-    });
+    this.logger.log(
+      'WBS 할당 취소, 자기평가 삭제, 평가라인 매핑 삭제 및 평가기준 정리 완료',
+      {
+        assignmentId: params.assignmentId,
+        selfEvaluationsDeleted: deletionResult.deletedCount,
+        criteriaDeleted:
+          !remainingAssignments || remainingAssignments.length === 0,
+      },
+    );
   }
 
   /**
    * WBS ID를 사용하여 WBS 할당을 취소하고 관련 데이터를 정리한다
-   * 
+   *
    * 자동 처리:
    * - 자기평가 삭제
    * - 평가라인 매핑 삭제
@@ -1061,7 +1059,8 @@ export class WbsAssignmentBusinessService {
       wbsItemId,
       primaryEvaluator: employee.managerId,
       secondaryEvaluator:
-        projectManagerEmployeeId && projectManagerEmployeeId !== employee.managerId
+        projectManagerEmployeeId &&
+        projectManagerEmployeeId !== employee.managerId
           ? projectManagerEmployeeId
           : null,
     });

@@ -226,9 +226,10 @@ export class WbsEvaluationCriteriaService
         updateData.importance !== undefined
       ) {
         // criteria가 undefined가 아닌 경우 (빈 문자열 포함) 업데이트
-        const newCriteria = updateData.criteria !== undefined 
-          ? updateData.criteria 
-          : criteria.criteria;
+        const newCriteria =
+          updateData.criteria !== undefined
+            ? updateData.criteria
+            : criteria.criteria;
         const newImportance = updateData.importance ?? criteria.importance;
         criteria.기준내용업데이트한다(newCriteria, newImportance, updatedBy);
       }
@@ -326,7 +327,7 @@ export class WbsEvaluationCriteriaService
         // 수정자 정보 먼저 업데이트
         criteria.수정자를_설정한다(deletedBy);
         await repository.save(criteria);
-        
+
         // TypeORM의 softDelete 메서드를 사용하여 안전하게 삭제
         await repository.softDelete(criteria.id);
       }
@@ -337,6 +338,3 @@ export class WbsEvaluationCriteriaService
     }, 'WBS항목_평가기준_전체삭제한다');
   }
 }
-
-
-

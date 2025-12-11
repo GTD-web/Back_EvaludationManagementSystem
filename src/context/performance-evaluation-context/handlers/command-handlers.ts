@@ -18,6 +18,7 @@ import { ResetWbsSelfEvaluationsToEvaluatorByProjectHandler } from './self-evalu
 import { ClearWbsSelfEvaluationHandler } from './self-evaluation/commands/clear-wbs-self-evaluation.handler';
 import { ClearAllWbsSelfEvaluationsByEmployeePeriodHandler } from './self-evaluation/commands/clear-all-wbs-self-evaluations.handler';
 import { ClearWbsSelfEvaluationsByProjectHandler } from './self-evaluation/commands/clear-wbs-self-evaluations-by-project.handler';
+import { DeleteWbsSelfEvaluationsByAssignmentHandler } from './self-evaluation/commands/delete-wbs-self-evaluations-by-assignment.handler';
 
 // 동료평가
 import {
@@ -88,6 +89,7 @@ export const CommandHandlers = [
   ClearWbsSelfEvaluationHandler,
   ClearAllWbsSelfEvaluationsByEmployeePeriodHandler,
   ClearWbsSelfEvaluationsByProjectHandler,
+  DeleteWbsSelfEvaluationsByAssignmentHandler,
 
   // 동료평가 커맨드 핸들러
   CreatePeerEvaluationHandler,

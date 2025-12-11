@@ -34,6 +34,7 @@ import {
   ClearWbsSelfEvaluationsByProjectCommand,
   UpdateWbsSelfEvaluationCommand,
   UpsertWbsSelfEvaluationCommand,
+  DeleteWbsSelfEvaluationsByAssignmentCommand,
 } from './handlers/self-evaluation';
 import type {
   SubmitAllWbsSelfEvaluationsResponse,
@@ -47,6 +48,7 @@ import type {
   ResetWbsSelfEvaluationsToEvaluatorByProjectResponse,
   ClearAllWbsSelfEvaluationsResponse,
   ClearWbsSelfEvaluationsByProjectResponse,
+  DeleteWbsSelfEvaluationsByAssignmentResponse,
 } from './handlers/self-evaluation';
 // 평가 수정 가능 상태 관련 커맨드
 import { UpdatePeriodAllEvaluationEditableStatusCommand } from './handlers/evaluation-editable-status';
@@ -1347,6 +1349,27 @@ export class PerformanceEvaluationService
       data.periodId,
       data.projectId,
       data.clearedBy,
+    );
+
+    const result = await this.commandBus.execute(command);
+    return result;
+  }
+
+  /**
+   * WBS 할당에 연결된 자기평가를 삭제한다
+   * WBS 할당 취소 시 관련 자기평가 데이터를 정리하는 용도로 사용합니다.
+   */
+  async WBS할당_자기평가를_삭제한다(data: {
+    employeeId: string;
+    periodId: string;
+    wbsItemId: string;
+    deletedBy: string;
+  }): Promise<DeleteWbsSelfEvaluationsByAssignmentResponse> {
+    const command = new DeleteWbsSelfEvaluationsByAssignmentCommand(
+      data.employeeId,
+      data.periodId,
+      data.wbsItemId,
+      data.deletedBy,
     );
 
     const result = await this.commandBus.execute(command);

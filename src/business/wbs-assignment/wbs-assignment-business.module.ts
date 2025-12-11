@@ -6,6 +6,7 @@ import { ProjectModule } from '@domain/common/project/project.module';
 import { EvaluationLineModule } from '@domain/core/evaluation-line/evaluation-line.module';
 import { EvaluationLineMappingModule } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { EvaluationWbsAssignmentModule } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module';
+import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.module';
 import { WbsAssignmentBusinessService } from './wbs-assignment-business.service';
 
 /**
@@ -20,6 +21,7 @@ import { WbsAssignmentBusinessService } from './wbs-assignment-business.service'
     EvaluationLineModule,
     EvaluationLineMappingModule,
     EvaluationWbsAssignmentModule,
+    WbsSelfEvaluationModule,
   ],
   providers: [WbsAssignmentBusinessService],
   exports: [WbsAssignmentBusinessService],

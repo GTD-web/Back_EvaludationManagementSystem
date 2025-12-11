@@ -5,6 +5,7 @@ import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
+import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import type { OrderDirection } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types';
 import type { WbsItemDto } from '@domain/common/wbs-item/wbs-item.types';
 export declare class WbsAssignmentBusinessService {
@@ -15,8 +16,9 @@ export declare class WbsAssignmentBusinessService {
     private readonly evaluationLineService;
     private readonly evaluationLineMappingService;
     private readonly evaluationWbsAssignmentService;
+    private readonly wbsSelfEvaluationService;
     private readonly logger;
-    constructor(evaluationCriteriaManagementService: EvaluationCriteriaManagementService, activityLogContextService: EvaluationActivityLogContextService, employeeService: EmployeeService, projectService: ProjectService, evaluationLineService: EvaluationLineService, evaluationLineMappingService: EvaluationLineMappingService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService);
+    constructor(evaluationCriteriaManagementService: EvaluationCriteriaManagementService, activityLogContextService: EvaluationActivityLogContextService, employeeService: EmployeeService, projectService: ProjectService, evaluationLineService: EvaluationLineService, evaluationLineMappingService: EvaluationLineMappingService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService, wbsSelfEvaluationService: WbsSelfEvaluationService);
     WBS를_할당한다(params: {
         employeeId: string;
         wbsItemId: string;

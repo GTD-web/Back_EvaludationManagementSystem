@@ -6,6 +6,7 @@ import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
+import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
 import { WbsItemStatus } from '@domain/common/wbs-item/wbs-item.types';
 import type {
@@ -34,6 +35,7 @@ export class WbsAssignmentBusinessService {
     private readonly evaluationLineService: EvaluationLineService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
+    private readonly wbsSelfEvaluationService: WbsSelfEvaluationService,
     // private readonly notificationService: NotificationService, // TODO: 알림 서비스 추가 시 주입
     // private readonly organizationManagementService: OrganizationManagementService, // TODO: 조직 관리 서비스 추가 시 주입
   ) {}
@@ -163,14 +165,16 @@ export class WbsAssignmentBusinessService {
   }
 
   /**
-   * WBS 할당을 취소하고 관련 평가기준을 정리한다
+   * WBS 할당을 취소하고 관련 데이터를 정리한다
    *
    * 비즈니스 규칙:
+   * - 해당 WBS 항목의 자기평가 자동 삭제
    * - 마지막 할당 취소 시 해당 WBS의 평가기준도 자동 삭제
+   * - 평가라인 매핑 자동 삭제
    *
    * 참고:
    * - 컨텍스트 레벨에서 멱등성 보장 (할당이 없어도 성공 처리)
-   * - 비즈니스 서비스는 평가기준 정리만 수행하므로, 할당이 없으면 조기 반환
+   * - 비즈니스 서비스는 관련 데이터 정리를 수행하므로, 할당이 없으면 조기 반환
    */
   async WBS_할당을_취소한다(params: {
     assignmentId: string;
@@ -202,13 +206,38 @@ export class WbsAssignmentBusinessService {
     const wbsItemId = assignment.wbsItemId;
     const periodId = assignment.periodId;
 
-    // 2. WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)
+    // 2. 해당 WBS 항목의 자기평가 조회 및 삭제
+    const selfEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
+      employeeId,
+      periodId,
+      wbsItemId,
+    });
+
+    // 2-1. 자기평가 삭제
+    for (const evaluation of selfEvaluations) {
+      await this.wbsSelfEvaluationService.삭제한다(
+        evaluation.id,
+        params.cancelledBy,
+      );
+      this.logger.debug(
+        `자기평가 삭제: ${evaluation.id} (WBS: ${wbsItemId})`,
+      );
+    }
+
+    if (selfEvaluations.length > 0) {
+      this.logger.log(`WBS 할당 취소 시 자기평가 ${selfEvaluations.length}개 삭제`, {
+        assignmentId: params.assignmentId,
+        wbsItemId,
+      });
+    }
+
+    // 3. WBS 할당 취소 (컨텍스트 호출 - 멱등성 보장됨)
     await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(
       params.assignmentId,
       params.cancelledBy,
     );
 
-    // 3. 해당 WBS에 대한 평가라인 매핑 삭제 (2차 평가자)
+    // 4. 해당 WBS에 대한 평가라인 매핑 삭제 (2차 평가자)
     await this.평가라인_매핑을_삭제한다(
       employeeId,
       wbsItemId,
@@ -216,14 +245,14 @@ export class WbsAssignmentBusinessService {
       params.cancelledBy,
     );
 
-    // 4. 해당 WBS 항목에 다른 할당이 있는지 확인
+    // 5. 해당 WBS 항목에 다른 할당이 있는지 확인
     const remainingAssignments =
       await this.evaluationCriteriaManagementService.특정_평가기간에_WBS_항목에_할당된_직원을_조회한다(
         wbsItemId,
         periodId,
       );
 
-    // 5. 마지막 할당이었다면 평가기준 삭제
+    // 6. 마지막 할당이었다면 평가기준 삭제
     if (!remainingAssignments || remainingAssignments.length === 0) {
       this.logger.log('마지막 WBS 할당이 취소되어 평가기준을 삭제합니다', {
         wbsItemId,
@@ -235,7 +264,7 @@ export class WbsAssignmentBusinessService {
       );
     }
 
-    // 6. 활동 내역 기록
+    // 7. 활동 내역 기록
     try {
       await this.activityLogContextService.활동내역을_기록한다({
         periodId,
@@ -259,7 +288,7 @@ export class WbsAssignmentBusinessService {
       });
     }
 
-    // 7. 알림 발송 (추후 구현)
+    // 8. 알림 발송 (추후 구현)
     // TODO: WBS 할당 취소 알림 발송
     // await this.notificationService.send({
     //   type: 'WBS_ASSIGNMENT_CANCELLED',
@@ -269,15 +298,21 @@ export class WbsAssignmentBusinessService {
     //   },
     // });
 
-    this.logger.log('WBS 할당 취소, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
+    this.logger.log('WBS 할당 취소, 자기평가 삭제, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
       assignmentId: params.assignmentId,
+      selfEvaluationsDeleted: selfEvaluations.length,
       criteriaDeleted:
         !remainingAssignments || remainingAssignments.length === 0,
     });
   }
 
   /**
-   * WBS ID를 사용하여 WBS 할당을 취소하고 관련 평가기준을 정리한다
+   * WBS ID를 사용하여 WBS 할당을 취소하고 관련 데이터를 정리한다
+   * 
+   * 자동 처리:
+   * - 자기평가 삭제
+   * - 평가라인 매핑 삭제
+   * - 평가기준 정리 (마지막 할당인 경우)
    */
   async WBS_할당을_WBS_ID로_취소한다(params: {
     employeeId: string;

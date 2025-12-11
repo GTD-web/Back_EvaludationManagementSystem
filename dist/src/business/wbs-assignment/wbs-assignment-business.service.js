@@ -19,6 +19,7 @@ const project_service_1 = require("../../domain/common/project/project.service")
 const evaluation_line_service_1 = require("../../domain/core/evaluation-line/evaluation-line.service");
 const evaluation_line_mapping_service_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const evaluation_wbs_assignment_service_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service");
+const wbs_self_evaluation_service_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.service");
 const evaluation_line_types_1 = require("../../domain/core/evaluation-line/evaluation-line.types");
 const wbs_item_types_1 = require("../../domain/common/wbs-item/wbs-item.types");
 let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAssignmentBusinessService {
@@ -29,8 +30,9 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
     evaluationLineService;
     evaluationLineMappingService;
     evaluationWbsAssignmentService;
+    wbsSelfEvaluationService;
     logger = new common_1.Logger(WbsAssignmentBusinessService_1.name);
-    constructor(evaluationCriteriaManagementService, activityLogContextService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService) {
+    constructor(evaluationCriteriaManagementService, activityLogContextService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService, wbsSelfEvaluationService) {
         this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
         this.activityLogContextService = activityLogContextService;
         this.employeeService = employeeService;
@@ -38,6 +40,7 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         this.evaluationLineService = evaluationLineService;
         this.evaluationLineMappingService = evaluationLineMappingService;
         this.evaluationWbsAssignmentService = evaluationWbsAssignmentService;
+        this.wbsSelfEvaluationService = wbsSelfEvaluationService;
     }
     async WBS를_할당한다(params) {
         this.logger.log('WBS 할당 비즈니스 로직 시작', {
@@ -116,6 +119,21 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         const employeeId = assignment.employeeId;
         const wbsItemId = assignment.wbsItemId;
         const periodId = assignment.periodId;
+        const selfEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
+            employeeId,
+            periodId,
+            wbsItemId,
+        });
+        for (const evaluation of selfEvaluations) {
+            await this.wbsSelfEvaluationService.삭제한다(evaluation.id, params.cancelledBy);
+            this.logger.debug(`자기평가 삭제: ${evaluation.id} (WBS: ${wbsItemId})`);
+        }
+        if (selfEvaluations.length > 0) {
+            this.logger.log(`WBS 할당 취소 시 자기평가 ${selfEvaluations.length}개 삭제`, {
+                assignmentId: params.assignmentId,
+                wbsItemId,
+            });
+        }
         await this.evaluationCriteriaManagementService.WBS_할당을_취소한다(params.assignmentId, params.cancelledBy);
         await this.평가라인_매핑을_삭제한다(employeeId, wbsItemId, periodId, params.cancelledBy);
         const remainingAssignments = await this.evaluationCriteriaManagementService.특정_평가기간에_WBS_항목에_할당된_직원을_조회한다(wbsItemId, periodId);
@@ -147,8 +165,9 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
                 error: error.message,
             });
         }
-        this.logger.log('WBS 할당 취소, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
+        this.logger.log('WBS 할당 취소, 자기평가 삭제, 평가라인 매핑 삭제 및 평가기준 정리 완료', {
             assignmentId: params.assignmentId,
+            selfEvaluationsDeleted: selfEvaluations.length,
             criteriaDeleted: !remainingAssignments || remainingAssignments.length === 0,
         });
     }
@@ -588,6 +607,7 @@ exports.WbsAssignmentBusinessService = WbsAssignmentBusinessService = WbsAssignm
         project_service_1.ProjectService,
         evaluation_line_service_1.EvaluationLineService,
         evaluation_line_mapping_service_1.EvaluationLineMappingService,
-        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService])
+        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService,
+        wbs_self_evaluation_service_1.WbsSelfEvaluationService])
 ], WbsAssignmentBusinessService);
 //# sourceMappingURL=wbs-assignment-business.service.js.map

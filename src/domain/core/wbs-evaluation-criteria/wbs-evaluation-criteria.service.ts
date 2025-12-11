@@ -263,9 +263,12 @@ export class WbsEvaluationCriteriaService
         throw new WbsEvaluationCriteriaNotFoundException(id);
       }
 
-      criteria.deletedAt = new Date();
+      // 수정자 정보 먼저 업데이트
       criteria.수정자를_설정한다(deletedBy);
       await repository.save(criteria);
+
+      // TypeORM의 softDelete 메서드를 사용하여 안전하게 삭제
+      await repository.softDelete(id);
 
       this.logger.log(
         `WBS 평가 기준 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}`,
@@ -320,9 +323,12 @@ export class WbsEvaluationCriteriaService
       });
 
       for (const criteria of criteriaList) {
-        criteria.deletedAt = new Date();
+        // 수정자 정보 먼저 업데이트
         criteria.수정자를_설정한다(deletedBy);
         await repository.save(criteria);
+        
+        // TypeORM의 softDelete 메서드를 사용하여 안전하게 삭제
+        await repository.softDelete(criteria.id);
       }
 
       this.logger.log(

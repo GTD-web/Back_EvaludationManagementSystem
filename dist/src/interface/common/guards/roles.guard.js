@@ -60,7 +60,7 @@ let RolesGuard = RolesGuard_1 = class RolesGuard {
                 throw new common_1.ForbiddenException(`이 작업을 수행할 권한이 없습니다. 필요한 역할: ${requiredRoles.join(', ')}`);
             }
         }
-        const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter((role) => userRoles.includes(role));
+        const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter((role) => userRoles.includes(role) && requiredRoles?.includes(role));
         if (rolesNeedingCheck.length > 0) {
             const isAccessible = await this.organizationManagementService.사번으로_관리자권한있는가(user.employeeNumber);
             if (!isAccessible) {

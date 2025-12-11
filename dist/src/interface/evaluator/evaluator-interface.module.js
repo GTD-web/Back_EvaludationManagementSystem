@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EvaluatorInterfaceModule = void 0;
 const common_1 = require("@nestjs/common");
-const core_1 = require("@nestjs/core");
 const business_module_1 = require("../../business/business.module");
 const audit_log_context_module_1 = require("../../context/audit-log-context/audit-log-context.module");
 const auth_context_module_1 = require("../../context/auth-context/auth-context.module");
@@ -26,7 +25,6 @@ const employee_module_1 = require("../../domain/common/employee/employee.module"
 const notification_1 = require("../../domain/common/notification");
 const system_setting_module_1 = require("../../domain/common/system-setting/system-setting.module");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
-const guards_1 = require("../common/guards");
 const evaluator_auth_controller_1 = require("./auth/evaluator-auth.controller");
 const evaluator_dashboard_controller_1 = require("./dashboard/evaluator-dashboard.controller");
 const evaluator_employee_management_controller_1 = require("./employee-management/evaluator-employee-management.controller");
@@ -83,18 +81,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             evaluator_revision_request_controller_1.EvaluatorRevisionRequestController,
             notification_controller_1.NotificationController,
         ],
-        providers: [
-            {
-                provide: guards_1.ROLES_GUARD_OPTIONS,
-                useValue: {
-                    rolesRequiringAccessibilityCheck: ['evaluator'],
-                },
-            },
-            {
-                provide: core_1.APP_GUARD,
-                useClass: guards_1.RolesGuard,
-            },
-        ],
+        providers: [],
         exports: [],
     })
 ], EvaluatorInterfaceModule);

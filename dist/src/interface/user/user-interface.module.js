@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserInterfaceModule = void 0;
 const common_1 = require("@nestjs/common");
-const core_1 = require("@nestjs/core");
 const business_module_1 = require("../../business/business.module");
 const audit_log_context_module_1 = require("../../context/audit-log-context/audit-log-context.module");
 const auth_context_module_1 = require("../../context/auth-context/auth-context.module");
@@ -25,7 +24,6 @@ const step_approval_context_module_1 = require("../../context/step-approval-cont
 const employee_module_1 = require("../../domain/common/employee/employee.module");
 const notification_1 = require("../../domain/common/notification");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
-const guards_1 = require("../common/guards");
 const user_auth_controller_1 = require("./auth/user-auth.controller");
 const user_dashboard_controller_1 = require("./dashboard/user-dashboard.controller");
 const user_wbs_assignment_management_controller_1 = require("./evaluation-criteria/user-wbs-assignment-management.controller");
@@ -71,18 +69,7 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             user_revision_request_controller_1.UserRevisionRequestController,
             notification_controller_1.NotificationController,
         ],
-        providers: [
-            {
-                provide: guards_1.ROLES_GUARD_OPTIONS,
-                useValue: {
-                    rolesRequiringAccessibilityCheck: ['user'],
-                },
-            },
-            {
-                provide: core_1.APP_GUARD,
-                useClass: guards_1.RolesGuard,
-            },
-        ],
+        providers: [],
         exports: [],
     })
 ], UserInterfaceModule);

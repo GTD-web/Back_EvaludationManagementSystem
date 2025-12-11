@@ -15,6 +15,7 @@ const auth_context_1 = require("../context/auth-context");
 const audit_log_context_module_1 = require("../context/audit-log-context/audit-log-context.module");
 const organization_management_context_1 = require("../context/organization-management-context");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
+const guards_1 = require("./common/guards");
 const audit_log_interceptor_1 = require("./common/interceptors/audit-log.interceptor");
 const user_interface_module_1 = require("./user/user-interface.module");
 const evaluator_interface_module_1 = require("./evaluator/evaluator-interface.module");
@@ -39,6 +40,16 @@ exports.InterfaceModule = InterfaceModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: jwt_auth_guard_1.JwtAuthGuard,
+            },
+            {
+                provide: guards_1.ROLES_GUARD_OPTIONS,
+                useValue: {
+                    rolesRequiringAccessibilityCheck: ['admin', 'user'],
+                },
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: guards_1.RolesGuard,
             },
             {
                 provide: core_1.APP_INTERCEPTOR,

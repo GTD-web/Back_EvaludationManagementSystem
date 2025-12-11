@@ -89,90 +89,82 @@ let SubmitAllWbsSelfEvaluationsToEvaluatorHandler = SubmitAllWbsSelfEvaluationsT
             if (evaluations.length === 0) {
                 throw new common_1.BadRequestException('제출할 자기평가가 존재하지 않습니다.');
             }
-            const completedEvaluations = [];
-            const failedEvaluations = [];
-            for (const evaluation of evaluations) {
-                try {
-                    if (evaluation.피평가자가_1차평가자에게_제출했는가()) {
-                        this.logger.debug(`이미 1차 평가자에게 제출된 평가 스킵 - ID: ${evaluation.id}`);
-                        completedEvaluations.push({
-                            evaluationId: evaluation.id,
-                            wbsItemId: evaluation.wbsItemId,
-                            selfEvaluationContent: evaluation.selfEvaluationContent,
-                            selfEvaluationScore: evaluation.selfEvaluationScore,
-                            performanceResult: evaluation.performanceResult,
-                            submittedToEvaluatorAt: evaluation.submittedToEvaluatorAt,
-                        });
-                        continue;
-                    }
-                    if (!evaluation.selfEvaluationContent ||
-                        !evaluation.selfEvaluationScore) {
-                        failedEvaluations.push({
-                            evaluationId: evaluation.id,
-                            wbsItemId: evaluation.wbsItemId,
-                            reason: '평가 내용과 점수가 입력되지 않았습니다.',
-                            selfEvaluationContent: evaluation.selfEvaluationContent,
-                            selfEvaluationScore: evaluation.selfEvaluationScore,
-                        });
-                        continue;
-                    }
-                    if (!evaluation.점수가_유효한가(maxScore)) {
-                        failedEvaluations.push({
-                            evaluationId: evaluation.id,
-                            wbsItemId: evaluation.wbsItemId,
-                            reason: `평가 점수가 유효하지 않습니다 (0 ~ ${maxScore} 사이여야 함).`,
-                            selfEvaluationContent: evaluation.selfEvaluationContent,
-                            selfEvaluationScore: evaluation.selfEvaluationScore,
-                        });
-                        continue;
-                    }
-                    await this.wbsSelfEvaluationService.피평가자가_1차평가자에게_제출한다(evaluation, submittedBy);
-                    const updatedEvaluation = await this.wbsSelfEvaluationService.조회한다(evaluation.id);
-                    if (!updatedEvaluation) {
-                        failedEvaluations.push({
-                            evaluationId: evaluation.id,
-                            wbsItemId: evaluation.wbsItemId,
-                            reason: '저장 후 조회 실패: 자기평가를 찾을 수 없습니다.',
-                            selfEvaluationContent: evaluation.selfEvaluationContent,
-                            selfEvaluationScore: evaluation.selfEvaluationScore,
-                        });
-                        continue;
-                    }
-                    completedEvaluations.push({
-                        evaluationId: updatedEvaluation.id,
-                        wbsItemId: updatedEvaluation.wbsItemId,
-                        selfEvaluationContent: updatedEvaluation.selfEvaluationContent,
-                        selfEvaluationScore: updatedEvaluation.selfEvaluationScore,
-                        performanceResult: updatedEvaluation.performanceResult,
-                        submittedToEvaluatorAt: updatedEvaluation.submittedToEvaluatorAt,
-                    });
-                    this.logger.debug(`평가 제출 처리 성공 - ID: ${evaluation.id}`);
-                }
-                catch (error) {
-                    this.logger.error(`평가 제출 처리 실패 - ID: ${evaluation.id}`, error);
-                    failedEvaluations.push({
+            const missingFieldsList = [];
+            const notSubmittedYet = evaluations.filter((e) => !e.피평가자가_1차평가자에게_제출했는가());
+            for (const evaluation of notSubmittedYet) {
+                const missingFields = {
+                    performanceResult: !evaluation.performanceResult?.trim(),
+                    selfEvaluationContent: !evaluation.selfEvaluationContent?.trim(),
+                    selfEvaluationScore: evaluation.selfEvaluationScore === undefined ||
+                        evaluation.selfEvaluationScore === null,
+                };
+                if (missingFields.performanceResult ||
+                    missingFields.selfEvaluationContent ||
+                    missingFields.selfEvaluationScore) {
+                    missingFieldsList.push({
                         evaluationId: evaluation.id,
                         wbsItemId: evaluation.wbsItemId,
-                        reason: error.message || '알 수 없는 오류가 발생했습니다.',
+                        missingFields,
+                    });
+                }
+                if (!missingFields.selfEvaluationScore &&
+                    !evaluation.점수가_유효한가(maxScore)) {
+                    throw new common_1.BadRequestException(`평가 점수가 유효하지 않습니다 (WBS ID: ${evaluation.wbsItemId}, 점수: ${evaluation.selfEvaluationScore}, 허용 범위: 0 ~ ${maxScore})`);
+                }
+            }
+            if (missingFieldsList.length > 0) {
+                const missingFieldsDetails = missingFieldsList
+                    .map((info) => {
+                    const fields = [];
+                    if (info.missingFields.performanceResult)
+                        fields.push('성과');
+                    if (info.missingFields.selfEvaluationContent)
+                        fields.push('자기평가 내용');
+                    if (info.missingFields.selfEvaluationScore)
+                        fields.push('자기평가 점수');
+                    return `  - WBS ID: ${info.wbsItemId} → 미작성: ${fields.join(', ')}`;
+                })
+                    .join('\n');
+                throw new common_1.BadRequestException(`자기평가를 제출하려면 모든 필수 항목을 작성해야 합니다.\n\n미작성 항목:\n${missingFieldsDetails}\n\n작성해야 할 항목: 성과, 자기평가 내용, 자기평가 점수`);
+            }
+            const completedEvaluations = [];
+            for (const evaluation of evaluations) {
+                if (evaluation.피평가자가_1차평가자에게_제출했는가()) {
+                    this.logger.debug(`이미 1차 평가자에게 제출된 평가 포함 - ID: ${evaluation.id}`);
+                    completedEvaluations.push({
+                        evaluationId: evaluation.id,
+                        wbsItemId: evaluation.wbsItemId,
                         selfEvaluationContent: evaluation.selfEvaluationContent,
                         selfEvaluationScore: evaluation.selfEvaluationScore,
+                        performanceResult: evaluation.performanceResult,
+                        submittedToEvaluatorAt: evaluation.submittedToEvaluatorAt,
                     });
                 }
             }
+            for (const evaluation of notSubmittedYet) {
+                await this.wbsSelfEvaluationService.피평가자가_1차평가자에게_제출한다(evaluation, submittedBy);
+                const updatedEvaluation = await this.wbsSelfEvaluationService.조회한다(evaluation.id);
+                if (!updatedEvaluation) {
+                    throw new Error(`제출 후 자기평가를 찾을 수 없습니다. (ID: ${evaluation.id})`);
+                }
+                completedEvaluations.push({
+                    evaluationId: updatedEvaluation.id,
+                    wbsItemId: updatedEvaluation.wbsItemId,
+                    selfEvaluationContent: updatedEvaluation.selfEvaluationContent,
+                    selfEvaluationScore: updatedEvaluation.selfEvaluationScore,
+                    performanceResult: updatedEvaluation.performanceResult,
+                    submittedToEvaluatorAt: updatedEvaluation.submittedToEvaluatorAt,
+                });
+                this.logger.debug(`평가 제출 처리 성공 - ID: ${evaluation.id}`);
+            }
             const result = {
-                submittedCount: completedEvaluations.length,
-                failedCount: failedEvaluations.length,
+                submittedCount: notSubmittedYet.length,
+                failedCount: 0,
                 totalCount: evaluations.length,
                 completedEvaluations,
-                failedEvaluations,
+                failedEvaluations: [],
             };
-            if (failedEvaluations.length > 0) {
-                this.logger.warn('일부 평가 제출 실패', {
-                    failedCount: failedEvaluations.length,
-                    failures: failedEvaluations,
-                });
-            }
-            if (completedEvaluations.length > 0) {
+            if (notSubmittedYet.length > 0) {
                 this.일차평가자에게_알림을전송한다(employeeId, periodId, evaluationPeriod.name).catch((error) => {
                     this.logger.error('WBS 자기평가 일괄 제출 알림 전송 실패 (무시됨)', error.stack);
                 });

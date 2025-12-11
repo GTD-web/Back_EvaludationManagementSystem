@@ -165,9 +165,13 @@ let SubmitAllWbsSelfEvaluationsToEvaluatorHandler = SubmitAllWbsSelfEvaluationsT
                 failedEvaluations: [],
             };
             if (notSubmittedYet.length > 0) {
-                this.일차평가자에게_알림을전송한다(employeeId, periodId, evaluationPeriod.name).catch((error) => {
+                try {
+                    await this.일차평가자에게_알림을전송한다(employeeId, periodId, evaluationPeriod.name);
+                    this.logger.log(`WBS 자기평가 일괄 제출 알림 전송 완료 - employeeId: ${employeeId}, periodId: ${periodId}`);
+                }
+                catch (error) {
                     this.logger.error('WBS 자기평가 일괄 제출 알림 전송 실패 (무시됨)', error.stack);
-                });
+                }
             }
             return result;
         });

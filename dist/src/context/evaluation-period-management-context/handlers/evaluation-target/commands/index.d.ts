@@ -12,4 +12,4 @@ import { IncludeEvaluationTargetHandler } from './include-evaluation-target.hand
 import { UnregisterEvaluationTargetHandler } from './unregister-evaluation-target.handler';
 import { UnregisterAllEvaluationTargetsHandler } from './unregister-all-evaluation-targets.handler';
 import { RegisterEvaluationTargetWithAutoEvaluatorHandler } from './register-evaluation-target-with-auto-evaluator.handler';
-export declare const EVALUATION_TARGET_COMMAND_HANDLERS: (typeof RegisterEvaluationTargetWithAutoEvaluatorHandler | typeof RegisterEvaluationTargetHandler | typeof RegisterBulkEvaluationTargetsHandler | typeof ExcludeEvaluationTargetHandler | typeof IncludeEvaluationTargetHandler | typeof UnregisterEvaluationTargetHandler | typeof UnregisterAllEvaluationTargetsHandler)[];
+export declare const EVALUATION_TARGET_COMMAND_HANDLERS: (typeof RegisterEvaluationTargetHandler | typeof RegisterEvaluationTargetWithAutoEvaluatorHandler | typeof RegisterBulkEvaluationTargetsHandler | typeof ExcludeEvaluationTargetHandler | typeof IncludeEvaluationTargetHandler | typeof UnregisterEvaluationTargetHandler | typeof UnregisterAllEvaluationTargetsHandler)[];

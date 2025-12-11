@@ -55,31 +55,40 @@ let SubmitWbsSelfEvaluationsByProjectHandler = SubmitWbsSelfEvaluationsByProject
                 throw new common_1.BadRequestException(`평가기간을 찾을 수 없습니다. (periodId: ${periodId})`);
             }
             const maxScore = evaluationPeriod.자기평가_달성률_최대값();
-            const assignments = await this.evaluationWbsAssignmentService.필터_조회한다({
-                employeeId,
-                periodId,
-                projectId,
-            });
-            if (assignments.length === 0) {
-                throw new common_1.BadRequestException('해당 프로젝트에 할당된 WBS가 존재하지 않습니다.');
-            }
-            const wbsItemIds = assignments.map((assignment) => assignment.wbsItemId);
-            this.logger.debug('할당된 WBS 항목 개수', {
-                count: wbsItemIds.length,
-                wbsItemIds,
-            });
-            const evaluations = await this.wbsSelfEvaluationService.필터_조회한다({
+            const allEvaluations = await this.wbsSelfEvaluationService.필터_조회한다({
                 employeeId,
                 periodId,
             });
-            const projectEvaluations = evaluations.filter((evaluation) => wbsItemIds.includes(evaluation.wbsItemId));
+            const projectEvaluations = await this.transactionManager.executeTransaction(async (manager) => {
+                const wbsItemIds = allEvaluations.map((e) => e.wbsItemId);
+                if (wbsItemIds.length === 0) {
+                    return [];
+                }
+                const validWbsIds = await manager
+                    .createQueryBuilder()
+                    .select('DISTINCT wbs_assignment.wbsItemId', 'wbsItemId')
+                    .from('evaluation_wbs_assignment', 'wbs_assignment')
+                    .leftJoin('evaluation_project_assignment', 'project_assignment', 'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL')
+                    .where('wbs_assignment.periodId = :periodId', { periodId })
+                    .andWhere('wbs_assignment.employeeId = :employeeId', { employeeId })
+                    .andWhere('wbs_assignment.projectId = :projectId', { projectId })
+                    .andWhere('wbs_assignment.wbsItemId IN (:...wbsItemIds)', {
+                    wbsItemIds,
+                })
+                    .andWhere('wbs_assignment.deletedAt IS NULL')
+                    .andWhere('project_assignment.id IS NOT NULL')
+                    .getRawMany();
+                const validWbsIdSet = new Set(validWbsIds.map((row) => row.wbsItemId));
+                this.logger.debug('프로젝트별 유효한 WBS 항목', {
+                    totalWbsCount: wbsItemIds.length,
+                    validWbsCount: validWbsIdSet.size,
+                    projectId,
+                });
+                return allEvaluations.filter((e) => validWbsIdSet.has(e.wbsItemId));
+            });
             if (projectEvaluations.length === 0) {
-                throw new common_1.BadRequestException('제출할 자기평가가 존재하지 않습니다.');
+                throw new common_1.BadRequestException('해당 프로젝트에 제출할 자기평가가 존재하지 않습니다. (취소된 프로젝트 할당의 WBS는 제외됨)');
             }
-            this.logger.debug('프로젝트 자기평가 개수', {
-                totalEvaluations: evaluations.length,
-                projectEvaluations: projectEvaluations.length,
-            });
             const completedEvaluations = [];
             const failedEvaluations = [];
             for (const evaluation of projectEvaluations) {

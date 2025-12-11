@@ -27,6 +27,16 @@ export interface FailedWbsSelfEvaluationToEvaluator {
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
 }
+export interface MissingFieldInfo {
+    evaluationId: string;
+    wbsItemId: string;
+    wbsItemName?: string;
+    missingFields: {
+        performanceResult: boolean;
+        selfEvaluationContent: boolean;
+        selfEvaluationScore: boolean;
+    };
+}
 export interface SubmitAllWbsSelfEvaluationsToEvaluatorResponse {
     submittedCount: number;
     failedCount: number;

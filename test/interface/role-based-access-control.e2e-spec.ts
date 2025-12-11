@@ -263,19 +263,21 @@ describe('역할 기반 접근 제어(RBAC) E2E 테스트', () => {
       orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(true);
     });
 
-    it('evaluator 역할은 isAccessible 체크하므로 false면 접근 차단', async () => {
+    it('evaluator 역할은 isAccessible 체크하지 않으므로 false여도 접근 가능', async () => {
       testSuite.setCurrentUser(evaluatorUser);
 
       // OrganizationManagementService의 사번으로_관리자권한있는가 모킹을 false로 변경
       const orgService = testSuite.getOrganizationManagementService();
       orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(false);
 
+      // isAccessible=false여도 evaluator 엔드포인트 접근 가능
       const response = await testSuite
         .request()
         .get('/evaluator/auth/me')
-        .expect(403);
+        .expect(200);
 
-      expect(response.body.message).toContain('평가자');
+      expect(response.body).toHaveProperty('email', evaluatorUser.email);
+      expect(response.body.roles).toContain('evaluator');
 
       // 원복
       orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(true);
@@ -294,6 +296,37 @@ describe('역할 기반 접근 제어(RBAC) E2E 테스트', () => {
         .expect(403);
 
       expect(response.body.message).toContain('유저');
+
+      // 원복
+      orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(true);
+    });
+
+    it('admin + evaluator + user 역할이 있지만 isAccessible=false인 경우: evaluator 엔드포인트만 접근 가능', async () => {
+      testSuite.setCurrentUser({
+        ...adminUser,
+        roles: ['admin', 'evaluator', 'user'],
+      });
+
+      // OrganizationManagementService의 사번으로_관리자권한있는가 모킹을 false로 변경
+      const orgService = testSuite.getOrganizationManagementService();
+      orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(false);
+
+      // evaluator 엔드포인트는 접근 가능 (isAccessible 체크 안 함)
+      await testSuite.request().get('/evaluator/auth/me').expect(200);
+
+      // admin 엔드포인트는 접근 차단 (isAccessible 체크함)
+      const adminResponse = await testSuite
+        .request()
+        .get('/admin/auth/me')
+        .expect(403);
+      expect(adminResponse.body.message).toContain('관리자');
+
+      // user 엔드포인트는 접근 차단 (isAccessible 체크함)
+      const userResponse = await testSuite
+        .request()
+        .get('/user/auth/me')
+        .expect(403);
+      expect(userResponse.body.message).toContain('유저');
 
       // 원복
       orgService.사번으로_관리자권한있는가 = jest.fn().mockResolvedValue(true);

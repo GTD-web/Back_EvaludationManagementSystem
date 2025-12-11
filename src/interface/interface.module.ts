@@ -6,6 +6,7 @@ import { AuthContextModule } from '@context/auth-context';
 import { AuditLogContextModule } from '@context/audit-log-context/audit-log-context.module';
 import { OrganizationManagementContextModule } from '@context/organization-management-context';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_GUARD_OPTIONS } from './common/guards';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { UserInterfaceModule } from './user/user-interface.module';
 import { EvaluatorInterfaceModule } from './evaluator/evaluator-interface.module';
@@ -38,6 +39,18 @@ import { PublicInterfaceModule } from './public/public-interface.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // JWT 인증 가드를 전역으로 적용
+    },
+    {
+      provide: ROLES_GUARD_OPTIONS,
+      useValue: {
+        // admin과 user 역할은 isAccessible 체크 수행
+        // evaluator 역할은 isAccessible 체크 하지 않음
+        rolesRequiringAccessibilityCheck: ['admin', 'user'],
+      },
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // 역할 기반 접근 제어 가드를 전역으로 적용
     },
     {
       provide: APP_INTERCEPTOR,

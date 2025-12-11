@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { BusinessModule } from '../../business/business.module';
 import { AuditLogContextModule } from '../../context/audit-log-context/audit-log-context.module';
 import { AuthContextModule } from '../../context/auth-context/auth-context.module';
@@ -17,7 +16,6 @@ import { EmployeeModule } from '../../domain/common/employee/employee.module';
 import { NotificationModule } from '../../domain/common/notification';
 import { SystemSettingModule } from '../../domain/common/system-setting/system-setting.module';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
-import { ROLES_GUARD_OPTIONS, RolesGuard } from '../common/guards';
 import { EvaluatorAuthController } from './auth/evaluator-auth.controller';
 import { EvaluatorDashboardController } from './dashboard/evaluator-dashboard.controller';
 import { EvaluatorEmployeeManagementController } from './employee-management/evaluator-employee-management.controller';
@@ -77,19 +75,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     EvaluatorRevisionRequestController,
     NotificationController,
   ],
-  providers: [
-    {
-      provide: ROLES_GUARD_OPTIONS,
-      useValue: {
-        // evaluator 역할에 대해 접근 가능 여부 확인 수행
-        rolesRequiringAccessibilityCheck: ['evaluator'],
-      },
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+  providers: [],
   exports: [],
 })
 export class EvaluatorInterfaceModule {}

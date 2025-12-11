@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { BusinessModule } from '../../business/business.module';
 import { AuditLogContextModule } from '../../context/audit-log-context/audit-log-context.module';
 import { AuthContextModule } from '../../context/auth-context/auth-context.module';
@@ -16,7 +15,6 @@ import { StepApprovalContextModule } from '../../context/step-approval-context/s
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
 import { NotificationModule } from '../../domain/common/notification';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
-import { ROLES_GUARD_OPTIONS, RolesGuard } from '../common/guards';
 import { UserAuthController } from './auth/user-auth.controller';
 import { UserDashboardController } from './dashboard/user-dashboard.controller';
 import { UserWbsAssignmentManagementController } from './evaluation-criteria/user-wbs-assignment-management.controller';
@@ -65,19 +63,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     UserRevisionRequestController,
     NotificationController,
   ],
-  providers: [
-    {
-      provide: ROLES_GUARD_OPTIONS,
-      useValue: {
-        // user 역할에 대해 접근 가능 여부 확인 수행
-        rolesRequiringAccessibilityCheck: ['user'],
-      },
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+  providers: [],
   exports: [],
 })
 export class UserInterfaceModule {}

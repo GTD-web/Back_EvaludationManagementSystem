@@ -178,35 +178,68 @@ export class GetEmployeeAssignedDataHandler
     }, 0);
 
     // 전체 자기평가 수 및 제출 상태 조회
-    const totalSelfEvaluations = await this.selfEvaluationRepository.count({
-      where: {
-        periodId: evaluationPeriodId,
-        employeeId: employeeId,
-        deletedAt: null as any,
-      },
-    });
+    // 소프트 딜리트된 프로젝트 할당에 속한 WBS 자기평가 제외
+    const totalSelfEvaluations = await this.selfEvaluationRepository
+      .createQueryBuilder('self_eval')
+      .leftJoin(
+        'evaluation_wbs_assignment',
+        'wbs_assignment',
+        'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
+      )
+      .leftJoin(
+        'evaluation_project_assignment',
+        'project_assignment',
+        'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+      )
+      .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+      .andWhere('self_eval.deletedAt IS NULL')
+      .andWhere('project_assignment.id IS NOT NULL')
+      .getCount();
 
     // 1차 평가자에게 제출된 자기평가 수
-    const submittedToEvaluatorCount = await this.selfEvaluationRepository.count(
-      {
-        where: {
-          periodId: evaluationPeriodId,
-          employeeId: employeeId,
-          submittedToEvaluator: true,
-          deletedAt: null as any,
-        },
-      },
-    );
+    const submittedToEvaluatorCount = await this.selfEvaluationRepository
+      .createQueryBuilder('self_eval')
+      .leftJoin(
+        'evaluation_wbs_assignment',
+        'wbs_assignment',
+        'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
+      )
+      .leftJoin(
+        'evaluation_project_assignment',
+        'project_assignment',
+        'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+      )
+      .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+      .andWhere('self_eval.submittedToEvaluator = :submittedToEvaluator', {
+        submittedToEvaluator: true,
+      })
+      .andWhere('self_eval.deletedAt IS NULL')
+      .andWhere('project_assignment.id IS NOT NULL')
+      .getCount();
 
     // 관리자에게 제출된 자기평가 수 (완료된 자기평가)
-    const submittedToManagerCount = await this.selfEvaluationRepository.count({
-      where: {
-        periodId: evaluationPeriodId,
-        employeeId: employeeId,
+    const submittedToManagerCount = await this.selfEvaluationRepository
+      .createQueryBuilder('self_eval')
+      .leftJoin(
+        'evaluation_wbs_assignment',
+        'wbs_assignment',
+        'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
+      )
+      .leftJoin(
+        'evaluation_project_assignment',
+        'project_assignment',
+        'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+      )
+      .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+      .andWhere('self_eval.submittedToManager = :submittedToManager', {
         submittedToManager: true,
-        deletedAt: null as any,
-      },
-    });
+      })
+      .andWhere('self_eval.deletedAt IS NULL')
+      .andWhere('project_assignment.id IS NOT NULL')
+      .getCount();
 
     const completedSelfEvaluations = submittedToManagerCount;
 

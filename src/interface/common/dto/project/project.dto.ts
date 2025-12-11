@@ -147,23 +147,20 @@ export class CreateProjectDto {
       '• orderLevel=1: 상위 프로젝트 직속 하위\n' +
       '• orderLevel=2: orderLevel=1 중 마지막 프로젝트의 하위\n' +
       '• orderLevel=3: orderLevel=2 중 마지막 프로젝트의 하위\n' +
-      '• 각 하위마다 다른 managerId(PM) 지정 가능',
+      '• ⭐ 모든 하위는 최상위 프로젝트의 PM으로 자동 설정됩니다 (managerId 입력해도 무시됨)',
     type: [ChildProjectInputDto],
     example: [
       {
         orderLevel: 1,
         name: 'EMS 프로젝트 - 1차 하위 A',
-        managerId: '550e8400-e29b-41d4-a716-446655440000',
       },
       {
         orderLevel: 1,
         name: 'EMS 프로젝트 - 1차 하위 B',
-        managerId: '660e9500-f30c-52e5-b827-557766551111',
       },
       {
         orderLevel: 2,
         name: 'EMS 프로젝트 - 2차 하위',
-        managerId: '770ea600-g40d-63f6-c938-668877662222',
       },
     ],
   })
@@ -182,7 +179,8 @@ export class CreateProjectsBulkDto {
     description:
       '생성할 프로젝트 목록\n' +
       '• 각 프로젝트마다 childProjects로 하위 프로젝트를 함께 생성 가능\n' +
-      '• orderLevel로 계층 구조 형성 (같은 레벨은 형제 관계)',
+      '• orderLevel로 계층 구조 형성 (같은 레벨은 형제 관계)\n' +
+      '• ⭐ 각 프로젝트의 하위들은 해당 최상위 PM으로 자동 설정됩니다',
     type: [CreateProjectDto],
     example: [
       {
@@ -196,17 +194,14 @@ export class CreateProjectsBulkDto {
           {
             orderLevel: 1,
             name: 'EMS 프로젝트 - 백엔드',
-            managerId: '660e9500-f30c-52e5-b827-557766551111',
           },
           {
             orderLevel: 1,
             name: 'EMS 프로젝트 - 프론트엔드',
-            managerId: '770ea600-g40d-63f6-c938-668877662222',
           },
           {
             orderLevel: 2,
             name: 'EMS 프로젝트 - API 개발',
-            managerId: '880fb700-h50e-74g7-d049-779988773333',
           },
         ],
       },
@@ -221,12 +216,10 @@ export class CreateProjectsBulkDto {
           {
             orderLevel: 1,
             name: 'HRM 프로젝트 - 인사관리',
-            managerId: '990gc800-i60f-85h8-e150-880099884444',
           },
           {
             orderLevel: 1,
             name: 'HRM 프로젝트 - 급여관리',
-            managerId: 'aa0hd900-j70g-96i9-f261-991100995555',
           },
         ],
       },
@@ -309,7 +302,7 @@ export class UpdateProjectDto {
       '하위 프로젝트 목록 (평면 구조)\n' +
       '• 기존 하위 프로젝트를 모두 삭제하고 새로 생성\n' +
       '• 같은 orderLevel은 형제 관계\n' +
-      '• 각 하위마다 다른 managerId(PM) 지정\n' +
+      '• ⭐ 모든 하위는 최상위 프로젝트의 PM으로 자동 설정됩니다 (managerId 입력해도 무시됨)\n' +
       '• undefined: 하위 변경 없음\n' +
       '• []: 모든 하위 삭제',
     type: [ChildProjectInputDto],

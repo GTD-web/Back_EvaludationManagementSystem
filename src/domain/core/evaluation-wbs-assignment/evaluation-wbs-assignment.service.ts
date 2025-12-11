@@ -231,6 +231,14 @@ export class EvaluationWbsAssignmentService
       // Soft Delete 필터 (삭제되지 않은 항목만 조회)
       queryBuilder.andWhere('assignment.deletedAt IS NULL');
 
+      // 소프트 딜리트된 프로젝트 할당 제외
+      queryBuilder.leftJoin(
+        'evaluation_project_assignment',
+        'projectAssignment',
+        'projectAssignment.projectId = assignment.projectId AND projectAssignment.periodId = assignment.periodId AND projectAssignment.employeeId = assignment.employeeId AND projectAssignment.deletedAt IS NULL',
+      );
+      queryBuilder.andWhere('projectAssignment.id IS NOT NULL');
+
       if (filter.periodId) {
         queryBuilder.andWhere('assignment.periodId = :periodId', {
           periodId: filter.periodId,

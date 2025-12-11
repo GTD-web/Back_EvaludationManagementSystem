@@ -10,4 +10,4 @@ import { GetEmployeeEvaluationPeriodsHandler } from './get-employee-evaluation-p
 import { CheckEvaluationTargetHandler } from './check-evaluation-target.handler';
 import { GetEvaluationTargetsByFilterHandler } from './get-evaluation-targets-by-filter.handler';
 import { GetUnregisteredEmployeesHandler } from './get-unregistered-employees.handler';
-export declare const EVALUATION_TARGET_QUERY_HANDLERS: (typeof GetEvaluationTargetsHandler | typeof GetExcludedEvaluationTargetsHandler | typeof GetEmployeeEvaluationPeriodsHandler | typeof CheckEvaluationTargetHandler | typeof GetUnregisteredEmployeesHandler | typeof GetEvaluationTargetsByFilterHandler)[];
+export declare const EVALUATION_TARGET_QUERY_HANDLERS: (typeof GetEvaluationTargetsHandler | typeof GetExcludedEvaluationTargetsHandler | typeof GetEmployeeEvaluationPeriodsHandler | typeof CheckEvaluationTargetHandler | typeof GetEvaluationTargetsByFilterHandler | typeof GetUnregisteredEmployeesHandler)[];

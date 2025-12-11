@@ -164,8 +164,10 @@ export class RolesGuard implements CanActivate {
     }
 
     // 접근 가능 여부 확인이 필요한 역할인지 확인 (2중 보안)
+    // 현재 엔드포인트가 요구하는 역할(requiredRoles)과
+    // isAccessible 체크가 필요한 역할(rolesRequiringAccessibilityCheck)의 교집합만 체크
     const rolesNeedingCheck = this.rolesRequiringAccessibilityCheck.filter(
-      (role) => userRoles.includes(role),
+      (role) => userRoles.includes(role) && requiredRoles?.includes(role),
     );
 
     if (rolesNeedingCheck.length > 0) {

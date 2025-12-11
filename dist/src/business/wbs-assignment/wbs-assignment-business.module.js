@@ -10,12 +10,12 @@ exports.WbsAssignmentBusinessModule = void 0;
 const common_1 = require("@nestjs/common");
 const evaluation_criteria_management_context_module_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management-context.module");
 const evaluation_activity_log_context_module_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.module");
+const performance_evaluation_context_module_1 = require("../../context/performance-evaluation-context/performance-evaluation-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
 const project_module_1 = require("../../domain/common/project/project.module");
 const evaluation_line_module_1 = require("../../domain/core/evaluation-line/evaluation-line.module");
 const evaluation_line_mapping_module_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module");
 const evaluation_wbs_assignment_module_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module");
-const wbs_self_evaluation_module_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.module");
 const wbs_assignment_business_service_1 = require("./wbs-assignment-business.service");
 let WbsAssignmentBusinessModule = class WbsAssignmentBusinessModule {
 };
@@ -25,12 +25,12 @@ exports.WbsAssignmentBusinessModule = WbsAssignmentBusinessModule = __decorate([
         imports: [
             evaluation_criteria_management_context_module_1.EvaluationCriteriaManagementContextModule,
             evaluation_activity_log_context_module_1.EvaluationActivityLogContextModule,
+            performance_evaluation_context_module_1.PerformanceEvaluationContextModule,
             employee_module_1.EmployeeModule,
             project_module_1.ProjectModule,
             evaluation_line_module_1.EvaluationLineModule,
             evaluation_line_mapping_module_1.EvaluationLineMappingModule,
             evaluation_wbs_assignment_module_1.EvaluationWbsAssignmentModule,
-            wbs_self_evaluation_module_1.WbsSelfEvaluationModule,
         ],
         providers: [wbs_assignment_business_service_1.WbsAssignmentBusinessService],
         exports: [wbs_assignment_business_service_1.WbsAssignmentBusinessService],

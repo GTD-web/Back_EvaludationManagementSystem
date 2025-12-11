@@ -391,6 +391,11 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const result = await this.commandBus.execute(command);
         return result;
     }
+    async WBS할당_자기평가를_삭제한다(data) {
+        const command = new self_evaluation_1.DeleteWbsSelfEvaluationsByAssignmentCommand(data.employeeId, data.periodId, data.wbsItemId, data.deletedBy);
+        const result = await this.commandBus.execute(command);
+        return result;
+    }
     async 동료평가에_질문그룹을_추가한다(peerEvaluationId, questionGroupId, startDisplayOrder, createdBy) {
         const command = new peer_evaluation_1.AddQuestionGroupToPeerEvaluationCommand(peerEvaluationId, questionGroupId, startDisplayOrder, createdBy);
         const result = await this.commandBus.execute(command);

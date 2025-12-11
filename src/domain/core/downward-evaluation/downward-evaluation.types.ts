@@ -38,6 +38,8 @@ export interface CreateDownwardEvaluationData {
  * 하향평가 수정 데이터
  */
 export interface UpdateDownwardEvaluationData {
+  /** 평가자 ID (잘못된 평가자 ID 수정용) */
+  evaluatorId?: string;
   /** 자기평가 ID */
   selfEvaluationId?: string;
   /** 하향평가 내용 */

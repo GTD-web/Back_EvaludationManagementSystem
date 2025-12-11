@@ -81,6 +81,12 @@ export class DownwardEvaluationService {
     }
 
     try {
+      // 평가자 ID 수정 (잘못된 평가자 ID 수정용)
+      if (updateData.evaluatorId !== undefined) {
+        downwardEvaluation.evaluatorId = updateData.evaluatorId;
+        downwardEvaluation.메타데이터를_업데이트한다(updatedBy);
+      }
+
       downwardEvaluation.하향평가를_수정한다(
         updateData.downwardEvaluationContent,
         updateData.downwardEvaluationScore,

@@ -47,6 +47,10 @@ let DownwardEvaluationService = DownwardEvaluationService_1 = class DownwardEval
             throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(id);
         }
         try {
+            if (updateData.evaluatorId !== undefined) {
+                downwardEvaluation.evaluatorId = updateData.evaluatorId;
+                downwardEvaluation.메타데이터를_업데이트한다(updatedBy);
+            }
             downwardEvaluation.하향평가를_수정한다(updateData.downwardEvaluationContent, updateData.downwardEvaluationScore, updatedBy);
             if (updateData.isCompleted !== undefined) {
                 if (updateData.isCompleted) {

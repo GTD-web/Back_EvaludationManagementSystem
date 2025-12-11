@@ -58,7 +58,6 @@ let UpsertDownwardEvaluationHandler = UpsertDownwardEvaluationHandler_1 = class 
         return await this.transactionManager.executeTransaction(async () => {
             const existingEvaluations = await this.downwardEvaluationService.필터_조회한다({
                 employeeId: evaluateeId,
-                evaluatorId,
                 periodId,
                 wbsId,
                 evaluationType: evaluationType,
@@ -67,8 +66,13 @@ let UpsertDownwardEvaluationHandler = UpsertDownwardEvaluationHandler_1 = class 
             if (existingEvaluation) {
                 this.logger.log('기존 하향평가 수정', {
                     evaluationId: existingEvaluation.id,
+                    oldEvaluatorId: existingEvaluation.evaluatorId,
+                    newEvaluatorId: evaluatorId,
                 });
                 await this.downwardEvaluationService.수정한다(existingEvaluation.id, {
+                    evaluatorId: evaluatorId !== existingEvaluation.evaluatorId
+                        ? evaluatorId
+                        : undefined,
                     downwardEvaluationContent,
                     downwardEvaluationScore,
                     selfEvaluationId: selfEvaluationId !== existingEvaluation.selfEvaluationId

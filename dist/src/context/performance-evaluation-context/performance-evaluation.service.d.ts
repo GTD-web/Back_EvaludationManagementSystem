@@ -27,7 +27,7 @@ export declare class PerformanceEvaluationService implements IPerformanceEvaluat
     constructor(commandBus: CommandBus, queryBus: QueryBus, mappingRepository: Repository<EvaluationPeriodEmployeeMapping>, employeeRepository: Repository<Employee>, secondaryStepApprovalService: SecondaryEvaluationStepApprovalService, stepApprovalContextService: StepApprovalContextService);
     WBS자기평가를_생성한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent: string, selfEvaluationScore: number, performanceResult?: string, createdBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     WBS자기평가를_수정한다(evaluationId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, updatedBy?: string): Promise<WbsSelfEvaluationBasicDto>;
-    WBS자기평가를_저장한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, actionBy?: string): Promise<WbsSelfEvaluationResponseDto>;
+    WBS자기평가를_저장한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, subProject?: string, actionBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     WBS자기평가를_제출한다(evaluationId: string, submittedBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     피평가자가_1차평가자에게_자기평가를_제출한다(evaluationId: string, submittedBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     직원의_전체_WBS자기평가를_제출한다(employeeId: string, periodId: string, submittedBy?: string): Promise<SubmitAllWbsSelfEvaluationsResponse>;

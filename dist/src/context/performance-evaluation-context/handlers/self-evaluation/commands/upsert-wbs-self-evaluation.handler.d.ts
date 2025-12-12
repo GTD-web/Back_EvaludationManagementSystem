@@ -10,8 +10,9 @@ export declare class UpsertWbsSelfEvaluationCommand {
     readonly selfEvaluationContent?: string | undefined;
     readonly selfEvaluationScore?: number | undefined;
     readonly performanceResult?: string | undefined;
+    readonly subProject?: string | undefined;
     readonly actionBy: string;
-    constructor(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string | undefined, selfEvaluationScore?: number | undefined, performanceResult?: string | undefined, actionBy?: string);
+    constructor(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string | undefined, selfEvaluationScore?: number | undefined, performanceResult?: string | undefined, subProject?: string | undefined, actionBy?: string);
 }
 export declare class UpsertWbsSelfEvaluationHandler implements ICommandHandler<UpsertWbsSelfEvaluationCommand> {
     private readonly wbsSelfEvaluationService;

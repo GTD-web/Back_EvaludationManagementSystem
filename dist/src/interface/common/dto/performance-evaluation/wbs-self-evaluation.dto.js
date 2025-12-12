@@ -17,6 +17,7 @@ class CreateWbsSelfEvaluationBodyDto {
     selfEvaluationContent;
     selfEvaluationScore;
     performanceResult;
+    subProject;
     createdBy;
 }
 exports.CreateWbsSelfEvaluationBodyDto = CreateWbsSelfEvaluationBodyDto;
@@ -49,6 +50,15 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateWbsSelfEvaluationBodyDto.prototype, "performanceResult", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateWbsSelfEvaluationBodyDto.prototype, "subProject", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
@@ -157,6 +167,7 @@ class WbsSelfEvaluationBasicDto {
     performanceResult;
     selfEvaluationContent;
     selfEvaluationScore;
+    subProject;
     createdAt;
     updatedAt;
     version;
@@ -261,6 +272,14 @@ __decorate([
     __metadata("design:type", Number)
 ], WbsSelfEvaluationBasicDto.prototype, "selfEvaluationScore", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], WbsSelfEvaluationBasicDto.prototype, "subProject", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({
         description: '생성 일시',
         example: '2024-01-15T09:00:00Z',
@@ -299,6 +318,7 @@ class WbsSelfEvaluationDetailResponseDto {
     performanceResult;
     selfEvaluationContent;
     selfEvaluationScore;
+    subProject;
     createdAt;
     updatedAt;
     deletedAt;
@@ -408,6 +428,14 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], WbsSelfEvaluationDetailResponseDto.prototype, "selfEvaluationScore", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], WbsSelfEvaluationDetailResponseDto.prototype, "subProject", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '생성 일시',

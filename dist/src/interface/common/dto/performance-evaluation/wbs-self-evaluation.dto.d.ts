@@ -2,6 +2,7 @@ export declare class CreateWbsSelfEvaluationBodyDto {
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
     performanceResult?: string;
+    subProject?: string;
     createdBy?: string;
 }
 export declare class UpdateWbsSelfEvaluationDto {
@@ -32,6 +33,7 @@ export declare class WbsSelfEvaluationBasicDto {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     createdAt: Date;
     updatedAt: Date;
     version: number;
@@ -53,6 +55,7 @@ export declare class WbsSelfEvaluationDetailResponseDto {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt?: Date;

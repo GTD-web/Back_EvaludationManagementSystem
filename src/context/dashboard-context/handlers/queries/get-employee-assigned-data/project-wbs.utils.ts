@@ -169,6 +169,7 @@ export async function getProjectsWithWbs(
 
   // 6. 배치 조회: 성과 정보 (WHERE periodId = :p AND employeeId = :e AND wbsItemId IN (:...wbsItemIds))
   const performanceMap = new Map<string, WbsPerformance | null>();
+  const subProjectMap = new Map<string, string | null>();
   if (wbsItemIds.length > 0) {
     const selfEvaluationRows = await selfEvaluationRepository
       .createQueryBuilder('evaluation')
@@ -176,6 +177,7 @@ export async function getProjectsWithWbs(
         'evaluation.wbsItemId AS evaluation_wbs_item_id',
         'evaluation.performanceResult AS evaluation_performance_result',
         'evaluation.selfEvaluationScore AS evaluation_self_evaluation_score',
+        'evaluation.subProject AS evaluation_sub_project',
         'evaluation.submittedToManagerAt AS evaluation_submitted_to_manager_at',
       ])
       .where('evaluation.periodId = :periodId', {
@@ -204,6 +206,7 @@ export async function getProjectsWithWbs(
       };
 
       performanceMap.set(wbsId, performance);
+      subProjectMap.set(wbsId, row.evaluation_sub_project || null);
     }
   }
 
@@ -639,6 +642,7 @@ export async function getProjectsWithWbs(
 
       const criteria = criteriaMap.get(wbsItemId) || [];
       const performance = performanceMap.get(wbsItemId) || null;
+      const subProject = subProjectMap.get(wbsItemId) || null;
       const downwardEvalData = downwardEvaluationMap.get(wbsItemId) || {
         primary: null,
         secondary: null,
@@ -682,6 +686,7 @@ export async function getProjectsWithWbs(
         wbsCode: wbsRow.wbs_item_wbs_code || '',
         weight: parseFloat(wbsRow.assignment_weight) || 0,
         assignedAt: wbsRow.assignment_assigned_date,
+        subProject,
         criteria,
         performance,
         primaryDownwardEvaluation: downwardEvalData.primary || null,

@@ -16,6 +16,7 @@ export class UpsertWbsSelfEvaluationCommand {
     public readonly selfEvaluationContent?: string,
     public readonly selfEvaluationScore?: number,
     public readonly performanceResult?: string,
+    public readonly subProject?: string,
     public readonly actionBy: string = '시스템',
   ) {}
 }
@@ -47,6 +48,7 @@ export class UpsertWbsSelfEvaluationHandler
       selfEvaluationContent,
       selfEvaluationScore,
       performanceResult,
+      subProject,
       actionBy,
     } = command;
 
@@ -91,6 +93,7 @@ export class UpsertWbsSelfEvaluationHandler
             selfEvaluationContent,
             selfEvaluationScore,
             performanceResult,
+            subProject,
           },
           actionBy,
         );
@@ -104,6 +107,7 @@ export class UpsertWbsSelfEvaluationHandler
           selfEvaluationContent,
           selfEvaluationScore,
           performanceResult,
+          subProject,
           createdBy: actionBy,
         });
       }

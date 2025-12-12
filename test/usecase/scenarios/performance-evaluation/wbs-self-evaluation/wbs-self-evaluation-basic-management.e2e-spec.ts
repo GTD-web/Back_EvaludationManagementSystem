@@ -272,6 +272,232 @@ describe('WBS 자기평가 기본 관리 시나리오', () => {
     });
   });
 
+  describe('자기평가 저장 시 subProject 필드 테스트', () => {
+    it('subProject 값을 포함하여 자기평가를 저장하고 조회한다', async () => {
+      // Given - subProject를 포함한 자기평가 저장
+      const 저장결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: '서브 프로젝트 테스트 자기평가',
+        selfEvaluationScore: 100,
+        performanceResult: '모바일 앱 개발 완료',
+        subProject: '모바일 앱 개발',
+      });
+
+      // Then - 저장 결과에 subProject 포함 확인
+      expect(저장결과.id).toBeDefined();
+      expect(저장결과.subProject).toBe('모바일 앱 개발');
+      expect(저장결과.selfEvaluationContent).toBe('서브 프로젝트 테스트 자기평가');
+      expect(저장결과.selfEvaluationScore).toBe(100);
+
+      // When - 상세 조회
+      const 상세조회결과 =
+        await wbsSelfEvaluationScenario.WBS자기평가_상세정보를_조회한다(
+          저장결과.id,
+        );
+
+      // Then - 상세 조회 결과에 subProject 포함 확인
+      expect(상세조회결과.subProject).toBe('모바일 앱 개발');
+      expect(상세조회결과.performanceResult).toBe('모바일 앱 개발 완료');
+
+      // When - 사용자 할당 정보 조회
+      const 할당데이터 =
+        await wbsSelfEvaluationScenario.직원_할당_데이터를_조회한다({
+          periodId: evaluationPeriodId,
+          employeeId: employeeIds[0],
+        });
+
+      // Then - WBS 정보에 subProject가 wbsId, wbsName, wbsCode와 같은 레벨에 포함 확인
+      expect(할당데이터.projects).toBeDefined();
+      expect(할당데이터.projects.length).toBeGreaterThan(0);
+      
+      const 프로젝트 = 할당데이터.projects[0];
+      expect(프로젝트.wbsList).toBeDefined();
+      expect(프로젝트.wbsList.length).toBeGreaterThan(0);
+      
+      const wbs = 프로젝트.wbsList.find((w: any) => w.wbsId === wbsItemIds[0]);
+      expect(wbs).toBeDefined();
+      expect(wbs.subProject).toBe('모바일 앱 개발');
+      expect(wbs.wbsId).toBeDefined();
+      expect(wbs.wbsName).toBeDefined();
+      expect(wbs.wbsCode).toBeDefined();
+      
+      // subProject가 performance 내부가 아닌 WBS 레벨에 있는지 확인
+      expect(wbs.performance).toBeDefined();
+      if (wbs.performance && typeof wbs.performance === 'object') {
+        expect(wbs.performance.subProject).toBeUndefined(); // performance에는 없어야 함
+      }
+    });
+
+    it('subProject 없이 자기평가를 저장하면 null로 반환된다', async () => {
+      // WBS 할당 (두 번째 WBS)
+      await wbsAssignmentScenario.WBS를_할당한다({
+        periodId: evaluationPeriodId,
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[1],
+        projectId: projectIds[0],
+      });
+
+      // Given - subProject 없이 자기평가 저장
+      const 저장결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[1],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: 'subProject 없는 자기평가',
+        selfEvaluationScore: 90,
+        performanceResult: '일반 작업 완료',
+      });
+
+      // Then - subProject가 null로 반환되는지 확인
+      expect(저장결과.id).toBeDefined();
+      expect(저장결과.subProject).toBeNull();
+
+      // When - 사용자 할당 정보 조회
+      const 할당데이터 =
+        await wbsSelfEvaluationScenario.직원_할당_데이터를_조회한다({
+          periodId: evaluationPeriodId,
+          employeeId: employeeIds[0],
+        });
+
+      // Then - WBS 레벨에 subProject가 null로 포함되어 있는지 확인
+      const wbs = 할당데이터.projects[0].wbsList.find(
+        (w: any) => w.wbsId === wbsItemIds[1],
+      );
+      expect(wbs).toBeDefined();
+      expect(wbs.subProject).toBeNull(); // 항상 프로퍼티는 존재하고 null 값
+      expect(wbs.wbsId).toBeDefined();
+    });
+
+    it('subProject를 수정할 수 있다', async () => {
+      // Given - 초기 subProject로 저장
+      const 저장결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: '초기 평가',
+        selfEvaluationScore: 80,
+        performanceResult: '초기 성과',
+        subProject: '백엔드 API',
+      });
+
+      expect(저장결과.subProject).toBe('백엔드 API');
+
+      // When - subProject 수정
+      const 수정결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: '수정된 평가',
+        selfEvaluationScore: 95,
+        performanceResult: '수정된 성과',
+        subProject: '프론트엔드 UI',
+      });
+
+      // Then - subProject가 수정되었는지 확인
+      expect(수정결과.id).toBe(저장결과.id); // 동일한 평가
+      expect(수정결과.subProject).toBe('프론트엔드 UI');
+      expect(수정결과.version).toBeGreaterThan(저장결과.version);
+
+      // When - 상세 조회로 재확인
+      const 상세조회결과 =
+        await wbsSelfEvaluationScenario.WBS자기평가_상세정보를_조회한다(
+          저장결과.id,
+        );
+
+      // Then - 상세 조회에서도 수정된 subProject 확인
+      expect(상세조회결과.subProject).toBe('프론트엔드 UI');
+    });
+
+    it('1차 평가자에게 제출 후에도 subProject가 유지된다', async () => {
+      // Given - subProject 포함 자기평가 저장
+      const 저장결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: '제출 테스트',
+        selfEvaluationScore: 100,
+        performanceResult: '작업 완료',
+        subProject: '데이터베이스 설계',
+      });
+
+      expect(저장결과.subProject).toBe('데이터베이스 설계');
+
+      // When - 1차 평가자에게 제출
+      const 제출결과 =
+        await wbsSelfEvaluationScenario.WBS자기평가를_1차평가자에게_제출한다(
+          저장결과.id,
+        );
+
+      // Then - 제출 후에도 subProject 유지
+      expect(제출결과.submittedToEvaluator).toBe(true);
+      expect(제출결과.subProject).toBe('데이터베이스 설계');
+
+      // When - 사용자 할당 정보 조회
+      const 할당데이터 =
+        await wbsSelfEvaluationScenario.직원_할당_데이터를_조회한다({
+          periodId: evaluationPeriodId,
+          employeeId: employeeIds[0],
+        });
+
+      // Then - 할당 데이터에서도 subProject 확인
+      const wbs = 할당데이터.projects[0].wbsList.find(
+        (w: any) => w.wbsId === wbsItemIds[0],
+      );
+      expect(wbs.subProject).toBe('데이터베이스 설계');
+    });
+
+    it('관리자에게 제출 후에도 subProject가 유지된다', async () => {
+      // Given - subProject 포함 자기평가 저장 및 1차 평가자 제출
+      const 저장결과 = await wbsSelfEvaluationScenario.WBS자기평가를_저장한다({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: evaluationPeriodId,
+        selfEvaluationContent: '관리자 제출 테스트',
+        selfEvaluationScore: 110,
+        performanceResult: '최종 완료',
+        subProject: '시스템 통합',
+      });
+
+      await wbsSelfEvaluationScenario.WBS자기평가를_1차평가자에게_제출한다(
+        저장결과.id,
+      );
+
+      // When - 관리자에게 제출
+      const 제출결과 =
+        await wbsSelfEvaluationScenario.WBS자기평가를_관리자에게_제출한다(
+          저장결과.id,
+        );
+
+      // Then - 관리자 제출 후에도 subProject 유지
+      expect(제출결과.submittedToManager).toBe(true);
+      expect(제출결과.subProject).toBe('시스템 통합');
+
+      // When - 나의 할당 정보 조회
+      testSuite.setCurrentUser({
+        id: employeeIds[0],
+        email: 'test@example.com',
+        name: '테스트 사용자',
+        employeeNumber: 'TEST001',
+      });
+
+      const 나의할당데이터 =
+        await wbsSelfEvaluationScenario.나의_할당_데이터를_조회한다(
+          evaluationPeriodId,
+        );
+
+      // Then - 나의 할당 정보에서도 subProject 확인
+      expect(나의할당데이터.projects).toBeDefined();
+      const wbs = 나의할당데이터.projects[0].wbsList.find(
+        (w: any) => w.wbsId === wbsItemIds[0],
+      );
+      expect(wbs).toBeDefined();
+      expect(wbs.subProject).toBe('시스템 통합');
+      expect(wbs.performance).toBeDefined();
+      expect(wbs.performance.performanceResult).toBe('최종 완료');
+    });
+  });
+
   describe('자기평가 수정 (제출 전)', () => {
     it('자기평가를 수정하고 대시보드 API를 검증한다', async () => {
       // Given - 자기평가 저장

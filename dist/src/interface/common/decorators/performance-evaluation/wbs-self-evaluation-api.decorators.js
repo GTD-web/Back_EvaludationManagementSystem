@@ -38,7 +38,26 @@ function UpsertWbsSelfEvaluation() {
 - \`selfEvaluationContent\` (선택): 자기평가 내용 (문자열)
 - \`selfEvaluationScore\` (선택): 자기평가 점수 (달성률 %, 0 ~ 평가기간의 maxSelfEvaluationRate, 기본 최대값 120)
 - \`performanceResult\` (선택): 성과 실적 (문자열, 빈 문자열도 허용)
+- \`subProject\` (선택): 세부 프로젝트/서브 프로젝트 (문자열)
 - \`createdBy\` (선택): 생성자 ID (UUID 형식)
+
+**요청 예시:**
+\`\`\`json
+{
+  "selfEvaluationContent": "이번 분기 목표를 성공적으로 달성했습니다.",
+  "selfEvaluationScore": 100,
+  "performanceResult": "WBS 항목 A를 100% 완료하였으며, 고객 만족도 95%를 달성했습니다.",
+  "subProject": "모바일 앱 개발"
+}
+\`\`\`
+
+**최소 요청 예시 (모든 필드 선택사항):**
+\`\`\`json
+{
+  "performanceResult": "작업 완료",
+  "subProject": "백엔드 API"
+}
+\`\`\`
 
 **테스트 케이스:**
 - 신규 생성: 동일 조합의 평가가 없으면 신규 생성되며 version=1, isCompleted=false로 초기화
@@ -81,6 +100,35 @@ function UpsertWbsSelfEvaluation() {
     }), (0, swagger_1.ApiBody)({
         type: wbs_self_evaluation_dto_1.CreateWbsSelfEvaluationBodyDto,
         description: 'WBS 자기평가 저장 정보 (모든 필드 선택사항)',
+        examples: {
+            full: {
+                summary: '전체 필드 포함',
+                description: '자기평가 내용, 점수, 성과 실적, 서브 프로젝트를 모두 포함한 예시',
+                value: {
+                    selfEvaluationContent: '이번 분기 목표를 성공적으로 달성했습니다.',
+                    selfEvaluationScore: 100,
+                    performanceResult: 'WBS 항목 A를 100% 완료하였으며, 고객 만족도 95%를 달성했습니다.',
+                    subProject: '모바일 앱 개발',
+                },
+            },
+            minimal: {
+                summary: '최소 필드만',
+                description: '필수 항목이 없으므로 일부 필드만 포함 가능',
+                value: {
+                    performanceResult: '작업 완료',
+                    subProject: '백엔드 API',
+                },
+            },
+            withSubProject: {
+                summary: '서브 프로젝트 포함',
+                description: '서브 프로젝트 정보를 포함한 성과 입력',
+                value: {
+                    selfEvaluationScore: 95,
+                    performanceResult: 'ERD 40개 테이블 설계 완료, 정규화 3단계까지 적용',
+                    subProject: '데이터베이스 설계',
+                },
+            },
+        },
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.OK,
         description: 'WBS 자기평가가 성공적으로 저장되었습니다. 신규 생성 또는 기존 평가 수정 결과를 반환합니다.',

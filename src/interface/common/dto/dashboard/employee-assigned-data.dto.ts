@@ -405,6 +405,13 @@ export class AssignedWbsInfoDto implements AssignedWbsInfo {
   })
   assignedAt: Date;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
+
   @ApiProperty({
     description: 'WBS에 할당된 평가기준 목록',
     type: [WbsEvaluationCriterionDto],

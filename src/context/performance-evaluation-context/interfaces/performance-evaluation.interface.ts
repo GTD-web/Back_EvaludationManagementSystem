@@ -38,6 +38,7 @@ export interface IPerformanceEvaluationService {
     selfEvaluationContent?: string,
     selfEvaluationScore?: number,
     performanceResult?: string,
+    subProject?: string,
     actionBy?: string,
   ): Promise<WbsSelfEvaluationResponseDto>;
 

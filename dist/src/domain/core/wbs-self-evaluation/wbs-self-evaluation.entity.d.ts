@@ -15,6 +15,7 @@ export declare class WbsSelfEvaluation extends BaseEntity<WbsSelfEvaluationDto> 
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     constructor(data?: CreateWbsSelfEvaluationData);
     평가기간과_일치하는가(periodId: string): boolean;
     해당_직원의_자가평가인가(employeeId: string): boolean;
@@ -28,7 +29,7 @@ export declare class WbsSelfEvaluation extends BaseEntity<WbsSelfEvaluationDto> 
     피평가자가_1차평가자에게_제출했는가(): boolean;
     일차평가자가_관리자에게_제출했는가(): boolean;
     점수가_유효한가(maxScore: number): boolean;
-    자가평가를_수정한다(content?: string, score?: number, performanceResult?: string, updatedBy?: string): void;
+    자가평가를_수정한다(content?: string, score?: number, performanceResult?: string, subProject?: string | null, updatedBy?: string): void;
     자가평가_내용을_초기화한다(updatedBy?: string): void;
     삭제한다(): void;
     DTO로_변환한다(): WbsSelfEvaluationDto;

@@ -105,6 +105,14 @@ export class WbsSelfEvaluation
   })
   selfEvaluationScore?: number;
 
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '세부 프로젝트 (서브 프로젝트)',
+  })
+  subProject?: string | null;
+
   constructor(data?: CreateWbsSelfEvaluationData) {
     super();
     if (data) {
@@ -118,6 +126,7 @@ export class WbsSelfEvaluation
       this.performanceResult = data.performanceResult;
       this.selfEvaluationContent = data.selfEvaluationContent;
       this.selfEvaluationScore = data.selfEvaluationScore;
+      this.subProject = data.subProject;
       this.evaluationDate = new Date();
 
       // 감사 정보 설정
@@ -239,6 +248,7 @@ export class WbsSelfEvaluation
     content?: string,
     score?: number,
     performanceResult?: string,
+    subProject?: string | null,
     updatedBy?: string,
   ): void {
     if (content !== undefined) {
@@ -249,6 +259,9 @@ export class WbsSelfEvaluation
     }
     if (performanceResult !== undefined) {
       this.performanceResult = performanceResult;
+    }
+    if (subProject !== undefined) {
+      this.subProject = subProject;
     }
     this.evaluationDate = new Date();
 
@@ -302,6 +315,7 @@ export class WbsSelfEvaluation
       performanceResult: this.performanceResult,
       selfEvaluationContent: this.selfEvaluationContent,
       selfEvaluationScore: this.selfEvaluationScore,
+      subProject: this.subProject,
       createdBy: this.createdBy,
       updatedBy: this.updatedBy,
       createdAt: this.createdAt,

@@ -23,14 +23,16 @@ class UpsertWbsSelfEvaluationCommand {
     selfEvaluationContent;
     selfEvaluationScore;
     performanceResult;
+    subProject;
     actionBy;
-    constructor(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, actionBy = '시스템') {
+    constructor(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, subProject, actionBy = '시스템') {
         this.periodId = periodId;
         this.employeeId = employeeId;
         this.wbsItemId = wbsItemId;
         this.selfEvaluationContent = selfEvaluationContent;
         this.selfEvaluationScore = selfEvaluationScore;
         this.performanceResult = performanceResult;
+        this.subProject = subProject;
         this.actionBy = actionBy;
     }
 }
@@ -46,7 +48,7 @@ let UpsertWbsSelfEvaluationHandler = UpsertWbsSelfEvaluationHandler_1 = class Up
         this.transactionManager = transactionManager;
     }
     async execute(command) {
-        const { periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, actionBy, } = command;
+        const { periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, subProject, actionBy, } = command;
         return await this.transactionManager.executeTransaction(async () => {
             const evaluationPeriod = await this.evaluationPeriodService.ID로_조회한다(periodId);
             if (!evaluationPeriod) {
@@ -70,6 +72,7 @@ let UpsertWbsSelfEvaluationHandler = UpsertWbsSelfEvaluationHandler_1 = class Up
                     selfEvaluationContent,
                     selfEvaluationScore,
                     performanceResult,
+                    subProject,
                 }, actionBy);
             }
             else {
@@ -81,6 +84,7 @@ let UpsertWbsSelfEvaluationHandler = UpsertWbsSelfEvaluationHandler_1 = class Up
                     selfEvaluationContent,
                     selfEvaluationScore,
                     performanceResult,
+                    subProject,
                     createdBy: actionBy,
                 });
             }

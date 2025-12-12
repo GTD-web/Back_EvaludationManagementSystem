@@ -437,6 +437,7 @@ class AssignedWbsInfoDto {
     wbsCode;
     weight;
     assignedAt;
+    subProject;
     criteria;
     performance;
     primaryDownwardEvaluation;
@@ -481,6 +482,14 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], AssignedWbsInfoDto.prototype, "assignedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], AssignedWbsInfoDto.prototype, "subProject", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'WBS에 할당된 평가기준 목록',

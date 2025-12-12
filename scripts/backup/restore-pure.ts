@@ -103,16 +103,70 @@ async function restore() {
     // SQL 파일 읽기
     const sqlContent = fs.readFileSync(BACKUP_FILE, 'utf8');
 
-    // SQL 문을 세미콜론으로 분리하여 실행
-    const statements = sqlContent
-      .split(';')
-      .map((stmt) => stmt.trim())
-      .filter((stmt) => stmt.length > 0 && !stmt.startsWith('--'));
+    // SQL 문을 더 정확하게 분리 (문자열 내부의 세미콜론 무시)
+    const statements: string[] = [];
+    let currentStatement = '';
+    let insideString = false;
+    let stringDelimiter = '';
+
+    for (let i = 0; i < sqlContent.length; i++) {
+      const char = sqlContent[i];
+      const prevChar = i > 0 ? sqlContent[i - 1] : '';
+
+      // 문자열 시작/종료 감지 (escape된 따옴표 무시)
+      if ((char === "'" || char === '"') && prevChar !== '\\') {
+        if (!insideString) {
+          insideString = true;
+          stringDelimiter = char;
+        } else if (char === stringDelimiter) {
+          insideString = false;
+          stringDelimiter = '';
+        }
+      }
+
+      // 세미콜론이 문자열 밖에 있을 때만 구문 구분자로 인식
+      if (char === ';' && !insideString) {
+        const stmt = currentStatement.trim();
+        if (stmt.length > 0 && !stmt.startsWith('--')) {
+          statements.push(stmt);
+        }
+        currentStatement = '';
+      } else {
+        currentStatement += char;
+      }
+    }
+
+    // 마지막 구문 추가
+    const lastStmt = currentStatement.trim();
+    if (lastStmt.length > 0 && !lastStmt.startsWith('--')) {
+      statements.push(lastStmt);
+    }
 
     console.log(`📝 ${statements.length}개의 SQL 구문 실행 중...`);
 
     let executedCount = 0;
     let errorCount = 0;
+    let criticalErrorCount = 0;
+
+    // 무시해도 되는 오류 패턴 (백업 복구 시 예상되는 오류들)
+    const ignorableErrors = [
+      'already exists',
+      'does not exist',
+      'multiple primary keys',
+      'relation "IDX_',
+      'relation "PK_',
+      'relation "UQ_',
+      'relation "FK_',
+      'constraint "FK_',
+      'constraint "PK_',
+      'constraint "UQ_',
+    ];
+
+    const shouldIgnoreError = (errorMessage: string): boolean => {
+      return ignorableErrors.some((pattern) =>
+        errorMessage.toLowerCase().includes(pattern.toLowerCase()),
+      );
+    };
 
     for (const statement of statements) {
       try {
@@ -125,9 +179,11 @@ async function restore() {
         }
       } catch (error) {
         errorCount++;
-        // 일부 오류는 무시 (예: 테이블이 이미 존재하지 않는 경우)
-        if (error instanceof Error && !error.message.includes('does not exist')) {
-          console.error(`\n⚠️  SQL 실행 오류: ${error.message}`);
+
+        // 중요한 오류만 표시
+        if (error instanceof Error && !shouldIgnoreError(error.message)) {
+          criticalErrorCount++;
+          console.error(`\n⚠️  중요 오류: ${error.message}`);
         }
       }
     }
@@ -137,7 +193,12 @@ async function restore() {
     console.log('✅ 복구 완료!');
     console.log(`   성공: ${executedCount}개`);
     if (errorCount > 0) {
-      console.log(`   경고: ${errorCount}개 (무시됨)`);
+      console.log(
+        `   무시됨: ${errorCount - criticalErrorCount}개 (예상된 중복)`,
+      );
+    }
+    if (criticalErrorCount > 0) {
+      console.log(`   ⚠️  경고: ${criticalErrorCount}개의 중요 오류`);
     }
     console.log('   데이터베이스가 성공적으로 복구되었습니다.');
   } catch (error) {

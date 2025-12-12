@@ -23,9 +23,11 @@ const seed_data_context_module_1 = require("../../context/seed-data-context/seed
 const step_approval_context_module_1 = require("../../context/step-approval-context/step-approval-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
 const notification_1 = require("../../domain/common/notification");
+const project_module_1 = require("../../domain/common/project/project.module");
 const system_setting_module_1 = require("../../domain/common/system-setting/system-setting.module");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const evaluator_auth_controller_1 = require("./auth/evaluator-auth.controller");
+const evaluator_project_management_controller_1 = require("./project/evaluator-project-management.controller");
 const evaluator_dashboard_controller_1 = require("./dashboard/evaluator-dashboard.controller");
 const evaluator_employee_management_controller_1 = require("./employee-management/evaluator-employee-management.controller");
 const evaluator_evaluation_activity_log_controller_1 = require("./evaluation-activity-log/evaluator-evaluation-activity-log.controller");
@@ -62,6 +64,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
             notification_1.NotificationModule,
+            project_module_1.ProjectModule,
             system_setting_module_1.SystemSettingModule,
         ],
         controllers: [
@@ -71,6 +74,7 @@ exports.EvaluatorInterfaceModule = EvaluatorInterfaceModule = __decorate([
             evaluator_evaluation_activity_log_controller_1.EvaluatorEvaluationActivityLogController,
             evaluator_evaluation_line_management_controller_1.EvaluatorEvaluationLineManagementController,
             evaluator_project_assignment_management_controller_1.EvaluatorProjectAssignmentManagementController,
+            evaluator_project_management_controller_1.EvaluatorProjectManagementController,
             evaluator_wbs_assignment_management_controller_1.EvaluatorWbsAssignmentManagementController,
             evaluator_wbs_evaluation_criteria_management_controller_1.EvaluatorWbsEvaluationCriteriaManagementController,
             evaluator_evaluation_period_management_controller_1.EvaluatorEvaluationPeriodManagementController,

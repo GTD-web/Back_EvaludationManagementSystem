@@ -14,9 +14,11 @@ import { SeedDataContextModule } from '../../context/seed-data-context/seed-data
 import { StepApprovalContextModule } from '../../context/step-approval-context/step-approval-context.module';
 import { EmployeeModule } from '../../domain/common/employee/employee.module';
 import { NotificationModule } from '../../domain/common/notification';
+import { ProjectModule } from '../../domain/common/project/project.module';
 import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/evaluation-period.module';
 import { UserAuthController } from './auth/user-auth.controller';
 import { UserDashboardController } from './dashboard/user-dashboard.controller';
+import { UserProjectManagementController } from './project/user-project-management.controller';
 import { UserWbsAssignmentManagementController } from './evaluation-criteria/user-wbs-assignment-management.controller';
 import { UserWbsEvaluationCriteriaManagementController } from './evaluation-criteria/user-wbs-evaluation-criteria-management.controller';
 import { UserEvaluationPeriodManagementController } from './evaluation-period/user-evaluation-period-management.controller';
@@ -50,11 +52,13 @@ import { NotificationController } from '../common/controllers/notification.contr
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
     NotificationModule, // 알림 모듈 주입
+    ProjectModule, // 프로젝트 모듈 주입
   ],
   controllers: [
     UserDashboardController,
     UserAuthController,
     UserEvaluationPeriodManagementController,
+    UserProjectManagementController,
     UserWbsAssignmentManagementController,
     UserWbsEvaluationCriteriaManagementController,
     UserDeliverableManagementController,

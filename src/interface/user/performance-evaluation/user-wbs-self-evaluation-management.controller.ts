@@ -58,6 +58,7 @@ export class UserWbsSelfEvaluationManagementController {
       dto.selfEvaluationContent,
       dto.selfEvaluationScore,
       dto.performanceResult,
+      dto.subProject,
       actionBy,
     );
   }

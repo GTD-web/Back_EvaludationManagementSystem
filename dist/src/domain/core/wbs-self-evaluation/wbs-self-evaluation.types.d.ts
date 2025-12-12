@@ -13,6 +13,7 @@ export interface WbsSelfEvaluationDto {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt?: Date;
@@ -35,6 +36,7 @@ export interface WbsSelfEvaluationDetailDto {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt?: Date;
@@ -50,6 +52,7 @@ export interface CreateWbsSelfEvaluationData {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
     createdBy: string;
 }
 export interface UpdateWbsSelfEvaluationData {
@@ -61,6 +64,7 @@ export interface UpdateWbsSelfEvaluationData {
     performanceResult?: string;
     selfEvaluationContent?: string;
     selfEvaluationScore?: number;
+    subProject?: string | null;
 }
 export interface WbsSelfEvaluationFilter {
     periodId?: string;

@@ -40,6 +40,14 @@ export class CreateWbsSelfEvaluationBodyDto {
   @IsString()
   performanceResult?: string;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+  })
+  @IsOptional()
+  @IsString()
+  subProject?: string;
+
   // Swagger에 표시하지 않기 위해 @Api 데코레이터 제거
   @IsOptional()
   @IsUUID()
@@ -220,6 +228,13 @@ export class WbsSelfEvaluationBasicDto {
   })
   selfEvaluationScore?: number;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
+
   @ApiProperty({
     description: '생성 일시',
     example: '2024-01-15T09:00:00Z',
@@ -331,6 +346,13 @@ export class WbsSelfEvaluationDetailResponseDto {
     example: 100,
   })
   selfEvaluationScore?: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
 
   @ApiProperty({
     description: '생성 일시',

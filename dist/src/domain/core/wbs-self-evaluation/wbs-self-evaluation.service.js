@@ -78,8 +78,9 @@ let WbsSelfEvaluationService = WbsSelfEvaluationService_1 = class WbsSelfEvaluat
             }
             if (updateData.selfEvaluationContent !== undefined ||
                 updateData.selfEvaluationScore !== undefined ||
-                updateData.performanceResult !== undefined) {
-                wbsSelfEvaluation.자가평가를_수정한다(updateData.selfEvaluationContent, updateData.selfEvaluationScore, updateData.performanceResult, updatedBy);
+                updateData.performanceResult !== undefined ||
+                updateData.subProject !== undefined) {
+                wbsSelfEvaluation.자가평가를_수정한다(updateData.selfEvaluationContent, updateData.selfEvaluationScore, updateData.performanceResult, updateData.subProject, updatedBy);
             }
             const saved = await repository.save(wbsSelfEvaluation);
             return saved;

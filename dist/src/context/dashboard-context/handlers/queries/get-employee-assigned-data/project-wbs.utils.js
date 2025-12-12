@@ -97,6 +97,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
         }
     }
     const performanceMap = new Map();
+    const subProjectMap = new Map();
     if (wbsItemIds.length > 0) {
         const selfEvaluationRows = await selfEvaluationRepository
             .createQueryBuilder('evaluation')
@@ -104,6 +105,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             'evaluation.wbsItemId AS evaluation_wbs_item_id',
             'evaluation.performanceResult AS evaluation_performance_result',
             'evaluation.selfEvaluationScore AS evaluation_self_evaluation_score',
+            'evaluation.subProject AS evaluation_sub_project',
             'evaluation.submittedToManagerAt AS evaluation_submitted_to_manager_at',
         ])
             .where('evaluation.periodId = :periodId', {
@@ -129,6 +131,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                     : undefined,
             };
             performanceMap.set(wbsId, performance);
+            subProjectMap.set(wbsId, row.evaluation_sub_project || null);
         }
     }
     const primaryEvaluatorMap = new Map();
@@ -451,6 +454,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             }
             const criteria = criteriaMap.get(wbsItemId) || [];
             const performance = performanceMap.get(wbsItemId) || null;
+            const subProject = subProjectMap.get(wbsItemId) || null;
             const downwardEvalData = downwardEvaluationMap.get(wbsItemId) || {
                 primary: null,
                 secondary: null,
@@ -489,6 +493,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 wbsCode: wbsRow.wbs_item_wbs_code || '',
                 weight: parseFloat(wbsRow.assignment_weight) || 0,
                 assignedAt: wbsRow.assignment_assigned_date,
+                subProject,
                 criteria,
                 performance,
                 primaryDownwardEvaluation: downwardEvalData.primary || null,

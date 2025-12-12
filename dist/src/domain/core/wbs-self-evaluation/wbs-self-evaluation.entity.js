@@ -26,6 +26,7 @@ let WbsSelfEvaluation = class WbsSelfEvaluation extends base_entity_1.BaseEntity
     performanceResult;
     selfEvaluationContent;
     selfEvaluationScore;
+    subProject;
     constructor(data) {
         super();
         if (data) {
@@ -39,6 +40,7 @@ let WbsSelfEvaluation = class WbsSelfEvaluation extends base_entity_1.BaseEntity
             this.performanceResult = data.performanceResult;
             this.selfEvaluationContent = data.selfEvaluationContent;
             this.selfEvaluationScore = data.selfEvaluationScore;
+            this.subProject = data.subProject;
             this.evaluationDate = new Date();
             this.메타데이터를_업데이트한다(data.createdBy);
         }
@@ -91,7 +93,7 @@ let WbsSelfEvaluation = class WbsSelfEvaluation extends base_entity_1.BaseEntity
         }
         return (this.selfEvaluationScore >= 0 && this.selfEvaluationScore <= maxScore);
     }
-    자가평가를_수정한다(content, score, performanceResult, updatedBy) {
+    자가평가를_수정한다(content, score, performanceResult, subProject, updatedBy) {
         if (content !== undefined) {
             this.selfEvaluationContent = content;
         }
@@ -100,6 +102,9 @@ let WbsSelfEvaluation = class WbsSelfEvaluation extends base_entity_1.BaseEntity
         }
         if (performanceResult !== undefined) {
             this.performanceResult = performanceResult;
+        }
+        if (subProject !== undefined) {
+            this.subProject = subProject;
         }
         this.evaluationDate = new Date();
         if (updatedBy) {
@@ -138,6 +143,7 @@ let WbsSelfEvaluation = class WbsSelfEvaluation extends base_entity_1.BaseEntity
             performanceResult: this.performanceResult,
             selfEvaluationContent: this.selfEvaluationContent,
             selfEvaluationScore: this.selfEvaluationScore,
+            subProject: this.subProject,
             createdBy: this.createdBy,
             updatedBy: this.updatedBy,
             createdAt: this.createdAt,
@@ -246,6 +252,15 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], WbsSelfEvaluation.prototype, "selfEvaluationScore", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+        comment: '세부 프로젝트 (서브 프로젝트)',
+    }),
+    __metadata("design:type", Object)
+], WbsSelfEvaluation.prototype, "subProject", void 0);
 exports.WbsSelfEvaluation = WbsSelfEvaluation = __decorate([
     (0, typeorm_1.Entity)('wbs_self_evaluation'),
     (0, typeorm_1.Index)(['evaluationDate']),

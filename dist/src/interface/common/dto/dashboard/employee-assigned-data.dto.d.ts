@@ -64,6 +64,7 @@ export declare class AssignedWbsInfoDto implements AssignedWbsInfo {
     wbsCode: string;
     weight: number;
     assignedAt: Date;
+    subProject?: string | null;
     criteria: WbsEvaluationCriterionDto[];
     performance?: WbsPerformanceDto | null;
     primaryDownwardEvaluation?: WbsDownwardEvaluationDto | null;

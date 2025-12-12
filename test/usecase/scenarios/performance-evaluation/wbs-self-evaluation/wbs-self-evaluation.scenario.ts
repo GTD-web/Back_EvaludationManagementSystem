@@ -28,6 +28,7 @@ export class WbsSelfEvaluationScenario {
     selfEvaluationContent: string;
     selfEvaluationScore: number;
     performanceResult?: string;
+    subProject?: string | null;
   }) {
     return await this.apiClient.upsertWbsSelfEvaluation(data);
   }

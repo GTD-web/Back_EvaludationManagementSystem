@@ -56,8 +56,8 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const result = await this.commandBus.execute(command);
         return result;
     }
-    async WBS자기평가를_저장한다(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, actionBy) {
-        const command = new self_evaluation_1.UpsertWbsSelfEvaluationCommand(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, actionBy || '시스템');
+    async WBS자기평가를_저장한다(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, subProject, actionBy) {
+        const command = new self_evaluation_1.UpsertWbsSelfEvaluationCommand(periodId, employeeId, wbsItemId, selfEvaluationContent, selfEvaluationScore, performanceResult, subProject, actionBy || '시스템');
         const result = await this.commandBus.execute(command);
         return result;
     }

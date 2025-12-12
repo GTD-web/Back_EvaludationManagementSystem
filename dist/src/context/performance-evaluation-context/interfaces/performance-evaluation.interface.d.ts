@@ -4,7 +4,7 @@ import { GetFinalEvaluationByEmployeePeriodQuery, GetFinalEvaluationListQuery, G
 import { GetPeerEvaluationDetailQuery, GetPeerEvaluationListQuery } from '../handlers/peer-evaluation';
 import { GetEmployeeSelfEvaluationsQuery, GetWbsSelfEvaluationDetailQuery } from '../handlers/self-evaluation';
 export interface IPerformanceEvaluationService {
-    WBS자기평가를_저장한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, actionBy?: string): Promise<WbsSelfEvaluationResponseDto>;
+    WBS자기평가를_저장한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, subProject?: string, actionBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     WBS자기평가를_생성한다(periodId: string, employeeId: string, wbsItemId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, createdBy?: string): Promise<WbsSelfEvaluationResponseDto>;
     WBS자기평가를_수정한다(evaluationId: string, selfEvaluationContent?: string, selfEvaluationScore?: number, performanceResult?: string, updatedBy?: string): Promise<WbsSelfEvaluationBasicDto>;
     WBS자기평가를_제출한다(evaluationId: string, submittedBy?: string): Promise<WbsSelfEvaluationResponseDto>;

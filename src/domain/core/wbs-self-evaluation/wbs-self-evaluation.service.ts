@@ -125,16 +125,18 @@ export class WbsSelfEvaluationService {
         }
       }
 
-      // 자가평가 내용/점수/결과 수정 (선택적)
+      // 자가평가 내용/점수/결과/서브프로젝트 수정 (선택적)
       if (
         updateData.selfEvaluationContent !== undefined ||
         updateData.selfEvaluationScore !== undefined ||
-        updateData.performanceResult !== undefined
+        updateData.performanceResult !== undefined ||
+        updateData.subProject !== undefined
       ) {
         wbsSelfEvaluation.자가평가를_수정한다(
           updateData.selfEvaluationContent,
           updateData.selfEvaluationScore,
           updateData.performanceResult,
+          updateData.subProject,
           updatedBy,
         );
       }

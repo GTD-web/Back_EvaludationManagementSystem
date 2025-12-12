@@ -20,6 +20,7 @@ export class WbsSelfEvaluationApiClient {
     selfEvaluationContent: string;
     selfEvaluationScore: number;
     performanceResult?: string;
+    subProject?: string | null;
   }) {
     const response = await this.testSuite
       .request()
@@ -30,6 +31,7 @@ export class WbsSelfEvaluationApiClient {
         selfEvaluationContent: data.selfEvaluationContent,
         selfEvaluationScore: data.selfEvaluationScore,
         performanceResult: data.performanceResult,
+        subProject: data.subProject,
       })
       .expect(200);
 

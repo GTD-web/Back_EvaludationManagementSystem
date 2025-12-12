@@ -30,7 +30,7 @@ let EvaluatorWbsSelfEvaluationManagementController = class EvaluatorWbsSelfEvalu
     }
     async upsertWbsSelfEvaluation(employeeId, wbsItemId, periodId, dto, user) {
         const actionBy = user.id;
-        return await this.performanceEvaluationService.WBS자기평가를_저장한다(periodId, employeeId, wbsItemId, dto.selfEvaluationContent, dto.selfEvaluationScore, dto.performanceResult, actionBy);
+        return await this.performanceEvaluationService.WBS자기평가를_저장한다(periodId, employeeId, wbsItemId, dto.selfEvaluationContent, dto.selfEvaluationScore, dto.performanceResult, dto.subProject, actionBy);
     }
     async submitAllWbsSelfEvaluationsByEmployeePeriod(employeeId, periodId, user) {
         const submittedBy = user.id;

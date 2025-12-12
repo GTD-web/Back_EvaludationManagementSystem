@@ -1,30 +1,17 @@
-import {
-  GetEmployeeSelfEvaluationsQuery,
-  GetWbsSelfEvaluationDetailQuery,
-} from '@context/performance-evaluation-context/handlers/self-evaluation';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { WbsSelfEvaluationBusinessService } from '@business/wbs-self-evaluation/wbs-self-evaluation-business.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import { ParseUUID, Roles } from '@interface/common/decorators';
-import { Body, Controller, Query } from '@nestjs/common';
+import { Body, Controller } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   ClearAllWbsSelfEvaluationsByEmployeePeriod,
-  ClearWbsSelfEvaluation,
   ClearWbsSelfEvaluationsByProject,
-  GetEmployeeSelfEvaluations,
-  GetWbsSelfEvaluationDetail,
-  ResetAllWbsSelfEvaluationsByEmployeePeriod,
-  ResetWbsSelfEvaluation,
-  ResetWbsSelfEvaluationsByProject,
-  ResetWbsSelfEvaluationToEvaluator,
   ResetAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod,
   ResetWbsSelfEvaluationsToEvaluatorByProject,
   SubmitAllWbsSelfEvaluationsByEmployeePeriod,
   SubmitAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod,
-  SubmitWbsSelfEvaluation,
-  SubmitWbsSelfEvaluationToEvaluator,
   SubmitWbsSelfEvaluationsByProject,
   SubmitWbsSelfEvaluationsToEvaluatorByProject,
   UpsertWbsSelfEvaluation,
@@ -33,13 +20,10 @@ import {
   ClearAllWbsSelfEvaluationsResponseDto,
   ClearWbsSelfEvaluationsByProjectResponseDto,
   CreateWbsSelfEvaluationBodyDto,
-  EmployeeSelfEvaluationsResponseDto,
   ResetAllWbsSelfEvaluationsResponseDto,
   ResetWbsSelfEvaluationsByProjectResponseDto,
   SubmitAllWbsSelfEvaluationsResponseDto,
   SubmitWbsSelfEvaluationsByProjectResponseDto,
-  WbsSelfEvaluationDetailResponseDto,
-  WbsSelfEvaluationFilterDto,
   WbsSelfEvaluationResponseDto,
 } from '@interface/common/dto/performance-evaluation/wbs-self-evaluation.dto';
 
@@ -78,6 +62,7 @@ export class EvaluatorWbsSelfEvaluationManagementController {
       dto.selfEvaluationContent,
       dto.selfEvaluationScore,
       dto.performanceResult,
+      dto.subProject,
       actionBy,
     );
   }

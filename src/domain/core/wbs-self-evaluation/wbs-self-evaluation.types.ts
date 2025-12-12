@@ -34,6 +34,8 @@ export interface WbsSelfEvaluationDto {
   selfEvaluationContent?: string;
   /** 자가평가 점수 (0 ~ maxSelfEvaluationRate) */
   selfEvaluationScore?: number;
+  /** 세부 프로젝트 (서브 프로젝트) */
+  subProject?: string | null;
   /** 생성 일시 */
   createdAt: Date;
   /** 수정 일시 */
@@ -80,6 +82,8 @@ export interface WbsSelfEvaluationDetailDto {
   selfEvaluationContent?: string;
   /** 자가평가 점수 (0 ~ maxSelfEvaluationRate) */
   selfEvaluationScore?: number;
+  /** 세부 프로젝트 (서브 프로젝트) */
+  subProject?: string | null;
   /** 생성 일시 */
   createdAt: Date;
   /** 수정 일시 */
@@ -112,6 +116,8 @@ export interface CreateWbsSelfEvaluationData {
   selfEvaluationContent?: string;
   /** 자가평가 점수 (0 ~ maxSelfEvaluationRate) */
   selfEvaluationScore?: number;
+  /** 세부 프로젝트 (서브 프로젝트) */
+  subProject?: string | null;
   /** 생성자 ID */
   createdBy: string;
 }
@@ -136,6 +142,8 @@ export interface UpdateWbsSelfEvaluationData {
   selfEvaluationContent?: string;
   /** 자가평가 점수 (0 ~ maxSelfEvaluationRate) */
   selfEvaluationScore?: number;
+  /** 세부 프로젝트 (서브 프로젝트) */
+  subProject?: string | null;
 }
 
 /**

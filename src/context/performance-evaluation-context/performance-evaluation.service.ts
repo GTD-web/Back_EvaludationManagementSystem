@@ -206,6 +206,7 @@ export class PerformanceEvaluationService
     selfEvaluationContent?: string,
     selfEvaluationScore?: number,
     performanceResult?: string,
+    subProject?: string,
     actionBy?: string,
   ): Promise<WbsSelfEvaluationResponseDto> {
     const command = new UpsertWbsSelfEvaluationCommand(
@@ -215,6 +216,7 @@ export class PerformanceEvaluationService
       selfEvaluationContent,
       selfEvaluationScore,
       performanceResult,
+      subProject,
       actionBy || '시스템',
     );
 

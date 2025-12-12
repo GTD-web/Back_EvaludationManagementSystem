@@ -152,6 +152,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserProjectManagementController.prototype, "getProjectDetail", null);
 exports.UserProjectManagementController = UserProjectManagementController = __decorate([
+    (0, swagger_1.ApiExcludeController)(),
     (0, swagger_1.ApiTags)('A-0. 사용자 - 프로젝트 조회'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, decorators_1.Roles)('user'),

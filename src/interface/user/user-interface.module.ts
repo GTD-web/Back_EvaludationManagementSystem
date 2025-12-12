@@ -19,6 +19,7 @@ import { EvaluationPeriodModule } from '../../domain/core/evaluation-period/eval
 import { UserAuthController } from './auth/user-auth.controller';
 import { UserDashboardController } from './dashboard/user-dashboard.controller';
 import { UserProjectManagementController } from './project/user-project-management.controller';
+import { UserProjectAssignmentManagementController } from './evaluation-criteria/user-project-assignment-management.controller';
 import { UserWbsAssignmentManagementController } from './evaluation-criteria/user-wbs-assignment-management.controller';
 import { UserWbsEvaluationCriteriaManagementController } from './evaluation-criteria/user-wbs-evaluation-criteria-management.controller';
 import { UserEvaluationPeriodManagementController } from './evaluation-period/user-evaluation-period-management.controller';
@@ -59,6 +60,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     UserAuthController,
     UserEvaluationPeriodManagementController,
     UserProjectManagementController,
+    UserProjectAssignmentManagementController,
     UserWbsAssignmentManagementController,
     UserWbsEvaluationCriteriaManagementController,
     UserDeliverableManagementController,

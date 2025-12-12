@@ -15,7 +15,7 @@ import {
   Query,
   NotFoundException,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExcludeController, ApiTags } from '@nestjs/swagger';
 import { Roles } from '@interface/common/decorators';
 
 /**
@@ -23,6 +23,7 @@ import { Roles } from '@interface/common/decorators';
  *
  * 평가자가 프로젝트 정보를 조회할 수 있는 기능을 제공합니다.
  */
+@ApiExcludeController()
 @ApiTags('D-0. 평가자 - 프로젝트 조회')
 @ApiBearerAuth('Bearer')
 @Roles('evaluator')

@@ -152,6 +152,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EvaluatorProjectManagementController.prototype, "getProjectDetail", null);
 exports.EvaluatorProjectManagementController = EvaluatorProjectManagementController = __decorate([
+    (0, swagger_1.ApiExcludeController)(),
     (0, swagger_1.ApiTags)('D-0. 평가자 - 프로젝트 조회'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, decorators_1.Roles)('evaluator'),

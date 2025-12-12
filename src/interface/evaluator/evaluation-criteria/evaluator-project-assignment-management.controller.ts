@@ -8,7 +8,7 @@ import {
   CancelProjectAssignmentByProject,
   ChangeProjectAssignmentOrderByProject,
   CreateProjectAssignment,
-  GetAvailableProjects
+  GetAvailableProjects,
 } from '@interface/common/decorators/evaluation-criteria/project-assignment-api.decorators';
 import {
   AvailableProjectsResponseDto,
@@ -17,7 +17,7 @@ import {
   ChangeProjectAssignmentOrderByProjectDto,
   CreateProjectAssignmentDto,
   GetAvailableProjectsQueryDto,
-  ProjectAssignmentResponseDto
+  ProjectAssignmentResponseDto,
 } from '@interface/common/dto/evaluation-criteria/project-assignment.dto';
 import { Body, Controller, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';

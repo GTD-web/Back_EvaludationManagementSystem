@@ -23,9 +23,12 @@ const seed_data_context_module_1 = require("../../context/seed-data-context/seed
 const step_approval_context_module_1 = require("../../context/step-approval-context/step-approval-context.module");
 const employee_module_1 = require("../../domain/common/employee/employee.module");
 const notification_1 = require("../../domain/common/notification");
+const project_module_1 = require("../../domain/common/project/project.module");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const user_auth_controller_1 = require("./auth/user-auth.controller");
 const user_dashboard_controller_1 = require("./dashboard/user-dashboard.controller");
+const user_project_management_controller_1 = require("./project/user-project-management.controller");
+const user_project_assignment_management_controller_1 = require("./evaluation-criteria/user-project-assignment-management.controller");
 const user_wbs_assignment_management_controller_1 = require("./evaluation-criteria/user-wbs-assignment-management.controller");
 const user_wbs_evaluation_criteria_management_controller_1 = require("./evaluation-criteria/user-wbs-evaluation-criteria-management.controller");
 const user_evaluation_period_management_controller_1 = require("./evaluation-period/user-evaluation-period-management.controller");
@@ -56,11 +59,14 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             evaluation_period_module_1.EvaluationPeriodModule,
             employee_module_1.EmployeeModule,
             notification_1.NotificationModule,
+            project_module_1.ProjectModule,
         ],
         controllers: [
             user_dashboard_controller_1.UserDashboardController,
             user_auth_controller_1.UserAuthController,
             user_evaluation_period_management_controller_1.UserEvaluationPeriodManagementController,
+            user_project_management_controller_1.UserProjectManagementController,
+            user_project_assignment_management_controller_1.UserProjectAssignmentManagementController,
             user_wbs_assignment_management_controller_1.UserWbsAssignmentManagementController,
             user_wbs_evaluation_criteria_management_controller_1.UserWbsEvaluationCriteriaManagementController,
             user_deliverable_management_controller_1.UserDeliverableManagementController,

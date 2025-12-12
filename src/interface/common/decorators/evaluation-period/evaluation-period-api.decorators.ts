@@ -1570,7 +1570,7 @@ export function GetEmployeePeriodAssignments() {
  */
 export function GetMyPeriodAssignments() {
   return applyDecorators(
-    Get(':periodId/my-assignments'),
+    Get(':periodId/assignments'),
     ApiOperation({
       summary: '내 평가기간별 할당 정보 조회',
       description: `특정 평가기간에 현재 로그인한 사용자에게 할당된 프로젝트와 WBS(평가항목) 목록을 조회합니다.

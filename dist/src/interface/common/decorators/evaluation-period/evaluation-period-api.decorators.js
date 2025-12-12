@@ -1214,7 +1214,7 @@ function GetEmployeePeriodAssignments() {
     }));
 }
 function GetMyPeriodAssignments() {
-    return (0, common_1.applyDecorators)((0, common_1.Get)(':periodId/my-assignments'), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_1.Get)(':periodId/assignments'), (0, swagger_1.ApiOperation)({
         summary: '내 평가기간별 할당 정보 조회',
         description: `특정 평가기간에 현재 로그인한 사용자에게 할당된 프로젝트와 WBS(평가항목) 목록을 조회합니다.
 

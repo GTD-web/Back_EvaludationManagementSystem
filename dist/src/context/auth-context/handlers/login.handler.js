@@ -35,9 +35,6 @@ let LoginHandler = LoginHandler_1 = class LoginHandler {
             this.logger.log(`로그인 성공: ${email}`);
         }
         catch (error) {
-            if (error instanceof common_1.ForbiddenException) {
-                throw error;
-            }
             const errorMessage = error?.message ||
                 error?.details ||
                 '로그인 처리 중 오류가 발생했습니다.';
@@ -55,10 +52,6 @@ let LoginHandler = LoginHandler_1 = class LoginHandler {
                             : '이메일 또는 패스워드가 올바르지 않습니다.';
                         this.logger.warn(`로그인 실패: ${email} - ${authErrorMessage}`);
                         throw new common_1.UnauthorizedException(authErrorMessage);
-                    case 'FORBIDDEN':
-                        throw new common_1.ForbiddenException(errorMessage !== '로그인 처리 중 오류가 발생했습니다.'
-                            ? errorMessage
-                            : '이 시스템에 대한 접근 권한이 없습니다.');
                     default:
                         this.logger.error(`예상치 못한 SSO 에러: ${errorCode} (status: ${errorStatus})`, error);
                         throw new common_1.InternalServerErrorException(errorMessage !== '로그인 처리 중 오류가 발생했습니다.'
@@ -75,11 +68,6 @@ let LoginHandler = LoginHandler_1 = class LoginHandler {
                     this.logger.warn(`로그인 실패: ${email} - ${authErrorMessage}`);
                     throw new common_1.UnauthorizedException(authErrorMessage);
                 }
-                else if (errorStatus === 403) {
-                    throw new common_1.ForbiddenException(errorMessage !== '로그인 처리 중 오류가 발생했습니다.'
-                        ? errorMessage
-                        : '이 시스템에 대한 접근 권한이 없습니다.');
-                }
             }
             this.logger.error('알 수 없는 SSO 에러:', error);
             throw new common_1.InternalServerErrorException(errorMessage !== '로그인 처리 중 오류가 발생했습니다.'
@@ -89,16 +77,26 @@ let LoginHandler = LoginHandler_1 = class LoginHandler {
         this.logger.log(`로그인 성공: ${loginResult.email} (${loginResult.employeeNumber})`);
         const employee = await this.employeeService.findByEmployeeNumber(loginResult.employeeNumber);
         if (!employee) {
-            this.logger.warn(`시스템에 등록되지 않은 직원의 로그인 시도: ${loginResult.employeeNumber} (${loginResult.email})`);
-            throw new common_1.ForbiddenException('시스템에 등록되지 않은 사용자입니다. 관리자에게 문의하세요.');
+            this.logger.warn(`시스템에 등록되지 않은 직원의 로그인: ${loginResult.employeeNumber} (${loginResult.email}) - 로그인은 허용하지만 SSO 정보만 사용`);
+            const roles = loginResult.systemRoles?.['EMS-PROD'] || [];
+            const userInfo = {
+                id: '',
+                externalId: loginResult.id || '',
+                email: loginResult.email,
+                name: loginResult.name,
+                employeeNumber: loginResult.employeeNumber,
+                roles: roles,
+                status: 'ACTIVE',
+            };
+            return {
+                user: userInfo,
+                accessToken: loginResult.accessToken,
+                refreshToken: loginResult.refreshToken,
+            };
         }
         const roles = loginResult.systemRoles?.['EMS-PROD'] || [];
         this.logger.log(`로그인 결과의 systemRoles: ${JSON.stringify(loginResult.systemRoles)}`);
         this.logger.log(`추출된 EMS-PROD roles: [${roles.join(', ')}]`);
-        if (roles.includes('admin') && !employee.isAccessible) {
-            this.logger.warn(`접근 권한이 없는 관리자의 로그인 시도: ${employee.employeeNumber} (${employee.email})`);
-            throw new common_1.ForbiddenException('시스템 접근 권한이 없습니다. 관리자에게 문의하세요.');
-        }
         try {
             await this.employeeService.updateRoles(employee.id, roles);
             this.logger.log(`직원 ${employee.employeeNumber}의 역할 정보를 업데이트했습니다.`);

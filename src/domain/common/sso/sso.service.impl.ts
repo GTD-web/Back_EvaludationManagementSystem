@@ -146,9 +146,7 @@ export class SSOServiceImpl implements ISSOService, OnModuleInit {
 
   /**
    * 사용자 로그인을 수행한다
-   * 로그인 성공 후 시스템 역할을 검증하여 접근 권한을 확인한다
-   *
-   * @throws {ForbiddenException} 시스템 역할이 없거나 비어있는 경우
+   * 아이디/비밀번호가 일치하면 역할과 관계없이 로그인을 허용한다
    */
   async 로그인한다(email: string, password: string): Promise<LoginResult> {
     this.초기화확인();
@@ -161,8 +159,8 @@ export class SSOServiceImpl implements ISSOService, OnModuleInit {
       throw error;
     }
     this.logger.log(`로그인 결과: ${JSON.stringify(result)}`);
-    // 시스템 역할 검증
-    this.시스템역할을검증한다(result);
+    // 시스템 역할 검증 제거: 아이디/비밀번호만 맞으면 로그인 허용
+    // this.시스템역할을검증한다(result);
 
     // JSON 저장
     this.저장한다('로그인한다', { email }, result);

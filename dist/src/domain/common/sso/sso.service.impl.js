@@ -96,7 +96,6 @@ let SSOServiceImpl = SSOServiceImpl_1 = class SSOServiceImpl {
             throw error;
         }
         this.logger.log(`로그인 결과: ${JSON.stringify(result)}`);
-        this.시스템역할을검증한다(result);
         this.저장한다('로그인한다', { email }, result);
         return result;
     }

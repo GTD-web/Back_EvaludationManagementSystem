@@ -8,6 +8,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   ClearAllWbsSelfEvaluationsByEmployeePeriod,
   ClearWbsSelfEvaluationsByProject,
+  ResetAllWbsSelfEvaluationsByEmployeePeriod,
   ResetAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod,
   ResetWbsSelfEvaluationsToEvaluatorByProject,
   SubmitAllWbsSelfEvaluationsByEmployeePeriod,
@@ -154,6 +155,40 @@ export class EvaluatorWbsSelfEvaluationManagementController {
         };
       }),
     } as SubmitWbsSelfEvaluationsByProjectResponseDto;
+  }
+
+  /**
+   * 직원의 전체 WBS 자기평가 미제출 상태로 변경
+   * 특정 직원의 특정 평가기간에 대한 모든 완료된 WBS 자기평가를 미제출 상태로 변경합니다.
+   */
+  @ResetAllWbsSelfEvaluationsByEmployeePeriod()
+  async resetAllWbsSelfEvaluationsByEmployeePeriod(
+    @ParseUUID('employeeId') employeeId: string,
+    @ParseUUID('periodId') periodId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ResetAllWbsSelfEvaluationsResponseDto> {
+    const resetBy = user.id;
+    const result =
+      await this.performanceEvaluationService.직원의_전체_WBS자기평가를_초기화한다(
+        employeeId,
+        periodId,
+        resetBy,
+      );
+    // 응답을 DTO 형식으로 변환
+    return {
+      resetCount: result.resetCount,
+      failedCount: result.failedCount,
+      totalCount: result.totalCount,
+      resetEvaluations: result.resetEvaluations.map((e) => ({
+        evaluationId: e.evaluationId,
+        wbsItemId: e.wbsItemId,
+        selfEvaluationContent: e.selfEvaluationContent,
+        selfEvaluationScore: e.selfEvaluationScore,
+        performanceResult: e.performanceResult,
+        wasSubmittedToManager: e.wasSubmittedToManager,
+      })),
+      failedResets: result.failedResets,
+    } as ResetAllWbsSelfEvaluationsResponseDto;
   }
 
   /**

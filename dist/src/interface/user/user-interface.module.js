@@ -37,6 +37,7 @@ const user_peer_evaluation_management_controller_1 = require("./performance-eval
 const user_wbs_self_evaluation_management_controller_1 = require("./performance-evaluation/user-wbs-self-evaluation-management.controller");
 const user_revision_request_controller_1 = require("./revision-request/user-revision-request.controller");
 const notification_controller_1 = require("../common/controllers/notification.controller");
+const user_audit_log_controller_1 = require("./audit-log/user-audit-log.controller");
 let UserInterfaceModule = class UserInterfaceModule {
 };
 exports.UserInterfaceModule = UserInterfaceModule;
@@ -73,6 +74,7 @@ exports.UserInterfaceModule = UserInterfaceModule = __decorate([
             user_peer_evaluation_management_controller_1.UserPeerEvaluationManagementController,
             user_wbs_self_evaluation_management_controller_1.UserWbsSelfEvaluationManagementController,
             user_revision_request_controller_1.UserRevisionRequestController,
+            user_audit_log_controller_1.UserAuditLogController,
             notification_controller_1.NotificationController,
         ],
         providers: [],

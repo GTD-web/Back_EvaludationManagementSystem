@@ -137,7 +137,7 @@ export class DownwardEvaluationManagementController {
   ): Promise<void> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
-    const approveAllBelow = queryDto.approveAllBelow || false;
+    const approveAllBelow = queryDto.approveAllBelow ?? true;
 
     await this.downwardEvaluationBusinessService.일차_하향평가를_제출하고_재작성요청을_완료한다(
       evaluateeId,
@@ -164,7 +164,7 @@ export class DownwardEvaluationManagementController {
   ): Promise<void> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
-    const approveAllBelow = queryDto.approveAllBelow || false;
+    const approveAllBelow = queryDto.approveAllBelow ?? true;
 
     await this.downwardEvaluationBusinessService.이차_하향평가를_제출하고_재작성요청을_완료한다(
       evaluateeId,
@@ -293,6 +293,7 @@ export class DownwardEvaluationManagementController {
   }> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
+    const approveAllBelow = queryDto.approveAllBelow ?? true;
 
     return await this.downwardEvaluationBusinessService.피평가자의_모든_하향평가를_일괄_제출한다(
       evaluatorId,
@@ -300,6 +301,7 @@ export class DownwardEvaluationManagementController {
       periodId,
       queryDto.evaluationType,
       submittedBy,
+      approveAllBelow,
     );
   }
 

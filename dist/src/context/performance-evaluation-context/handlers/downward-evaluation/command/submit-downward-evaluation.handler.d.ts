@@ -12,7 +12,8 @@ import { EmployeeService } from '@domain/common/employee/employee.service';
 export declare class SubmitDownwardEvaluationCommand {
     readonly evaluationId: string;
     readonly submittedBy: string;
-    constructor(evaluationId: string, submittedBy?: string);
+    readonly approveAllBelow: boolean;
+    constructor(evaluationId: string, submittedBy?: string, approveAllBelow?: boolean);
 }
 export declare class SubmitDownwardEvaluationHandler implements ICommandHandler<SubmitDownwardEvaluationCommand> {
     private readonly downwardEvaluationService;

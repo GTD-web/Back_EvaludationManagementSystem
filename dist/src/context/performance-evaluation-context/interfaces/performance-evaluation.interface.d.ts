@@ -19,8 +19,8 @@ export interface IPerformanceEvaluationService {
     하향평가를_생성한다(evaluatorId: string, evaluateeId: string, periodId: string, projectId: string, selfEvaluationId?: string, evaluationType?: string, downwardEvaluationContent?: string, downwardEvaluationScore?: number, createdBy?: string): Promise<string>;
     하향평가를_수정한다(evaluationId: string, downwardEvaluationContent?: string, downwardEvaluationScore?: number, updatedBy?: string): Promise<void>;
     하향평가를_제출한다(evaluationId: string, submittedBy?: string): Promise<void>;
-    일차_하향평가를_제출한다(evaluateeId: string, periodId: string, projectId: string, evaluatorId: string, submittedBy: string): Promise<void>;
-    이차_하향평가를_제출한다(evaluateeId: string, periodId: string, projectId: string, evaluatorId: string, submittedBy: string): Promise<void>;
+    일차_하향평가를_제출한다(evaluateeId: string, periodId: string, projectId: string, evaluatorId: string, submittedBy: string, approveAllBelow?: boolean): Promise<void>;
+    이차_하향평가를_제출한다(evaluateeId: string, periodId: string, projectId: string, evaluatorId: string, submittedBy: string, approveAllBelow?: boolean): Promise<void>;
     하향평가_목록을_조회한다(query: GetDownwardEvaluationListQuery): Promise<any>;
     하향평가_상세정보를_조회한다(query: GetDownwardEvaluationDetailQuery): Promise<any>;
     최종평가를_생성한다(employeeId: string, periodId: string, evaluationGrade: string, jobGrade: any, jobDetailedGrade: any, finalComments?: string, createdBy?: string): Promise<string>;

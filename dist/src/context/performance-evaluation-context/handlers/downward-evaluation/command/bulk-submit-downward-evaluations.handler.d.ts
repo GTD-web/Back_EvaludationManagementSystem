@@ -20,7 +20,8 @@ export declare class BulkSubmitDownwardEvaluationsCommand {
     readonly evaluationType: DownwardEvaluationType;
     readonly submittedBy: string;
     readonly forceSubmit: boolean;
-    constructor(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy?: string, forceSubmit?: boolean);
+    readonly approveAllBelow: boolean;
+    constructor(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy?: string, forceSubmit?: boolean, approveAllBelow?: boolean);
 }
 export declare class BulkSubmitDownwardEvaluationsHandler implements ICommandHandler<BulkSubmitDownwardEvaluationsCommand> {
     private readonly downwardEvaluationRepository;

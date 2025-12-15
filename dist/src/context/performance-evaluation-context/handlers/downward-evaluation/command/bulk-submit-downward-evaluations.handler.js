@@ -32,6 +32,7 @@ const notification_helper_service_1 = require("../../../../../domain/common/noti
 const step_approval_context_service_1 = require("../../../../step-approval-context/step-approval-context.service");
 const evaluation_period_service_1 = require("../../../../../domain/core/evaluation-period/evaluation-period.service");
 const employee_service_1 = require("../../../../../domain/common/employee/employee.service");
+const employee_evaluation_step_approval_1 = require("../../../../../domain/sub/employee-evaluation-step-approval");
 class BulkSubmitDownwardEvaluationsCommand {
     evaluatorId;
     evaluateeId;
@@ -39,13 +40,15 @@ class BulkSubmitDownwardEvaluationsCommand {
     evaluationType;
     submittedBy;
     forceSubmit;
-    constructor(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy = '시스템', forceSubmit = false) {
+    approveAllBelow;
+    constructor(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy = '시스템', forceSubmit = false, approveAllBelow = true) {
         this.evaluatorId = evaluatorId;
         this.evaluateeId = evaluateeId;
         this.periodId = periodId;
         this.evaluationType = evaluationType;
         this.submittedBy = submittedBy;
         this.forceSubmit = forceSubmit;
+        this.approveAllBelow = approveAllBelow;
     }
 }
 exports.BulkSubmitDownwardEvaluationsCommand = BulkSubmitDownwardEvaluationsCommand;
@@ -78,13 +81,14 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
         this.configService = configService;
     }
     async execute(command) {
-        const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit } = command;
+        const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit, approveAllBelow } = command;
         this.logger.log('피평가자의 모든 하향평가 일괄 제출 핸들러 실행', {
             evaluatorId,
             evaluateeId,
             periodId,
             evaluationType,
             forceSubmit,
+            approveAllBelow,
         });
         return await this.transactionManager.executeTransaction(async () => {
             await this.할당된_WBS에_대한_하향평가를_생성한다(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit);
@@ -138,6 +142,47 @@ let BulkSubmitDownwardEvaluationsHandler = BulkSubmitDownwardEvaluationsHandler_
                         error: error instanceof Error ? error.message : String(error),
                     });
                     this.logger.error(`하향평가 제출 실패: ${evaluation.id}`, error instanceof Error ? error.stack : undefined);
+                }
+            }
+            if (submittedIds.length > 0 && approveAllBelow) {
+                try {
+                    await this.stepApprovalContext.평가기준설정_확인상태를_변경한다({
+                        evaluationPeriodId: periodId,
+                        employeeId: evaluateeId,
+                        status: employee_evaluation_step_approval_1.StepApprovalStatus.APPROVED,
+                        updatedBy: submittedBy,
+                    });
+                    await this.stepApprovalContext.자기평가_확인상태를_변경한다({
+                        evaluationPeriodId: periodId,
+                        employeeId: evaluateeId,
+                        status: employee_evaluation_step_approval_1.StepApprovalStatus.APPROVED,
+                        updatedBy: submittedBy,
+                    });
+                    if (evaluationType === 'primary') {
+                        await this.stepApprovalContext.일차하향평가_확인상태를_변경한다({
+                            evaluationPeriodId: periodId,
+                            employeeId: evaluateeId,
+                            status: employee_evaluation_step_approval_1.StepApprovalStatus.APPROVED,
+                            updatedBy: submittedBy,
+                        });
+                    }
+                    else if (evaluationType === 'secondary') {
+                        await this.stepApprovalContext.이차하향평가_확인상태를_변경한다({
+                            evaluationPeriodId: periodId,
+                            employeeId: evaluateeId,
+                            evaluatorId,
+                            status: employee_evaluation_step_approval_1.StepApprovalStatus.APPROVED,
+                            updatedBy: submittedBy,
+                        });
+                    }
+                    this.logger.debug(`단계 승인 상태를 approved로 변경 완료 (일괄 제출) - 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}`);
+                }
+                catch (error) {
+                    this.logger.error('단계 승인 상태 변경 실패 (일괄 제출, 계속 진행)', error instanceof Error ? error.stack : undefined, {
+                        evaluateeId,
+                        periodId,
+                        evaluationType,
+                    });
                 }
             }
             const result = {

@@ -32,9 +32,11 @@ const employee_service_1 = require("../../../../../domain/common/employee/employ
 class SubmitDownwardEvaluationCommand {
     evaluationId;
     submittedBy;
-    constructor(evaluationId, submittedBy = '시스템') {
+    approveAllBelow;
+    constructor(evaluationId, submittedBy = '시스템', approveAllBelow = true) {
         this.evaluationId = evaluationId;
         this.submittedBy = submittedBy;
+        this.approveAllBelow = approveAllBelow;
     }
 }
 exports.SubmitDownwardEvaluationCommand = SubmitDownwardEvaluationCommand;
@@ -61,7 +63,7 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
         this.configService = configService;
     }
     async execute(command) {
-        const { evaluationId, submittedBy } = command;
+        const { evaluationId, submittedBy, approveAllBelow } = command;
         this.logger.log('하향평가 제출 핸들러 실행', { evaluationId });
         await this.transactionManager.executeTransaction(async () => {
             const evaluation = await this.downwardEvaluationService.조회한다(evaluationId);
@@ -89,14 +91,17 @@ let SubmitDownwardEvaluationHandler = SubmitDownwardEvaluationHandler_1 = class 
                         createdBy: submittedBy,
                     });
                 }
+                const approvalStatus = approveAllBelow
+                    ? employee_evaluation_step_approval_types_1.StepApprovalStatus.APPROVED
+                    : employee_evaluation_step_approval_types_1.StepApprovalStatus.PENDING;
                 if (evaluation.evaluationType === 'primary') {
-                    this.stepApprovalService.단계_상태를_변경한다(stepApproval, 'primary', employee_evaluation_step_approval_types_1.StepApprovalStatus.PENDING, submittedBy);
+                    this.stepApprovalService.단계_상태를_변경한다(stepApproval, 'primary', approvalStatus, submittedBy);
                 }
                 else if (evaluation.evaluationType === 'secondary') {
-                    this.stepApprovalService.단계_상태를_변경한다(stepApproval, 'secondary', employee_evaluation_step_approval_types_1.StepApprovalStatus.PENDING, submittedBy);
+                    this.stepApprovalService.단계_상태를_변경한다(stepApproval, 'secondary', approvalStatus, submittedBy);
                 }
                 await this.stepApprovalService.저장한다(stepApproval);
-                this.logger.debug(`단계 승인 상태를 pending으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`);
+                this.logger.debug(`단계 승인 상태를 ${approveAllBelow ? 'approved' : 'pending'}으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`);
             }
             if (evaluation.evaluationType === 'primary') {
                 this.이차평가자에게_알림을전송한다(evaluation.employeeId, evaluation.periodId, evaluation.wbsId, evaluation.evaluatorId).catch((error) => {

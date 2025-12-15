@@ -59,6 +59,14 @@ export class UpsertWbsEvaluationCriteriaBodyDto {
   @Min(1)
   @Max(10)
   importance: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+  })
+  @IsOptional()
+  @IsString()
+  subProject?: string;
 }
 
 /**
@@ -84,6 +92,14 @@ export class UpdateWbsEvaluationCriteriaDto {
   @Min(1)
   @Max(10)
   importance?: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+  })
+  @IsOptional()
+  @IsString()
+  subProject?: string;
 }
 
 /**
@@ -166,6 +182,13 @@ export class WbsEvaluationCriteriaDto {
     example: 5,
   })
   importance: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
 
   @ApiProperty({ description: '생성일시', example: '2024-10-01T09:00:00Z' })
   createdAt: Date;

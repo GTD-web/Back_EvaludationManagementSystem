@@ -44,6 +44,17 @@ export class WbsEvaluationCriteria
   importance: number;
 
   /**
+   * 세부 프로젝트 (서브 프로젝트)
+   */
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '세부 프로젝트 (서브 프로젝트)',
+  })
+  subProject?: string | null;
+
+  /**
    * DTO로 변환
    */
   DTO로_변환한다(): WbsEvaluationCriteriaDto {
@@ -52,6 +63,7 @@ export class WbsEvaluationCriteria
       wbsItemId: this.wbsItemId,
       criteria: this.criteria,
       importance: this.importance,
+      subProject: this.subProject,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -63,10 +75,14 @@ export class WbsEvaluationCriteria
   기준내용업데이트한다(
     criteria: string,
     importance: number,
+    subProject: string | null | undefined,
     updatedBy: string,
   ): void {
     this.criteria = criteria;
     this.importance = importance;
+    if (subProject !== undefined) {
+      this.subProject = subProject;
+    }
     this.수정자를_설정한다(updatedBy);
     this.메타데이터를_업데이트한다();
   }

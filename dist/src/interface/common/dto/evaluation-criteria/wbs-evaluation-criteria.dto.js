@@ -50,6 +50,7 @@ __decorate([
 class UpsertWbsEvaluationCriteriaBodyDto {
     criteria;
     importance;
+    subProject;
 }
 exports.UpsertWbsEvaluationCriteriaBodyDto = UpsertWbsEvaluationCriteriaBodyDto;
 __decorate([
@@ -72,9 +73,19 @@ __decorate([
     (0, class_validator_1.Max)(10),
     __metadata("design:type", Number)
 ], UpsertWbsEvaluationCriteriaBodyDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpsertWbsEvaluationCriteriaBodyDto.prototype, "subProject", void 0);
 class UpdateWbsEvaluationCriteriaDto {
     criteria;
     importance;
+    subProject;
 }
 exports.UpdateWbsEvaluationCriteriaDto = UpdateWbsEvaluationCriteriaDto;
 __decorate([
@@ -99,6 +110,15 @@ __decorate([
     (0, class_validator_1.Max)(10),
     __metadata("design:type", Number)
 ], UpdateWbsEvaluationCriteriaDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateWbsEvaluationCriteriaDto.prototype, "subProject", void 0);
 class WbsEvaluationCriteriaFilterDto {
     wbsItemId;
     criteriaSearch;
@@ -165,6 +185,7 @@ class WbsEvaluationCriteriaDto {
     wbsItemId;
     criteria;
     importance;
+    subProject;
     createdAt;
     updatedAt;
 }
@@ -197,6 +218,14 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteriaDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], WbsEvaluationCriteriaDto.prototype, "subProject", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '생성일시', example: '2024-10-01T09:00:00Z' }),
     __metadata("design:type", Date)

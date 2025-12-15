@@ -180,6 +180,7 @@ export class WbsEvaluationCriteriaService
         wbsItemId: createData.wbsItemId,
         criteria: createData.criteria,
         importance: createData.importance,
+        subProject: createData.subProject,
       });
 
       const savedCriteria = await repository.save(criteria);
@@ -223,7 +224,8 @@ export class WbsEvaluationCriteriaService
       // 업데이트 적용
       if (
         updateData.criteria !== undefined ||
-        updateData.importance !== undefined
+        updateData.importance !== undefined ||
+        updateData.subProject !== undefined
       ) {
         // criteria가 undefined가 아닌 경우 (빈 문자열 포함) 업데이트
         const newCriteria =
@@ -231,7 +233,16 @@ export class WbsEvaluationCriteriaService
             ? updateData.criteria
             : criteria.criteria;
         const newImportance = updateData.importance ?? criteria.importance;
-        criteria.기준내용업데이트한다(newCriteria, newImportance, updatedBy);
+        const newSubProject =
+          updateData.subProject !== undefined
+            ? updateData.subProject
+            : criteria.subProject;
+        criteria.기준내용업데이트한다(
+          newCriteria,
+          newImportance,
+          newSubProject,
+          updatedBy,
+        );
       }
 
       const updatedCriteria = await repository.save(criteria);

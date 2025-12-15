@@ -98,6 +98,7 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
                 wbsItemId: createData.wbsItemId,
                 criteria: createData.criteria,
                 importance: createData.importance,
+                subProject: createData.subProject,
             });
             const savedCriteria = await repository.save(criteria);
             this.logger.log(`WBS 평가 기준 생성 완료 - ID: ${savedCriteria.id}, WBS 항목: ${savedCriteria.wbsItemId}`);
@@ -113,12 +114,16 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
             }
             await this.validationService.업데이트데이터검증한다(id, updateData, manager);
             if (updateData.criteria !== undefined ||
-                updateData.importance !== undefined) {
+                updateData.importance !== undefined ||
+                updateData.subProject !== undefined) {
                 const newCriteria = updateData.criteria !== undefined
                     ? updateData.criteria
                     : criteria.criteria;
                 const newImportance = updateData.importance ?? criteria.importance;
-                criteria.기준내용업데이트한다(newCriteria, newImportance, updatedBy);
+                const newSubProject = updateData.subProject !== undefined
+                    ? updateData.subProject
+                    : criteria.subProject;
+                criteria.기준내용업데이트한다(newCriteria, newImportance, newSubProject, updatedBy);
             }
             const updatedCriteria = await repository.save(criteria);
             this.logger.log(`WBS 평가 기준 업데이트 완료 - ID: ${id}, 수정자: ${updatedBy}`);

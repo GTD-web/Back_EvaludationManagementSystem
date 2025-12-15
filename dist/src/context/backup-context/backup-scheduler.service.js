@@ -79,7 +79,7 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     async 시간별_백업을_실행한다() {
         try {
-            this.logger.log('🕐 4시간 단위 백업 시작...');
+            this.logger.log('🕐 4시간 단위 백업 시작... (KST)');
             await this.백업을_실행한다(this.HOURLY_DIR, 'hourly');
             await this.오래된_백업을_삭제한다(this.HOURLY_DIR, 6);
             this.logger.log('✅ 4시간 단위 백업 완료');
@@ -90,7 +90,7 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     async 일일_백업을_실행한다() {
         try {
-            this.logger.log('📅 일일 백업 시작...');
+            this.logger.log('📅 일일 백업 시작... (KST 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
             await this.백업을_실행한다(this.HOURLY_DIR, 'hourly', timestamp);
             await this.백업을_실행한다(this.DAILY_DIR, 'daily', timestamp);
@@ -103,7 +103,7 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     async 주간_백업을_실행한다() {
         try {
-            this.logger.log('📆 주간 백업 시작...');
+            this.logger.log('📆 주간 백업 시작... (KST 일요일 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
             await this.백업을_실행한다(this.WEEKLY_DIR, 'weekly', timestamp);
             await this.오래된_백업을_삭제한다(this.WEEKLY_DIR, 12);
@@ -115,7 +115,7 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     async 월간_백업을_실행한다() {
         try {
-            this.logger.log('📊 월간 백업 시작...');
+            this.logger.log('📊 월간 백업 시작... (KST 1일 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
             await this.백업을_실행한다(this.MONTHLY_DIR, 'monthly', timestamp);
             await this.오래된_백업을_삭제한다(this.MONTHLY_DIR, 12);
@@ -143,9 +143,10 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
                 cwd: process.cwd(),
                 env: { ...process.env },
             });
-            const files = fs.readdirSync(tempBackupDir)
-                .filter(f => f.startsWith('backup-') && f.endsWith('.sql'))
-                .map(f => ({
+            const files = fs
+                .readdirSync(tempBackupDir)
+                .filter((f) => f.startsWith('backup-') && f.endsWith('.sql'))
+                .map((f) => ({
                 name: f,
                 path: path.join(tempBackupDir, f),
                 mtime: fs.statSync(path.join(tempBackupDir, f)).mtime,
@@ -163,9 +164,10 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     async 오래된_백업을_삭제한다(dir, keepCount) {
         try {
-            const files = fs.readdirSync(dir)
-                .filter(f => f.startsWith('backup-') && f.endsWith('.sql'))
-                .map(f => ({
+            const files = fs
+                .readdirSync(dir)
+                .filter((f) => f.startsWith('backup-') && f.endsWith('.sql'))
+                .map((f) => ({
                 name: f,
                 path: path.join(dir, f),
                 mtime: fs.statSync(path.join(dir, f)).mtime,
@@ -184,7 +186,13 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
         }
     }
     타임스탬프를_생성한다() {
-        return new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').split('Z')[0];
+        const now = new Date();
+        const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+        return kstDate
+            .toISOString()
+            .replace(/[:.]/g, '-')
+            .replace('T', '-')
+            .split('Z')[0];
     }
     async 수동_백업을_실행한다(type = 'daily') {
         this.logger.log(`🔧 수동 백업 시작 (타입: ${type})...`);
@@ -217,9 +225,9 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     백업_파일_개수를_조회한다(dir) {
         try {
-            return fs.readdirSync(dir)
-                .filter(f => f.startsWith('backup-') && f.endsWith('.sql'))
-                .length;
+            return fs
+                .readdirSync(dir)
+                .filter((f) => f.startsWith('backup-') && f.endsWith('.sql')).length;
         }
         catch {
             return 0;
@@ -228,25 +236,33 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
 };
 exports.BackupSchedulerService = BackupSchedulerService;
 __decorate([
-    (0, schedule_1.Cron)('0 0,4,8,12,16,20 * * *'),
+    (0, schedule_1.Cron)('0 0,4,8,12,16,20 * * *', {
+        timeZone: 'Asia/Seoul',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], BackupSchedulerService.prototype, "\uC2DC\uAC04\uBCC4_\uBC31\uC5C5\uC744_\uC2E4\uD589\uD55C\uB2E4", null);
 __decorate([
-    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_MIDNIGHT),
+    (0, schedule_1.Cron)('0 0 * * *', {
+        timeZone: 'Asia/Seoul',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], BackupSchedulerService.prototype, "\uC77C\uC77C_\uBC31\uC5C5\uC744_\uC2E4\uD589\uD55C\uB2E4", null);
 __decorate([
-    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_WEEK),
+    (0, schedule_1.Cron)('0 0 * * 0', {
+        timeZone: 'Asia/Seoul',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], BackupSchedulerService.prototype, "\uC8FC\uAC04_\uBC31\uC5C5\uC744_\uC2E4\uD589\uD55C\uB2E4", null);
 __decorate([
-    (0, schedule_1.Cron)('0 0 1 * *'),
+    (0, schedule_1.Cron)('0 0 1 * *', {
+        timeZone: 'Asia/Seoul',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

@@ -12,7 +12,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
-  ApiForbiddenResponse,
 } from '@nestjs/swagger';
 import {
   GetNotificationsResponseDto,
@@ -95,8 +94,7 @@ export function GetNotifications() {
 - sourceSystem 검증: 모든 알림의 sourceSystem이 'EMS'여야 함
 - 개수 검증: total과 unreadCount가 응답에 포함되어야 함
 - total 정확성: 필터 조건에 맞는 전체 개수가 정확해야 함
-- UUID 검증: 잘못된 UUID 형식의 recipientId로 요청 시 400 에러
-- 권한 없음: 사용자의 역할이 빈 배열일 때 403 에러`,
+- UUID 검증: 잘못된 UUID 형식의 recipientId로 요청 시 400 에러`,
     }),
     ApiParam({
       name: 'recipientId',
@@ -137,16 +135,6 @@ export function GetNotifications() {
     ApiResponse({
       status: HttpStatus.UNAUTHORIZED,
       description: '인증이 필요합니다.',
-    }),
-    ApiForbiddenResponse({
-      description: '권한 없음 (역할이 없는 사용자)',
-      schema: {
-        example: {
-          message: '이 작업을 수행할 권한이 없습니다.',
-          error: 'Forbidden',
-          statusCode: 403,
-        },
-      },
     }),
   );
 }

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Inject,
-  Logger,
-  Param,
-  Query,
-  ForbiddenException,
-  Req,
-} from '@nestjs/common';
+import { Controller, Inject, Logger, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { INotificationService } from '@domain/common/notification';
 import { NOTIFICATION_SERVICE_TOKEN } from '@domain/common/notification/notification-helper.service';
@@ -21,7 +13,6 @@ import {
   MarkNotificationAsReadResponseDto,
   MarkAllAsReadResponseDto,
 } from '../dto/notification/notification.dto';
-import type { Request } from 'express';
 
 /**
  * 알림 컨트롤러
@@ -43,16 +34,9 @@ export class NotificationController {
    */
   @GetNotifications()
   async getNotifications(
-    @Req() request: Request,
     @Param('recipientId') recipientId: string,
     @Query() query: GetNotificationsQueryDto,
   ): Promise<GetNotificationsResponseDto> {
-    // 권한 검증: 역할이 빈 배열이면 403 에러
-    const user = request['user'];
-    if (!user?.roles || user.roles.length === 0) {
-      throw new ForbiddenException('이 작업을 수행할 권한이 없습니다.');
-    }
-
     // isRead를 string에서 boolean으로 수동 변환
     let isRead: boolean | undefined = undefined;
     if (query.isRead !== undefined) {

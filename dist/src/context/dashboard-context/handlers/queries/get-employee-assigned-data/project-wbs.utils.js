@@ -75,6 +75,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             'criteria.wbsItemId AS criteria_wbs_item_id',
             'criteria.criteria AS criteria_criteria',
             'criteria.importance AS criteria_importance',
+            'criteria.subProject AS criteria_sub_project',
             'criteria.createdAt AS criteria_created_at',
         ])
             .where('criteria.wbsItemId IN (:...wbsItemIds)', { wbsItemIds })
@@ -92,6 +93,7 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 criterionId: row.criteria_id,
                 criteria: row.criteria_criteria || '',
                 importance: row.criteria_importance || 5,
+                subProject: row.criteria_sub_project || null,
                 createdAt: row.criteria_created_at,
             });
         }
@@ -454,7 +456,6 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
             }
             const criteria = criteriaMap.get(wbsItemId) || [];
             const performance = performanceMap.get(wbsItemId) || null;
-            const subProject = subProjectMap.get(wbsItemId) || null;
             const downwardEvalData = downwardEvaluationMap.get(wbsItemId) || {
                 primary: null,
                 secondary: null,
@@ -493,7 +494,6 @@ async function getProjectsWithWbs(evaluationPeriodId, employeeId, mapping, proje
                 wbsCode: wbsRow.wbs_item_wbs_code || '',
                 weight: parseFloat(wbsRow.assignment_weight) || 0,
                 assignedAt: wbsRow.assignment_assigned_date,
-                subProject,
                 criteria,
                 performance,
                 primaryDownwardEvaluation: downwardEvalData.primary || null,

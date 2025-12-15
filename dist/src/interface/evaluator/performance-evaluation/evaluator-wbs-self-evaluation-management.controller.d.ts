@@ -11,6 +11,7 @@ export declare class EvaluatorWbsSelfEvaluationManagementController {
     submitAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod(employeeId: string, periodId: string, user: AuthenticatedUser): Promise<SubmitAllWbsSelfEvaluationsResponseDto>;
     submitWbsSelfEvaluationsByProject(employeeId: string, periodId: string, projectId: string, user: AuthenticatedUser): Promise<SubmitWbsSelfEvaluationsByProjectResponseDto>;
     submitWbsSelfEvaluationsToEvaluatorByProject(employeeId: string, periodId: string, projectId: string, user: AuthenticatedUser): Promise<SubmitWbsSelfEvaluationsByProjectResponseDto>;
+    resetAllWbsSelfEvaluationsByEmployeePeriod(employeeId: string, periodId: string, user: AuthenticatedUser): Promise<ResetAllWbsSelfEvaluationsResponseDto>;
     resetAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod(employeeId: string, periodId: string, user: AuthenticatedUser): Promise<ResetAllWbsSelfEvaluationsResponseDto>;
     resetWbsSelfEvaluationsToEvaluatorByProject(employeeId: string, periodId: string, projectId: string, user: AuthenticatedUser): Promise<ResetWbsSelfEvaluationsByProjectResponseDto>;
     clearAllWbsSelfEvaluationsByEmployeePeriod(employeeId: string, periodId: string, user: AuthenticatedUser): Promise<ClearAllWbsSelfEvaluationsResponseDto>;

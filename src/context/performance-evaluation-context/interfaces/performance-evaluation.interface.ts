@@ -188,6 +188,7 @@ export interface IPerformanceEvaluationService {
     projectId: string,
     evaluatorId: string,
     submittedBy: string,
+    approveAllBelow?: boolean,
   ): Promise<void>;
 
   /**
@@ -199,6 +200,7 @@ export interface IPerformanceEvaluationService {
     projectId: string,
     evaluatorId: string,
     submittedBy: string,
+    approveAllBelow?: boolean,
   ): Promise<void>;
 
   /**

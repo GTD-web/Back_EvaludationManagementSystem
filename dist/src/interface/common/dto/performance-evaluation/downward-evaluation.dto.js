@@ -145,12 +145,12 @@ class SubmitDownwardEvaluationQueryDto {
 exports.SubmitDownwardEvaluationQueryDto = SubmitDownwardEvaluationQueryDto;
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '하위 단계 자동 승인 여부 (기본값: false)',
-        example: false,
+        description: '하위 단계 자동 승인 여부 (기본값: true)',
+        example: true,
         type: Boolean,
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, decorators_1.ToBoolean)(false),
+    (0, decorators_1.ToBoolean)(true),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], SubmitDownwardEvaluationQueryDto.prototype, "approveAllBelow", void 0);

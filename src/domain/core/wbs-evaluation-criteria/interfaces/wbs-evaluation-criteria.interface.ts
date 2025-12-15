@@ -9,7 +9,7 @@ export interface IWbsEvaluationCriteria extends IBaseEntity {
   wbsItemId: string;
   /** 평가 기준 내용 */
   criteria: string;
-  /** 중요도 (1~10) */
+  /** 중요도 (1~5) */
   importance: number;
   /** 세부 프로젝트 (서브 프로젝트) */
   subProject?: string | null;
@@ -17,7 +17,7 @@ export interface IWbsEvaluationCriteria extends IBaseEntity {
   /**
    * 평가 기준 내용을 업데이트한다
    * @param criteria 새로운 평가 기준 내용
-   * @param importance 중요도 (1~10)
+   * @param importance 중요도 (1~5)
    * @param subProject 세부 프로젝트 (서브 프로젝트)
    * @param updatedBy 수정자 ID
    */

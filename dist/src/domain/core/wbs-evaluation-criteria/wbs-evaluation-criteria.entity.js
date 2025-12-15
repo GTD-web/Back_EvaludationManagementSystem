@@ -73,8 +73,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'int',
-        default: 5,
-        comment: '중요도 (1~10, 기본값: 5)',
+        default: 3,
+        comment: '중요도 (1~5, 기본값: 3)',
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteria.prototype, "importance", void 0);

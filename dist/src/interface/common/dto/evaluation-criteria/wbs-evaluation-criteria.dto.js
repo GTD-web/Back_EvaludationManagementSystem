@@ -37,14 +37,14 @@ __decorate([
 ], CreateWbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], CreateWbsEvaluationCriteriaDto.prototype, "importance", void 0);
 class UpsertWbsEvaluationCriteriaBodyDto {
@@ -63,14 +63,14 @@ __decorate([
 ], UpsertWbsEvaluationCriteriaBodyDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], UpsertWbsEvaluationCriteriaBodyDto.prototype, "importance", void 0);
 __decorate([
@@ -99,15 +99,15 @@ __decorate([
 ], UpdateWbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], UpdateWbsEvaluationCriteriaDto.prototype, "importance", void 0);
 __decorate([
@@ -213,8 +213,8 @@ __decorate([
 ], WbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteriaDto.prototype, "importance", void 0);
@@ -278,8 +278,8 @@ __decorate([
 ], WbsEvaluationCriteriaDetailDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteriaDetailDto.prototype, "importance", void 0);

@@ -21,14 +21,14 @@ export class CreateWbsEvaluationCriteriaDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance: number;
 }
 
@@ -50,14 +50,14 @@ export class UpsertWbsEvaluationCriteriaBodyDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance: number;
 
   @ApiPropertyOptional({
@@ -82,15 +82,15 @@ export class UpdateWbsEvaluationCriteriaDto {
   criteria?: string;
 
   @ApiPropertyOptional({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance?: number;
 
   @ApiPropertyOptional({
@@ -178,8 +178,8 @@ export class WbsEvaluationCriteriaDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
   })
   importance: number;
 
@@ -231,8 +231,8 @@ export class WbsEvaluationCriteriaDetailDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
   })
   importance: number;
 

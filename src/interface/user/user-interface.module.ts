@@ -28,6 +28,7 @@ import { UserPeerEvaluationManagementController } from './performance-evaluation
 import { UserWbsSelfEvaluationManagementController } from './performance-evaluation/user-wbs-self-evaluation-management.controller';
 import { UserRevisionRequestController } from './revision-request/user-revision-request.controller';
 import { NotificationController } from '../common/controllers/notification.controller';
+import { UserAuditLogController } from './audit-log/user-audit-log.controller';
 
 /**
  * 사용자 인터페이스 모듈
@@ -67,6 +68,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     UserPeerEvaluationManagementController,
     UserWbsSelfEvaluationManagementController,
     UserRevisionRequestController,
+    UserAuditLogController,
     NotificationController,
   ],
   providers: [],

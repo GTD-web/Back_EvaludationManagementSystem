@@ -289,14 +289,14 @@ let EvaluationCriteriaManagementService = EvaluationCriteriaManagementService_1 
         const command = new wbs_evaluation_criteria_1.UpdateWbsEvaluationCriteriaCommand(id, data, updatedBy);
         return await this.commandBus.execute(command);
     }
-    async WBS_평가기준을_저장한다(wbsItemId, criteria, importance, actionBy) {
+    async WBS_평가기준을_저장한다(wbsItemId, criteria, importance, subProject, actionBy) {
         const existingCriteria = await this.특정_WBS항목의_평가기준을_조회한다(wbsItemId);
         if (existingCriteria && existingCriteria.length > 0) {
             const criteriaToUpdate = existingCriteria[0];
-            return await this.WBS_평가기준을_수정한다(criteriaToUpdate.id, { criteria, importance }, actionBy);
+            return await this.WBS_평가기준을_수정한다(criteriaToUpdate.id, { criteria, importance, subProject }, actionBy);
         }
         else {
-            return await this.WBS_평가기준을_생성한다({ wbsItemId, criteria, importance }, actionBy);
+            return await this.WBS_평가기준을_생성한다({ wbsItemId, criteria, importance, subProject }, actionBy);
         }
     }
     async WBS_평가기준을_삭제한다(id, deletedBy) {

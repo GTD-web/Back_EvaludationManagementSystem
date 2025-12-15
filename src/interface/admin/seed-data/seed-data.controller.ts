@@ -172,21 +172,23 @@ export class SeedDataController {
 
     // 부서 목록 (실제 시스템의 실무 부서)
     const departmentNames = [
+      '경영지원본부',
       '경영지원실',
       '사업개발실',
-      'PM실',
-      '시스템파트',
-      'ES파트',
-      '전력파트',
-      '전자1파트',
-      '전자2파트',
-      'RF파트',
-      '기구파트',
-      'Web파트',
-      '지상운용파트',
-      '영상분석파트',
+      '기반기술사업부',
       '제조파트',
       'QA파트',
+      '루미르 주식회사',
+      '시스템파트',
+      'EC파트',
+      'EP파트',
+      'ES파트',
+      'IP파트',
+      'ME파트',
+      'PM실',
+      'RF파트',
+      'SO파트',
+      'Web파트',
     ];
 
     // 직급 목록 (실제 시스템 데이터)
@@ -263,15 +265,6 @@ export class SeedDataController {
         const rank = isHighRank
           ? ranks[Math.floor(Math.random() * Math.min(5, ranks.length))] // 이사 이상
           : ranks[Math.floor(Math.random() * 9) + 6]; // 전문위원 이하
-
-        // 랜덤하게 직책 선택 (80%는 직원, 15%는 파트장/팀장, 5%는 실장 이상)
-        const positionRoll = Math.random();
-        const position =
-          positionRoll > 0.95
-            ? positions[Math.floor(Math.random() * 3)] // 임원/실장/PM
-            : positionRoll > 0.8
-              ? positions[Math.floor(Math.random() * 2) + 3] // 팀장/파트장
-              : positions[5]; // 직원
 
         // 외부 시스템 ID 생성
         const externalId = uuidv4();

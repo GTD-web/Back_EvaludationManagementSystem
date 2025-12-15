@@ -16,19 +16,24 @@ let WbsEvaluationCriteria = class WbsEvaluationCriteria extends base_entity_1.Ba
     wbsItemId;
     criteria;
     importance;
+    subProject;
     DTO로_변환한다() {
         return {
             id: this.id,
             wbsItemId: this.wbsItemId,
             criteria: this.criteria,
             importance: this.importance,
+            subProject: this.subProject,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
     }
-    기준내용업데이트한다(criteria, importance, updatedBy) {
+    기준내용업데이트한다(criteria, importance, subProject, updatedBy) {
         this.criteria = criteria;
         this.importance = importance;
+        if (subProject !== undefined) {
+            this.subProject = subProject;
+        }
         this.수정자를_설정한다(updatedBy);
         this.메타데이터를_업데이트한다();
     }
@@ -68,11 +73,20 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'int',
-        default: 5,
-        comment: '중요도 (1~10, 기본값: 5)',
+        default: 3,
+        comment: '중요도 (1~5, 기본값: 3)',
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteria.prototype, "importance", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+        comment: '세부 프로젝트 (서브 프로젝트)',
+    }),
+    __metadata("design:type", Object)
+], WbsEvaluationCriteria.prototype, "subProject", void 0);
 exports.WbsEvaluationCriteria = WbsEvaluationCriteria = __decorate([
     (0, typeorm_1.Entity)('wbs_evaluation_criteria')
 ], WbsEvaluationCriteria);

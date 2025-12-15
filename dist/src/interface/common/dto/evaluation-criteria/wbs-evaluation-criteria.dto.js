@@ -37,19 +37,20 @@ __decorate([
 ], CreateWbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], CreateWbsEvaluationCriteriaDto.prototype, "importance", void 0);
 class UpsertWbsEvaluationCriteriaBodyDto {
     criteria;
     importance;
+    subProject;
 }
 exports.UpsertWbsEvaluationCriteriaBodyDto = UpsertWbsEvaluationCriteriaBodyDto;
 __decorate([
@@ -62,19 +63,29 @@ __decorate([
 ], UpsertWbsEvaluationCriteriaBodyDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], UpsertWbsEvaluationCriteriaBodyDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpsertWbsEvaluationCriteriaBodyDto.prototype, "subProject", void 0);
 class UpdateWbsEvaluationCriteriaDto {
     criteria;
     importance;
+    subProject;
 }
 exports.UpdateWbsEvaluationCriteriaDto = UpdateWbsEvaluationCriteriaDto;
 __decorate([
@@ -88,17 +99,26 @@ __decorate([
 ], UpdateWbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
         minimum: 1,
-        maximum: 10,
+        maximum: 5,
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Max)(5),
     __metadata("design:type", Number)
 ], UpdateWbsEvaluationCriteriaDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateWbsEvaluationCriteriaDto.prototype, "subProject", void 0);
 class WbsEvaluationCriteriaFilterDto {
     wbsItemId;
     criteriaSearch;
@@ -165,6 +185,7 @@ class WbsEvaluationCriteriaDto {
     wbsItemId;
     criteria;
     importance;
+    subProject;
     createdAt;
     updatedAt;
 }
@@ -192,11 +213,19 @@ __decorate([
 ], WbsEvaluationCriteriaDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteriaDto.prototype, "importance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '세부 프로젝트 (서브 프로젝트)',
+        example: '모바일 앱 개발',
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], WbsEvaluationCriteriaDto.prototype, "subProject", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '생성일시', example: '2024-10-01T09:00:00Z' }),
     __metadata("design:type", Date)
@@ -249,8 +278,8 @@ __decorate([
 ], WbsEvaluationCriteriaDetailDto.prototype, "criteria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '중요도 (1~10)',
-        example: 5,
+        description: '중요도 (1~5)',
+        example: 3,
     }),
     __metadata("design:type", Number)
 ], WbsEvaluationCriteriaDetailDto.prototype, "importance", void 0);

@@ -34,14 +34,25 @@ export class WbsEvaluationCriteria
 
   /**
    * 중요도
-   * 평가 기준의 중요도 (1~10)
+   * 평가 기준의 중요도 (1~5)
    */
   @Column({
     type: 'int',
-    default: 5,
-    comment: '중요도 (1~10, 기본값: 5)',
+    default: 3,
+    comment: '중요도 (1~5, 기본값: 3)',
   })
   importance: number;
+
+  /**
+   * 세부 프로젝트 (서브 프로젝트)
+   */
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '세부 프로젝트 (서브 프로젝트)',
+  })
+  subProject?: string | null;
 
   /**
    * DTO로 변환
@@ -52,6 +63,7 @@ export class WbsEvaluationCriteria
       wbsItemId: this.wbsItemId,
       criteria: this.criteria,
       importance: this.importance,
+      subProject: this.subProject,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -63,10 +75,14 @@ export class WbsEvaluationCriteria
   기준내용업데이트한다(
     criteria: string,
     importance: number,
+    subProject: string | null | undefined,
     updatedBy: string,
   ): void {
     this.criteria = criteria;
     this.importance = importance;
+    if (subProject !== undefined) {
+      this.subProject = subProject;
+    }
     this.수정자를_설정한다(updatedBy);
     this.메타데이터를_업데이트한다();
   }

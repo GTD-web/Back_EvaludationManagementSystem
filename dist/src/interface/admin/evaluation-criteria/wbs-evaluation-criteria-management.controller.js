@@ -47,7 +47,7 @@ let WbsEvaluationCriteriaManagementController = class WbsEvaluationCriteriaManag
     }
     async upsertWbsEvaluationCriteria(wbsItemId, dto, user) {
         const actionBy = user.id;
-        return await this.evaluationCriteriaManagementService.WBS_평가기준을_저장한다(wbsItemId, dto.criteria, dto.importance, actionBy);
+        return await this.evaluationCriteriaManagementService.WBS_평가기준을_저장한다(wbsItemId, dto.criteria, dto.importance, dto.subProject, actionBy);
     }
     async deleteWbsEvaluationCriteria(id, user) {
         const deletedBy = user.id;

@@ -113,21 +113,23 @@ let SeedDataController = SeedDataController_1 = class SeedDataController {
         const errors = [];
         const timestamp = Date.now();
         const departmentNames = [
+            '경영지원본부',
             '경영지원실',
             '사업개발실',
-            'PM실',
-            '시스템파트',
-            'ES파트',
-            '전력파트',
-            '전자1파트',
-            '전자2파트',
-            'RF파트',
-            '기구파트',
-            'Web파트',
-            '지상운용파트',
-            '영상분석파트',
+            '기반기술사업부',
             '제조파트',
             'QA파트',
+            '루미르 주식회사',
+            '시스템파트',
+            'EC파트',
+            'EP파트',
+            'ES파트',
+            'IP파트',
+            'ME파트',
+            'PM실',
+            'RF파트',
+            'SO파트',
+            'Web파트',
         ];
         const ranks = [
             { name: '제조원', code: '제조원', level: 9 },
@@ -182,12 +184,6 @@ let SeedDataController = SeedDataController_1 = class SeedDataController {
                 const rank = isHighRank
                     ? ranks[Math.floor(Math.random() * Math.min(5, ranks.length))]
                     : ranks[Math.floor(Math.random() * 9) + 6];
-                const positionRoll = Math.random();
-                const position = positionRoll > 0.95
-                    ? positions[Math.floor(Math.random() * 3)]
-                    : positionRoll > 0.8
-                        ? positions[Math.floor(Math.random() * 2) + 3]
-                        : positions[5];
                 const externalId = (0, uuid_1.v4)();
                 const now = new Date();
                 const newEmployee = await this.employeeService.create({

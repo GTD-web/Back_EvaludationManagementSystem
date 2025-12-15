@@ -164,7 +164,7 @@ export declare class EvaluationCriteriaManagementService implements IEvaluationC
     }>;
     WBS_평가기준을_생성한다(data: CreateWbsEvaluationCriteriaData, createdBy: string): Promise<WbsEvaluationCriteriaDto>;
     WBS_평가기준을_수정한다(id: string, data: UpdateWbsEvaluationCriteriaData, updatedBy: string): Promise<WbsEvaluationCriteriaDto>;
-    WBS_평가기준을_저장한다(wbsItemId: string, criteria: string, importance: number, actionBy: string): Promise<WbsEvaluationCriteriaDto>;
+    WBS_평가기준을_저장한다(wbsItemId: string, criteria: string, importance: number, subProject: string | undefined, actionBy: string): Promise<WbsEvaluationCriteriaDto>;
     WBS_평가기준을_삭제한다(id: string, deletedBy: string): Promise<boolean>;
     WBS_항목을_생성한다(data: {
         wbsCode: string;

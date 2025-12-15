@@ -48,12 +48,14 @@ async function backup() {
     console.log('✅ 데이터베이스 연결 성공');
 
     // SQL 헤더
-    sqlContent += `-- PostgreSQL Database Backup\n`;
+    sqlContent += `-- PostgreSQL Database Backup (Data Only)\n`;
     sqlContent += `-- Generated: ${new Date().toISOString()}\n`;
-    sqlContent += `-- Database: ${config.database}\n\n`;
+    sqlContent += `-- Database: ${config.database}\n`;
+    sqlContent += `-- Note: 이 백업은 데이터만 포함합니다. 테이블 구조는 TypeORM이 관리합니다.\n\n`;
     sqlContent += `SET statement_timeout = 0;\n`;
     sqlContent += `SET lock_timeout = 0;\n`;
     sqlContent += `SET client_encoding = 'UTF8';\n\n`;
+    sqlContent += `-- UUID와 FK 관계를 보존하기 위해 기존 데이터를 모두 삭제하고 백업 데이터로 교체합니다.\n\n`;
 
     // 1. 모든 테이블 목록 가져오기
     console.log('📋 테이블 목록 조회 중...');
@@ -72,45 +74,12 @@ async function backup() {
     for (const tableName of tables) {
       console.log(`   - 백업 중: ${tableName}`);
 
-      // 기존 테이블 삭제 구문
+      // 테이블 데이터 삭제 구문 (구조는 유지)
       sqlContent += `\n-- Table: ${tableName}\n`;
-      sqlContent += `DROP TABLE IF EXISTS "${tableName}" CASCADE;\n\n`;
+      sqlContent += `TRUNCATE TABLE "${tableName}" CASCADE;\n\n`;
 
-      // 테이블 생성 구문
-      const createTableResult = await client.query(`
-        SELECT 
-          'CREATE TABLE "' || table_name || '" (' || 
-          string_agg(
-            '"' || column_name || '" ' || 
-            CASE 
-              WHEN data_type = 'USER-DEFINED' THEN udt_name
-              WHEN data_type = 'ARRAY' THEN udt_name
-              ELSE data_type
-            END ||
-            CASE 
-              WHEN character_maximum_length IS NOT NULL 
-              THEN '(' || character_maximum_length || ')'
-              ELSE ''
-            END ||
-            CASE 
-              WHEN is_nullable = 'NO' THEN ' NOT NULL'
-              ELSE ''
-            END ||
-            CASE 
-              WHEN column_default IS NOT NULL THEN ' DEFAULT ' || column_default
-              ELSE ''
-            END,
-            ', '
-          ) || ');' as create_table
-        FROM information_schema.columns
-        WHERE table_name = $1
-          AND table_schema = 'public'
-        GROUP BY table_name;
-      `, [tableName]);
-
-      if (createTableResult.rows.length > 0) {
-        sqlContent += createTableResult.rows[0].create_table + '\n\n';
-      }
+      // 테이블 생성 구문은 생략 (이미 존재하는 테이블 구조 사용)
+      // TypeORM이 스키마를 관리하므로 데이터만 백업
 
       // 테이블 데이터 백업
       const dataResult = await client.query(`SELECT * FROM "${tableName}"`);
@@ -138,66 +107,8 @@ async function backup() {
       }
     }
 
-    // 3. Primary Key, Foreign Key, Index 백업
-    console.log('🔑 제약조건 및 인덱스 조회 중...');
-
-    // Primary Keys
-    const pkResult = await client.query(`
-      SELECT
-        tc.table_name,
-        tc.constraint_name,
-        string_agg(kcu.column_name, ', ' ORDER BY kcu.ordinal_position) as columns
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-      WHERE tc.constraint_type = 'PRIMARY KEY'
-        AND tc.table_schema = 'public'
-      GROUP BY tc.table_name, tc.constraint_name;
-    `);
-
-    sqlContent += '\n-- Primary Keys\n';
-    for (const row of pkResult.rows) {
-      sqlContent += `ALTER TABLE "${row.table_name}" ADD CONSTRAINT "${row.constraint_name}" PRIMARY KEY (${row.columns});\n`;
-    }
-
-    // Foreign Keys
-    const fkResult = await client.query(`
-      SELECT
-        tc.table_name,
-        tc.constraint_name,
-        kcu.column_name,
-        ccu.table_name AS foreign_table_name,
-        ccu.column_name AS foreign_column_name
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-      JOIN information_schema.constraint_column_usage ccu
-        ON ccu.constraint_name = tc.constraint_name
-      WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema = 'public';
-    `);
-
-    sqlContent += '\n-- Foreign Keys\n';
-    for (const row of fkResult.rows) {
-      sqlContent += `ALTER TABLE "${row.table_name}" ADD CONSTRAINT "${row.constraint_name}" FOREIGN KEY ("${row.column_name}") REFERENCES "${row.foreign_table_name}" ("${row.foreign_column_name}");\n`;
-    }
-
-    // Indexes
-    const indexResult = await client.query(`
-      SELECT
-        schemaname,
-        tablename,
-        indexname,
-        indexdef
-      FROM pg_indexes
-      WHERE schemaname = 'public'
-        AND indexname NOT LIKE '%_pkey';
-    `);
-
-    sqlContent += '\n-- Indexes\n';
-    for (const row of indexResult.rows) {
-      sqlContent += `${row.indexdef};\n`;
-    }
+    // 제약조건과 인덱스는 TypeORM이 관리하므로 백업하지 않음
+    console.log('✅ 데이터 백업 완료 (제약조건은 TypeORM이 관리)');
 
     // 파일 저장
     fs.writeFileSync(BACKUP_FILE, sqlContent, 'utf8');

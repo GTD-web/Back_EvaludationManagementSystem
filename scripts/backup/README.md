@@ -76,7 +76,9 @@ scripts\backup\restore.bat scripts\backup\dumps\backup-20241212-143000.sql
 ### ✅ 순수 Node.js 방식 (기본)
 - **추가 설치 불필요** - 이미 설치된 pg 라이브러리 사용
 - Windows/Mac/Linux 모든 환경에서 작동
-- 스키마 + 데이터 + 제약조건 완전 백업
+- **데이터 중심 백업** - 테이블 구조는 TypeORM이 관리
+- **UUID 보존** - 복구 시 백업 당시의 UUID로 완전 복구
+- **강제 덮어쓰기** - 기존 데이터를 모두 삭제하고 백업 데이터로 교체
 - EC2에서도 바로 작동
 
 ### ⚡ pg_dump 방식 (선택사항)

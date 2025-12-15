@@ -56,10 +56,10 @@ export declare class PerformanceEvaluationService implements IPerformanceEvaluat
     하향평가를_생성한다(evaluatorId: string, evaluateeId: string, periodId: string, projectId: string, selfEvaluationId?: string, evaluationType?: string, downwardEvaluationContent?: string, downwardEvaluationScore?: number, createdBy?: string): Promise<string>;
     하향평가를_수정한다(evaluationId: string, downwardEvaluationContent?: string, downwardEvaluationScore?: number, updatedBy?: string): Promise<void>;
     하향평가를_저장한다(evaluatorId: string, evaluateeId: string, periodId: string, wbsId: string, selfEvaluationId?: string, evaluationType?: string, downwardEvaluationContent?: string, downwardEvaluationScore?: number, actionBy?: string): Promise<string>;
-    일차_하향평가를_제출한다(evaluateeId: string, periodId: string, wbsId: string, evaluatorId: string, submittedBy: string): Promise<void>;
-    이차_하향평가를_제출한다(evaluateeId: string, periodId: string, wbsId: string, evaluatorId: string, submittedBy: string): Promise<void>;
+    일차_하향평가를_제출한다(evaluateeId: string, periodId: string, wbsId: string, evaluatorId: string, submittedBy: string, approveAllBelow?: boolean): Promise<void>;
+    이차_하향평가를_제출한다(evaluateeId: string, periodId: string, wbsId: string, evaluatorId: string, submittedBy: string, approveAllBelow?: boolean): Promise<void>;
     하향평가를_제출한다(evaluationId: string, submittedBy?: string): Promise<void>;
-    피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy: string, forceSubmit?: boolean): Promise<{
+    피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy: string, forceSubmit?: boolean, approveAllBelow?: boolean): Promise<{
         submittedCount: number;
         skippedCount: number;
         failedCount: number;

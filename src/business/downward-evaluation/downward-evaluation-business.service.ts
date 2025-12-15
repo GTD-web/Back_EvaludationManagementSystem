@@ -280,7 +280,7 @@ export class DownwardEvaluationBusinessService {
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow = false,
+    approveAllBelow = true,
   ): Promise<void> {
     this.logger.log(
       `1차 하향평가 제출 및 재작성 요청 완료 처리 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
@@ -293,6 +293,7 @@ export class DownwardEvaluationBusinessService {
       wbsId,
       evaluatorId,
       submittedBy,
+      approveAllBelow,
     );
 
     // 2. 해당 평가기간에 발생한 1차 하향평가에 대한 재작성 요청 자동 완료 처리
@@ -314,9 +315,47 @@ export class DownwardEvaluationBusinessService {
         wbsId,
         submittedBy,
       );
+
+      // 4. 단계 승인 상태 자동 승인: 평가기준, 자기평가를 approved로 변경
+      // (1차평가는 이미 제출 핸들러에서 approved로 설정됨)
+      this.logger.log(
+        `하위 단계 자동 승인 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+      );
+
+      try {
+        // 4-1. 평가기준 설정 승인
+        await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+          evaluationPeriodId: periodId,
+          employeeId: evaluateeId,
+          status: StepApprovalStatus.APPROVED,
+          updatedBy: submittedBy,
+        });
+
+        // 4-2. 자기평가 승인
+        await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
+          evaluationPeriodId: periodId,
+          employeeId: evaluateeId,
+          status: StepApprovalStatus.APPROVED,
+          updatedBy: submittedBy,
+        });
+
+        this.logger.log(
+          `하위 단계 자동 승인 완료 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          '하위 단계 자동 승인 실패 (계속 진행)',
+          error.stack,
+          {
+            evaluateeId,
+            periodId,
+            submittedBy,
+          },
+        );
+      }
     }
 
-    // 4. 알림 전송 (비동기 처리, 실패해도 제출은 성공)
+    // 5. 알림 전송 (비동기 처리, 실패해도 제출은 성공)
     this.피평가자에게_알림을_전송한다(evaluateeId, periodId).catch((error) => {
       this.logger.error(
         '1차 하향평가 제출 알림 전송 실패 (무시됨)',
@@ -383,7 +422,7 @@ export class DownwardEvaluationBusinessService {
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow = false,
+    approveAllBelow = true,
   ): Promise<void> {
     this.logger.log(
       `2차 하향평가 제출 및 재작성 요청 완료 처리 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
@@ -396,6 +435,7 @@ export class DownwardEvaluationBusinessService {
       wbsId,
       evaluatorId,
       submittedBy,
+      approveAllBelow,
     );
 
     // 2. 해당 평가기간에 발생한 2차 하향평가에 대한 재작성 요청 자동 완료 처리
@@ -426,6 +466,53 @@ export class DownwardEvaluationBusinessService {
         wbsId,
         submittedBy,
       );
+
+      // 3-3. 단계 승인 상태 자동 승인: 평가기준, 자기평가, 1차평가를 approved로 변경
+      // (2차평가는 이미 제출 핸들러에서 approved로 설정됨)
+      this.logger.log(
+        `하위 단계 자동 승인 시작 (2차) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+      );
+
+      try {
+        // 평가기준 설정 승인
+        await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+          evaluationPeriodId: periodId,
+          employeeId: evaluateeId,
+          status: StepApprovalStatus.APPROVED,
+          updatedBy: submittedBy,
+        });
+
+        // 자기평가 승인
+        await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
+          evaluationPeriodId: periodId,
+          employeeId: evaluateeId,
+          status: StepApprovalStatus.APPROVED,
+          updatedBy: submittedBy,
+        });
+
+        // 1차 하향평가 승인
+        await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다({
+          evaluationPeriodId: periodId,
+          employeeId: evaluateeId,
+          status: StepApprovalStatus.APPROVED,
+          updatedBy: submittedBy,
+        });
+
+        this.logger.log(
+          `하위 단계 자동 승인 완료 (2차) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          '하위 단계 자동 승인 실패 (계속 진행)',
+          error.stack,
+          {
+            evaluateeId,
+            periodId,
+            evaluatorId,
+            submittedBy,
+          },
+        );
+      }
     }
 
     this.logger.log(
@@ -605,6 +692,7 @@ export class DownwardEvaluationBusinessService {
     periodId: string,
     evaluationType: DownwardEvaluationType,
     submittedBy: string,
+    approveAllBelow: boolean = true,
   ): Promise<{
     submittedCount: number;
     skippedCount: number;
@@ -618,6 +706,7 @@ export class DownwardEvaluationBusinessService {
       evaluateeId,
       periodId,
       evaluationType,
+      approveAllBelow,
     });
 
     // 1. 하향평가 일괄 제출
@@ -628,6 +717,8 @@ export class DownwardEvaluationBusinessService {
         periodId,
         evaluationType,
         submittedBy,
+        false, // forceSubmit
+        approveAllBelow,
       );
 
     // 2. 해당 평가기간에 발생한 하향평가에 대한 재작성 요청 자동 완료 처리
@@ -665,36 +756,94 @@ export class DownwardEvaluationBusinessService {
       });
     }
 
-    // 3. 2차 평가인 경우 개별 승인 상태 설정
-    // 재작성 요청이 있을 때만 REVISION_COMPLETED로 설정
-    // 재작성 요청이 없으면 PENDING으로 설정하거나 아예 설정하지 않음
-    // step-approval.utils.ts에서 실제 재작성 요청이 있는지 확인하고
-    // 재작성 요청이 없으면 pending 상태를 반환하도록 수정하므로
-    // 여기서는 재작성 요청이 있을 때만 REVISION_COMPLETED로 설정
-    // 재작성 요청이 없으면 아예 설정하지 않음 (기본값 pending 유지)
-    if (
-      evaluationType === DownwardEvaluationType.SECONDARY &&
-      result.submittedCount > 0
-    ) {
+    // 3. 하위 단계 자동 승인 (approveAllBelow=true이고 제출이 성공한 경우)
+    if (approveAllBelow && result.submittedCount > 0) {
+      this.logger.log(
+        `하위 단계 자동 승인 시작 (일괄 제출) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가유형: ${evaluationType}`,
+      );
+
       try {
-        // 재작성 요청 완료 처리가 성공했다고 해서 재작성 요청이 있었다는 보장은 없음
-        // 재작성 요청 완료 처리 함수는 재작성 요청이 없으면 그냥 return하므로
-        // 재작성 요청이 있었는지 확인할 수 없음
-        // 따라서 재작성 요청이 있을 때만 REVISION_COMPLETED로 설정하고
-        // 재작성 요청이 없으면 아예 설정하지 않음 (기본값 pending 유지)
-        // step-approval.utils.ts에서 실제 재작성 요청이 있는지 확인하고
-        // 재작성 요청이 없으면 pending 상태를 반환하도록 수정
-        // 재작성 완료 응답 제출 시 이차평가자_개별_승인상태를_재작성완료로_변경한다에서
-        // REVISION_COMPLETED로 설정되므로, 여기서는 재작성 요청이 있을 때만 설정
-        // 재작성 요청이 없으면 아예 설정하지 않음
+        // 1차 평가 일괄 제출인 경우: 평가기준, 자기평가, 1차평가를 승인
+        if (evaluationType === DownwardEvaluationType.PRIMARY) {
+          // 평가기준 설정 승인
+          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 자기평가 승인
+          await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 1차 하향평가 승인
+          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          this.logger.log(
+            `하위 단계 자동 승인 완료 (1차 일괄) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+          );
+        }
+        // 2차 평가 일괄 제출인 경우: 평가기준, 자기평가, 1차평가, 2차평가를 승인
+        else if (evaluationType === DownwardEvaluationType.SECONDARY) {
+          // 평가기준 설정 승인
+          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 자기평가 승인
+          await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 1차 하향평가 승인
+          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 2차 하향평가 승인
+          await this.stepApprovalContextService.이차하향평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            evaluatorId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          this.logger.log(
+            `하위 단계 자동 승인 완료 (2차 일괄) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
+          );
+        }
       } catch (error) {
-        // 개별 승인 상태 변경 실패 시에도 하향평가 제출은 정상 처리
-        this.logger.warn('2차 평가 개별 승인 상태 설정 실패', {
-          evaluatorId,
-          evaluateeId,
-          periodId,
-          error: error.message,
-        });
+        this.logger.error(
+          '하위 단계 자동 승인 실패 (계속 진행)',
+          error.stack,
+          {
+            evaluatorId,
+            evaluateeId,
+            periodId,
+            evaluationType,
+            submittedBy,
+          },
+        );
       }
     }
 

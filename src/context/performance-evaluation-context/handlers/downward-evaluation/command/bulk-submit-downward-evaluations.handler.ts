@@ -17,6 +17,7 @@ import { NotificationHelperService } from '@domain/common/notification/notificat
 import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { EmployeeService } from '@domain/common/employee/employee.service';
+import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approval';
 
 /**
  * 피평가자의 모든 하향평가 일괄 제출 커맨드
@@ -29,6 +30,7 @@ export class BulkSubmitDownwardEvaluationsCommand {
     public readonly evaluationType: DownwardEvaluationType,
     public readonly submittedBy: string = '시스템',
     public readonly forceSubmit: boolean = false, // 강제 제출 옵션 (승인 시 필수 항목 검증 건너뛰기)
+    public readonly approveAllBelow: boolean = true, // 하위 단계 자동 승인 여부
   ) {}
 }
 
@@ -72,7 +74,7 @@ export class BulkSubmitDownwardEvaluationsHandler
     skippedIds: string[];
     failedItems: Array<{ evaluationId: string; error: string }>;
   }> {
-    const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit } =
+    const { evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit, approveAllBelow } =
       command;
 
     this.logger.log('피평가자의 모든 하향평가 일괄 제출 핸들러 실행', {
@@ -81,6 +83,7 @@ export class BulkSubmitDownwardEvaluationsHandler
       periodId,
       evaluationType,
       forceSubmit,
+      approveAllBelow,
     });
 
     return await this.transactionManager.executeTransaction(async () => {
@@ -170,6 +173,59 @@ export class BulkSubmitDownwardEvaluationsHandler
           this.logger.error(
             `하향평가 제출 실패: ${evaluation.id}`,
             error instanceof Error ? error.stack : undefined,
+          );
+        }
+      }
+
+      // 단계 승인 상태 변경 (제출 성공한 평가가 있을 때만)
+      if (submittedIds.length > 0 && approveAllBelow) {
+        try {
+          // 평가기준 설정 승인
+          await this.stepApprovalContext.평가기준설정_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 자기평가 승인
+          await this.stepApprovalContext.자기평가_확인상태를_변경한다({
+            evaluationPeriodId: periodId,
+            employeeId: evaluateeId,
+            status: StepApprovalStatus.APPROVED,
+            updatedBy: submittedBy,
+          });
+
+          // 1차/2차 하향평가 승인
+          if (evaluationType === 'primary') {
+            await this.stepApprovalContext.일차하향평가_확인상태를_변경한다({
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            });
+          } else if (evaluationType === 'secondary') {
+            await this.stepApprovalContext.이차하향평가_확인상태를_변경한다({
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              evaluatorId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            });
+          }
+
+          this.logger.debug(
+            `단계 승인 상태를 approved로 변경 완료 (일괄 제출) - 피평가자: ${evaluateeId}, 평가유형: ${evaluationType}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            '단계 승인 상태 변경 실패 (일괄 제출, 계속 진행)',
+            error instanceof Error ? error.stack : undefined,
+            {
+              evaluateeId,
+              periodId,
+              evaluationType,
+            },
           );
         }
       }

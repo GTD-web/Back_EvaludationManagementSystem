@@ -61,3 +61,7 @@ src/domain/common/sso/mock-data/*.json
 # Database backups
 scripts/backup/dumps/*.sql
 !scripts/backup/dumps/.gitkeep
+
+# Automated backup directories
+backup/
+!backup/.gitkeep

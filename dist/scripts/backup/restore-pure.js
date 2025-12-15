@@ -46,9 +46,7 @@ const config = {
     user: process.env.DATABASE_USERNAME || 'postgres',
     password: process.env.DATABASE_PASSWORD || '',
     database: process.env.DATABASE_NAME || 'ems',
-    ssl: process.env.DATABASE_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
 let BACKUP_FILE = process.argv[2];
 async function askConfirmation(question) {
@@ -85,7 +83,7 @@ async function restore() {
             process.exit(1);
         }
         BACKUP_FILE = files[0].path;
-        console.log(`📂 최신 백업 파일을 사용합니다: ${BACKUP_FILE}`);
+        console.log(`📂 최신 백업 파일을 사용합니다: ${path.basename(BACKUP_FILE)}`);
     }
     else {
         if (!fs.existsSync(BACKUP_FILE)) {
@@ -98,7 +96,7 @@ async function restore() {
     console.log('');
     console.log(`   호스트: ${config.host}:${config.port}`);
     console.log(`   데이터베이스: ${config.database}`);
-    console.log(`   백업 파일: ${BACKUP_FILE}`);
+    console.log(`   백업 파일: ${path.basename(BACKUP_FILE)}`);
     console.log('');
     const confirmed = await askConfirmation('계속하시겠습니까? (yes/no): ');
     if (!confirmed) {
@@ -107,6 +105,14 @@ async function restore() {
     }
     console.log('');
     console.log('🔄 데이터베이스 복구 시작...');
+    console.log('');
+    console.log('📝 복구 전략:');
+    console.log('   1. 모든 테이블의 데이터를 TRUNCATE로 삭제');
+    console.log('   2. 백업 파일의 데이터를 그대로 INSERT');
+    console.log('   3. UUID가 백업 당시의 값으로 복구됨');
+    console.log('   4. FK 관계도 모두 유지됨');
+    console.log('   5. 서버가 켜져 있어도 다음 SSO 동기화 시 externalId로 매칭되어 UUID 유지');
+    console.log('');
     const client = new pg_1.Client(config);
     try {
         await client.connect();
@@ -190,6 +196,10 @@ async function restore() {
             console.log(`   ⚠️  경고: ${criticalErrorCount}개의 중요 오류`);
         }
         console.log('   데이터베이스가 성공적으로 복구되었습니다.');
+        console.log('');
+        console.log('💡 다음 SSO 동기화 시:');
+        console.log('   - externalId로 기존 직원을 찾아 UUID를 유지합니다.');
+        console.log('   - 새로 생성하지 않고 기존 데이터를 업데이트합니다.');
     }
     catch (error) {
         console.error('');

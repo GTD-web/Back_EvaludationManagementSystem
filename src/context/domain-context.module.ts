@@ -13,6 +13,7 @@ import { RevisionRequestContextModule } from './revision-request-context/revisio
 import { AuditLogContextModule } from './audit-log-context/audit-log-context.module';
 import { EvaluationActivityLogContextModule } from './evaluation-activity-log-context/evaluation-activity-log-context.module';
 import { ProjectModule } from '../domain/common/project/project.module';
+import { BackupContextModule } from './backup-context/backup-context.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProjectModule } from '../domain/common/project/project.module';
     AuditLogContextModule,
     EvaluationActivityLogContextModule,
     ProjectModule, // 프로젝트 모듈 추가
+    BackupContextModule, // 백업 자동화 모듈 추가
   ],
   providers: [],
   exports: [
@@ -47,6 +49,7 @@ import { ProjectModule } from '../domain/common/project/project.module';
     AuditLogContextModule,
     EvaluationActivityLogContextModule,
     ProjectModule, // 프로젝트 모듈 export
+    BackupContextModule, // 백업 자동화 모듈 export
   ],
 })
 export class DomainContextModule {}

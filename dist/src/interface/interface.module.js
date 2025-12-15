@@ -14,12 +14,14 @@ const common_domain_module_1 = require("../domain/common/common-domain.module");
 const auth_context_1 = require("../context/auth-context");
 const audit_log_context_module_1 = require("../context/audit-log-context/audit-log-context.module");
 const organization_management_context_1 = require("../context/organization-management-context");
+const backup_context_module_1 = require("../context/backup-context/backup-context.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const guards_1 = require("./common/guards");
 const audit_log_interceptor_1 = require("./common/interceptors/audit-log.interceptor");
 const user_interface_module_1 = require("./user/user-interface.module");
 const evaluator_interface_module_1 = require("./evaluator/evaluator-interface.module");
 const public_interface_module_1 = require("./public/public-interface.module");
+const backup_controller_1 = require("./backup/backup.controller");
 let InterfaceModule = class InterfaceModule {
 };
 exports.InterfaceModule = InterfaceModule;
@@ -30,12 +32,13 @@ exports.InterfaceModule = InterfaceModule = __decorate([
             auth_context_1.AuthContextModule,
             audit_log_context_module_1.AuditLogContextModule,
             organization_management_context_1.OrganizationManagementContextModule,
+            backup_context_module_1.BackupContextModule,
             admin_interface_module_1.AdminInterfaceModule,
             user_interface_module_1.UserInterfaceModule,
             evaluator_interface_module_1.EvaluatorInterfaceModule,
             public_interface_module_1.PublicInterfaceModule,
         ],
-        controllers: [],
+        controllers: [backup_controller_1.BackupController],
         providers: [
             {
                 provide: core_1.APP_GUARD,

@@ -12,7 +12,6 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
 import { UserInterfaceModule } from './user/user-interface.module';
 import { EvaluatorInterfaceModule } from './evaluator/evaluator-interface.module';
 import { PublicInterfaceModule } from './public/public-interface.module';
-import { BackupController } from './backup/backup.controller';
 
 /**
  * 인터페이스 모듈
@@ -37,7 +36,7 @@ import { BackupController } from './backup/backup.controller';
     EvaluatorInterfaceModule, // 평가자 인터페이스 모듈
     PublicInterfaceModule, // Public 인터페이스 모듈 (크론 작업 등)
   ],
-  controllers: [BackupController], // 백업 관리 API
+  controllers: [],
   providers: [
     {
       provide: APP_GUARD,

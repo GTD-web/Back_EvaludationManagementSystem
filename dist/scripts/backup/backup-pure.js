@@ -39,11 +39,21 @@ const path = __importStar(require("path"));
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const BACKUP_DIR = path.join(__dirname, 'dumps');
-const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '-')
-    .split('.')[0];
+function getKSTDate() {
+    const now = new Date();
+    const kstOffset = 9 * 60;
+    return new Date(now.getTime() + kstOffset * 60 * 1000);
+}
+function getKSTTimestamp() {
+    const kstTime = getKSTDate();
+    const formatted = kstTime
+        .toISOString()
+        .replace(/[:.]/g, '-')
+        .replace('T', '-')
+        .split('.')[0];
+    return `${formatted}-KST`;
+}
+const timestamp = getKSTTimestamp();
 const BACKUP_FILE = path.join(BACKUP_DIR, `backup-${timestamp}.sql`);
 const config = {
     host: process.env.DATABASE_HOST || 'localhost',
@@ -70,7 +80,7 @@ async function backup() {
         await client.connect();
         console.log('✅ 데이터베이스 연결 성공');
         sqlContent += `-- PostgreSQL Database Backup (Data Only)\n`;
-        sqlContent += `-- Generated: ${new Date().toISOString()}\n`;
+        sqlContent += `-- Generated: ${getKSTDate().toISOString()} (KST)\n`;
         sqlContent += `-- Database: ${config.database}\n`;
         sqlContent += `-- Note: 이 백업은 데이터만 포함합니다. 테이블 구조는 TypeORM이 관리합니다.\n\n`;
         sqlContent += `SET statement_timeout = 0;\n`;

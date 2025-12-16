@@ -273,8 +273,6 @@ class MyTargetSelfEvaluationDto {
     isSubmittedToEvaluator;
     submittedToManagerCount;
     isSubmittedToManager;
-    totalScore;
-    grade;
     viewedByPrimaryEvaluator;
     viewedBySecondaryEvaluator;
 }
@@ -336,22 +334,6 @@ __decorate([
     }),
     __metadata("design:type", Boolean)
 ], MyTargetSelfEvaluationDto.prototype, "isSubmittedToManager", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: '가중치 기반 자기평가 총점 (0-100)',
-        example: 85.5,
-        nullable: true,
-    }),
-    __metadata("design:type", Object)
-], MyTargetSelfEvaluationDto.prototype, "totalScore", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: '평가기간 등급 기준에 따른 자기평가 등급 (예: S+, A-, B 등)',
-        example: 'A-',
-        nullable: true,
-    }),
-    __metadata("design:type", Object)
-], MyTargetSelfEvaluationDto.prototype, "grade", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: '1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공)',

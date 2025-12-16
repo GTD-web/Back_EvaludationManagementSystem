@@ -13,6 +13,8 @@ import { EntityManager, IsNull, Repository } from 'typeorm';
 import { IEvaluationCriteriaManagementService } from './interfaces/evaluation-criteria-management.interface';
 import { WbsAssignmentValidationService } from './services/wbs-assignment-validation.service';
 import { EvaluationPeriodEmployeeMappingService } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service';
+import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
+import { EmployeeEvaluationStepApprovalService } from '@domain/sub/employee-evaluation-step-approval';
 import type { EvaluationPeriodEmployeeMappingDto } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.types';
 
 // Project Assignment Commands & Queries
@@ -129,8 +131,11 @@ export class EvaluationCriteriaManagementService
     private readonly evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(EvaluationLine)
     private readonly evaluationLineRepository: Repository<EvaluationLine>,
+    @InjectRepository(EvaluationPeriodEmployeeMapping)
+    private readonly evaluationPeriodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
     private readonly wbsAssignmentValidationService: WbsAssignmentValidationService,
     private readonly evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService,
+    private readonly stepApprovalService: EmployeeEvaluationStepApprovalService,
   ) {}
 
   // ============================================================================
@@ -840,6 +845,7 @@ export class EvaluationCriteriaManagementService
     wbsItemId: string,
     criteria: string,
     importance: number,
+    subProject: string | undefined,
     actionBy: string,
   ): Promise<WbsEvaluationCriteriaDto> {
     // wbsItemId로 기존 평가기준 조회
@@ -851,13 +857,13 @@ export class EvaluationCriteriaManagementService
       const criteriaToUpdate = existingCriteria[0];
       return await this.WBS_평가기준을_수정한다(
         criteriaToUpdate.id,
-        { criteria, importance },
+        { criteria, importance, subProject },
         actionBy,
       );
     } else {
       // 기존 평가기준이 없으면 생성
       return await this.WBS_평가기준을_생성한다(
-        { wbsItemId, criteria, importance },
+        { wbsItemId, criteria, importance, subProject },
         actionBy,
       );
     }
@@ -1188,10 +1194,42 @@ export class EvaluationCriteriaManagementService
     employeeId: string,
     updatedBy: string,
   ): Promise<EvaluationPeriodEmployeeMappingDto> {
-    return await this.evaluationPeriodEmployeeMappingService.평가기준_제출을_초기화한다(
+    const result = await this.evaluationPeriodEmployeeMappingService.평가기준_제출을_초기화한다(
       evaluationPeriodId,
       employeeId,
       updatedBy,
     );
+
+    // StepApproval의 criteriaSettingStatus도 초기화 (null로 설정)
+    try {
+      const mapping = await this.evaluationPeriodEmployeeMappingRepository.findOne({
+        where: {
+          evaluationPeriodId,
+          employeeId,
+          deletedAt: null as any,
+        },
+      });
+
+      if (mapping) {
+        const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
+        if (stepApproval) {
+          // criteriaSettingStatus를 PENDING으로 초기화
+          stepApproval.평가기준설정_대기로_변경한다(updatedBy);
+          await this.stepApprovalService.저장한다(stepApproval);
+
+          this.logger.log(
+            `평가기준 제출 초기화 시 StepApproval 상태 초기화 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
+          );
+        }
+      }
+    } catch (error) {
+      // StepApproval 초기화 실패는 경고만 출력 (평가기준 제출 초기화는 성공)
+      this.logger.warn(
+        `평가기준 제출 초기화 시 StepApproval 상태 초기화 실패 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
+        error,
+      );
+    }
+
+    return result;
   }
 }

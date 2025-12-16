@@ -199,6 +199,13 @@ export class WbsEvaluationCriterionDto implements WbsEvaluationCriterion {
   })
   importance: number;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
+
   @ApiProperty({
     description: '생성일',
     type: 'string',
@@ -404,13 +411,6 @@ export class AssignedWbsInfoDto implements AssignedWbsInfo {
     example: '2024-01-01T09:00:00.000Z',
   })
   assignedAt: Date;
-
-  @ApiPropertyOptional({
-    description: '세부 프로젝트 (서브 프로젝트)',
-    example: '모바일 앱 개발',
-    nullable: true,
-  })
-  subProject?: string | null;
 
   @ApiProperty({
     description: 'WBS에 할당된 평가기준 목록',

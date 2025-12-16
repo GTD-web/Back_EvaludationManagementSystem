@@ -30,6 +30,7 @@ export declare class WbsEvaluationCriterionDto implements WbsEvaluationCriterion
     criterionId: string;
     criteria: string;
     importance: number;
+    subProject?: string | null;
     createdAt: Date;
 }
 export declare class WbsPerformanceDto implements WbsPerformance {
@@ -64,7 +65,6 @@ export declare class AssignedWbsInfoDto implements AssignedWbsInfo {
     wbsCode: string;
     weight: number;
     assignedAt: Date;
-    subProject?: string | null;
     criteria: WbsEvaluationCriterionDto[];
     performance?: WbsPerformanceDto | null;
     primaryDownwardEvaluation?: WbsDownwardEvaluationDto | null;

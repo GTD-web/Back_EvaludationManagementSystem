@@ -13,8 +13,10 @@ exports.BulkSubmitDownwardEvaluationQueryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const downward_evaluation_types_1 = require("../../../../domain/core/downward-evaluation/downward-evaluation.types");
+const decorators_1 = require("../../decorators");
 class BulkSubmitDownwardEvaluationQueryDto {
     evaluationType;
+    approveAllBelow;
 }
 exports.BulkSubmitDownwardEvaluationQueryDto = BulkSubmitDownwardEvaluationQueryDto;
 __decorate([
@@ -29,4 +31,15 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], BulkSubmitDownwardEvaluationQueryDto.prototype, "evaluationType", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '하위 단계 자동 승인 여부 (기본값: true)',
+        example: true,
+        type: Boolean,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, decorators_1.ToBoolean)(true),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], BulkSubmitDownwardEvaluationQueryDto.prototype, "approveAllBelow", void 0);
 //# sourceMappingURL=bulk-submit-downward-evaluation-query.dto.js.map

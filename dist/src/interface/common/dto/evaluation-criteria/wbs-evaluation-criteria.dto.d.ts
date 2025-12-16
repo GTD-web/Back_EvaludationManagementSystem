@@ -6,10 +6,12 @@ export declare class CreateWbsEvaluationCriteriaDto {
 export declare class UpsertWbsEvaluationCriteriaBodyDto {
     criteria: string;
     importance: number;
+    subProject?: string;
 }
 export declare class UpdateWbsEvaluationCriteriaDto {
     criteria?: string;
     importance?: number;
+    subProject?: string;
 }
 export declare class WbsEvaluationCriteriaFilterDto {
     wbsItemId?: string;
@@ -26,6 +28,7 @@ export declare class WbsEvaluationCriteriaDto {
     wbsItemId: string;
     criteria: string;
     importance: number;
+    subProject?: string | null;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -58,6 +58,24 @@ let EvaluatorWbsSelfEvaluationManagementController = class EvaluatorWbsSelfEvalu
             }),
         };
     }
+    async resetAllWbsSelfEvaluationsByEmployeePeriod(employeeId, periodId, user) {
+        const resetBy = user.id;
+        const result = await this.performanceEvaluationService.직원의_전체_WBS자기평가를_초기화한다(employeeId, periodId, resetBy);
+        return {
+            resetCount: result.resetCount,
+            failedCount: result.failedCount,
+            totalCount: result.totalCount,
+            resetEvaluations: result.resetEvaluations.map((e) => ({
+                evaluationId: e.evaluationId,
+                wbsItemId: e.wbsItemId,
+                selfEvaluationContent: e.selfEvaluationContent,
+                selfEvaluationScore: e.selfEvaluationScore,
+                performanceResult: e.performanceResult,
+                wasSubmittedToManager: e.wasSubmittedToManager,
+            })),
+            failedResets: result.failedResets,
+        };
+    }
     async resetAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod(employeeId, periodId, user) {
         const resetBy = user.id;
         const result = await this.wbsSelfEvaluationBusinessService.직원의_전체_자기평가를_1차평가자_제출_취소한다(employeeId, periodId, resetBy);
@@ -155,6 +173,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluatorWbsSelfEvaluationManagementController.prototype, "submitWbsSelfEvaluationsToEvaluatorByProject", null);
+__decorate([
+    (0, wbs_self_evaluation_api_decorators_1.ResetAllWbsSelfEvaluationsByEmployeePeriod)(),
+    __param(0, (0, decorators_1.ParseUUID)('employeeId')),
+    __param(1, (0, decorators_1.ParseUUID)('periodId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluatorWbsSelfEvaluationManagementController.prototype, "resetAllWbsSelfEvaluationsByEmployeePeriod", null);
 __decorate([
     (0, wbs_self_evaluation_api_decorators_1.ResetAllWbsSelfEvaluationsToEvaluatorByEmployeePeriod)(),
     __param(0, (0, decorators_1.ParseUUID)('employeeId')),

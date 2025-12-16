@@ -33,6 +33,7 @@ const wbs_evaluation_criteria_1 = require("./handlers/wbs-evaluation-criteria");
 const wbs_item_1 = require("./handlers/wbs-item");
 const evaluation_period_module_1 = require("../../domain/core/evaluation-period/evaluation-period.module");
 const evaluation_period_employee_mapping_module_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.module");
+const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
 const evaluation_wbs_assignment_entity_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity");
 const wbs_evaluation_criteria_entity_1 = require("../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity");
 const wbs_item_module_1 = require("../../domain/common/wbs-item/wbs-item.module");
@@ -40,6 +41,7 @@ const wbs_assignment_weight_calculation_service_1 = require("./services/wbs-assi
 const wbs_assignment_validation_service_1 = require("./services/wbs-assignment-validation.service");
 const wbs_self_evaluation_module_1 = require("../../domain/core/wbs-self-evaluation/wbs-self-evaluation.module");
 const downward_evaluation_module_1 = require("../../domain/core/downward-evaluation/downward-evaluation.module");
+const employee_evaluation_step_approval_1 = require("../../domain/sub/employee-evaluation-step-approval");
 let EvaluationCriteriaManagementContextModule = class EvaluationCriteriaManagementContextModule {
 };
 exports.EvaluationCriteriaManagementContextModule = EvaluationCriteriaManagementContextModule;
@@ -53,6 +55,7 @@ exports.EvaluationCriteriaManagementContextModule = EvaluationCriteriaManagement
                 department_entity_1.Department,
                 project_entity_1.Project,
                 evaluation_period_entity_1.EvaluationPeriod,
+                evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping,
                 evaluation_wbs_assignment_entity_1.EvaluationWbsAssignment,
                 wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria,
                 evaluation_line_entity_1.EvaluationLine,
@@ -70,6 +73,7 @@ exports.EvaluationCriteriaManagementContextModule = EvaluationCriteriaManagement
             evaluation_period_employee_mapping_module_1.EvaluationPeriodEmployeeMappingModule,
             wbs_item_module_1.WbsItemModule,
             downward_evaluation_module_1.DownwardEvaluationModule,
+            employee_evaluation_step_approval_1.EmployeeEvaluationStepApprovalModule,
         ],
         providers: [
             evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,

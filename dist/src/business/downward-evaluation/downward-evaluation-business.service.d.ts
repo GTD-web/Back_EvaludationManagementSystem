@@ -48,7 +48,7 @@ export declare class DownwardEvaluationBusinessService {
     이차_하향평가를_제출하고_재작성요청을_완료한다(evaluateeId: string, periodId: string, wbsId: string, evaluatorId: string, submittedBy: string, approveAllBelow?: boolean): Promise<void>;
     일차_하향평가_재작성요청_생성_및_제출상태_초기화(evaluationPeriodId: string, employeeId: string, revisionComment: string, requestedBy: string): Promise<void>;
     이차_하향평가_재작성요청_생성_및_제출상태_초기화(evaluationPeriodId: string, employeeId: string, evaluatorId: string, revisionComment: string, requestedBy: string): Promise<import('@domain/sub/secondary-evaluation-step-approval').SecondaryEvaluationStepApproval>;
-    피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy: string): Promise<{
+    피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId: string, evaluateeId: string, periodId: string, evaluationType: DownwardEvaluationType, submittedBy: string, approveAllBelow?: boolean): Promise<{
         submittedCount: number;
         skippedCount: number;
         failedCount: number;

@@ -14,7 +14,7 @@ const common_domain_module_1 = require("../domain/common/common-domain.module");
 const auth_context_1 = require("../context/auth-context");
 const audit_log_context_module_1 = require("../context/audit-log-context/audit-log-context.module");
 const organization_management_context_1 = require("../context/organization-management-context");
-const backup_context_module_1 = require("../context/backup-context/backup-context.module");
+const domain_context_module_1 = require("../context/domain-context.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const guards_1 = require("./common/guards");
 const audit_log_interceptor_1 = require("./common/interceptors/audit-log.interceptor");
@@ -31,7 +31,7 @@ exports.InterfaceModule = InterfaceModule = __decorate([
             auth_context_1.AuthContextModule,
             audit_log_context_module_1.AuditLogContextModule,
             organization_management_context_1.OrganizationManagementContextModule,
-            backup_context_module_1.BackupContextModule,
+            domain_context_module_1.DomainContextModule,
             admin_interface_module_1.AdminInterfaceModule,
             user_interface_module_1.UserInterfaceModule,
             evaluator_interface_module_1.EvaluatorInterfaceModule,

@@ -35,7 +35,12 @@
     "docker:compose:up": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",
     "docker:compose:logs": "docker-compose logs -f",
-    "sso:fetch-mock-data": "ts-node -r tsconfig-paths/register scripts/sso-fetch-mock-data.ts"
+    "sso:fetch-mock-data": "ts-node -r tsconfig-paths/register scripts/sso-fetch-mock-data.ts",
+    "db:backup": "ts-node scripts/backup/backup-pure.ts",
+    "db:backup:pgdump": "ts-node scripts/backup/backup.ts",
+    "db:restore": "ts-node scripts/backup/restore-pure.ts",
+    "db:restore:psql": "ts-node scripts/backup/restore.ts",
+    "db:test:clear": "ts-node scripts/backup/test-clear-all-data.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

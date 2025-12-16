@@ -20,6 +20,7 @@ const execAsync = promisify(exec);
 @Injectable()
 export class BackupSchedulerService {
   private readonly logger = new Logger(BackupSchedulerService.name);
+  private readonly isVercel = !!process.env.VERCEL;
 
   // 백업 디렉토리 설정
   private readonly BACKUP_BASE_DIR = path.join(process.cwd(), 'backup');
@@ -30,6 +31,14 @@ export class BackupSchedulerService {
   private readonly YEARLY_DIR = path.join(this.BACKUP_BASE_DIR, 'yearly');
 
   constructor() {
+    // Vercel 환경에서는 백업 스케줄러 비활성화
+    if (this.isVercel) {
+      this.logger.warn(
+        '⚠️  Vercel 환경 감지: 백업 스케줄러가 비활성화되었습니다.',
+      );
+      return;
+    }
+
     // 백업 디렉토리 생성
     this.초기화한다();
   }
@@ -62,6 +71,8 @@ export class BackupSchedulerService {
     timeZone: 'Asia/Seoul',
   })
   async 시간별_백업을_실행한다(): Promise<void> {
+    if (this.isVercel) return;
+
     try {
       this.logger.log('🕐 4시간 단위 백업 시작... (KST)');
       await this.백업을_실행한다(this.HOURLY_DIR, 'hourly');
@@ -80,6 +91,8 @@ export class BackupSchedulerService {
     timeZone: 'Asia/Seoul',
   })
   async 일일_백업을_실행한다(): Promise<void> {
+    if (this.isVercel) return;
+
     try {
       this.logger.log('📅 일일 백업 시작... (KST 00:00)');
 
@@ -103,6 +116,8 @@ export class BackupSchedulerService {
     timeZone: 'Asia/Seoul',
   })
   async 주간_백업을_실행한다(): Promise<void> {
+    if (this.isVercel) return;
+
     try {
       this.logger.log('📆 주간 백업 시작... (KST 일요일 00:00)');
 
@@ -124,6 +139,8 @@ export class BackupSchedulerService {
     timeZone: 'Asia/Seoul',
   })
   async 월간_백업을_실행한다(): Promise<void> {
+    if (this.isVercel) return;
+
     try {
       this.logger.log('📊 월간 백업 시작... (KST 1일 00:00)');
 
@@ -258,6 +275,12 @@ export class BackupSchedulerService {
   async 수동_백업을_실행한다(
     type: 'hourly' | 'daily' | 'weekly' | 'monthly' = 'daily',
   ): Promise<string> {
+    if (this.isVercel) {
+      throw new Error(
+        'Vercel 환경에서는 백업 기능을 사용할 수 없습니다. EC2 환경을 사용해주세요.',
+      );
+    }
+
     this.logger.log(`🔧 수동 백업 시작 (타입: ${type})...`);
 
     let targetDir: string;

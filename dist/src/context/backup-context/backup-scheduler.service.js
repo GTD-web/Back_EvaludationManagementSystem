@@ -53,6 +53,7 @@ const path = __importStar(require("path"));
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerService {
     logger = new common_1.Logger(BackupSchedulerService_1.name);
+    isVercel = !!process.env.VERCEL;
     BACKUP_BASE_DIR = path.join(process.cwd(), 'backup');
     HOURLY_DIR = path.join(this.BACKUP_BASE_DIR, 'hourly');
     DAILY_DIR = path.join(this.BACKUP_BASE_DIR, 'daily');
@@ -60,6 +61,10 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     MONTHLY_DIR = path.join(this.BACKUP_BASE_DIR, 'monthly');
     YEARLY_DIR = path.join(this.BACKUP_BASE_DIR, 'yearly');
     constructor() {
+        if (this.isVercel) {
+            this.logger.warn('⚠️  Vercel 환경 감지: 백업 스케줄러가 비활성화되었습니다.');
+            return;
+        }
         this.초기화한다();
     }
     초기화한다() {
@@ -78,6 +83,8 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
         }
     }
     async 시간별_백업을_실행한다() {
+        if (this.isVercel)
+            return;
         try {
             this.logger.log('🕐 4시간 단위 백업 시작... (KST)');
             await this.백업을_실행한다(this.HOURLY_DIR, 'hourly');
@@ -89,6 +96,8 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
         }
     }
     async 일일_백업을_실행한다() {
+        if (this.isVercel)
+            return;
         try {
             this.logger.log('📅 일일 백업 시작... (KST 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
@@ -102,6 +111,8 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
         }
     }
     async 주간_백업을_실행한다() {
+        if (this.isVercel)
+            return;
         try {
             this.logger.log('📆 주간 백업 시작... (KST 일요일 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
@@ -114,6 +125,8 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
         }
     }
     async 월간_백업을_실행한다() {
+        if (this.isVercel)
+            return;
         try {
             this.logger.log('📊 월간 백업 시작... (KST 1일 00:00)');
             const timestamp = this.타임스탬프를_생성한다();
@@ -195,6 +208,9 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
             .split('Z')[0];
     }
     async 수동_백업을_실행한다(type = 'daily') {
+        if (this.isVercel) {
+            throw new Error('Vercel 환경에서는 백업 기능을 사용할 수 없습니다. EC2 환경을 사용해주세요.');
+        }
         this.logger.log(`🔧 수동 백업 시작 (타입: ${type})...`);
         let targetDir;
         switch (type) {

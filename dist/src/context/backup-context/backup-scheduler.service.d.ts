@@ -1,5 +1,6 @@
 export declare class BackupSchedulerService {
     private readonly logger;
+    private readonly isVercel;
     private readonly BACKUP_BASE_DIR;
     private readonly HOURLY_DIR;
     private readonly DAILY_DIR;

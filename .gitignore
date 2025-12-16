@@ -62,6 +62,6 @@ src/domain/common/sso/mock-data/*.json
 scripts/backup/dumps/*.sql
 !scripts/backup/dumps/.gitkeep
 
-# Automated backup directories
-backup/
-!backup/.gitkeep
+# Automated backup directories (루트 디렉토리의 백업 파일만 무시)
+/backup/
+!/backup/.gitkeep

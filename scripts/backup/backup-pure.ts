@@ -8,11 +8,27 @@ dotenv.config();
 
 // 백업 설정
 const BACKUP_DIR = path.join(__dirname, 'dumps');
-const timestamp = new Date()
-  .toISOString()
-  .replace(/[:.]/g, '-')
-  .replace('T', '-')
-  .split('.')[0];
+
+// 한국 시간(KST) 유틸리티 함수
+function getKSTDate(): Date {
+  const now = new Date();
+  // 한국 시간으로 변환 (UTC+9)
+  const kstOffset = 9 * 60; // 9시간을 분으로
+  return new Date(now.getTime() + kstOffset * 60 * 1000);
+}
+
+function getKSTTimestamp(): string {
+  const kstTime = getKSTDate();
+  // ISO 형식의 문자열 생성 후 포맷팅
+  const formatted = kstTime
+    .toISOString()
+    .replace(/[:.]/g, '-')
+    .replace('T', '-')
+    .split('.')[0];
+  return `${formatted}-KST`;
+}
+
+const timestamp = getKSTTimestamp();
 const BACKUP_FILE = path.join(BACKUP_DIR, `backup-${timestamp}.sql`);
 
 // 데이터베이스 연결 정보
@@ -49,7 +65,7 @@ async function backup() {
 
     // SQL 헤더
     sqlContent += `-- PostgreSQL Database Backup (Data Only)\n`;
-    sqlContent += `-- Generated: ${new Date().toISOString()}\n`;
+    sqlContent += `-- Generated: ${getKSTDate().toISOString()} (KST)\n`;
     sqlContent += `-- Database: ${config.database}\n`;
     sqlContent += `-- Note: 이 백업은 데이터만 포함합니다. 테이블 구조는 TypeORM이 관리합니다.\n\n`;
     sqlContent += `SET statement_timeout = 0;\n`;

@@ -23,6 +23,8 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const wbs_assignment_validation_service_1 = require("./services/wbs-assignment-validation.service");
 const evaluation_period_employee_mapping_service_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service");
+const evaluation_period_employee_mapping_entity_1 = require("../../domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity");
+const employee_evaluation_step_approval_1 = require("../../domain/sub/employee-evaluation-step-approval");
 const project_assignment_1 = require("./handlers/project-assignment");
 const wbs_assignment_1 = require("./handlers/wbs-assignment");
 const wbs_evaluation_criteria_1 = require("./handlers/wbs-evaluation-criteria");
@@ -33,16 +35,20 @@ let EvaluationCriteriaManagementService = EvaluationCriteriaManagementService_1 
     queryBus;
     evaluationLineMappingRepository;
     evaluationLineRepository;
+    evaluationPeriodEmployeeMappingRepository;
     wbsAssignmentValidationService;
     evaluationPeriodEmployeeMappingService;
+    stepApprovalService;
     logger = new common_1.Logger(EvaluationCriteriaManagementService_1.name);
-    constructor(commandBus, queryBus, evaluationLineMappingRepository, evaluationLineRepository, wbsAssignmentValidationService, evaluationPeriodEmployeeMappingService) {
+    constructor(commandBus, queryBus, evaluationLineMappingRepository, evaluationLineRepository, evaluationPeriodEmployeeMappingRepository, wbsAssignmentValidationService, evaluationPeriodEmployeeMappingService, stepApprovalService) {
         this.commandBus = commandBus;
         this.queryBus = queryBus;
         this.evaluationLineMappingRepository = evaluationLineMappingRepository;
         this.evaluationLineRepository = evaluationLineRepository;
+        this.evaluationPeriodEmployeeMappingRepository = evaluationPeriodEmployeeMappingRepository;
         this.wbsAssignmentValidationService = wbsAssignmentValidationService;
         this.evaluationPeriodEmployeeMappingService = evaluationPeriodEmployeeMappingService;
+        this.stepApprovalService = stepApprovalService;
     }
     async 프로젝트를_할당한다(data, assignedBy) {
         const command = new project_assignment_1.CreateProjectAssignmentCommand(data, assignedBy);
@@ -428,7 +434,28 @@ let EvaluationCriteriaManagementService = EvaluationCriteriaManagementService_1 
         return await this.evaluationPeriodEmployeeMappingService.평가기준을_제출한다(evaluationPeriodId, employeeId, submittedBy);
     }
     async 평가기준_제출을_초기화한다(evaluationPeriodId, employeeId, updatedBy) {
-        return await this.evaluationPeriodEmployeeMappingService.평가기준_제출을_초기화한다(evaluationPeriodId, employeeId, updatedBy);
+        const result = await this.evaluationPeriodEmployeeMappingService.평가기준_제출을_초기화한다(evaluationPeriodId, employeeId, updatedBy);
+        try {
+            const mapping = await this.evaluationPeriodEmployeeMappingRepository.findOne({
+                where: {
+                    evaluationPeriodId,
+                    employeeId,
+                    deletedAt: null,
+                },
+            });
+            if (mapping) {
+                const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
+                if (stepApproval) {
+                    stepApproval.평가기준설정_대기로_변경한다(updatedBy);
+                    await this.stepApprovalService.저장한다(stepApproval);
+                    this.logger.log(`평가기준 제출 초기화 시 StepApproval 상태 초기화 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
+                }
+            }
+        }
+        catch (error) {
+            this.logger.warn(`평가기준 제출 초기화 시 StepApproval 상태 초기화 실패 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
+        }
+        return result;
     }
 };
 exports.EvaluationCriteriaManagementService = EvaluationCriteriaManagementService;
@@ -436,11 +463,14 @@ exports.EvaluationCriteriaManagementService = EvaluationCriteriaManagementServic
     (0, common_1.Injectable)(),
     __param(2, (0, typeorm_1.InjectRepository)(evaluation_line_mapping_entity_1.EvaluationLineMapping)),
     __param(3, (0, typeorm_1.InjectRepository)(evaluation_line_entity_1.EvaluationLine)),
+    __param(4, (0, typeorm_1.InjectRepository)(evaluation_period_employee_mapping_entity_1.EvaluationPeriodEmployeeMapping)),
     __metadata("design:paramtypes", [cqrs_1.CommandBus,
         cqrs_1.QueryBus,
         typeorm_2.Repository,
         typeorm_2.Repository,
+        typeorm_2.Repository,
         wbs_assignment_validation_service_1.WbsAssignmentValidationService,
-        evaluation_period_employee_mapping_service_1.EvaluationPeriodEmployeeMappingService])
+        evaluation_period_employee_mapping_service_1.EvaluationPeriodEmployeeMappingService,
+        employee_evaluation_step_approval_1.EmployeeEvaluationStepApprovalService])
 ], EvaluationCriteriaManagementService);
 //# sourceMappingURL=evaluation-criteria-management.service.js.map

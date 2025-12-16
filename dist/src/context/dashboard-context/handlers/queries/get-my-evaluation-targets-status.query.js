@@ -164,7 +164,16 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                     const { totalWbsCount: perfTotalWbsCount, inputCompletedCount } = await this.성과입력_상태를_조회한다(evaluationPeriodId, employeeId);
                     const performanceInputStatus = this.성과입력_상태를_계산한다(perfTotalWbsCount, inputCompletedCount);
                     const selfEvaluationStatus = await (0, self_evaluation_utils_1.자기평가_진행_상태를_조회한다)(evaluationPeriodId, employeeId, this.wbsSelfEvaluationRepository, this.wbsAssignmentRepository, this.evaluationPeriodRepository);
-                    const selfEvaluationStatusType = (0, self_evaluation_utils_1.자기평가_상태를_계산한다)(selfEvaluationStatus.totalMappingCount, selfEvaluationStatus.completedMappingCount);
+                    let selfEvaluationStatusType;
+                    if (selfEvaluationStatus.totalMappingCount === 0) {
+                        selfEvaluationStatusType = 'none';
+                    }
+                    else if (selfEvaluationStatus.isSubmittedToManager) {
+                        selfEvaluationStatusType = 'complete';
+                    }
+                    else {
+                        selfEvaluationStatusType = 'in_progress';
+                    }
                     const downwardEvaluationStatus = await this.내가_담당하는_하향평가_현황을_조회한다(evaluationPeriodId, employeeId, evaluatorId, evaluatorTypes);
                     const stepApproval = await this.stepApprovalService.맵핑ID로_조회한다(mapping.id);
                     const setupStatus = (0, evaluation_criteria_utils_1.평가기준설정_상태를_계산한다)(evaluationCriteriaStatus, wbsCriteriaStatus, stepApproval?.criteriaSettingStatus ?? null, mapping.isCriteriaSubmitted || false);
@@ -183,8 +192,6 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                         isSubmittedToEvaluator: selfEvaluationStatus.isSubmittedToEvaluator,
                         submittedToManagerCount: selfEvaluationStatus.submittedToManagerCount,
                         isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
-                        totalScore: selfEvaluationStatus.totalScore,
-                        grade: selfEvaluationStatus.grade,
                     };
                     if (viewedStatus) {
                         if (evaluatorTypes.includes(evaluation_line_types_1.EvaluatorType.PRIMARY) &&
@@ -272,8 +279,7 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                 .andWhere('eval.deletedAt IS NULL')
                 .getMany();
             const assignedWbsCount = evaluations.length;
-            const completedEvaluationCount = evaluations.filter((e) => e.downwardEvaluationScore !== null &&
-                e.downwardEvaluationScore !== undefined).length;
+            const completedEvaluationCount = evaluations.filter((e) => e.isCompleted === true).length;
             let totalScore = null;
             let grade = null;
             if (assignedWbsCount > 0 &&
@@ -315,8 +321,7 @@ let GetMyEvaluationTargetsStatusHandler = GetMyEvaluationTargetsStatusHandler_1 
                 .andWhere('eval.deletedAt IS NULL')
                 .getMany();
             const assignedWbsCount = evaluations.length;
-            const completedEvaluationCount = evaluations.filter((e) => e.downwardEvaluationScore !== null &&
-                e.downwardEvaluationScore !== undefined).length;
+            const completedEvaluationCount = evaluations.filter((e) => e.isCompleted === true).length;
             let totalScore = null;
             let grade = null;
             if (assignedWbsCount > 0 &&

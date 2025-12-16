@@ -36,6 +36,7 @@ import { WBS_ITEM_HANDLERS } from './handlers/wbs-item';
 // Domain Modules
 import { EvaluationPeriodModule } from '@domain/core/evaluation-period/evaluation-period.module';
 import { EvaluationPeriodEmployeeMappingModule } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.module';
+import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 
@@ -44,6 +45,7 @@ import { WbsAssignmentWeightCalculationService } from './services/wbs-assignment
 import { WbsAssignmentValidationService } from './services/wbs-assignment-validation.service';
 import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.module';
 import { DownwardEvaluationModule } from '@domain/core/downward-evaluation/downward-evaluation.module';
+import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evaluation-step-approval';
 
 /**
  * 평가기준관리 컨텍스트 모듈 (MVP 버전)
@@ -65,6 +67,7 @@ import { DownwardEvaluationModule } from '@domain/core/downward-evaluation/downw
       Department,
       Project,
       EvaluationPeriod,
+      EvaluationPeriodEmployeeMapping,
       EvaluationWbsAssignment,
       WbsEvaluationCriteria,
       EvaluationLine,
@@ -82,6 +85,7 @@ import { DownwardEvaluationModule } from '@domain/core/downward-evaluation/downw
     EvaluationPeriodEmployeeMappingModule,
     WbsItemModule,
     DownwardEvaluationModule,
+    EmployeeEvaluationStepApprovalModule,
   ],
   providers: [
     EvaluationCriteriaManagementService,

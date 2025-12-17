@@ -8,14 +8,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BackupContextModule = void 0;
 const common_1 = require("@nestjs/common");
-const schedule_1 = require("@nestjs/schedule");
 const backup_scheduler_service_1 = require("./backup-scheduler.service");
 let BackupContextModule = class BackupContextModule {
 };
 exports.BackupContextModule = BackupContextModule;
 exports.BackupContextModule = BackupContextModule = __decorate([
+    (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [schedule_1.ScheduleModule.forRoot()],
         providers: [backup_scheduler_service_1.BackupSchedulerService],
         exports: [backup_scheduler_service_1.BackupSchedulerService],
     })

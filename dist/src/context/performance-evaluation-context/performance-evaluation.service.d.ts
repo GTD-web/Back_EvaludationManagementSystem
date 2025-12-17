@@ -173,4 +173,5 @@ export declare class PerformanceEvaluationService implements IPerformanceEvaluat
     직원별_산출물을_조회한다(employeeId: string, activeOnly?: boolean): Promise<Deliverable[]>;
     WBS항목별_산출물을_조회한다(wbsItemId: string, activeOnly?: boolean): Promise<Deliverable[]>;
     산출물_상세를_조회한다(id: string): Promise<Deliverable>;
+    산출물을_ID로_조회한다(id: string): Promise<Deliverable | null>;
 }

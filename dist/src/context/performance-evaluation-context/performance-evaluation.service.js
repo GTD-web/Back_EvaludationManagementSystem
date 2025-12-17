@@ -483,6 +483,17 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const deliverable = await this.queryBus.execute(query);
         return deliverable;
     }
+    async 산출물을_ID로_조회한다(id) {
+        try {
+            return await this.산출물_상세를_조회한다(id);
+        }
+        catch (error) {
+            if (error.name === 'DeliverableNotFoundException') {
+                return null;
+            }
+            throw error;
+        }
+    }
 };
 exports.PerformanceEvaluationService = PerformanceEvaluationService;
 exports.PerformanceEvaluationService = PerformanceEvaluationService = PerformanceEvaluationService_1 = __decorate([

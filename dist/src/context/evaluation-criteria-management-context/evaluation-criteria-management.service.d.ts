@@ -1,5 +1,6 @@
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { EntityManager, Repository } from 'typeorm';
 import { IEvaluationCriteriaManagementService } from './interfaces/evaluation-criteria-management.interface';
@@ -25,11 +26,12 @@ export declare class EvaluationCriteriaManagementService implements IEvaluationC
     private readonly evaluationLineMappingRepository;
     private readonly evaluationLineRepository;
     private readonly evaluationPeriodEmployeeMappingRepository;
+    private readonly wbsAssignmentRepository;
     private readonly wbsAssignmentValidationService;
     private readonly evaluationPeriodEmployeeMappingService;
     private readonly stepApprovalService;
     private readonly logger;
-    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, evaluationPeriodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>, wbsAssignmentValidationService: WbsAssignmentValidationService, evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService, stepApprovalService: EmployeeEvaluationStepApprovalService);
+    constructor(commandBus: CommandBus, queryBus: QueryBus, evaluationLineMappingRepository: Repository<EvaluationLineMapping>, evaluationLineRepository: Repository<EvaluationLine>, evaluationPeriodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>, wbsAssignmentValidationService: WbsAssignmentValidationService, evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService, stepApprovalService: EmployeeEvaluationStepApprovalService);
     프로젝트를_할당한다(data: CreateEvaluationProjectAssignmentData, assignedBy: string): Promise<EvaluationProjectAssignmentDto>;
     프로젝트_할당을_취소한다(id: string, cancelledBy: string): Promise<void>;
     프로젝트_할당_목록을_조회한다(filter: EvaluationProjectAssignmentFilter): Promise<ProjectAssignmentListResult>;
@@ -55,6 +57,7 @@ export declare class EvaluationCriteriaManagementService implements IEvaluationC
     특정_평가기간에_프로젝트의_WBS_할당을_조회한다(projectId: string, periodId: string): Promise<EvaluationWbsAssignmentDto[]>;
     WBS_할당_상세를_조회한다(employeeId: string, wbsItemId: string, projectId: string, periodId: string): Promise<WbsAssignmentDetailResult | null>;
     특정_평가기간에_WBS_항목에_할당된_직원을_조회한다(wbsItemId: string, periodId: string): Promise<EvaluationWbsAssignmentDto[]>;
+    WBS항목에_할당된_모든_직원을_조회한다(wbsItemId: string): Promise<EvaluationWbsAssignmentDto[]>;
     특정_평가기간에_프로젝트에서_할당되지_않은_WBS_항목_목록을_조회한다(projectId: string, periodId: string, employeeId?: string): Promise<WbsItemDto[]>;
     WBS를_대량으로_할당한다(assignments: CreateEvaluationWbsAssignmentData[], assignedBy: string): Promise<EvaluationWbsAssignmentDto[]>;
     평가기간의_WBS_할당을_초기화한다(periodId: string, resetBy: string): Promise<void>;

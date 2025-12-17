@@ -1678,4 +1678,23 @@ export class PerformanceEvaluationService
     const deliverable = await this.queryBus.execute(query);
     return deliverable;
   }
+
+  /**
+   * 산출물을 ID로 조회한다 (nullable)
+   * 
+   * @param id 산출물 ID
+   * @returns 산출물 엔티티 또는 null
+   */
+  async 산출물을_ID로_조회한다(id: string): Promise<Deliverable | null> {
+    try {
+      return await this.산출물_상세를_조회한다(id);
+    } catch (error) {
+      // DeliverableNotFoundException인 경우 null 반환
+      if (error.name === 'DeliverableNotFoundException') {
+        return null;
+      }
+      // 다른 예외는 재throw
+      throw error;
+    }
+  }
 }

@@ -22,7 +22,6 @@ const revision_request_context_module_1 = require("./revision-request-context/re
 const audit_log_context_module_1 = require("./audit-log-context/audit-log-context.module");
 const evaluation_activity_log_context_module_1 = require("./evaluation-activity-log-context/evaluation-activity-log-context.module");
 const project_module_1 = require("../domain/common/project/project.module");
-const backup_context_module_1 = require("./backup-context/backup-context.module");
 let DomainContextModule = class DomainContextModule {
 };
 exports.DomainContextModule = DomainContextModule;
@@ -43,7 +42,6 @@ exports.DomainContextModule = DomainContextModule = __decorate([
             audit_log_context_module_1.AuditLogContextModule,
             evaluation_activity_log_context_module_1.EvaluationActivityLogContextModule,
             project_module_1.ProjectModule,
-            backup_context_module_1.BackupContextModule,
         ],
         providers: [],
         exports: [
@@ -61,7 +59,6 @@ exports.DomainContextModule = DomainContextModule = __decorate([
             audit_log_context_module_1.AuditLogContextModule,
             evaluation_activity_log_context_module_1.EvaluationActivityLogContextModule,
             project_module_1.ProjectModule,
-            backup_context_module_1.BackupContextModule,
         ],
     })
 ], DomainContextModule);

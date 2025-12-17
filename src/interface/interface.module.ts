@@ -30,7 +30,7 @@ import { PublicInterfaceModule } from './public/public-interface.module';
     AuthContextModule, // Auth Context 모듈 (JWT 인증 가드에서 사용)
     AuditLogContextModule, // Audit 로그 컨텍스트 모듈
     OrganizationManagementContextModule, // 조직 관리 컨텍스트 모듈 (RolesGuard에서 사용)
-    DomainContextModule, // 도메인 컨텍스트 모듈 (BackupContextModule 포함)
+    DomainContextModule, // 도메인 컨텍스트 모듈
     AdminInterfaceModule, // 관리자 인터페이스 모듈
     UserInterfaceModule, // 사용자 인터페이스 모듈
     EvaluatorInterfaceModule, // 평가자 인터페이스 모듈

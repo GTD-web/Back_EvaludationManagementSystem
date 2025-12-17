@@ -418,186 +418,604 @@ describe('DeliverableBusinessService E2E 테스트', () => {
         });
     });
 
-    it('Domain 직접 조회와 Context를 통한 조회 결과가 동일하다', async () => {
-      // Given: 산출물 ID
-      const deliverableId = comparisonDeliverable.id;
+    describe('조회(GET) 동작 일치성', () => {
+      it('Domain 직접 조회와 Context를 통한 조회 결과가 동일하다', async () => {
+        // Given: 산출물 ID
+        const deliverableId = comparisonDeliverable.id;
 
-      // When: Domain 서비스로 직접 조회 (리팩토링 전 방식)
-      const domainResult = await deliverableService.조회한다(deliverableId);
+        // When: Domain 서비스로 직접 조회 (리팩토링 전 방식)
+        const domainResult = await deliverableService.조회한다(deliverableId);
 
-      // When: Context 서비스를 통한 조회 (리팩토링 후 방식)
-      const contextResult =
-        await performanceEvaluationService.산출물을_ID로_조회한다(
-          deliverableId,
-        );
+        // When: Context 서비스를 통한 조회 (리팩토링 후 방식)
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            deliverableId,
+          );
 
-      // Then: 두 결과가 동일하다
-      expect(domainResult).toBeDefined();
-      expect(contextResult).toBeDefined();
-      expect(domainResult).not.toBeNull();
-      expect(contextResult).not.toBeNull();
+        // Then: 두 결과가 동일하다
+        expect(domainResult).toBeDefined();
+        expect(contextResult).toBeDefined();
+        expect(domainResult).not.toBeNull();
+        expect(contextResult).not.toBeNull();
 
-      // Null 체크 후 핵심 필드 비교
-      if (domainResult && contextResult) {
-        expect(contextResult.id).toBe(domainResult.id);
-        expect(contextResult.name).toBe(domainResult.name);
-        expect(contextResult.type).toBe(domainResult.type);
-        expect(contextResult.employeeId).toBe(domainResult.employeeId);
-        expect(contextResult.wbsItemId).toBe(domainResult.wbsItemId);
-        expect(contextResult.description).toBe(domainResult.description);
-        expect(contextResult.filePath).toBe(domainResult.filePath);
-      }
-
-      // 테스트 결과 저장
-      testResults.push({
-        testName: 'Domain 직접 조회와 Context를 통한 조회 결과가 동일하다',
-        status: 'passed',
-        result: {
-          deliverableId,
-          domainResultExists: !!domainResult,
-          contextResultExists: !!contextResult,
-          fieldsMatch: true,
-          comparedFields: [
-            'id',
-            'name',
-            'type',
-            'employeeId',
-            'wbsItemId',
-            'description',
-            'filePath',
-          ],
-        },
-      });
-
-      console.log(`✅ Domain vs Context 조회 결과 일치 확인`);
-    });
-
-    it('WBS 배정 조회 결과가 동일하다', async () => {
-      // Given: WBS 항목 ID
-      const testWbsItemId = wbsItemId;
-
-      // When: Domain 서비스로 직접 조회 (리팩토링 전 방식)
-      const domainResult =
-        await evaluationWbsAssignmentService.WBS항목별_조회한다(testWbsItemId);
-
-      // When: Context 서비스를 통한 조회 (리팩토링 후 방식)
-      const contextResult =
-        await evaluationCriteriaManagementService.WBS항목에_할당된_모든_직원을_조회한다(
-          testWbsItemId,
-        );
-
-      // Then: 두 결과의 길이가 동일하다
-      expect(domainResult.length).toBe(contextResult.length);
-
-      // Then: 각 항목의 핵심 필드가 일치한다
-      if (domainResult.length > 0 && contextResult.length > 0) {
-        for (let i = 0; i < domainResult.length; i++) {
-          const domainItem = domainResult[i];
-          const contextItem = contextResult[i];
-
-          expect(contextItem.id).toBe(domainItem.id);
-          expect(contextItem.periodId).toBe(domainItem.periodId);
-          expect(contextItem.employeeId).toBe(domainItem.employeeId);
-          expect(contextItem.projectId).toBe(domainItem.projectId);
-          expect(contextItem.wbsItemId).toBe(domainItem.wbsItemId);
+        // Null 체크 후 핵심 필드 비교
+        if (domainResult && contextResult) {
+          expect(contextResult.id).toBe(domainResult.id);
+          expect(contextResult.name).toBe(domainResult.name);
+          expect(contextResult.type).toBe(domainResult.type);
+          expect(contextResult.employeeId).toBe(domainResult.employeeId);
+          expect(contextResult.wbsItemId).toBe(domainResult.wbsItemId);
+          expect(contextResult.description).toBe(domainResult.description);
+          expect(contextResult.filePath).toBe(domainResult.filePath);
         }
-      }
 
-      // 테스트 결과 저장
-      testResults.push({
-        testName: 'WBS 배정 조회 결과가 동일하다',
-        status: 'passed',
-        result: {
-          wbsItemId: testWbsItemId,
-          domainResultCount: domainResult.length,
-          contextResultCount: contextResult.length,
-          countsMatch: domainResult.length === contextResult.length,
-          fieldsMatch: true,
-          comparedFields: [
-            'id',
-            'periodId',
-            'employeeId',
-            'projectId',
-            'wbsItemId',
-          ],
-        },
+        // 테스트 결과 저장
+        testResults.push({
+          testName: 'Domain 직접 조회와 Context를 통한 조회 결과가 동일하다',
+          status: 'passed',
+          result: {
+            deliverableId,
+            domainResultExists: !!domainResult,
+            contextResultExists: !!contextResult,
+            fieldsMatch: true,
+            comparedFields: [
+              'id',
+              'name',
+              'type',
+              'employeeId',
+              'wbsItemId',
+              'description',
+              'filePath',
+            ],
+          },
+        });
+
+        console.log(`✅ Domain vs Context 조회 결과 일치 확인`);
       });
 
-      console.log(`✅ WBS 배정 조회 결과 일치 확인: ${domainResult.length}건`);
+      it('WBS 배정 조회 결과가 동일하다', async () => {
+        // Given: WBS 항목 ID
+        const testWbsItemId = wbsItemId;
+
+        // When: Domain 서비스로 직접 조회 (리팩토링 전 방식)
+        const domainResult =
+          await evaluationWbsAssignmentService.WBS항목별_조회한다(
+            testWbsItemId,
+          );
+
+        // When: Context 서비스를 통한 조회 (리팩토링 후 방식)
+        const contextResult =
+          await evaluationCriteriaManagementService.WBS항목에_할당된_모든_직원을_조회한다(
+            testWbsItemId,
+          );
+
+        // Then: 두 결과의 길이가 동일하다
+        expect(domainResult.length).toBe(contextResult.length);
+
+        // Then: 각 항목의 핵심 필드가 일치한다
+        if (domainResult.length > 0 && contextResult.length > 0) {
+          for (let i = 0; i < domainResult.length; i++) {
+            const domainItem = domainResult[i];
+            const contextItem = contextResult[i];
+
+            expect(contextItem.id).toBe(domainItem.id);
+            expect(contextItem.periodId).toBe(domainItem.periodId);
+            expect(contextItem.employeeId).toBe(domainItem.employeeId);
+            expect(contextItem.projectId).toBe(domainItem.projectId);
+            expect(contextItem.wbsItemId).toBe(domainItem.wbsItemId);
+          }
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: 'WBS 배정 조회 결과가 동일하다',
+          status: 'passed',
+          result: {
+            wbsItemId: testWbsItemId,
+            domainResultCount: domainResult.length,
+            contextResultCount: contextResult.length,
+            countsMatch: domainResult.length === contextResult.length,
+            fieldsMatch: true,
+            comparedFields: [
+              'id',
+              'periodId',
+              'employeeId',
+              'projectId',
+              'wbsItemId',
+            ],
+          },
+        });
+
+        console.log(
+          `✅ WBS 배정 조회 결과 일치 확인: ${domainResult.length}건`,
+        );
+      });
+
+      it('삭제된 산출물 조회 시 동일한 동작을 한다', async () => {
+        // Given: 테스트용 산출물 생성 및 삭제
+        const testDeliverable =
+          await deliverableBusinessService.산출물을_생성한다({
+            name: '삭제 테스트',
+            type: DeliverableType.CODE,
+            employeeId,
+            wbsItemId,
+            createdBy: managerId,
+          });
+
+        await deliverableBusinessService.산출물을_삭제한다(
+          testDeliverable.id,
+          managerId,
+        );
+
+        // When & Then: Domain 서비스는 null 반환
+        const domainResult = await deliverableService.조회한다(
+          testDeliverable.id,
+        );
+        expect(domainResult).toBeNull();
+
+        // When & Then: Context 서비스도 null 반환
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            testDeliverable.id,
+          );
+        expect(contextResult).toBeNull();
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '삭제된 산출물 조회 시 동일한 동작을 한다',
+          status: 'passed',
+          result: {
+            deletedDeliverableId: testDeliverable.id,
+            domainReturnsNull: domainResult === null,
+            contextReturnsNull: contextResult === null,
+            behaviorMatches: true,
+          },
+        });
+
+        console.log(`✅ 삭제된 산출물 조회 동작 일치 확인`);
+      });
+
+      it('존재하지 않는 산출물 조회 시 동일한 동작을 한다', async () => {
+        // Given: 존재하지 않는 ID
+        const nonExistentId = '00000000-0000-0000-0000-000000000000';
+
+        // When: Domain 서비스는 null 반환
+        const domainResult = await deliverableService.조회한다(nonExistentId);
+        expect(domainResult).toBeNull();
+
+        // When: Context 서비스도 null 반환
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            nonExistentId,
+          );
+        expect(contextResult).toBeNull();
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '존재하지 않는 산출물 조회 시 동일한 동작을 한다',
+          status: 'passed',
+          result: {
+            nonExistentId,
+            domainReturnsNull: domainResult === null,
+            contextReturnsNull: contextResult === null,
+            behaviorMatches: true,
+          },
+        });
+
+        console.log(`✅ 존재하지 않는 산출물 조회 동작 일치 확인`);
+      });
     });
 
-    it('삭제된 산출물 조회 시 동일한 동작을 한다', async () => {
-      // Given: 테스트용 산출물 생성 및 삭제
-      const testDeliverable =
-        await deliverableBusinessService.산출물을_생성한다({
-          name: '삭제 테스트',
+    describe('생성(POST) 동작 일치성', () => {
+      it('생성 요청 파라미터와 응답이 동일하다', async () => {
+        // Given: 생성 요청 데이터
+        const createRequest = {
+          name: 'POST 테스트 산출물',
+          type: DeliverableType.CODE,
+          employeeId,
+          wbsItemId,
+          description: 'POST 동작 테스트',
+          filePath: '/uploads/post-test.zip',
+          createdBy: managerId,
+        };
+
+        // When: 산출물 생성
+        const result =
+          await deliverableBusinessService.산출물을_생성한다(createRequest);
+
+        // Then: 요청 파라미터가 응답에 반영됨
+        expect(result.name).toBe(createRequest.name);
+        expect(result.type).toBe(createRequest.type);
+        expect(result.employeeId).toBe(createRequest.employeeId);
+        expect(result.wbsItemId).toBe(createRequest.wbsItemId);
+        expect(result.description).toBe(createRequest.description);
+        expect(result.filePath).toBe(createRequest.filePath);
+
+        // Then: Domain을 통한 조회로도 동일한 결과 확인
+        const domainResult = await deliverableService.조회한다(result.id);
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(result.id);
+
+        expect(domainResult).not.toBeNull();
+        expect(contextResult).not.toBeNull();
+
+        if (domainResult && contextResult) {
+          expect(contextResult.name).toBe(domainResult.name);
+          expect(contextResult.type).toBe(domainResult.type);
+          expect(contextResult.description).toBe(domainResult.description);
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '생성 요청 파라미터와 응답이 동일하다',
+          status: 'passed',
+          result: {
+            requestParams: Object.keys(createRequest),
+            responseMatchesRequest: true,
+            domainQueryMatches: true,
+            contextQueryMatches: true,
+          },
+        });
+
+        console.log(`✅ POST 요청/응답 일치 확인`);
+      });
+
+      it('생성된 산출물을 Domain과 Context 양쪽에서 조회 가능하다', async () => {
+        // Given: 새로운 산출물 생성
+        const created = await deliverableBusinessService.산출물을_생성한다({
+          name: '조회 가능성 테스트',
+          type: DeliverableType.REPORT,
+          employeeId,
+          wbsItemId,
+          createdBy: managerId,
+        });
+
+        // When: Domain 서비스로 조회
+        const domainResult = await deliverableService.조회한다(created.id);
+
+        // When: Context 서비스로 조회
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(created.id);
+
+        // Then: 둘 다 조회 가능하고 내용 동일
+        expect(domainResult).not.toBeNull();
+        expect(contextResult).not.toBeNull();
+
+        if (domainResult && contextResult) {
+          expect(contextResult.id).toBe(created.id);
+          expect(domainResult.id).toBe(created.id);
+          expect(contextResult.name).toBe(domainResult.name);
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '생성된 산출물을 Domain과 Context 양쪽에서 조회 가능하다',
+          status: 'passed',
+          result: {
+            createdId: created.id,
+            domainQuerySuccess: !!domainResult,
+            contextQuerySuccess: !!contextResult,
+            resultsMatch: true,
+          },
+        });
+
+        console.log(`✅ 생성 후 양쪽 조회 가능 확인`);
+      });
+    });
+
+    describe('수정(PATCH) 동작 일치성', () => {
+      let testDeliverableForUpdate: Deliverable;
+
+      beforeAll(async () => {
+        testDeliverableForUpdate =
+          await deliverableBusinessService.산출물을_생성한다({
+            name: 'PATCH 테스트용',
+            type: DeliverableType.DOCUMENT,
+            employeeId,
+            wbsItemId,
+            description: '수정 전',
+            createdBy: managerId,
+          });
+      });
+
+      it('수정 요청 파라미터가 응답에 반영된다', async () => {
+        // Given: 수정 요청 데이터
+        const updateRequest = {
+          id: testDeliverableForUpdate.id,
+          name: '수정된 이름',
+          description: '수정된 설명',
+          type: DeliverableType.PRESENTATION,
+          updatedBy: managerId,
+        };
+
+        // When: 산출물 수정
+        const result =
+          await deliverableBusinessService.산출물을_수정한다(updateRequest);
+
+        // Then: 요청 파라미터가 응답에 반영됨
+        expect(result.id).toBe(updateRequest.id);
+        expect(result.name).toBe(updateRequest.name);
+        expect(result.description).toBe(updateRequest.description);
+        expect(result.type).toBe(updateRequest.type);
+
+        // Then: Domain과 Context 조회 결과 일치
+        const domainResult = await deliverableService.조회한다(result.id);
+        const contextResult =
+          await performanceEvaluationService.산출물을_ID로_조회한다(result.id);
+
+        expect(domainResult).not.toBeNull();
+        expect(contextResult).not.toBeNull();
+
+        if (domainResult && contextResult) {
+          expect(contextResult.name).toBe(domainResult.name);
+          expect(contextResult.description).toBe(domainResult.description);
+          expect(contextResult.type).toBe(domainResult.type);
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '수정 요청 파라미터가 응답에 반영된다',
+          status: 'passed',
+          result: {
+            updateFields: ['name', 'description', 'type'],
+            responseMatchesRequest: true,
+            domainQueryMatches: true,
+            contextQueryMatches: true,
+          },
+        });
+
+        console.log(`✅ PATCH 요청/응답 일치 확인`);
+      });
+
+      it('수정 전 산출물 조회가 Domain/Context에서 동일하게 동작한다', async () => {
+        // Given: 수정할 산출물
+        const toUpdate = await deliverableBusinessService.산출물을_생성한다({
+          name: '수정 전 조회 테스트',
           type: DeliverableType.CODE,
           employeeId,
           wbsItemId,
           createdBy: managerId,
         });
 
-      await deliverableBusinessService.산출물을_삭제한다(
-        testDeliverable.id,
-        managerId,
-      );
+        // When: 수정 전 Domain으로 조회
+        const beforeDomain = await deliverableService.조회한다(toUpdate.id);
 
-      // When & Then: Domain 서비스는 null 반환
-      const domainResult = await deliverableService.조회한다(
-        testDeliverable.id,
-      );
-      expect(domainResult).toBeNull();
+        // When: 수정 전 Context로 조회
+        const beforeContext =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            toUpdate.id,
+          );
 
-      // When & Then: Context 서비스도 null 반환
-      const contextResult =
-        await performanceEvaluationService.산출물을_ID로_조회한다(
-          testDeliverable.id,
-        );
-      expect(contextResult).toBeNull();
+        // Then: 수정 전 상태가 동일
+        expect(beforeDomain).not.toBeNull();
+        expect(beforeContext).not.toBeNull();
 
-      // 테스트 결과 저장
-      testResults.push({
-        testName: '삭제된 산출물 조회 시 동일한 동작을 한다',
-        status: 'passed',
-        result: {
-          deletedDeliverableId: testDeliverable.id,
-          domainReturnsNull: domainResult === null,
-          contextReturnsNull: contextResult === null,
-          behaviorMatches: true,
-        },
+        if (beforeDomain && beforeContext) {
+          expect(beforeContext.name).toBe(beforeDomain.name);
+        }
+
+        // When: 수정 실행
+        await deliverableBusinessService.산출물을_수정한다({
+          id: toUpdate.id,
+          name: '수정 후 이름',
+          updatedBy: managerId,
+        });
+
+        // When: 수정 후 Domain으로 조회
+        const afterDomain = await deliverableService.조회한다(toUpdate.id);
+
+        // When: 수정 후 Context로 조회
+        const afterContext =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            toUpdate.id,
+          );
+
+        // Then: 수정 후 상태도 동일
+        expect(afterDomain).not.toBeNull();
+        expect(afterContext).not.toBeNull();
+
+        if (afterDomain && afterContext) {
+          expect(afterContext.name).toBe(afterDomain.name);
+          expect(afterContext.name).toBe('수정 후 이름');
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName:
+            '수정 전 산출물 조회가 Domain/Context에서 동일하게 동작한다',
+          status: 'passed',
+          result: {
+            beforeUpdateMatches: true,
+            afterUpdateMatches: true,
+            updateReflected: true,
+          },
+        });
+
+        console.log(`✅ 수정 전후 조회 동작 일치 확인`);
       });
-
-      console.log(`✅ 삭제된 산출물 조회 동작 일치 확인`);
     });
 
-    it('존재하지 않는 산출물 조회 시 동일한 동작을 한다', async () => {
-      // Given: 존재하지 않는 ID
-      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+    describe('삭제(DELETE) 동작 일치성', () => {
+      it('삭제 동작이 Domain/Context 양쪽에 반영된다', async () => {
+        // Given: 삭제할 산출물 생성
+        const toDelete = await deliverableBusinessService.산출물을_생성한다({
+          name: 'DELETE 테스트',
+          type: DeliverableType.DESIGN,
+          employeeId,
+          wbsItemId,
+          createdBy: managerId,
+        });
 
-      // When: Domain 서비스는 null 반환
-      const domainResult = await deliverableService.조회한다(nonExistentId);
-      expect(domainResult).toBeNull();
-
-      // When: Context 서비스도 null 반환
-      const contextResult =
-        await performanceEvaluationService.산출물을_ID로_조회한다(
-          nonExistentId,
+        // When: 삭제 전 양쪽에서 조회 가능 확인
+        const beforeDeleteDomain = await deliverableService.조회한다(
+          toDelete.id,
         );
-      expect(contextResult).toBeNull();
+        const beforeDeleteContext =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            toDelete.id,
+          );
 
-      // 테스트 결과 저장
-      testResults.push({
-        testName: '존재하지 않는 산출물 조회 시 동일한 동작을 한다',
-        status: 'passed',
-        result: {
-          nonExistentId,
-          domainReturnsNull: domainResult === null,
-          contextReturnsNull: contextResult === null,
-          behaviorMatches: true,
-        },
+        expect(beforeDeleteDomain).not.toBeNull();
+        expect(beforeDeleteContext).not.toBeNull();
+
+        // When: 산출물 삭제
+        await deliverableBusinessService.산출물을_삭제한다(
+          toDelete.id,
+          managerId,
+        );
+
+        // Then: Domain에서 조회 시 null
+        const afterDeleteDomain = await deliverableService.조회한다(
+          toDelete.id,
+        );
+        expect(afterDeleteDomain).toBeNull();
+
+        // Then: Context에서 조회 시 null
+        const afterDeleteContext =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            toDelete.id,
+          );
+        expect(afterDeleteContext).toBeNull();
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '삭제 동작이 Domain/Context 양쪽에 반영된다',
+          status: 'passed',
+          result: {
+            beforeDeleteDomainExists: !!beforeDeleteDomain,
+            beforeDeleteContextExists: !!beforeDeleteContext,
+            afterDeleteDomainNull: afterDeleteDomain === null,
+            afterDeleteContextNull: afterDeleteContext === null,
+            deletionReflectedBothSides: true,
+          },
+        });
+
+        console.log(`✅ DELETE 동작 양쪽 반영 확인`);
       });
 
-      console.log(`✅ 존재하지 않는 산출물 조회 동작 일치 확인`);
+      it('삭제 전 existingDeliverable 조회가 동일하게 동작한다', async () => {
+        // Given: 삭제할 산출물
+        const toDelete = await deliverableBusinessService.산출물을_생성한다({
+          name: '삭제 전 조회 테스트',
+          type: DeliverableType.REPORT,
+          employeeId,
+          wbsItemId,
+          createdBy: managerId,
+        });
+
+        // When: Domain을 통한 삭제 전 조회 (리팩토링 전 방식)
+        const domainExisting = await deliverableService.조회한다(toDelete.id);
+
+        // When: Context를 통한 삭제 전 조회 (리팩토링 후 방식)
+        const contextExisting =
+          await performanceEvaluationService.산출물을_ID로_조회한다(
+            toDelete.id,
+          );
+
+        // Then: 둘 다 존재 확인
+        expect(domainExisting).not.toBeNull();
+        expect(contextExisting).not.toBeNull();
+
+        if (domainExisting && contextExisting) {
+          expect(contextExisting.id).toBe(domainExisting.id);
+          expect(contextExisting.name).toBe(domainExisting.name);
+        }
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '삭제 전 existingDeliverable 조회가 동일하게 동작한다',
+          status: 'passed',
+          result: {
+            domainExistingFound: !!domainExisting,
+            contextExistingFound: !!contextExisting,
+            resultsMatch: true,
+          },
+        });
+
+        console.log(`✅ 삭제 전 존재 확인 동작 일치 확인`);
+      });
+    });
+
+    describe('벌크 작업 동작 일치성', () => {
+      it('벌크 삭제 전 산출물 조회가 동일하게 동작한다', async () => {
+        // Given: 벌크 삭제할 산출물들 생성
+        const bulk1 = await deliverableBusinessService.산출물을_생성한다({
+          name: '벌크 삭제 1',
+          type: DeliverableType.DOCUMENT,
+          employeeId,
+          wbsItemId,
+          createdBy: managerId,
+        });
+
+        const bulk2 = await deliverableBusinessService.산출물을_생성한다({
+          name: '벌크 삭제 2',
+          type: DeliverableType.CODE,
+          employeeId,
+          wbsItemId,
+          createdBy: managerId,
+        });
+
+        const ids = [bulk1.id, bulk2.id];
+
+        // When: Domain을 통한 벌크 조회
+        const domainResults = await Promise.all(
+          ids.map((id) => deliverableService.조회한다(id)),
+        );
+
+        // When: Context를 통한 벌크 조회
+        const contextResults = await Promise.all(
+          ids.map((id) =>
+            performanceEvaluationService.산출물을_ID로_조회한다(id),
+          ),
+        );
+
+        // Then: 모두 조회되고 내용 일치
+        expect(domainResults.every((r) => r !== null)).toBe(true);
+        expect(contextResults.every((r) => r !== null)).toBe(true);
+        expect(domainResults.length).toBe(contextResults.length);
+
+        for (let i = 0; i < domainResults.length; i++) {
+          const domainResult = domainResults[i];
+          const contextResult = contextResults[i];
+          if (domainResult && contextResult) {
+            expect(contextResult.id).toBe(domainResult.id);
+            expect(contextResult.name).toBe(domainResult.name);
+          }
+        }
+
+        // When: 벌크 삭제
+        await deliverableBusinessService.산출물을_벌크_삭제한다({
+          ids,
+          deletedBy: managerId,
+        });
+
+        // Then: 삭제 후 Domain/Context 양쪽에서 null
+        const afterDomain = await Promise.all(
+          ids.map((id) => deliverableService.조회한다(id)),
+        );
+        const afterContext = await Promise.all(
+          ids.map((id) =>
+            performanceEvaluationService.산출물을_ID로_조회한다(id),
+          ),
+        );
+
+        expect(afterDomain.every((r) => r === null)).toBe(true);
+        expect(afterContext.every((r) => r === null)).toBe(true);
+
+        // 테스트 결과 저장
+        testResults.push({
+          testName: '벌크 삭제 전 산출물 조회가 동일하게 동작한다',
+          status: 'passed',
+          result: {
+            bulkCount: ids.length,
+            beforeDeleteAllFound: true,
+            afterDeleteAllNull: true,
+            domainContextMatch: true,
+          },
+        });
+
+        console.log(`✅ 벌크 작업 조회 동작 일치 확인`);
+      });
     });
   });
 

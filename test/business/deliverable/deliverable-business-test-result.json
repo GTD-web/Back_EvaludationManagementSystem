@@ -1,23 +1,23 @@
 {
-  "timestamp": "2025-12-17T00:25:40.461Z",
+  "timestamp": "2025-12-17T00:50:53.411Z",
   "testSuite": "DeliverableBusinessService E2E 테스트",
   "description": "Business → Context → Domain 아키텍처 준수 검증",
-  "totalTests": 12,
-  "passedTests": 12,
+  "totalTests": 19,
+  "passedTests": 19,
   "failedTests": 0,
   "testResults": [
     {
       "testName": "산출물을 생성할 수 있다",
       "status": "passed",
       "result": {
-        "deliverableId": "5fa46825-f415-4fad-a4f9-9a78f05ffda0",
+        "deliverableId": "3f4e0a74-f5a3-432d-9429-d8bde018589b",
         "name": "테스트 문서",
         "type": "document",
-        "employeeId": "a067981f-0f76-4e2a-b38d-3e6b37f5d710",
-        "wbsItemId": "331dcd95-34e9-4a4f-90a0-f4443702c053",
+        "employeeId": "dbd046ac-1310-461e-8807-e7616aa7c71e",
+        "wbsItemId": "cb39460e-4ba5-45ed-9a93-7d7bf4f984cd",
         "description": "테스트용 산출물입니다",
         "filePath": "/uploads/test-document.pdf",
-        "createdBy": "f2a020e7-b522-4e83-a39e-529198d16b69"
+        "createdBy": "6b989181-7234-498e-b055-7c44d054d4b5"
       }
     },
     {
@@ -32,7 +32,7 @@
       "testName": "산출물을 수정할 수 있다",
       "status": "passed",
       "result": {
-        "deliverableId": "5fa46825-f415-4fad-a4f9-9a78f05ffda0",
+        "deliverableId": "3f4e0a74-f5a3-432d-9429-d8bde018589b",
         "updatedName": "수정된 산출물",
         "updatedDescription": "수정 후 설명",
         "verified": true
@@ -42,7 +42,7 @@
       "testName": "산출물을 삭제할 수 있다",
       "status": "passed",
       "result": {
-        "deliverableId": "5fa46825-f415-4fad-a4f9-9a78f05ffda0",
+        "deliverableId": "3f4e0a74-f5a3-432d-9429-d8bde018589b",
         "deleted": true,
         "throwsExceptionOnQuery": true
       }
@@ -51,7 +51,7 @@
       "testName": "직원별 산출물을 조회할 수 있다",
       "status": "passed",
       "result": {
-        "employeeId": "a067981f-0f76-4e2a-b38d-3e6b37f5d710",
+        "employeeId": "dbd046ac-1310-461e-8807-e7616aa7c71e",
         "deliverableCount": 2,
         "allMatchEmployee": true
       }
@@ -60,7 +60,7 @@
       "testName": "WBS항목별 산출물을 조회할 수 있다",
       "status": "passed",
       "result": {
-        "wbsItemId": "331dcd95-34e9-4a4f-90a0-f4443702c053",
+        "wbsItemId": "cb39460e-4ba5-45ed-9a93-7d7bf4f984cd",
         "deliverableCount": 2,
         "allMatchWbsItem": true
       }
@@ -69,7 +69,7 @@
       "testName": "Domain 직접 조회와 Context를 통한 조회 결과가 동일하다",
       "status": "passed",
       "result": {
-        "deliverableId": "dd952b8d-a2d6-4bb3-8412-f4ca412a005c",
+        "deliverableId": "d4e4ae38-5964-49fc-92e2-f0215b96e502",
         "domainResultExists": true,
         "contextResultExists": true,
         "fieldsMatch": true,
@@ -88,7 +88,7 @@
       "testName": "WBS 배정 조회 결과가 동일하다",
       "status": "passed",
       "result": {
-        "wbsItemId": "331dcd95-34e9-4a4f-90a0-f4443702c053",
+        "wbsItemId": "cb39460e-4ba5-45ed-9a93-7d7bf4f984cd",
         "domainResultCount": 1,
         "contextResultCount": 1,
         "countsMatch": true,
@@ -106,7 +106,7 @@
       "testName": "삭제된 산출물 조회 시 동일한 동작을 한다",
       "status": "passed",
       "result": {
-        "deletedDeliverableId": "c684ab8c-aa30-41e3-98e2-4ec078417a38",
+        "deletedDeliverableId": "5d5068c5-6bd5-4f61-a1b2-9bf5ae46f48a",
         "domainReturnsNull": true,
         "contextReturnsNull": true,
         "behaviorMatches": true
@@ -120,6 +120,87 @@
         "domainReturnsNull": true,
         "contextReturnsNull": true,
         "behaviorMatches": true
+      }
+    },
+    {
+      "testName": "생성 요청 파라미터와 응답이 동일하다",
+      "status": "passed",
+      "result": {
+        "requestParams": [
+          "name",
+          "type",
+          "employeeId",
+          "wbsItemId",
+          "description",
+          "filePath",
+          "createdBy"
+        ],
+        "responseMatchesRequest": true,
+        "domainQueryMatches": true,
+        "contextQueryMatches": true
+      }
+    },
+    {
+      "testName": "생성된 산출물을 Domain과 Context 양쪽에서 조회 가능하다",
+      "status": "passed",
+      "result": {
+        "createdId": "40a75e00-e561-434e-b4f5-30f27595c2b4",
+        "domainQuerySuccess": true,
+        "contextQuerySuccess": true,
+        "resultsMatch": true
+      }
+    },
+    {
+      "testName": "수정 요청 파라미터가 응답에 반영된다",
+      "status": "passed",
+      "result": {
+        "updateFields": [
+          "name",
+          "description",
+          "type"
+        ],
+        "responseMatchesRequest": true,
+        "domainQueryMatches": true,
+        "contextQueryMatches": true
+      }
+    },
+    {
+      "testName": "수정 전 산출물 조회가 Domain/Context에서 동일하게 동작한다",
+      "status": "passed",
+      "result": {
+        "beforeUpdateMatches": true,
+        "afterUpdateMatches": true,
+        "updateReflected": true
+      }
+    },
+    {
+      "testName": "삭제 동작이 Domain/Context 양쪽에 반영된다",
+      "status": "passed",
+      "result": {
+        "beforeDeleteDomainExists": true,
+        "beforeDeleteContextExists": true,
+        "afterDeleteDomainNull": true,
+        "afterDeleteContextNull": true,
+        "deletionReflectedBothSides": true
+      }
+    },
+    {
+      "testName": "삭제 전 existingDeliverable 조회가 동일하게 동작한다",
+      "status": "passed",
+      "result": {
+        "domainExistingFound": true,
+        "contextExistingFound": true,
+        "resultsMatch": true
+      }
+    },
+    {
+      "testName": "벌크 삭제 전 산출물 조회가 동일하게 동작한다",
+      "status": "passed",
+      "result": {
+        "bulkCount": 2,
+        "beforeDeleteAllFound": true,
+        "afterDeleteAllNull": true,
+        "domainContextMatch": true
       }
     },
     {
@@ -157,6 +238,6 @@
     ]
   },
   "performanceMetrics": {
-    "totalTestDuration": "4.19s"
+    "totalTestDuration": "4.441s"
   }
 }

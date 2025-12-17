@@ -14,9 +14,10 @@ const config = {
   password: process.env.DATABASE_PASSWORD || '',
   database: process.env.DATABASE_NAME || 'ems',
   ssl:
-    process.env.DATABASE_SSL === 'true'
-      ? { rejectUnauthorized: false }
-      : false,
+    process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 30000, // 30초
+  query_timeout: 600000, // 10분
+  statement_timeout: 600000, // 10분
 };
 
 async function askConfirmation(question: string): Promise<boolean> {
@@ -31,6 +32,61 @@ async function askConfirmation(question: string): Promise<boolean> {
       resolve(answer.toLowerCase() === 'yes');
     });
   });
+}
+
+async function checkAndTerminateBlockingConnections(
+  client: Client,
+): Promise<void> {
+  console.log('');
+  console.log('🔍 데이터베이스 잠금 확인 중...');
+
+  // 활성 연결 확인
+  const activeConnectionsResult = await client.query(`
+    SELECT 
+      pid,
+      usename,
+      application_name,
+      state,
+      query,
+      state_change
+    FROM pg_stat_activity 
+    WHERE datname = current_database()
+      AND pid != pg_backend_pid()
+      AND state != 'idle'
+    ORDER BY state_change;
+  `);
+
+  if (activeConnectionsResult.rows.length > 0) {
+    console.log(
+      `   ⚠️  ${activeConnectionsResult.rows.length}개의 활성 연결 발견`,
+    );
+    for (const row of activeConnectionsResult.rows) {
+      console.log(
+        `      - PID ${row.pid}: ${row.application_name} (${row.state})`,
+      );
+    }
+
+    const terminate = await askConfirmation(
+      '\n   이 연결들을 강제 종료하시겠습니까? (yes/no): ',
+    );
+
+    if (terminate) {
+      for (const row of activeConnectionsResult.rows) {
+        try {
+          await client.query(`SELECT pg_terminate_backend(${row.pid})`);
+          console.log(`   ✓ PID ${row.pid} 종료됨`);
+        } catch (error) {
+          console.log(`   ✗ PID ${row.pid} 종료 실패`);
+        }
+      }
+    } else {
+      console.log(
+        '   ⚠️  다른 연결이 활성화되어 있으면 삭제가 느려지거나 실패할 수 있습니다.',
+      );
+    }
+  } else {
+    console.log('   ✓ 활성 연결 없음');
+  }
 }
 
 async function clearAllData() {
@@ -70,31 +126,81 @@ async function clearAllData() {
     const tables = tablesResult.rows.map((row) => row.table_name);
     console.log(`   - ${tables.length}개의 테이블 발견`);
 
+    // 활성 연결 확인 및 종료
+    await checkAndTerminateBlockingConnections(client);
+
     // 데이터 삭제 시작
     console.log('');
     console.log('🗑️  데이터 삭제 시작...');
 
-    // 트랜잭션 시작
-    await client.query('BEGIN');
+    // statement timeout을 10분으로 설정 (600000ms)
+    await client.query('SET statement_timeout = 600000');
+    console.log('   - Statement timeout: 10분');
 
-    // Foreign Key 제약조건 일시 비활성화
+    // lock timeout 설정 (5분)
+    await client.query('SET lock_timeout = 300000');
+    console.log('   - Lock timeout: 5분');
+
+    // Foreign Key 제약조건 일시 비활성화 (트랜잭션 없이)
     await client.query("SET session_replication_role = 'replica'");
+    console.log('   - Foreign Key 제약조건 비활성화');
 
-    // 각 테이블 데이터 삭제
+    let successCount = 0;
+    let errorCount = 0;
+
+    console.log('');
+    console.log('   개별 테이블 삭제 시작...');
+
+    // 개별 테이블로 삭제 (더 안정적)
     for (const table of tables) {
       try {
-        await client.query(`TRUNCATE TABLE "${table}" CASCADE`);
-        console.log(`   ✓ ${table}`);
+        // 테이블의 행 수 확인
+        const countResult = await client.query(
+          `SELECT COUNT(*) as count FROM "${table}"`,
+        );
+        const rowCount = parseInt(countResult.rows[0].count);
+
+        if (rowCount === 0) {
+          console.log(`   - ${table} (이미 비어있음)`);
+          successCount++;
+          continue;
+        }
+
+        console.log(
+          `   🔄 ${table} 삭제 중... (${rowCount.toLocaleString()}행)`,
+        );
+
+        const startTime = Date.now();
+
+        // DELETE를 사용하여 삭제 (TRUNCATE보다 잠금 문제에 강함)
+        await client.query(`DELETE FROM "${table}"`);
+
+        // SEQUENCE 리셋
+        await client.query(
+          `SELECT setval(pg_get_serial_sequence('"${table}"', column_name), 1, false) 
+           FROM information_schema.columns 
+           WHERE table_name = '${table}' 
+             AND column_default LIKE 'nextval%'`,
+        );
+
+        const duration = Date.now() - startTime;
+        console.log(`   ✓ ${table} 완료 (${duration}ms)`);
+        successCount++;
       } catch (error) {
-        console.error(`   ✗ ${table} - ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error(
+          `   ✗ ${table} - ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+        errorCount++;
       }
     }
 
     // Foreign Key 제약조건 다시 활성화
     await client.query("SET session_replication_role = 'origin'");
+    console.log('');
+    console.log('   - Foreign Key 제약조건 활성화');
 
-    // 트랜잭션 커밋
-    await client.query('COMMIT');
+    console.log('');
+    console.log(`📊 삭제 결과: 성공 ${successCount}개, 실패 ${errorCount}개`);
 
     console.log('');
     console.log('✅ 모든 데이터가 삭제되었습니다!');
@@ -140,4 +246,3 @@ async function clearAllData() {
 }
 
 clearAllData();
-

@@ -30,6 +30,16 @@ export class EmployeeSyncService implements OnModuleInit {
   private readonly syncEnabled: boolean;
   private readonly systemUserId = 'SYSTEM_SYNC'; // 시스템 동기화 사용자 ID
 
+  // 관리자 권한을 가진 직원 이름 목록
+  private readonly ADMIN_EMPLOYEE_NAMES = [
+    '남명용',
+    '이봉은',
+    '우은진',
+    '전무현',
+    '우창욱',
+    '김종식',
+  ];
+
   constructor(
     private readonly employeeService: EmployeeService,
     private readonly configService: ConfigService,
@@ -676,6 +686,23 @@ export class EmployeeSyncService implements OnModuleInit {
     ssoEmployees: any[],
     syncStartTime: Date,
   ): Promise<number> {
+    // 환경 변수로 SSO에 없는 직원 퇴사 처리 기능 제어 (기본값: true)
+    const syncDeleteMissing = this.configService.get<string | boolean>(
+      'SYNC_DELETE_MISSING_EMPLOYEES',
+      'true',
+    );
+    const syncDeleteMissingEnabled =
+      syncDeleteMissing === 'false' || syncDeleteMissing === false
+        ? false
+        : true;
+
+    if (!syncDeleteMissingEnabled) {
+      this.logger.debug(
+        'SSO에 없는 직원 퇴사 처리가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_EMPLOYEES=false)',
+      );
+      return 0;
+    }
+
     // SSO에서 가져온 직원의 externalId Set 생성
     const ssoExternalIds = new Set(
       ssoEmployees.map((emp) => emp.id).filter((id) => id),
@@ -685,11 +712,16 @@ export class EmployeeSyncService implements OnModuleInit {
     const allLocalEmployees = await this.employeeService.findAll(true);
 
     // SSO에 없고 아직 퇴사 상태가 아닌 직원 찾기
+    // 단, 최근에 동기화된 직원만 대상으로 (백업 복구된 오래된 데이터 보호)
+    const oneDayAgo = new Date(syncStartTime.getTime() - 24 * 60 * 60 * 1000);
     const employeesToTerminate = allLocalEmployees.filter(
       (emp) =>
         emp.externalId &&
         !ssoExternalIds.has(emp.externalId) &&
-        emp.status !== '퇴사',
+        emp.status !== '퇴사' &&
+        // lastSyncAt이 있고 최근 24시간 이내에 동기화된 경우만 퇴사 처리
+        emp.lastSyncAt &&
+        new Date(emp.lastSyncAt) > oneDayAgo,
     );
 
     if (employeesToTerminate.length === 0) {
@@ -843,8 +875,17 @@ export class EmployeeSyncService implements OnModuleInit {
         newEmployee.createdBy = this.systemUserId;
         newEmployee.updatedBy = this.systemUserId;
 
-        // isAccessible은 엔티티 생성자의 기본값(true)을 그대로 사용
+        // isAccessible 설정: 관리자 목록에 포함된 직원만 true
+        newEmployee.isAccessible = this.ADMIN_EMPLOYEE_NAMES.includes(
+          newEmployee.name,
+        );
         // roles는 SSO 로그인 시에만 설정됨
+
+        if (newEmployee.isAccessible) {
+          this.logger.log(
+            `신규 직원 ${newEmployee.name}에게 관리자 권한 부여 (isAccessible=true)`,
+          );
+        }
 
         return { success: true, employee: newEmployee, isNew: true };
       }

@@ -61,9 +61,7 @@ const config = {
     user: process.env.DATABASE_USERNAME || 'postgres',
     password: process.env.DATABASE_PASSWORD || '',
     database: process.env.DATABASE_NAME || 'ems',
-    ssl: process.env.DATABASE_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
 console.log('📦 데이터베이스 백업 시작...');
 console.log(`   호스트: ${config.host}:${config.port}`);
@@ -98,26 +96,36 @@ async function backup() {
         const tables = tablesResult.rows.map((row) => row.table_name);
         console.log(`   - ${tables.length}개의 테이블 발견`);
         for (const tableName of tables) {
-            console.log(`   - 백업 중: ${tableName}`);
             sqlContent += `\n-- Table: ${tableName}\n`;
             sqlContent += `TRUNCATE TABLE "${tableName}" CASCADE;\n\n`;
             const dataResult = await client.query(`SELECT * FROM "${tableName}"`);
             if (dataResult.rows.length > 0) {
+                console.log(`   - 백업 중: ${tableName} (${dataResult.rows.length}행)`);
                 const columns = Object.keys(dataResult.rows[0]);
                 const columnsList = columns.map((col) => `"${col}"`).join(', ');
+                if (tableName === 'employee' && columns.includes('isAccessible')) {
+                    const accessibleTrue = dataResult.rows.filter((r) => r.isAccessible === true).length;
+                    const accessibleFalse = dataResult.rows.filter((r) => r.isAccessible === false).length;
+                    console.log(`      → isAccessible: true=${accessibleTrue}, false=${accessibleFalse}`);
+                }
                 for (const row of dataResult.rows) {
                     const values = columns.map((col) => {
                         const value = row[col];
-                        if (value === null)
+                        if (value === null || value === undefined) {
                             return 'NULL';
-                        if (typeof value === 'boolean')
-                            return value ? 'true' : 'false';
-                        if (typeof value === 'number')
+                        }
+                        if (typeof value === 'boolean') {
+                            return value === true ? 'true' : 'false';
+                        }
+                        if (typeof value === 'number') {
                             return value.toString();
-                        if (value instanceof Date)
+                        }
+                        if (value instanceof Date) {
                             return `'${value.toISOString()}'`;
-                        if (typeof value === 'object')
+                        }
+                        if (typeof value === 'object') {
                             return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+                        }
                         return `'${String(value).replace(/'/g, "''")}'`;
                     });
                     sqlContent += `INSERT INTO "${tableName}" (${columnsList}) VALUES (${values.join(', ')});\n`;

@@ -39,9 +39,7 @@ const config = {
   password: process.env.DATABASE_PASSWORD || '',
   database: process.env.DATABASE_NAME || 'ems',
   ssl:
-    process.env.DATABASE_SSL === 'true'
-      ? { rejectUnauthorized: false }
-      : false,
+    process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
 
 console.log('📦 데이터베이스 백업 시작...');
@@ -88,8 +86,6 @@ async function backup() {
 
     // 2. 각 테이블의 스키마 및 데이터 백업
     for (const tableName of tables) {
-      console.log(`   - 백업 중: ${tableName}`);
-
       // 테이블 데이터 삭제 구문 (구조는 유지)
       sqlContent += `\n-- Table: ${tableName}\n`;
       sqlContent += `TRUNCATE TABLE "${tableName}" CASCADE;\n\n`;
@@ -101,19 +97,55 @@ async function backup() {
       const dataResult = await client.query(`SELECT * FROM "${tableName}"`);
 
       if (dataResult.rows.length > 0) {
+        console.log(`   - 백업 중: ${tableName} (${dataResult.rows.length}행)`);
+
         // 컬럼 목록
         const columns = Object.keys(dataResult.rows[0]);
         const columnsList = columns.map((col) => `"${col}"`).join(', ');
 
+        // employee 테이블의 경우 isAccessible 값 분포 확인
+        if (tableName === 'employee' && columns.includes('isAccessible')) {
+          const accessibleTrue = dataResult.rows.filter(
+            (r) => r.isAccessible === true,
+          ).length;
+          const accessibleFalse = dataResult.rows.filter(
+            (r) => r.isAccessible === false,
+          ).length;
+          console.log(
+            `      → isAccessible: true=${accessibleTrue}, false=${accessibleFalse}`,
+          );
+        }
+
         for (const row of dataResult.rows) {
           const values = columns.map((col) => {
             const value = row[col];
-            if (value === null) return 'NULL';
-            if (typeof value === 'boolean') return value ? 'true' : 'false';
-            if (typeof value === 'number') return value.toString();
-            if (value instanceof Date) return `'${value.toISOString()}'`;
-            if (typeof value === 'object')
+
+            // NULL 값 처리
+            if (value === null || value === undefined) {
+              return 'NULL';
+            }
+
+            // Boolean 값 처리 (명시적 확인)
+            if (typeof value === 'boolean') {
+              return value === true ? 'true' : 'false';
+            }
+
+            // 숫자 값 처리
+            if (typeof value === 'number') {
+              return value.toString();
+            }
+
+            // Date 값 처리
+            if (value instanceof Date) {
+              return `'${value.toISOString()}'`;
+            }
+
+            // 객체/배열 값 처리 (JSON)
+            if (typeof value === 'object') {
               return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+            }
+
+            // 문자열 값 처리
             return `'${String(value).replace(/'/g, "''")}'`;
           });
 
@@ -178,4 +210,3 @@ async function backup() {
 }
 
 backup();
-

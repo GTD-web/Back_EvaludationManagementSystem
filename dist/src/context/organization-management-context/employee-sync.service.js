@@ -27,6 +27,14 @@ let EmployeeSyncService = EmployeeSyncService_1 = class EmployeeSyncService {
     logger = new common_1.Logger(EmployeeSyncService_1.name);
     syncEnabled;
     systemUserId = 'SYSTEM_SYNC';
+    ADMIN_EMPLOYEE_NAMES = [
+        '남명용',
+        '이봉은',
+        '우은진',
+        '전무현',
+        '우창욱',
+        '김종식',
+    ];
     constructor(employeeService, configService, ssoService) {
         this.employeeService = employeeService;
         this.configService = configService;
@@ -406,11 +414,22 @@ let EmployeeSyncService = EmployeeSyncService_1 = class EmployeeSyncService {
         }
     }
     async SSO에_없는_직원을_퇴사_처리한다(ssoEmployees, syncStartTime) {
+        const syncDeleteMissing = this.configService.get('SYNC_DELETE_MISSING_EMPLOYEES', 'true');
+        const syncDeleteMissingEnabled = syncDeleteMissing === 'false' || syncDeleteMissing === false
+            ? false
+            : true;
+        if (!syncDeleteMissingEnabled) {
+            this.logger.debug('SSO에 없는 직원 퇴사 처리가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_EMPLOYEES=false)');
+            return 0;
+        }
         const ssoExternalIds = new Set(ssoEmployees.map((emp) => emp.id).filter((id) => id));
         const allLocalEmployees = await this.employeeService.findAll(true);
+        const oneDayAgo = new Date(syncStartTime.getTime() - 24 * 60 * 60 * 1000);
         const employeesToTerminate = allLocalEmployees.filter((emp) => emp.externalId &&
             !ssoExternalIds.has(emp.externalId) &&
-            emp.status !== '퇴사');
+            emp.status !== '퇴사' &&
+            emp.lastSyncAt &&
+            new Date(emp.lastSyncAt) > oneDayAgo);
         if (employeesToTerminate.length === 0) {
             return 0;
         }
@@ -490,6 +509,10 @@ let EmployeeSyncService = EmployeeSyncService_1 = class EmployeeSyncService {
                 newEmployee.lastSyncAt = syncStartTime;
                 newEmployee.createdBy = this.systemUserId;
                 newEmployee.updatedBy = this.systemUserId;
+                newEmployee.isAccessible = this.ADMIN_EMPLOYEE_NAMES.includes(newEmployee.name);
+                if (newEmployee.isAccessible) {
+                    this.logger.log(`신규 직원 ${newEmployee.name}에게 관리자 권한 부여 (isAccessible=true)`);
+                }
                 return { success: true, employee: newEmployee, isNew: true };
             }
         }

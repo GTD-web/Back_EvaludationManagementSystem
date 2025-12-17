@@ -7,8 +7,16 @@ import * as dotenv from 'dotenv';
 // .env 파일 로드
 dotenv.config();
 
-// 백업 설정
-const BACKUP_DIR = path.join(__dirname, 'dumps');
+// 백업 설정 (자동 백업 디렉토리들)
+const BACKUP_ROOT = path.join(__dirname, '..', '..', 'backup');
+const BACKUP_DIRS = [
+  path.join(BACKUP_ROOT, 'hourly'),
+  path.join(BACKUP_ROOT, 'daily'),
+  path.join(BACKUP_ROOT, 'weekly'),
+  path.join(BACKUP_ROOT, 'monthly'),
+  path.join(BACKUP_ROOT, 'yearly'),
+  path.join(__dirname, 'dumps'), // 수동 백업 디렉토리도 포함
+];
 
 // 데이터베이스 연결 정보
 const config = {
@@ -38,35 +46,167 @@ async function askConfirmation(question: string): Promise<boolean> {
   });
 }
 
+async function askSelection(
+  question: string,
+  options: string[],
+): Promise<number> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      const selection = parseInt(answer, 10);
+      resolve(selection);
+    });
+  });
+}
+
 async function restore() {
   // 백업 파일 결정
   if (!BACKUP_FILE) {
-    // 인자가 없으면 최신 백업 파일 사용
-    if (!fs.existsSync(BACKUP_DIR)) {
-      console.error('❌ 백업 디렉토리가 존재하지 않습니다.');
-      console.error(`   경로: ${BACKUP_DIR}`);
-      process.exit(1);
+    // 1단계: 백업 타입별로 파일 수집
+    const filesByType = new Map<
+      string,
+      Array<{
+        name: string;
+        path: string;
+        mtime: Date;
+        dir: string;
+      }>
+    >();
+
+    for (const dir of BACKUP_DIRS) {
+      if (fs.existsSync(dir)) {
+        const dirName = path.basename(dir);
+        const files = fs
+          .readdirSync(dir)
+          .filter((file) => file.startsWith('backup-') && file.endsWith('.sql'))
+          .map((file) => ({
+            name: file,
+            path: path.join(dir, file),
+            mtime: fs.statSync(path.join(dir, file)).mtime,
+            dir: dirName,
+          }))
+          .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
+        if (files.length > 0) {
+          filesByType.set(dirName, files);
+        }
+      }
     }
 
-    const files = fs
-      .readdirSync(BACKUP_DIR)
-      .filter((file) => file.startsWith('backup-') && file.endsWith('.sql'))
-      .map((file) => ({
-        name: file,
-        path: path.join(BACKUP_DIR, file),
-        mtime: fs.statSync(path.join(BACKUP_DIR, file)).mtime,
-      }))
-      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-
-    if (files.length === 0) {
+    if (filesByType.size === 0) {
       console.error('❌ 백업 파일을 찾을 수 없습니다.');
-      console.error(`   경로: ${BACKUP_DIR}`);
+      console.error('   확인한 디렉토리:');
+      BACKUP_DIRS.forEach((dir) => {
+        console.error(`   - ${dir}`);
+      });
       process.exit(1);
     }
 
-    BACKUP_FILE = files[0].path;
+    // 1단계: 백업 타입 선택
+    console.log('');
+    console.log('📂 백업 타입을 선택하세요:');
+    console.log('');
+
+    const typeDescriptions = {
+      hourly: '4시간마다 (최근 24시간, 6개 유지)',
+      daily: '매일 자정 (30일 보관)',
+      weekly: '매주 일요일 (12주 보관)',
+      monthly: '매월 1일 (12개월 보관)',
+      yearly: '분기말/연말 (수동 관리)',
+      dumps: '수동 백업 (30일 보관)',
+    };
+
+    const availableTypes = Array.from(filesByType.keys());
+    availableTypes.forEach((type, index) => {
+      const count = filesByType.get(type)!.length;
+      const desc = typeDescriptions[type] || type;
+      console.log(`  ${index + 1}. ${type.padEnd(10)} - ${desc} (${count}개)`);
+    });
+
+    console.log('');
+    console.log('  0. 취소');
+    console.log('');
+
+    const typeSelection = await askSelection(
+      `백업 타입 번호를 선택하세요 (1-${availableTypes.length}): `,
+      availableTypes,
+    );
+
+    if (typeSelection === 0) {
+      console.log('복구 작업이 취소되었습니다.');
+      process.exit(0);
+    }
+
+    if (
+      typeSelection < 1 ||
+      typeSelection > availableTypes.length ||
+      isNaN(typeSelection)
+    ) {
+      console.error('❌ 잘못된 선택입니다.');
+      process.exit(1);
+    }
+
+    const selectedType = availableTypes[typeSelection - 1];
+    const filesOfType = filesByType.get(selectedType)!;
+
+    // 2단계: 해당 타입의 백업 파일 선택
+    console.log('');
+    console.log(`📋 ${selectedType} 백업 파일 목록:`);
+    console.log('');
+
+    // 최대 20개까지만 표시
+    const displayFiles = filesOfType.slice(0, 20);
+    displayFiles.forEach((file, index) => {
+      const timeStr = file.mtime.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+      });
+      const sizeInKB = (fs.statSync(file.path).size / 1024).toFixed(1);
+      console.log(`  ${(index + 1).toString().padStart(2)}. ${file.name}`);
+      console.log(`      ${timeStr} (${sizeInKB} KB)`);
+    });
+
+    if (filesOfType.length > 20) {
+      console.log(`  ... 외 ${filesOfType.length - 20}개 파일`);
+    }
+
+    console.log('');
+    console.log('  0. 취소');
+    console.log('');
+
+    // 사용자 입력 받기
+    const fileSelection = await askSelection(
+      `복구할 백업 파일 번호를 선택하세요 (1-${displayFiles.length}): `,
+      displayFiles.map((f) => f.name),
+    );
+
+    if (fileSelection === 0) {
+      console.log('복구 작업이 취소되었습니다.');
+      process.exit(0);
+    }
+
+    if (
+      fileSelection < 1 ||
+      fileSelection > displayFiles.length ||
+      isNaN(fileSelection)
+    ) {
+      console.error('❌ 잘못된 선택입니다.');
+      process.exit(1);
+    }
+
+    const selectedFile = displayFiles[fileSelection - 1];
+    BACKUP_FILE = selectedFile.path;
+
+    console.log('');
+    console.log(`✅ 선택된 파일: ${selectedFile.name}`);
+    console.log(`   타입: ${selectedType}`);
+    console.log(`   위치: backup/${selectedFile.dir}/`);
     console.log(
-      `📂 최신 백업 파일을 사용합니다: ${path.basename(BACKUP_FILE)}`,
+      `   생성 시간: ${selectedFile.mtime.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
     );
   } else {
     if (!fs.existsSync(BACKUP_FILE)) {
@@ -214,9 +354,23 @@ async function restore() {
     }
     console.log('   데이터베이스가 성공적으로 복구되었습니다.');
     console.log('');
+    console.log('💡 복구된 데이터:');
+    console.log('   - roles: 백업 당시의 역할 정보 복구됨');
+    console.log('   - isAccessible: 백업 당시의 접근 권한 복구됨');
+    console.log('   - UUID: 백업 당시의 UUID로 완전 복구됨');
+    console.log('');
     console.log('💡 다음 SSO 동기화 시:');
     console.log('   - externalId로 기존 직원을 찾아 UUID를 유지합니다.');
-    console.log('   - 새로 생성하지 않고 기존 데이터를 업데이트합니다.');
+    console.log(
+      '   - roles와 isAccessible은 변경되지 않습니다 (기존 값 유지).',
+    );
+    console.log('   - 로그인 시에만 roles가 SSO에서 업데이트됩니다.');
+    console.log('');
+    console.log('⚠️  중요: 동기화 보호 설정');
+    console.log('   백업 복구 직후 동기화로 인한 데이터 손실을 방지하려면:');
+    console.log('   1. SYNC_DELETE_MISSING_EMPLOYEES=false (환경 변수)');
+    console.log('   2. SYNC_DELETE_MISSING_DEPARTMENTS=false (환경 변수)');
+    console.log('   3. 이미 24시간 보호 로직이 적용되어 있습니다.');
   } catch (error) {
     console.error('');
     console.error('❌ 복구 실패!');

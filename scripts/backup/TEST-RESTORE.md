@@ -68,10 +68,39 @@ ORDER BY table_name;
 npm run db:restore
 ```
 
-또는 특정 백업 파일로 복구:
+**1단계 - 백업 타입 선택:**
+
+```
+📂 백업 타입을 선택하세요:
+
+  1. hourly     - 4시간마다 (최근 24시간, 6개 유지) (6개)
+  2. daily      - 매일 자정 (30일 보관) (15개)
+  3. weekly     - 매주 일요일 (12주 보관) (4개)
+
+  0. 취소
+
+백업 타입 번호를 선택하세요 (1-3): 1
+```
+
+**2단계 - 파일 선택:**
+
+```
+📋 hourly 백업 파일 목록:
+
+   1. backup-hourly-2025-12-17-16-00-00-030-KST.sql
+      2025. 12. 17. 오후 4:00:00 (145.2 KB)
+   2. backup-hourly-2025-12-17-12-00-00-030-KST.sql
+      2025. 12. 17. 오후 12:00:00 (144.8 KB)
+   
+   0. 취소
+
+복구할 백업 파일 번호를 선택하세요 (1-2): 1
+```
+
+**특정 백업 파일을 직접 지정하려면:**
 
 ```bash
-npm run db:restore scripts/backup/dumps/backup-2025-12-12-04-20-53-951Z.sql
+npm run db:restore -- backup/daily/backup-daily-2025-12-17-00-00-00-KST.sql
 ```
 
 ### 5단계: 복구 확인
@@ -156,6 +185,51 @@ SET session_replication_role = 'origin';
 ✅ 애플리케이션이 정상적으로 작동함
 ✅ API 요청이 정상적으로 처리됨
 ✅ 데이터 무결성이 유지됨 (FK, PK 제약조건)
+✅ roles와 isAccessible이 백업 당시 값으로 복구됨
+
+## 권한 관리
+
+### 복구 시 처리
+
+복구 완료 후 백업 당시의 권한 정보가 그대로 복원됩니다:
+
+- **roles**: 백업 당시의 역할 정보 (로그인 시 SSO에서 업데이트됨)
+- **isAccessible**: 백업 당시의 접근 권한 (SSO 동기화 시 변경되지 않음)
+
+### 권한 확인
+
+```sql
+-- 현재 권한 정보 확인
+SELECT 
+  employee_number,
+  name,
+  email,
+  roles,
+  is_accessible
+FROM employee
+ORDER BY employee_number;
+```
+
+### 역할(roles) 업데이트
+
+각 직원이 **로그인할 때** SSO에서 최신 역할을 자동으로 가져옵니다:
+
+1. **관리자 로그인**: `systemRoles['EMS-PROD']`에 `'admin'`이 있으면 `roles`에 `['admin']` 저장
+2. **일반 사용자 로그인**: `systemRoles['EMS-PROD']`에 따라 역할 저장
+
+### 접근 권한(isAccessible) 관리
+
+- **복구 시**: 백업 당시의 값 유지
+- **SSO 동기화 시**: 변경되지 않음 (기존 값 보존)
+- **신규 직원 생성 시**: 기본값 `false` (관리자가 수동으로 권한 부여 필요)
+- **수동 변경**: 관리자가 직접 수정 가능
+
+```sql
+-- 특정 직원에게 접근 권한 부여
+UPDATE employee 
+SET is_accessible = true 
+WHERE employee_number = '17007';
+```
 
 ## 주의: 운영 환경
 

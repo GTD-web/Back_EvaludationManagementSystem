@@ -438,6 +438,23 @@ export class DepartmentSyncService implements OnModuleInit {
     ssoDepartments: DepartmentInfo[],
     syncStartTime: Date,
   ): Promise<number> {
+    // 환경 변수로 SSO에 없는 부서 삭제 기능 제어 (기본값: true)
+    const syncDeleteMissing = this.configService.get<string | boolean>(
+      'SYNC_DELETE_MISSING_DEPARTMENTS',
+      'true',
+    );
+    const syncDeleteMissingEnabled =
+      syncDeleteMissing === 'false' || syncDeleteMissing === false
+        ? false
+        : true;
+
+    if (!syncDeleteMissingEnabled) {
+      this.logger.debug(
+        'SSO에 없는 부서 삭제가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_DEPARTMENTS=false)',
+      );
+      return 0;
+    }
+
     // SSO에서 가져온 부서의 externalId Set 생성
     const ssoExternalIds = new Set(
       ssoDepartments.map((dept) => dept.id).filter((id) => id),
@@ -447,11 +464,16 @@ export class DepartmentSyncService implements OnModuleInit {
     const allLocalDepartments = await this.departmentService.findAll();
 
     // SSO에 없고 아직 삭제되지 않은 부서 찾기
+    // 단, 최근에 동기화된 부서만 대상으로 (백업 복구된 오래된 데이터 보호)
+    const oneDayAgo = new Date(syncStartTime.getTime() - 24 * 60 * 60 * 1000);
     const departmentsToDelete = allLocalDepartments.filter(
       (dept) =>
         dept.externalId &&
         !ssoExternalIds.has(dept.externalId) &&
-        !dept.deletedAt,
+        !dept.deletedAt &&
+        // lastSyncAt이 있고 최근 24시간 이내에 동기화된 경우만 삭제 처리
+        dept.lastSyncAt &&
+        new Date(dept.lastSyncAt) > oneDayAgo,
     );
 
     if (departmentsToDelete.length === 0) {

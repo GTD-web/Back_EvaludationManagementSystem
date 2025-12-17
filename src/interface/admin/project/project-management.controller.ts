@@ -282,6 +282,7 @@ export class ProjectManagementController {
       '모현민',
       '하태식',
       '정석화',
+      '이봉은',
     ];
 
     // SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)

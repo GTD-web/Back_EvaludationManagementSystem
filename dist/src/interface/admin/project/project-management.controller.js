@@ -185,6 +185,7 @@ let ProjectManagementController = class ProjectManagementController {
             '모현민',
             '하태식',
             '정석화',
+            '이봉은',
         ];
         const employees = await this.ssoService.여러직원정보를조회한다({
             withDetail: true,

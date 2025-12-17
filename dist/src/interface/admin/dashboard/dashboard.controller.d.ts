@@ -1,7 +1,9 @@
+import type { Response } from 'express';
 import { DashboardService } from '@context/dashboard-context/dashboard.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { EmployeeSyncService } from '@context/organization-management-context/employee-sync.service';
+import { OrganizationManagementService } from '@context/organization-management-context';
 import { GetAllEmployeesEvaluationPeriodStatusQueryDto } from '@interface/common/dto/dashboard/get-all-employees-evaluation-period-status-query.dto';
 import { EmployeeEvaluationPeriodStatusResponseDto } from '@interface/common/dto/dashboard/employee-evaluation-period-status.dto';
 import { MyEvaluationTargetStatusResponseDto } from '@interface/common/dto/dashboard/my-evaluation-targets-status.dto';
@@ -15,8 +17,10 @@ export declare class DashboardController {
     private readonly dashboardService;
     private readonly evaluationPeriodService;
     private readonly employeeSyncService;
-    constructor(dashboardService: DashboardService, evaluationPeriodService: EvaluationPeriodService, employeeSyncService: EmployeeSyncService);
+    private readonly organizationManagementService;
+    constructor(dashboardService: DashboardService, evaluationPeriodService: EvaluationPeriodService, employeeSyncService: EmployeeSyncService, organizationManagementService: OrganizationManagementService);
     getAllEmployeesEvaluationPeriodStatus(evaluationPeriodId: string, queryDto: GetAllEmployeesEvaluationPeriodStatusQueryDto): Promise<EmployeeEvaluationPeriodStatusResponseDto[]>;
+    exportAllEmployeesEvaluationPeriodStatusToExcel(evaluationPeriodId: string, queryDto: GetAllEmployeesEvaluationPeriodStatusQueryDto, res: Response): Promise<void>;
     getMyEvaluationTargetsStatus(evaluationPeriodId: string, evaluatorId: string): Promise<MyEvaluationTargetStatusResponseDto[]>;
     getEmployeeEvaluationPeriodStatus(evaluationPeriodId: string, employeeId: string): Promise<EmployeeEvaluationPeriodStatusResponseDto | null>;
     getMyAssignedData(evaluationPeriodId: string, user: AuthenticatedUser): Promise<EmployeeAssignedDataResponseDto>;

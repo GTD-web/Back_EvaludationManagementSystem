@@ -20,6 +20,7 @@ const decorators_1 = require("../../common/decorators");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const evaluation_period_service_1 = require("../../../domain/core/evaluation-period/evaluation-period.service");
 const employee_sync_service_1 = require("../../../context/organization-management-context/employee-sync.service");
+const organization_management_context_1 = require("../../../context/organization-management-context");
 const get_all_employees_evaluation_period_status_query_dto_1 = require("../../common/dto/dashboard/get-all-employees-evaluation-period-status-query.dto");
 const dashboard_api_decorators_1 = require("../../common/decorators/dashboard/dashboard-api.decorators");
 const employee_final_evaluation_list_dto_1 = require("../../common/dto/dashboard/employee-final-evaluation-list.dto");
@@ -28,10 +29,12 @@ let DashboardController = class DashboardController {
     dashboardService;
     evaluationPeriodService;
     employeeSyncService;
-    constructor(dashboardService, evaluationPeriodService, employeeSyncService) {
+    organizationManagementService;
+    constructor(dashboardService, evaluationPeriodService, employeeSyncService, organizationManagementService) {
         this.dashboardService = dashboardService;
         this.evaluationPeriodService = evaluationPeriodService;
         this.employeeSyncService = employeeSyncService;
+        this.organizationManagementService = organizationManagementService;
     }
     async getAllEmployeesEvaluationPeriodStatus(evaluationPeriodId, queryDto) {
         const results = await this.dashboardService.평가기간의_모든_피평가자_현황을_조회한다(evaluationPeriodId, queryDto.includeUnregistered);
@@ -39,6 +42,20 @@ let DashboardController = class DashboardController {
             const { evaluationCriteria, wbsCriteria, evaluationLine, ...rest } = result;
             return rest;
         });
+    }
+    async exportAllEmployeesEvaluationPeriodStatusToExcel(evaluationPeriodId, queryDto, res) {
+        const period = await this.evaluationPeriodService.ID로_조회한다(evaluationPeriodId);
+        if (!period) {
+            throw new common_1.NotFoundException(`평가기간을 찾을 수 없습니다. (ID: ${evaluationPeriodId})`);
+        }
+        const departmentHierarchy = await this.organizationManagementService.부서하이라키_직원포함_조회();
+        const results = await this.dashboardService.평가기간의_모든_피평가자_현황을_조회한다(evaluationPeriodId, queryDto.includeUnregistered);
+        const buffer = await this.dashboardService.직원_현황을_엑셀로_생성한다(results, period.name, departmentHierarchy);
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `평가현황_${period.name}_${date}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        res.send(buffer);
     }
     async getMyEvaluationTargetsStatus(evaluationPeriodId, evaluatorId) {
         return await this.dashboardService.내가_담당하는_평가대상자_현황을_조회한다(evaluationPeriodId, evaluatorId);
@@ -323,6 +340,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DashboardController.prototype, "getAllEmployeesEvaluationPeriodStatus", null);
 __decorate([
+    (0, dashboard_api_decorators_1.ExportAllEmployeesEvaluationPeriodStatusToExcel)(),
+    __param(0, (0, decorators_1.ParseUUID)('evaluationPeriodId')),
+    __param(1, (0, common_1.Query)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, get_all_employees_evaluation_period_status_query_dto_1.GetAllEmployeesEvaluationPeriodStatusQueryDto, Object]),
+    __metadata("design:returntype", Promise)
+], DashboardController.prototype, "exportAllEmployeesEvaluationPeriodStatusToExcel", null);
+__decorate([
     (0, dashboard_api_decorators_1.GetMyEvaluationTargetsStatus)(),
     __param(0, (0, decorators_1.ParseUUID)('evaluationPeriodId')),
     __param(1, (0, decorators_1.ParseUUID)('evaluatorId')),
@@ -401,6 +427,7 @@ exports.DashboardController = DashboardController = __decorate([
     (0, common_1.Controller)('admin/dashboard'),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService,
         evaluation_period_service_1.EvaluationPeriodService,
-        employee_sync_service_1.EmployeeSyncService])
+        employee_sync_service_1.EmployeeSyncService,
+        organization_management_context_1.OrganizationManagementService])
 ], DashboardController);
 //# sourceMappingURL=dashboard.controller.js.map

@@ -200,12 +200,14 @@ let BackupSchedulerService = BackupSchedulerService_1 = class BackupSchedulerSer
     }
     타임스탬프를_생성한다() {
         const now = new Date();
-        const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-        return kstDate
+        const kstOffset = 9 * 60;
+        const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
+        const formatted = kstTime
             .toISOString()
             .replace(/[:.]/g, '-')
             .replace('T', '-')
             .split('Z')[0];
+        return `${formatted}-KST`;
     }
     async 수동_백업을_실행한다(type = 'daily') {
         if (this.isVercel) {

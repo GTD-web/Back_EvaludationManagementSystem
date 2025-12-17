@@ -851,6 +851,107 @@ describe('하향평가 시나리오', () => {
           ).toBeNull();
         }
       });
+
+      it('2차 하향평가 제출 시 하위 평가(평가기준, 자기평가, 1차 하향평가) 상태가 변경되지 않는다', async () => {
+        console.log('\n🧪 2차 하향평가 제출 시 하위 평가 상태 불변성 테스트 시작...');
+        
+        // Given - 1차 하향평가까지 모두 저장 및 제출
+        await downwardEvaluationScenario.일차하향평가를_저장한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: primaryEvaluatorId,
+          selfEvaluationId,
+          downwardEvaluationContent: '1차 하향평가 내용입니다.',
+          downwardEvaluationScore: 85,
+        });
+
+        await downwardEvaluationScenario.일차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: primaryEvaluatorId,
+        });
+
+        // 2차 하향평가 저장
+        await downwardEvaluationScenario.이차하향평가를_저장한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: secondaryEvaluatorId,
+          selfEvaluationId,
+          downwardEvaluationContent: '2차 하향평가 내용입니다.',
+          downwardEvaluationScore: 90,
+        });
+
+        // 2차 제출 전 하위 평가 상태 확인 (대시보드 API 사용)
+        const 제출전현황 =
+          await downwardEvaluationScenario.직원의_평가기간_현황을_조회한다({
+            periodId: evaluationPeriodId,
+            employeeId: evaluateeId,
+          });
+
+        // 제출 전 상태 기록
+        const 제출전_평가기준상태 = 제출전현황.evaluationCriteria?.status;
+        const 제출전_자기평가상태 = 제출전현황.selfEvaluation?.status;
+        const 제출전_일차하향평가상태 = 제출전현황.downwardEvaluation?.primary?.status;
+
+        console.log('📊 2차 제출 전 상태:', {
+          평가기준: 제출전_평가기준상태,
+          자기평가: 제출전_자기평가상태,
+          일차하향평가: 제출전_일차하향평가상태,
+        });
+
+        // When - 2차 하향평가 제출
+        await downwardEvaluationScenario.이차하향평가를_제출한다({
+          evaluateeId,
+          periodId: evaluationPeriodId,
+          wbsId: wbsItemIds[0],
+          evaluatorId: secondaryEvaluatorId,
+        });
+
+        console.log('✅ 2차 하향평가 제출 완료');
+
+        // Then - 2차 제출 후 하위 평가 상태 확인
+        const 제출후현황 =
+          await downwardEvaluationScenario.직원의_평가기간_현황을_조회한다({
+            periodId: evaluationPeriodId,
+            employeeId: evaluateeId,
+          });
+
+        const 제출후_평가기준상태 = 제출후현황.evaluationCriteria?.status;
+        const 제출후_자기평가상태 = 제출후현황.selfEvaluation?.status;
+        const 제출후_일차하향평가상태 = 제출후현황.downwardEvaluation?.primary?.status;
+
+        console.log('📊 2차 제출 후 상태:', {
+          평가기준: 제출후_평가기준상태,
+          자기평가: 제출후_자기평가상태,
+          일차하향평가: 제출후_일차하향평가상태,
+        });
+
+        // 하위 평가 상태가 변경되지 않았는지 검증
+        expect(제출후_평가기준상태).toBe(제출전_평가기준상태);
+        expect(제출후_자기평가상태).toBe(제출전_자기평가상태);
+        expect(제출후_일차하향평가상태).toBe(제출전_일차하향평가상태);
+
+        // 2차 하향평가가 제출되었는지 확인 (할당 데이터에서 확인)
+        const 제출후할당데이터 =
+          await downwardEvaluationScenario.직원_할당_데이터를_조회한다({
+            periodId: evaluationPeriodId,
+            employeeId: evaluateeId,
+          });
+
+        const 제출후wbsItem = 제출후할당데이터.projects[0]?.wbsList?.[0];
+        expect(제출후wbsItem.secondaryDownwardEvaluation.isCompleted).toBe(true);
+
+        console.log('✅ 2차 하향평가 제출 시 하위 평가 상태가 변경되지 않았습니다!');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✨ 검증 결과:');
+        console.log('   ✅ 평가기준 상태 유지:', 제출전_평가기준상태, '→', 제출후_평가기준상태);
+        console.log('   ✅ 자기평가 상태 유지:', 제출전_자기평가상태, '→', 제출후_자기평가상태);
+        console.log('   ✅ 1차 하향평가 상태 유지:', 제출전_일차하향평가상태, '→', 제출후_일차하향평가상태);
+        console.log('   ✅ 2차 하향평가만 제출됨');
+      });
     });
   });
 

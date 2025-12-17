@@ -256,17 +256,20 @@ export class BackupSchedulerService {
    * 타임스탬프 생성 (KST 기준)
    */
   private 타임스탬프를_생성한다(): string {
-    // 한국 시간으로 변환
     const now = new Date();
-    const kstDate = new Date(
-      now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }),
-    );
 
-    return kstDate
+    // 한국 시간으로 변환 (UTC+9)
+    const kstOffset = 9 * 60; // 9시간을 분으로
+    const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
+
+    // ISO 형식의 문자열 생성 후 포맷팅 (KST 표시 추가)
+    const formatted = kstTime
       .toISOString()
       .replace(/[:.]/g, '-')
       .replace('T', '-')
       .split('Z')[0];
+
+    return `${formatted}-KST`;
   }
 
   /**

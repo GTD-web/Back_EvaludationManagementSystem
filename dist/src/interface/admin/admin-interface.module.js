@@ -54,6 +54,7 @@ const audit_log_controller_1 = require("./audit-log/audit-log.controller");
 const evaluation_activity_log_controller_1 = require("./evaluation-activity-log/evaluation-activity-log.controller");
 const project_management_controller_1 = require("./project/project-management.controller");
 const notification_controller_1 = require("../common/controllers/notification.controller");
+const backup_controller_1 = require("../backup/backup.controller");
 let AdminInterfaceModule = class AdminInterfaceModule {
 };
 exports.AdminInterfaceModule = AdminInterfaceModule;
@@ -107,6 +108,7 @@ exports.AdminInterfaceModule = AdminInterfaceModule = __decorate([
             audit_log_controller_1.AuditLogController,
             evaluation_activity_log_controller_1.EvaluationActivityLogController,
             notification_controller_1.NotificationController,
+            backup_controller_1.BackupController,
         ],
         providers: [],
         exports: [],

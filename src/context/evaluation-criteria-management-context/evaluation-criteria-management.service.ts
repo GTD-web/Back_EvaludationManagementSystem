@@ -1,6 +1,7 @@
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import {
   ForbiddenException,
   Injectable,
@@ -133,6 +134,8 @@ export class EvaluationCriteriaManagementService
     private readonly evaluationLineRepository: Repository<EvaluationLine>,
     @InjectRepository(EvaluationPeriodEmployeeMapping)
     private readonly evaluationPeriodEmployeeMappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
+    @InjectRepository(EvaluationWbsAssignment)
+    private readonly wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
     private readonly wbsAssignmentValidationService: WbsAssignmentValidationService,
     private readonly evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService,
     private readonly stepApprovalService: EmployeeEvaluationStepApprovalService,
@@ -367,6 +370,29 @@ export class EvaluationCriteriaManagementService
   ): Promise<EvaluationWbsAssignmentDto[]> {
     const query = new GetWbsItemAssignmentsQuery(wbsItemId, periodId);
     return await this.queryBus.execute(query);
+  }
+
+  /**
+   * WBS 항목에 할당된 모든 직원을 조회한다 (평가기간 무관)
+   * 
+   * @param wbsItemId WBS 항목 ID
+   * @returns WBS 배정 목록
+   */
+  async WBS항목에_할당된_모든_직원을_조회한다(
+    wbsItemId: string,
+  ): Promise<EvaluationWbsAssignmentDto[]> {
+    // WBS 배정을 직접 조회 (periodId 필터 없이)
+    const assignments = await this.wbsAssignmentRepository.find({
+      where: {
+        wbsItemId,
+        deletedAt: IsNull(),
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+
+    return assignments.map((a) => a.DTO로_변환한다());
   }
 
   async 특정_평가기간에_프로젝트에서_할당되지_않은_WBS_항목_목록을_조회한다(

@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
-import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
-import { DeliverableService } from '@domain/core/deliverable/deliverable.service';
+import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { DeliverableNotFoundException } from '@domain/core/deliverable/deliverable.exceptions';
 import type { Deliverable } from '@domain/core/deliverable/deliverable.entity';
 import type { DeliverableType } from '@domain/core/deliverable/deliverable.types';
@@ -22,8 +21,7 @@ export class DeliverableBusinessService {
   constructor(
     private readonly performanceEvaluationService: PerformanceEvaluationService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
-    private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
-    private readonly deliverableService: DeliverableService,
+    private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
   ) {}
 
   /**
@@ -101,7 +99,8 @@ export class DeliverableBusinessService {
     this.logger.log('산출물 수정 시작', { id: data.id });
 
     // 1. 기존 산출물 조회
-    const existingDeliverable = await this.deliverableService.조회한다(data.id);
+    const existingDeliverable =
+      await this.performanceEvaluationService.산출물을_ID로_조회한다(data.id);
     if (!existingDeliverable) {
       throw new DeliverableNotFoundException(data.id);
     }
@@ -155,7 +154,8 @@ export class DeliverableBusinessService {
     this.logger.log('산출물 삭제 시작', { id });
 
     // 1. 기존 산출물 조회
-    const existingDeliverable = await this.deliverableService.조회한다(id);
+    const existingDeliverable =
+      await this.performanceEvaluationService.산출물을_ID로_조회한다(id);
     if (!existingDeliverable) {
       throw new DeliverableNotFoundException(id);
     }
@@ -286,7 +286,9 @@ export class DeliverableBusinessService {
 
     // 1. 기존 산출물 조회
     const deliverables = await Promise.all(
-      data.ids.map((id) => this.deliverableService.조회한다(id)),
+      data.ids.map((id) =>
+        this.performanceEvaluationService.산출물을_ID로_조회한다(id),
+      ),
     );
 
     // 2. 산출물 벌크 삭제
@@ -379,7 +381,9 @@ export class DeliverableBusinessService {
     try {
       // WBS 항목별 할당 조회
       const wbsAssignments =
-        await this.evaluationWbsAssignmentService.WBS항목별_조회한다(wbsItemId);
+        await this.evaluationCriteriaManagementService.WBS항목에_할당된_모든_직원을_조회한다(
+          wbsItemId,
+        );
 
       if (wbsAssignments && wbsAssignments.length > 0) {
         // 직원과 일치하는 할당 찾기

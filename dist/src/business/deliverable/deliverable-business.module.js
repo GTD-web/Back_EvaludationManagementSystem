@@ -10,8 +10,7 @@ exports.DeliverableBusinessModule = void 0;
 const common_1 = require("@nestjs/common");
 const performance_evaluation_context_module_1 = require("../../context/performance-evaluation-context/performance-evaluation-context.module");
 const evaluation_activity_log_context_module_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.module");
-const evaluation_wbs_assignment_module_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module");
-const deliverable_module_1 = require("../../domain/core/deliverable/deliverable.module");
+const evaluation_criteria_management_context_module_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management-context.module");
 const deliverable_business_service_1 = require("./deliverable-business.service");
 let DeliverableBusinessModule = class DeliverableBusinessModule {
 };
@@ -21,8 +20,7 @@ exports.DeliverableBusinessModule = DeliverableBusinessModule = __decorate([
         imports: [
             performance_evaluation_context_module_1.PerformanceEvaluationContextModule,
             evaluation_activity_log_context_module_1.EvaluationActivityLogContextModule,
-            evaluation_wbs_assignment_module_1.EvaluationWbsAssignmentModule,
-            deliverable_module_1.DeliverableModule,
+            evaluation_criteria_management_context_module_1.EvaluationCriteriaManagementContextModule,
         ],
         providers: [deliverable_business_service_1.DeliverableBusinessService],
         exports: [deliverable_business_service_1.DeliverableBusinessService],

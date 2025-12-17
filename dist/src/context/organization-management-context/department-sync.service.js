@@ -288,11 +288,22 @@ let DepartmentSyncService = DepartmentSyncService_1 = class DepartmentSyncServic
         }
     }
     async SSO에_없는_부서를_삭제한다(ssoDepartments, syncStartTime) {
+        const syncDeleteMissing = this.configService.get('SYNC_DELETE_MISSING_DEPARTMENTS', 'true');
+        const syncDeleteMissingEnabled = syncDeleteMissing === 'false' || syncDeleteMissing === false
+            ? false
+            : true;
+        if (!syncDeleteMissingEnabled) {
+            this.logger.debug('SSO에 없는 부서 삭제가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_DEPARTMENTS=false)');
+            return 0;
+        }
         const ssoExternalIds = new Set(ssoDepartments.map((dept) => dept.id).filter((id) => id));
         const allLocalDepartments = await this.departmentService.findAll();
+        const oneDayAgo = new Date(syncStartTime.getTime() - 24 * 60 * 60 * 1000);
         const departmentsToDelete = allLocalDepartments.filter((dept) => dept.externalId &&
             !ssoExternalIds.has(dept.externalId) &&
-            !dept.deletedAt);
+            !dept.deletedAt &&
+            dept.lastSyncAt &&
+            new Date(dept.lastSyncAt) > oneDayAgo);
         if (departmentsToDelete.length === 0) {
             return 0;
         }

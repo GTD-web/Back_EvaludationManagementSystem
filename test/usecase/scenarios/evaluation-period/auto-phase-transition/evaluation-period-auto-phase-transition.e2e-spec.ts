@@ -573,4 +573,272 @@ describe('평가기간 자동 단계 전이 E2E 테스트', () => {
       console.log(`   - 전이된 평가기간 수: ${totalTransitionedCount}`);
     });
   });
+
+  describe('특정 마감일 조합 자동 전이 테스트', () => {
+    it('peer-evaluation 단계에서 하향/동료평가 마감일만 있을 때 자동으로 closure 단계로 전이된다', async () => {
+      // Given: 시드 데이터 생성
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'minimal',
+        clearExisting: true,
+        projectCount: 1,
+        wbsPerProject: 2,
+        departmentCount: 1,
+        employeeCount: 3,
+      });
+
+      // Given: 평가기간 생성
+      const result = await scenario.평가기간을_생성하고_시작한다({
+        name: '하향/동료평가 마감일만 있는 평가기간',
+        startDate: '2024-01-01',
+        peerEvaluationDeadline: '2024-12-31',
+      });
+
+      // 전역 배열에 평가기간 ID 추가
+      if (!(global as any).createdEvaluationPeriods) {
+        (global as any).createdEvaluationPeriods = [];
+      }
+      (global as any).createdEvaluationPeriods.push(result.periodId);
+      const periodId = result.periodId;
+
+      console.log('📝 평가기간 생성 완료:', {
+        periodId,
+        name: '하향/동료평가 마감일만 있는 평가기간',
+      });
+
+      // 초기 상태 확인 (evaluation-setup 단계)
+      const initialState = await scenario.현재_단계를_조회한다(periodId);
+      expect(initialState.currentPhase).toBe('evaluation-setup');
+      expect(initialState.status).toBe('in-progress');
+      console.log('✅ 초기 상태 확인 완료:', initialState);
+
+      // When: 평가기간을 수동으로 peer-evaluation 단계까지 순차적으로 진행
+      console.log(
+        '🔄 평가기간을 peer-evaluation 단계로 순차적으로 수동 변경...',
+      );
+
+      // evaluation-setup → performance
+      await testSuite
+        .request()
+        .post(`/admin/evaluation-periods/${periodId}/phase-change`)
+        .send({ targetPhase: 'performance' })
+        .expect(200);
+      console.log('✅ performance 단계로 변경 완료');
+
+      // performance → self-evaluation
+      await testSuite
+        .request()
+        .post(`/admin/evaluation-periods/${periodId}/phase-change`)
+        .send({ targetPhase: 'self-evaluation' })
+        .expect(200);
+      console.log('✅ self-evaluation 단계로 변경 완료');
+
+      // self-evaluation → peer-evaluation
+      await testSuite
+        .request()
+        .post(`/admin/evaluation-periods/${periodId}/phase-change`)
+        .send({ targetPhase: 'peer-evaluation' })
+        .expect(200);
+      console.log('✅ peer-evaluation 단계로 변경 완료');
+
+      const peerEvalState = await scenario.현재_단계를_조회한다(periodId);
+      expect(peerEvalState.currentPhase).toBe('peer-evaluation');
+      console.log('✅ 최종 단계 확인:', peerEvalState);
+
+      // When: 하향/동료평가 마감일만 과거로 설정 (다른 마감일은 설정하지 않음)
+      const now = scenario.getCurrentTime();
+      const pastPeerDeadline = new Date(
+        now.getTime() - 2 * 60 * 1000,
+      ).toISOString(); // 2분 전 (peerEvaluationDeadline)
+
+      console.log('📝 하향/동료평가 마감일을 과거로 설정:', {
+        peerEvaluationDeadline: pastPeerDeadline,
+        currentTime: now.toISOString(),
+        note: '하향/동료평가 마감일만 설정 (다른 마감일은 null)',
+      });
+
+      await scenario.단계별_마감일을_설정한다({
+        periodId,
+        peerEvaluationDeadline: pastPeerDeadline,
+      });
+
+      // 마감일 설정 후 상태 확인
+      const stateAfterDeadlineSet =
+        await scenario.현재_단계를_조회한다(periodId);
+      console.log('📊 마감일 설정 후 상태:', stateAfterDeadlineSet);
+
+      // Then: 자동 단계 전이 실행
+      console.log('🔄 자동 단계 전이 실행...');
+      const transitionedCount = await scenario.자동_단계_전이를_실행한다();
+      console.log(`전이된 평가기간 수: ${transitionedCount}`);
+
+      // 현재 상태 확인
+      const finalState = await scenario.현재_단계를_조회한다(periodId);
+      console.log('📊 최종 상태:', finalState);
+
+      // Assert: peer-evaluation 단계의 마감일이 도래했으므로 closure로 전이되어야 함
+      expect(finalState.currentPhase).toBe('closure');
+      expect(finalState.status).toBe('in-progress');
+
+      // 마감일 설정 시점에 이미 closure로 전이되었거나, 자동 전이에 의해 전이됨
+      console.log(
+        `   - 마감일 설정 후 단계: ${stateAfterDeadlineSet.currentPhase}`,
+      );
+      console.log(`   - 자동 전이 후 단계: ${finalState.currentPhase}`);
+
+      console.log(
+        '✅ peer-evaluation 단계에서 하향/동료평가 마감일 도래 시 closure 전이 검증 완료',
+      );
+      console.log(
+        '   - 평가설정/업무수행/자기평가 마감일이 없어도, peer-evaluation 단계에서',
+      );
+      console.log(
+        '     하향/동료평가 마감일이 도래하면 closure 단계로 자동 전이됩니다.',
+      );
+    });
+
+    it('하향/동료평가 마감일만 과거로 설정하고 다른 마감일은 없을 때 CLOSURE로 전이됨', async () => {
+      // Given: 시드 데이터 생성
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'minimal',
+        clearExisting: true,
+        projectCount: 1,
+        wbsPerProject: 2,
+        departmentCount: 1,
+        employeeCount: 3,
+      });
+
+      // Given: 평가기간 생성
+      const result = await scenario.평가기간을_생성하고_시작한다({
+        name: '하향/동료평가 마감일만 설정된 평가기간',
+        startDate: '2024-01-01',
+        peerEvaluationDeadline: '2024-12-31',
+      });
+
+      // 전역 배열에 평가기간 ID 추가
+      if (!(global as any).createdEvaluationPeriods) {
+        (global as any).createdEvaluationPeriods = [];
+      }
+      (global as any).createdEvaluationPeriods.push(result.periodId);
+      const periodId = result.periodId;
+
+      console.log('📝 평가기간 생성 완료:', {
+        periodId,
+        name: '하향/동료평가 마감일만 설정된 평가기간',
+      });
+
+      // 초기 상태 확인
+      const initialState = await scenario.현재_단계를_조회한다(periodId);
+      expect(initialState.currentPhase).toBe('evaluation-setup');
+      console.log('✅ 초기 상태:', initialState);
+
+      // When: 하향/동료평가 마감일만 과거로 설정
+      const now = scenario.getCurrentTime();
+      const pastPeerDeadline = new Date(
+        now.getTime() - 2 * 60 * 1000,
+      ).toISOString(); // 2분 전
+
+      console.log('📝 하향/동료평가 마감일만 과거로 설정:', {
+        peerEvaluationDeadline: pastPeerDeadline,
+        currentTime: now.toISOString(),
+      });
+
+      await scenario.단계별_마감일을_설정한다({
+        periodId,
+        peerEvaluationDeadline: pastPeerDeadline,
+      });
+
+      // 마감일 설정 후 상태 확인 (일정 수정 시 자동 조정이 일어남)
+      const afterSetState = await scenario.현재_단계를_조회한다(periodId);
+      console.log('📊 마감일 설정 후 상태:', afterSetState);
+
+      // Assert: 중간 마감일이 없으므로 즉시 CLOSURE로 전이되어야 함
+      // 일정 수정 시 자동으로 단계 조정이 일어나므로 이미 CLOSURE에 도달
+      expect(afterSetState.currentPhase).toBe('closure');
+
+      console.log(
+        '✅ 하향/동료평가 마감일만 있고 중간 마감일이 없을 때 CLOSURE로 전이됨 검증 완료',
+      );
+      console.log(
+        '   - 중간 마감일(평가설정/업무수행/자기평가)이 없으면 해당 단계를 건너뛰고',
+      );
+      console.log(
+        '   - 하향/동료평가 마감일이 도래하면 CLOSURE 단계로 자동 전이됩니다.',
+      );
+      console.log('   - 일정 수정 시 자동 단계 조정 기능이 즉시 실행됩니다.');
+    });
+
+    it('일부 중간 마감일만 설정되어 있을 때 건너뛰기 동작 확인', async () => {
+      // Given: 시드 데이터 생성
+      const seedResult = await seedDataScenario.시드_데이터를_생성한다({
+        scenario: 'minimal',
+        clearExisting: true,
+        projectCount: 1,
+        wbsPerProject: 2,
+        departmentCount: 1,
+        employeeCount: 3,
+      });
+
+      // Given: 평가기간 생성 (peerEvaluationDeadline은 미래로 설정)
+      const now = scenario.getCurrentTime();
+      const pastSetupDeadline = new Date(
+        now.getTime() - 5 * 60 * 1000,
+      ).toISOString(); // 5분 전
+      const futurePeerDeadline = new Date(
+        now.getTime() + 60 * 60 * 1000,
+      ).toISOString(); // 60분 후
+
+      const result = await scenario.평가기간을_생성하고_시작한다({
+        name: '일부 마감일만 설정된 평가기간',
+        startDate: '2024-01-01',
+        peerEvaluationDeadline: futurePeerDeadline,
+      });
+
+      // 전역 배열에 평가기간 ID 추가
+      if (!(global as any).createdEvaluationPeriods) {
+        (global as any).createdEvaluationPeriods = [];
+      }
+      (global as any).createdEvaluationPeriods.push(result.periodId);
+      const periodId = result.periodId;
+
+      console.log('📝 평가기간 생성 완료:', {
+        periodId,
+        name: '일부 마감일만 설정된 평가기간',
+      });
+
+      // evaluationSetupDeadline만 과거로 설정 (performanceDeadline과 selfEvaluationDeadline은 설정하지 않음)
+      await scenario.단계별_마감일을_설정한다({
+        periodId,
+        evaluationSetupDeadline: pastSetupDeadline,
+      });
+
+      console.log('📝 마감일 설정 완료:', {
+        evaluationSetupDeadline: pastSetupDeadline,
+        peerEvaluationDeadline: futurePeerDeadline,
+        note: 'performanceDeadline과 selfEvaluationDeadline은 설정하지 않음',
+      });
+
+      // 마감일 설정 후 상태 확인 (일정 수정 시 자동 조정이 일어남)
+      const afterSetState = await scenario.현재_단계를_조회한다(periodId);
+      console.log('📊 마감일 설정 후 상태:', afterSetState);
+
+      // Assert: EVALUATION_SETUP → PERFORMANCE → SELF_EVALUATION → PEER_EVALUATION
+      // performanceDeadline과 selfEvaluationDeadline이 없으므로 해당 단계를 건너뛰고
+      // peerEvaluationDeadline이 아직 지나지 않았으므로 PEER_EVALUATION에 머뭄
+      expect(afterSetState.currentPhase).toBe('peer-evaluation');
+
+      console.log(
+        '✅ 일부 중간 마감일만 설정되어 있을 때 건너뛰기 동작 검증 완료',
+      );
+      console.log('   - evaluationSetupDeadline이 지나면 PERFORMANCE로 전이');
+      console.log(
+        '   - performanceDeadline이 없으면 즉시 SELF_EVALUATION으로 전이',
+      );
+      console.log(
+        '   - selfEvaluationDeadline이 없으면 즉시 PEER_EVALUATION으로 전이',
+      );
+      console.log(
+        '   - peerEvaluationDeadline이 아직 지나지 않았으므로 PEER_EVALUATION에 머뭄',
+      );
+    });
+  });
 });

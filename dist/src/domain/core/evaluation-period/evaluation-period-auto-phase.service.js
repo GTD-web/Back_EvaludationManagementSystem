@@ -118,29 +118,45 @@ let EvaluationPeriodAutoPhaseService = EvaluationPeriodAutoPhaseService_1 = clas
         return false;
     }
     async checkAndTransitionPhase(period, now) {
-        const currentPhase = period.currentPhase;
+        let currentPhase = period.currentPhase;
+        let transitioned = false;
         if (!currentPhase) {
             this.logger.warn(`평가기간 ${period.id}의 현재 단계가 설정되지 않았습니다.`);
             return false;
         }
-        const nextPhase = this.getNextPhase(currentPhase);
-        if (!nextPhase) {
-            return false;
-        }
-        const shouldTransition = this.shouldTransitionToNextPhase(period, nextPhase, now);
-        if (shouldTransition) {
-            try {
-                this.logger.log(`평가기간 ${period.id} 단계 변경: ${currentPhase} → ${nextPhase}`);
-                await this.evaluationPeriodService.단계_변경한다(period.id, nextPhase, 'SYSTEM_AUTO_PHASE');
-                this.logger.log(`평가기간 ${period.id} 단계 변경 완료: ${currentPhase} → ${nextPhase}`);
-                return true;
+        let maxIterations = 5;
+        let iteration = 0;
+        while (iteration < maxIterations) {
+            iteration++;
+            const nextPhase = this.getNextPhase(currentPhase);
+            if (!nextPhase) {
+                break;
             }
-            catch (error) {
-                this.logger.error(`평가기간 ${period.id} 단계 변경 실패: ${error.message}`, error.stack);
-                return false;
+            const shouldTransition = this.shouldTransitionToNextPhase(period, currentPhase, nextPhase, now);
+            if (shouldTransition) {
+                try {
+                    this.logger.log(`평가기간 ${period.id} 단계 변경: ${currentPhase} → ${nextPhase}`);
+                    await this.evaluationPeriodService.단계_변경한다(period.id, nextPhase, 'SYSTEM_AUTO_PHASE');
+                    this.logger.log(`평가기간 ${period.id} 단계 변경 완료: ${currentPhase} → ${nextPhase}`);
+                    transitioned = true;
+                    currentPhase = nextPhase;
+                    const updatedPeriod = await this.evaluationPeriodRepository.findOne({
+                        where: { id: period.id },
+                    });
+                    if (updatedPeriod) {
+                        Object.assign(period, updatedPeriod);
+                    }
+                }
+                catch (error) {
+                    this.logger.error(`평가기간 ${period.id} 단계 변경 실패: ${error.message}`, error.stack);
+                    break;
+                }
+            }
+            else {
+                break;
             }
         }
-        return false;
+        return transitioned;
     }
     getNextPhase(currentPhase) {
         const phaseSequence = {
@@ -153,12 +169,11 @@ let EvaluationPeriodAutoPhaseService = EvaluationPeriodAutoPhaseService_1 = clas
         };
         return phaseSequence[currentPhase] || null;
     }
-    shouldTransitionToNextPhase(period, nextPhase, now) {
-        const currentPhase = period.currentPhase;
+    shouldTransitionToNextPhase(period, currentPhase, nextPhase, now) {
         const currentPhaseDeadline = this.getPhaseDeadline(period, currentPhase);
         if (!currentPhaseDeadline) {
-            this.logger.debug(`평가기간 ${period.id}의 ${currentPhase} 단계 마감일이 설정되지 않았습니다.`);
-            return false;
+            this.logger.debug(`평가기간 ${period.id}의 ${currentPhase} 단계 마감일이 설정되지 않았습니다. 다음 단계로 즉시 전이합니다.`);
+            return true;
         }
         const koreaNow = this.toKoreaDayjs(now);
         const koreaDeadline = this.toKoreaDayjs(currentPhaseDeadline);

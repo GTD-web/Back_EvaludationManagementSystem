@@ -174,11 +174,23 @@ let ProjectManagementController = class ProjectManagementController {
         };
     }
     async getProjectManagers(query) {
+        const ALLOWED_PM_NAMES = [
+            '남명용',
+            '김경민',
+            '홍연창',
+            '강남규',
+            '전구영',
+            '고영훈',
+            '박일수',
+            '모현민',
+            '하태식',
+            '정석화',
+        ];
         const employees = await this.ssoService.여러직원정보를조회한다({
             withDetail: true,
             includeTerminated: false,
         });
-        let managers = employees.filter((emp) => emp.position?.hasManagementAuthority === true);
+        let managers = employees.filter((emp) => ALLOWED_PM_NAMES.includes(emp.name));
         if (query.departmentId) {
             managers = managers.filter((emp) => emp.department?.id === query.departmentId);
         }

@@ -270,15 +270,29 @@ export class ProjectManagementController {
   async getProjectManagers(
     @Query() query: GetProjectManagersQueryDto,
   ): Promise<ProjectManagerListResponseDto> {
+    // PM으로 지정 가능한 직원 이름 목록
+    const ALLOWED_PM_NAMES = [
+      '남명용',
+      '김경민',
+      '홍연창',
+      '강남규',
+      '전구영',
+      '고영훈',
+      '박일수',
+      '모현민',
+      '하태식',
+      '정석화',
+    ];
+
     // SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
     const employees = await this.ssoService.여러직원정보를조회한다({
       withDetail: true,
       includeTerminated: false, // 재직중인 직원만
     });
 
-    // 관리 권한이 있는 직원만 필터링
-    let managers = employees.filter(
-      (emp) => emp.position?.hasManagementAuthority === true,
+    // 허용된 PM 이름 목록으로 필터링 (관리 권한 무관)
+    let managers = employees.filter((emp) =>
+      ALLOWED_PM_NAMES.includes(emp.name),
     );
 
     // 부서 필터링

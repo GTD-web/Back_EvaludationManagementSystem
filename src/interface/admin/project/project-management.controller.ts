@@ -15,7 +15,6 @@ import {
 import { DeleteChildProjects } from '@interface/common/decorators/project/delete-child-projects-api.decorator';
 import {
   CreateProjectManager,
-  GetProjectManagerList,
   GetProjectManagerDetail,
   UpdateProjectManager,
   DeleteProjectManager,
@@ -630,31 +629,6 @@ export class ProjectManagementController {
       createdBy,
     );
     return manager;
-  }
-
-  /**
-   * PM 목록 조회 (관리자용)
-   * 등록된 PM 목록을 조회합니다.
-   */
-  @GetProjectManagerList()
-  async getProjectManagerListAdmin(
-    @Query() query: GetPMQueryDto,
-  ): Promise<PMListResponseDto> {
-    const result = await this.projectManagerService.목록_조회한다({
-      page: query.page,
-      limit: query.limit,
-      filter: {
-        isActive: query.isActive,
-        search: query.search,
-      },
-    });
-
-    const totalPages = Math.ceil(result.total / result.limit);
-
-    return {
-      ...result,
-      totalPages,
-    };
   }
 
   /**

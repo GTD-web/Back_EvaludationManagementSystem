@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateProjectManager = CreateProjectManager;
-exports.GetProjectManagerList = GetProjectManagerList;
 exports.GetProjectManagerDetail = GetProjectManagerDetail;
 exports.UpdateProjectManager = UpdateProjectManager;
 exports.DeleteProjectManager = DeleteProjectManager;
@@ -10,7 +9,7 @@ const common_2 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const project_manager_dto_1 = require("../../dto/project/project-manager.dto");
 function CreateProjectManager() {
-    return (0, common_1.applyDecorators)((0, common_2.Post)('project-managers'), (0, common_2.HttpCode)(common_1.HttpStatus.CREATED), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Post)('managers'), (0, common_2.HttpCode)(common_1.HttpStatus.CREATED), (0, swagger_1.ApiOperation)({
         summary: 'PM 추가',
         description: `새로운 PM을 추가합니다.
 
@@ -48,37 +47,8 @@ function CreateProjectManager() {
         description: '이미 등록된 매니저 ID입니다.',
     }));
 }
-function GetProjectManagerList() {
-    return (0, common_1.applyDecorators)((0, common_2.Get)('project-managers/list'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
-        summary: 'PM 목록 조회',
-        description: `등록된 PM 목록을 조회합니다.
-
-**동작:**
-- 등록된 PM 목록을 페이징하여 조회합니다
-- 활성 상태로 필터링할 수 있습니다
-- 이름, 이메일, 사번으로 검색할 수 있습니다
-- 삭제된 PM은 제외됩니다
-
-**필터 옵션:**
-- isActive: 활성 상태 필터 (true/false)
-- search: 검색어 (이름, 이메일, 사번)
-- page: 페이지 번호 (기본값: 1)
-- limit: 페이지당 항목 수 (기본값: 50)
-
-**테스트 케이스:**
-- 전체 PM 목록 조회: 필터 없이 모든 PM 조회
-- 활성 PM만 조회: isActive=true로 필터링
-- 비활성 PM만 조회: isActive=false로 필터링
-- 이름으로 검색: search 파라미터로 특정 이름 검색
-- 페이징: page와 limit으로 페이징 조회`,
-    }), (0, swagger_1.ApiResponse)({
-        status: common_1.HttpStatus.OK,
-        description: 'PM 목록이 성공적으로 조회되었습니다.',
-        type: project_manager_dto_1.ProjectManagerListResponseDto,
-    }));
-}
 function GetProjectManagerDetail() {
-    return (0, common_1.applyDecorators)((0, common_2.Get)('project-managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Get)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: 'PM 상세 조회',
         description: `특정 PM의 상세 정보를 조회합니다.
 
@@ -107,7 +77,7 @@ function GetProjectManagerDetail() {
     }));
 }
 function UpdateProjectManager() {
-    return (0, common_1.applyDecorators)((0, common_2.Put)('project-managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Put)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: 'PM 수정',
         description: `기존 PM의 정보를 수정합니다.
 
@@ -148,7 +118,7 @@ function UpdateProjectManager() {
     }));
 }
 function DeleteProjectManager() {
-    return (0, common_1.applyDecorators)((0, common_2.Delete)('project-managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.NO_CONTENT), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Delete)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.NO_CONTENT), (0, swagger_1.ApiOperation)({
         summary: 'PM 삭제',
         description: `PM을 소프트 삭제합니다.
 

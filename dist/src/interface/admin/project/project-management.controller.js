@@ -401,21 +401,6 @@ let ProjectManagementController = class ProjectManagementController {
         const manager = await this.projectManagerService.생성한다(createDto, createdBy);
         return manager;
     }
-    async getProjectManagerListAdmin(query) {
-        const result = await this.projectManagerService.목록_조회한다({
-            page: query.page,
-            limit: query.limit,
-            filter: {
-                isActive: query.isActive,
-                search: query.search,
-            },
-        });
-        const totalPages = Math.ceil(result.total / result.limit);
-        return {
-            ...result,
-            totalPages,
-        };
-    }
     async getProjectManagerDetail(id) {
         const manager = await this.projectManagerService.ID로_조회한다(id);
         if (!manager) {
@@ -512,13 +497,6 @@ __decorate([
     __metadata("design:paramtypes", [project_manager_dto_1.CreateProjectManagerDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProjectManagementController.prototype, "createProjectManager", null);
-__decorate([
-    (0, project_manager_api_decorators_1.GetProjectManagerList)(),
-    __param(0, (0, common_1.Query)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [project_manager_dto_1.GetProjectManagersQueryDto]),
-    __metadata("design:returntype", Promise)
-], ProjectManagementController.prototype, "getProjectManagerListAdmin", null);
 __decorate([
     (0, project_manager_api_decorators_1.GetProjectManagerDetail)(),
     __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),

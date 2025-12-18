@@ -18,7 +18,7 @@ import {
  */
 export function CreateProjectManager() {
   return applyDecorators(
-    Post('project-managers'),
+    Post('managers'),
     HttpCode(HttpStatus.CREATED),
     ApiOperation({
       summary: 'PM 추가',
@@ -64,50 +64,13 @@ export function CreateProjectManager() {
   );
 }
 
-/**
- * PM 목록 조회 API 데코레이터
- */
-export function GetProjectManagerList() {
-  return applyDecorators(
-    Get('project-managers/list'),
-    HttpCode(HttpStatus.OK),
-    ApiOperation({
-      summary: 'PM 목록 조회',
-      description: `등록된 PM 목록을 조회합니다.
-
-**동작:**
-- 등록된 PM 목록을 페이징하여 조회합니다
-- 활성 상태로 필터링할 수 있습니다
-- 이름, 이메일, 사번으로 검색할 수 있습니다
-- 삭제된 PM은 제외됩니다
-
-**필터 옵션:**
-- isActive: 활성 상태 필터 (true/false)
-- search: 검색어 (이름, 이메일, 사번)
-- page: 페이지 번호 (기본값: 1)
-- limit: 페이지당 항목 수 (기본값: 50)
-
-**테스트 케이스:**
-- 전체 PM 목록 조회: 필터 없이 모든 PM 조회
-- 활성 PM만 조회: isActive=true로 필터링
-- 비활성 PM만 조회: isActive=false로 필터링
-- 이름으로 검색: search 파라미터로 특정 이름 검색
-- 페이징: page와 limit으로 페이징 조회`,
-    }),
-    ApiResponse({
-      status: HttpStatus.OK,
-      description: 'PM 목록이 성공적으로 조회되었습니다.',
-      type: ProjectManagerListResponseDto,
-    }),
-  );
-}
 
 /**
  * PM 상세 조회 API 데코레이터
  */
 export function GetProjectManagerDetail() {
   return applyDecorators(
-    Get('project-managers/:id'),
+    Get('managers/:id'),
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: 'PM 상세 조회',
@@ -148,7 +111,7 @@ export function GetProjectManagerDetail() {
  */
 export function UpdateProjectManager() {
   return applyDecorators(
-    Put('project-managers/:id'),
+    Put('managers/:id'),
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: 'PM 수정',
@@ -202,7 +165,7 @@ export function UpdateProjectManager() {
  */
 export function DeleteProjectManager() {
   return applyDecorators(
-    Delete('project-managers/:id'),
+    Delete('managers/:id'),
     HttpCode(HttpStatus.NO_CONTENT),
     ApiOperation({
       summary: 'PM 삭제',

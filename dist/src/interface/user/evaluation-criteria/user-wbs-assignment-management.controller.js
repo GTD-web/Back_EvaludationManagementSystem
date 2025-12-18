@@ -25,6 +25,16 @@ let UserWbsAssignmentManagementController = class UserWbsAssignmentManagementCon
     constructor(wbsAssignmentBusinessService) {
         this.wbsAssignmentBusinessService = wbsAssignmentBusinessService;
     }
+    async cancelWbsAssignmentByWbs(wbsItemId, bodyDto, user) {
+        const cancelledBy = user.id;
+        return await this.wbsAssignmentBusinessService.WBS_할당을_WBS_ID로_취소한다({
+            employeeId: bodyDto.employeeId,
+            wbsItemId: wbsItemId,
+            projectId: bodyDto.projectId,
+            periodId: bodyDto.periodId,
+            cancelledBy,
+        });
+    }
     async resetEmployeeWbsAssignments(employeeId, periodId, user) {
         const resetBy = user.id;
         return await this.wbsAssignmentBusinessService.직원의_WBS_할당을_초기화한다({
@@ -64,6 +74,15 @@ let UserWbsAssignmentManagementController = class UserWbsAssignmentManagementCon
     }
 };
 exports.UserWbsAssignmentManagementController = UserWbsAssignmentManagementController;
+__decorate([
+    (0, wbs_assignment_api_decorators_1.CancelWbsAssignmentByWbs)(),
+    __param(0, (0, common_1.Param)('wbsItemId', common_1.ParseUUIDPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, wbs_assignment_dto_1.CancelWbsAssignmentByWbsDto, Object]),
+    __metadata("design:returntype", Promise)
+], UserWbsAssignmentManagementController.prototype, "cancelWbsAssignmentByWbs", null);
 __decorate([
     (0, wbs_assignment_api_decorators_1.ResetEmployeeWbsAssignments)(),
     __param(0, (0, common_1.Param)('employeeId', common_1.ParseUUIDPipe)),

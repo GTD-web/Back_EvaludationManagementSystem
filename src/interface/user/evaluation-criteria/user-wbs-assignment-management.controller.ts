@@ -5,12 +5,14 @@ import { Body, Controller, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { WbsAssignmentBusinessService } from '../../../business/wbs-assignment/wbs-assignment-business.service';
 import {
+  CancelWbsAssignmentByWbs,
   ChangeWbsAssignmentOrderByWbs,
   CreateAndAssignWbs,
   ResetEmployeeWbsAssignments,
   UpdateWbsItemTitle,
 } from '@interface/common/decorators/evaluation-criteria/wbs-assignment-api.decorators';
 import {
+  CancelWbsAssignmentByWbsDto,
   ChangeWbsAssignmentOrderByWbsDto,
   CreateAndAssignWbsDto,
   UpdateWbsItemTitleDto,
@@ -29,6 +31,27 @@ export class UserWbsAssignmentManagementController {
   constructor(
     private readonly wbsAssignmentBusinessService: WbsAssignmentBusinessService,
   ) {}
+
+  /**
+   * WBS 할당 취소 (WBS ID 기반)
+   */
+  @CancelWbsAssignmentByWbs()
+  async cancelWbsAssignmentByWbs(
+    @Param('wbsItemId', ParseUUIDPipe) wbsItemId: string,
+    @Body() bodyDto: CancelWbsAssignmentByWbsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const cancelledBy = user.id;
+    return await this.wbsAssignmentBusinessService.WBS_할당을_WBS_ID로_취소한다(
+      {
+        employeeId: bodyDto.employeeId,
+        wbsItemId: wbsItemId,
+        projectId: bodyDto.projectId,
+        periodId: bodyDto.periodId,
+        cancelledBy,
+      },
+    );
+  }
 
   /**
    * 직원의 WBS 할당 초기화

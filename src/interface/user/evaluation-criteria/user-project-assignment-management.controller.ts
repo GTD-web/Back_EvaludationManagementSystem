@@ -4,15 +4,20 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import { Roles } from '@interface/common/decorators';
 import {
+  CancelProjectAssignmentByProject,
+  ChangeProjectAssignmentOrderByProject,
   CreateProjectAssignment,
   GetAvailableProjects,
 } from '@interface/common/decorators/evaluation-criteria/project-assignment-api.decorators';
 import {
   AvailableProjectsResponseDto,
+  CancelProjectAssignmentByProjectDto,
+  ChangeProjectAssignmentOrderByProjectDto,
   CreateProjectAssignmentDto,
   GetAvailableProjectsQueryDto,
+  ProjectAssignmentResponseDto,
 } from '@interface/common/dto/evaluation-criteria/project-assignment.dto';
-import { Body, Controller, Query } from '@nestjs/common';
+import { Body, Controller, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 /**
@@ -81,5 +86,42 @@ export class UserProjectAssignmentManagementController {
       sortBy: result.sortBy,
       sortOrder: result.sortOrder,
     };
+  }
+
+  /**
+   * 프로젝트 할당 취소 (프로젝트 ID 기반)
+   */
+  @CancelProjectAssignmentByProject()
+  async cancelProjectAssignmentByProject(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() bodyDto: CancelProjectAssignmentByProjectDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const cancelledBy = user.id;
+    return await this.projectAssignmentBusinessService.프로젝트_할당을_프로젝트_ID로_취소한다(
+      bodyDto.employeeId,
+      projectId,
+      bodyDto.periodId,
+      cancelledBy,
+    );
+  }
+
+  /**
+   * 프로젝트 할당 순서 변경 (프로젝트 ID 기반)
+   */
+  @ChangeProjectAssignmentOrderByProject()
+  async changeProjectAssignmentOrderByProject(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() bodyDto: ChangeProjectAssignmentOrderByProjectDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectAssignmentResponseDto> {
+    const updatedBy = user.id;
+    return await this.evaluationCriteriaManagementService.프로젝트_할당_순서를_프로젝트_ID로_변경한다(
+      bodyDto.employeeId,
+      projectId,
+      bodyDto.periodId,
+      bodyDto.direction,
+      updatedBy,
+    );
   }
 }

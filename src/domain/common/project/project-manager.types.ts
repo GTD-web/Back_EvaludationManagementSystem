@@ -76,6 +76,8 @@ export interface ProjectManagerFilter {
   isActive?: boolean;
   /** 검색어 (이름, 이메일, 사번) */
   search?: string;
+  /** 삭제된 레코드 포함 여부 */
+  includeDeleted?: boolean;
 }
 
 /**

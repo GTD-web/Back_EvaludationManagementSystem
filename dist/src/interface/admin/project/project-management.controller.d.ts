@@ -24,7 +24,7 @@ export declare class ProjectManagementController {
     generateChildProjects(dto: GenerateChildProjectsDto, user: AuthenticatedUser): Promise<GenerateChildProjectsResultDto>;
     deleteChildProjects(dto: DeleteChildProjectsDto, user: AuthenticatedUser): Promise<DeleteChildProjectsResultDto>;
     createProjectManager(createDto: CreatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
-    getProjectManagerDetail(id: string): Promise<PMResponseDto>;
-    updateProjectManager(id: string, updateDto: UpdatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
-    deleteProjectManager(id: string, user: AuthenticatedUser): Promise<void>;
+    getProjectManagerDetail(managerId: string): Promise<PMResponseDto>;
+    updateProjectManager(managerId: string, updateDto: UpdatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
+    deleteProjectManager(managerId: string, user: AuthenticatedUser): Promise<void>;
 }

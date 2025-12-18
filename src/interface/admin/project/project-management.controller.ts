@@ -278,14 +278,15 @@ export class ProjectManagementController {
 
   /**
    * PM(프로젝트 매니저) 목록 조회
-   * SSO 서비스에서 관리 권한이 있는 직원 목록을 조회합니다.
+   * 하드코딩된 기본 PM 12명 + 직접 추가한 PM들을 모두 조회합니다.
+   * 삭제된 PM은 목록에서 제외됩니다.
    * 주의: 구체적인 경로를 :id 경로보다 먼저 정의해야 함
    */
   @GetProjectManagers()
   async getProjectManagers(
     @Query() query: GetProjectManagersQueryDto,
   ): Promise<AvailableProjectManagerListResponseDto> {
-    // PM으로 지정 가능한 직원 이름 목록
+    // PM으로 지정 가능한 기본 직원 이름 목록 (하드코딩)
     const ALLOWED_PM_NAMES = [
       '남명용',
       '김경민',
@@ -301,16 +302,43 @@ export class ProjectManagementController {
       '김종식',
     ];
 
-    // SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
+    // 1. ProjectManager 테이블에 등록된 활성 PM들의 managerId 목록 조회
+    const registeredPMs = await this.projectManagerService.목록_조회한다({
+      page: 1,
+      limit: 1000,
+    });
+    const activeManagerIds = registeredPMs.managers.map((pm) => pm.managerId);
+
+    // 2. ProjectManager 테이블에서 삭제된 PM의 managerId 목록 조회
+    const deletedPMs = await this.projectManagerService.목록_조회한다({
+      page: 1,
+      limit: 1000,
+      filter: { includeDeleted: true },
+    });
+    const deletedManagerIds = deletedPMs.managers
+      .filter((pm) => pm.deletedAt)
+      .map((pm) => pm.managerId);
+
+    // 3. SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
     const employees = await this.ssoService.여러직원정보를조회한다({
       withDetail: true,
       includeTerminated: false, // 재직중인 직원만
     });
 
-    // 허용된 PM 이름 목록으로 필터링 (관리 권한 무관)
-    let managers = employees.filter((emp) =>
-      ALLOWED_PM_NAMES.includes(emp.name),
+    // 4. 하드코딩된 12명 OR 등록된 PM의 managerId로 필터링
+    // 단, 삭제된 PM은 제외
+    let managers = employees.filter(
+      (emp) =>
+        (ALLOWED_PM_NAMES.includes(emp.name) ||
+          activeManagerIds.includes(emp.id)) &&
+        !deletedManagerIds.includes(emp.id), // 삭제된 PM 제외
     );
+
+    // 중복 제거 (managerId 기준)
+    const uniqueManagers = managers.filter(
+      (emp, index, self) => index === self.findIndex((e) => e.id === emp.id),
+    );
+    managers = uniqueManagers;
 
     // 부서 필터링
     if (query.departmentId) {
@@ -651,16 +679,19 @@ export class ProjectManagementController {
 
   /**
    * PM 상세 조회
-   * 특정 PM의 상세 정보를 조회합니다.
+   * managerId(SSO ID)로 PM의 상세 정보를 조회합니다.
    */
   @GetProjectManagerDetail()
   async getProjectManagerDetail(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
   ): Promise<PMResponseDto> {
-    const manager = await this.projectManagerService.ID로_조회한다(id);
+    const manager =
+      await this.projectManagerService.managerId로_조회한다(managerId);
 
     if (!manager) {
-      throw new NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
+      throw new NotFoundException(
+        `매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`,
+      );
     }
 
     return manager;
@@ -668,17 +699,73 @@ export class ProjectManagementController {
 
   /**
    * PM 수정
-   * 기존 PM의 정보를 수정합니다.
+   * managerId(SSO ID)로 PM의 정보를 수정합니다.
+   * - soft delete된 PM은 복구 후 수정합니다.
+   * - ProjectManager에 등록되지 않은 PM(하드코딩된 기본 PM)은 자동으로 등록 후 수정합니다.
    */
   @UpdateProjectManager()
   async updateProjectManager(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
     @Body() updateDto: UpdatePMDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PMResponseDto> {
     const updatedBy = user.id;
-    const manager = await this.projectManagerService.수정한다(
-      id,
+
+    // 1. ProjectManager에 등록되어 있는지 확인 (삭제된 레코드 포함)
+    const existingManager =
+      await this.projectManagerService.managerId로_조회한다_삭제포함(managerId);
+
+    if (existingManager) {
+      // 1-1. soft delete된 레코드가 있으면 복구
+      if (existingManager.deletedAt) {
+        await this.projectManagerService.managerId로_복구한다(
+          managerId,
+          updatedBy,
+        );
+      }
+    } else {
+      // 1-2. 레코드가 아예 없으면 SSO에서 조회하여 자동 등록
+      const ssoEmployee = await this.ssoService.직원정보를조회한다({
+        employeeId: managerId,
+        withDetail: true,
+      });
+
+      if (!ssoEmployee) {
+        throw new NotFoundException(
+          `매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+
+      // Employee 조회 또는 생성
+      let employee = await this.employeeService.findByExternalId(managerId);
+      if (!employee) {
+        employee = await this.employeeService.create({
+          externalId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+        });
+      }
+
+      // ProjectManager 자동 등록
+      await this.projectManagerService.생성한다(
+        {
+          managerId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+          isActive: true,
+          note: '자동 등록된 PM',
+        },
+        updatedBy,
+      );
+    }
+
+    // 2. 수정
+    const manager = await this.projectManagerService.managerId로_수정한다(
+      managerId,
       updateDto,
       updatedBy,
     );
@@ -687,14 +774,102 @@ export class ProjectManagementController {
 
   /**
    * PM 삭제 (소프트 삭제)
-   * PM을 소프트 삭제합니다.
+   * managerId(SSO ID)로 PM을 소프트 삭제합니다.
+   * 하드코딩된 12명 중 ProjectManager에 등록되지 않은 PM은 자동 등록 후 즉시 삭제합니다.
    */
   @DeleteProjectManager()
   async deleteProjectManager(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     const deletedBy = user.id;
-    await this.projectManagerService.삭제한다(id, deletedBy);
+
+    try {
+      // 1. ProjectManager에 등록되어 있는지 확인 (삭제된 레코드 포함)
+      const existingManager =
+        await this.projectManagerService.managerId로_조회한다_삭제포함(
+          managerId,
+        );
+
+      if (existingManager) {
+        // 1-1. 이미 soft delete된 경우 재삭제 시도로 간주 (에러 발생하지 않음)
+        if (existingManager.deletedAt) {
+          return;
+        }
+        // 1-2. 활성 상태면 삭제 실행
+        await this.projectManagerService.managerId로_삭제한다(
+          managerId,
+          deletedBy,
+        );
+        return;
+      }
+
+      // 2. 레코드가 없으면 SSO에서 조회하여 자동 등록 후 즉시 삭제
+      const ssoEmployee = await this.ssoService.직원정보를조회한다({
+        employeeId: managerId,
+        withDetail: true,
+      });
+
+      if (!ssoEmployee) {
+        throw new NotFoundException(
+          `매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+
+      // Employee 조회 또는 생성
+      let employee = await this.employeeService.findByExternalId(managerId);
+      if (!employee) {
+        employee = await this.employeeService.create({
+          externalId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+        });
+      }
+
+      // ProjectManager 자동 등록
+      await this.projectManagerService.생성한다(
+        {
+          managerId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+          isActive: true,
+          note: '하드코딩 PM 삭제를 위해 자동 등록',
+        },
+        deletedBy,
+      );
+
+      // 3. 즉시 삭제
+      await this.projectManagerService.managerId로_삭제한다(
+        managerId,
+        deletedBy,
+      );
+    } catch (error) {
+      // ConflictException 또는 중복 키 에러인 경우
+      if (
+        error.code === '23505' ||
+        error.message?.includes('duplicate key') ||
+        error.message?.includes('이미 등록된')
+      ) {
+        // 이미 등록되어 있으니 다시 조회해서 삭제
+        const existingManager =
+          await this.projectManagerService.managerId로_조회한다_삭제포함(
+            managerId,
+          );
+        if (existingManager && !existingManager.deletedAt) {
+          await this.projectManagerService.managerId로_삭제한다(
+            managerId,
+            deletedBy,
+          );
+        }
+        // 이미 삭제된 경우 성공으로 처리
+        return;
+      }
+      // 다른 에러는 그대로 throw
+      throw error;
+    }
   }
 }

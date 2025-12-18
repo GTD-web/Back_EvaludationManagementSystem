@@ -193,11 +193,28 @@ let ProjectManagementController = class ProjectManagementController {
             '이봉은',
             '김종식',
         ];
+        const registeredPMs = await this.projectManagerService.목록_조회한다({
+            page: 1,
+            limit: 1000,
+        });
+        const activeManagerIds = registeredPMs.managers.map((pm) => pm.managerId);
+        const deletedPMs = await this.projectManagerService.목록_조회한다({
+            page: 1,
+            limit: 1000,
+            filter: { includeDeleted: true },
+        });
+        const deletedManagerIds = deletedPMs.managers
+            .filter((pm) => pm.deletedAt)
+            .map((pm) => pm.managerId);
         const employees = await this.ssoService.여러직원정보를조회한다({
             withDetail: true,
             includeTerminated: false,
         });
-        let managers = employees.filter((emp) => ALLOWED_PM_NAMES.includes(emp.name));
+        let managers = employees.filter((emp) => (ALLOWED_PM_NAMES.includes(emp.name) ||
+            activeManagerIds.includes(emp.id)) &&
+            !deletedManagerIds.includes(emp.id));
+        const uniqueManagers = managers.filter((emp, index, self) => index === self.findIndex((e) => e.id === emp.id));
+        managers = uniqueManagers;
         if (query.departmentId) {
             managers = managers.filter((emp) => emp.department?.id === query.departmentId);
         }
@@ -413,21 +430,103 @@ let ProjectManagementController = class ProjectManagementController {
         }, createdBy);
         return manager;
     }
-    async getProjectManagerDetail(id) {
-        const manager = await this.projectManagerService.ID로_조회한다(id);
+    async getProjectManagerDetail(managerId) {
+        const manager = await this.projectManagerService.managerId로_조회한다(managerId);
         if (!manager) {
-            throw new common_1.NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
+            throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`);
         }
         return manager;
     }
-    async updateProjectManager(id, updateDto, user) {
+    async updateProjectManager(managerId, updateDto, user) {
         const updatedBy = user.id;
-        const manager = await this.projectManagerService.수정한다(id, updateDto, updatedBy);
+        const existingManager = await this.projectManagerService.managerId로_조회한다_삭제포함(managerId);
+        if (existingManager) {
+            if (existingManager.deletedAt) {
+                await this.projectManagerService.managerId로_복구한다(managerId, updatedBy);
+            }
+        }
+        else {
+            const ssoEmployee = await this.ssoService.직원정보를조회한다({
+                employeeId: managerId,
+                withDetail: true,
+            });
+            if (!ssoEmployee) {
+                throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`);
+            }
+            let employee = await this.employeeService.findByExternalId(managerId);
+            if (!employee) {
+                employee = await this.employeeService.create({
+                    externalId: managerId,
+                    name: ssoEmployee.name,
+                    email: ssoEmployee.email,
+                    employeeNumber: ssoEmployee.employeeNumber,
+                    departmentName: ssoEmployee.department?.departmentName,
+                });
+            }
+            await this.projectManagerService.생성한다({
+                managerId: managerId,
+                name: ssoEmployee.name,
+                email: ssoEmployee.email,
+                employeeNumber: ssoEmployee.employeeNumber,
+                departmentName: ssoEmployee.department?.departmentName,
+                isActive: true,
+                note: '자동 등록된 PM',
+            }, updatedBy);
+        }
+        const manager = await this.projectManagerService.managerId로_수정한다(managerId, updateDto, updatedBy);
         return manager;
     }
-    async deleteProjectManager(id, user) {
+    async deleteProjectManager(managerId, user) {
         const deletedBy = user.id;
-        await this.projectManagerService.삭제한다(id, deletedBy);
+        try {
+            const existingManager = await this.projectManagerService.managerId로_조회한다_삭제포함(managerId);
+            if (existingManager) {
+                if (existingManager.deletedAt) {
+                    return;
+                }
+                await this.projectManagerService.managerId로_삭제한다(managerId, deletedBy);
+                return;
+            }
+            const ssoEmployee = await this.ssoService.직원정보를조회한다({
+                employeeId: managerId,
+                withDetail: true,
+            });
+            if (!ssoEmployee) {
+                throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`);
+            }
+            let employee = await this.employeeService.findByExternalId(managerId);
+            if (!employee) {
+                employee = await this.employeeService.create({
+                    externalId: managerId,
+                    name: ssoEmployee.name,
+                    email: ssoEmployee.email,
+                    employeeNumber: ssoEmployee.employeeNumber,
+                    departmentName: ssoEmployee.department?.departmentName,
+                });
+            }
+            await this.projectManagerService.생성한다({
+                managerId: managerId,
+                name: ssoEmployee.name,
+                email: ssoEmployee.email,
+                employeeNumber: ssoEmployee.employeeNumber,
+                departmentName: ssoEmployee.department?.departmentName,
+                isActive: true,
+                note: '하드코딩 PM 삭제를 위해 자동 등록',
+            }, deletedBy);
+            await this.projectManagerService.managerId로_삭제한다(managerId, deletedBy);
+        }
+        catch (error) {
+            if (error.code === '23505' ||
+                error.message?.includes('duplicate key') ||
+                error.message?.includes('이미 등록된')) {
+                const existingManager = await this.projectManagerService.managerId로_조회한다_삭제포함(managerId);
+                if (existingManager && !existingManager.deletedAt) {
+                    await this.projectManagerService.managerId로_삭제한다(managerId, deletedBy);
+                }
+                return;
+            }
+            throw error;
+        }
     }
 };
 exports.ProjectManagementController = ProjectManagementController;
@@ -511,14 +610,14 @@ __decorate([
 ], ProjectManagementController.prototype, "createProjectManager", null);
 __decorate([
     (0, project_manager_api_decorators_1.GetProjectManagerDetail)(),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(0, (0, common_1.Param)('managerId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ProjectManagementController.prototype, "getProjectManagerDetail", null);
 __decorate([
     (0, project_manager_api_decorators_1.UpdateProjectManager)(),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(0, (0, common_1.Param)('managerId')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -527,7 +626,7 @@ __decorate([
 ], ProjectManagementController.prototype, "updateProjectManager", null);
 __decorate([
     (0, project_manager_api_decorators_1.DeleteProjectManager)(),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(0, (0, common_1.Param)('managerId')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),

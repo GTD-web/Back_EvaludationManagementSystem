@@ -37,9 +37,10 @@ let ProjectManagerService = class ProjectManagerService {
         const page = options.page || 1;
         const limit = options.limit || 50;
         const skip = (page - 1) * limit;
-        const queryBuilder = this.projectManagerRepository
-            .createQueryBuilder('pm')
-            .where('pm.deletedAt IS NULL');
+        const queryBuilder = this.projectManagerRepository.createQueryBuilder('pm');
+        if (!options.filter?.includeDeleted) {
+            queryBuilder.where('pm.deletedAt IS NULL');
+        }
         if (options.filter?.isActive !== undefined) {
             queryBuilder.andWhere('pm.isActive = :isActive', {
                 isActive: options.filter.isActive,
@@ -96,6 +97,45 @@ let ProjectManagerService = class ProjectManagerService {
             select: ['managerId'],
         });
         return managers.map((m) => m.managerId);
+    }
+    async managerId로_조회한다_삭제포함(managerId) {
+        const manager = await this.projectManagerRepository.findOne({
+            where: { managerId },
+        });
+        return manager ? manager.DTO로_변환한다() : null;
+    }
+    async managerId로_수정한다(managerId, data, updatedBy) {
+        const manager = await this.projectManagerRepository.findOne({
+            where: { managerId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        if (!manager) {
+            throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`);
+        }
+        manager.업데이트한다(data, updatedBy);
+        const saved = await this.projectManagerRepository.save(manager);
+        return saved.DTO로_변환한다();
+    }
+    async managerId로_삭제한다(managerId, deletedBy) {
+        const manager = await this.projectManagerRepository.findOne({
+            where: { managerId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        if (!manager) {
+            throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`);
+        }
+        manager.삭제한다(deletedBy);
+        await this.projectManagerRepository.save(manager);
+    }
+    async managerId로_복구한다(managerId, restoredBy) {
+        const manager = await this.projectManagerRepository.findOne({
+            where: { managerId },
+        });
+        if (!manager) {
+            throw new common_1.NotFoundException(`매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`);
+        }
+        manager.deletedAt = undefined;
+        manager.updatedBy = restoredBy;
+        const saved = await this.projectManagerRepository.save(manager);
+        return saved.DTO로_변환한다();
     }
 };
 exports.ProjectManagerService = ProjectManagerService;

@@ -48,22 +48,21 @@ function CreateProjectManager() {
     }));
 }
 function GetProjectManagerDetail() {
-    return (0, common_1.applyDecorators)((0, common_2.Get)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Get)('managers/:managerId'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: 'PM 상세 조회',
         description: `특정 PM의 상세 정보를 조회합니다.
 
 **동작:**
-- PM ID로 상세 정보를 조회합니다
+- managerId(SSO ID)로 상세 정보를 조회합니다
 - 삭제된 PM은 조회되지 않습니다
 
 **테스트 케이스:**
-- PM 상세 조회 성공: 유효한 ID로 조회
-- 존재하지 않는 PM: 404 에러
-- 잘못된 UUID 형식: 400 에러`,
+- PM 상세 조회 성공: 유효한 managerId로 조회
+- 존재하지 않는 PM: 404 에러`,
     }), (0, swagger_1.ApiParam)({
-        name: 'id',
-        description: 'PM ID (UUID)',
-        example: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'managerId',
+        description: 'PM의 매니저 ID (SSO ID)',
+        example: '5befb5cd-9671-4a7b-8138-4f092c18e06c',
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.OK,
         description: 'PM 상세 정보가 성공적으로 조회되었습니다.',
@@ -71,19 +70,17 @@ function GetProjectManagerDetail() {
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.NOT_FOUND,
         description: 'PM을 찾을 수 없습니다.',
-    }), (0, swagger_1.ApiResponse)({
-        status: common_1.HttpStatus.BAD_REQUEST,
-        description: '잘못된 UUID 형식입니다.',
     }));
 }
 function UpdateProjectManager() {
-    return (0, common_1.applyDecorators)((0, common_2.Put)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Put)('managers/:managerId'), (0, common_2.HttpCode)(common_1.HttpStatus.OK), (0, swagger_1.ApiOperation)({
         summary: 'PM 수정',
         description: `기존 PM의 정보를 수정합니다.
 
 **동작:**
-- PM의 기본 정보를 수정합니다
-- managerId는 변경할 수 없습니다 (불변)
+- managerId(SSO ID)로 PM을 식별하여 수정합니다
+- soft delete된 PM은 복구 후 수정합니다
+- ProjectManager에 등록되지 않은 PM(하드코딩된 기본 PM)은 자동으로 등록 후 수정합니다
 - 활성/비활성 상태를 변경할 수 있습니다
 - 수정자 정보를 자동으로 기록합니다
 
@@ -99,12 +96,12 @@ function UpdateProjectManager() {
 - PM 정보 수정: 이름, 이메일 등 기본 정보 수정
 - 활성 상태 변경: isActive를 true/false로 변경
 - 비활성화: isActive=false로 설정
-- 존재하지 않는 PM: 404 에러
-- 잘못된 UUID 형식: 400 에러`,
+- 하드코딩 PM 수정: 기본 12명 중 하나를 수정
+- 존재하지 않는 PM: 404 에러`,
     }), (0, swagger_1.ApiParam)({
-        name: 'id',
-        description: 'PM ID (UUID)',
-        example: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'managerId',
+        description: 'PM의 매니저 ID (SSO ID)',
+        example: '5befb5cd-9671-4a7b-8138-4f092c18e06c',
     }), (0, swagger_1.ApiBody)({ type: project_manager_dto_1.UpdateProjectManagerDto }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.OK,
         description: 'PM이 성공적으로 수정되었습니다.',
@@ -118,12 +115,14 @@ function UpdateProjectManager() {
     }));
 }
 function DeleteProjectManager() {
-    return (0, common_1.applyDecorators)((0, common_2.Delete)('managers/:id'), (0, common_2.HttpCode)(common_1.HttpStatus.NO_CONTENT), (0, swagger_1.ApiOperation)({
+    return (0, common_1.applyDecorators)((0, common_2.Delete)('managers/:managerId'), (0, common_2.HttpCode)(common_1.HttpStatus.NO_CONTENT), (0, swagger_1.ApiOperation)({
         summary: 'PM 삭제',
         description: `PM을 소프트 삭제합니다.
 
 **동작:**
-- PM을 소프트 삭제 처리합니다
+- managerId(SSO ID)로 PM을 식별하여 삭제합니다
+- 하드코딩된 기본 PM(12명)도 삭제 가능합니다
+  - ProjectManager에 등록되지 않은 경우 자동 등록 후 즉시 삭제
 - 삭제자 정보를 자동으로 기록합니다
 - 실제 데이터는 유지되어 복구 가능합니다
 - 삭제된 PM은 목록 조회에서 제외됩니다
@@ -131,25 +130,23 @@ function DeleteProjectManager() {
 **주의사항:**
 - 소프트 삭제이므로 데이터는 실제로 삭제되지 않습니다
 - 삭제된 PM도 프로젝트에서 이미 할당된 경우 그대로 유지됩니다
+- 이미 삭제된 PM을 재삭제하려고 해도 에러가 발생하지 않습니다
 
 **테스트 케이스:**
-- PM 삭제 성공: 유효한 ID로 삭제
-- 삭제 후 조회: 삭제된 PM 조회 시 404 에러
-- 존재하지 않는 PM: 404 에러
-- 잘못된 UUID 형식: 400 에러`,
+- PM 삭제 성공: 유효한 managerId로 삭제
+- 하드코딩 PM 삭제: 기본 12명 중 하나를 삭제
+- 재삭제 시도: 이미 삭제된 PM 재삭제 시 성공 응답
+- 존재하지 않는 직원: SSO에 없는 managerId로 삭제 시 404 에러`,
     }), (0, swagger_1.ApiParam)({
-        name: 'id',
-        description: 'PM ID (UUID)',
-        example: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'managerId',
+        description: 'PM의 매니저 ID (SSO ID)',
+        example: '5befb5cd-9671-4a7b-8138-4f092c18e06c',
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.NO_CONTENT,
         description: 'PM이 성공적으로 삭제되었습니다.',
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.NOT_FOUND,
-        description: 'PM을 찾을 수 없습니다.',
-    }), (0, swagger_1.ApiResponse)({
-        status: common_1.HttpStatus.BAD_REQUEST,
-        description: '잘못된 UUID 형식입니다.',
+        description: 'SSO에서 직원을 찾을 수 없습니다.',
     }));
 }
 //# sourceMappingURL=project-manager-api.decorators.js.map

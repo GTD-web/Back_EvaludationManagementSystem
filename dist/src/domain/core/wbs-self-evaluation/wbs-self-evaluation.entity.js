@@ -254,8 +254,7 @@ __decorate([
 ], WbsSelfEvaluation.prototype, "selfEvaluationScore", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'varchar',
-        length: 255,
+        type: 'text',
         nullable: true,
         comment: '세부 프로젝트 (서브 프로젝트)',
     }),

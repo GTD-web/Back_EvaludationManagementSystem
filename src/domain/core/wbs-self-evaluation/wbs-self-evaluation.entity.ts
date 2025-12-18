@@ -106,8 +106,7 @@ export class WbsSelfEvaluation
   selfEvaluationScore?: number;
 
   @Column({
-    type: 'varchar',
-    length: 255,
+    type: 'text',
     nullable: true,
     comment: '세부 프로젝트 (서브 프로젝트)',
   })

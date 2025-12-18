@@ -20,15 +20,13 @@ import { IWbsItem } from './wbs-item.interface';
 @Index(['assignedToId'])
 export class WbsItem extends BaseEntity<WbsItemDto> implements IWbsItem {
   @Column({
-    type: 'varchar',
-    length: 50,
+    type: 'text',
     comment: 'WBS 코드',
   })
   wbsCode: string;
 
   @Column({
-    type: 'varchar',
-    length: 255,
+    type: 'text',
     comment: 'WBS 제목',
   })
   title: string;

@@ -8,10 +8,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var WbsAssignmentBusinessService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WbsAssignmentBusinessService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const evaluation_criteria_management_service_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const evaluation_activity_log_context_service_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.service");
 const performance_evaluation_service_1 = require("../../context/performance-evaluation-context/performance-evaluation.service");
@@ -20,6 +25,7 @@ const project_service_1 = require("../../domain/common/project/project.service")
 const evaluation_line_service_1 = require("../../domain/core/evaluation-line/evaluation-line.service");
 const evaluation_line_mapping_service_1 = require("../../domain/core/evaluation-line-mapping/evaluation-line-mapping.service");
 const evaluation_wbs_assignment_service_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service");
+const evaluation_wbs_assignment_entity_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity");
 const evaluation_line_types_1 = require("../../domain/core/evaluation-line/evaluation-line.types");
 const wbs_item_types_1 = require("../../domain/common/wbs-item/wbs-item.types");
 let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAssignmentBusinessService {
@@ -31,8 +37,9 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
     evaluationLineService;
     evaluationLineMappingService;
     evaluationWbsAssignmentService;
+    wbsAssignmentRepository;
     logger = new common_1.Logger(WbsAssignmentBusinessService_1.name);
-    constructor(evaluationCriteriaManagementService, activityLogContextService, performanceEvaluationService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService) {
+    constructor(evaluationCriteriaManagementService, activityLogContextService, performanceEvaluationService, employeeService, projectService, evaluationLineService, evaluationLineMappingService, evaluationWbsAssignmentService, wbsAssignmentRepository) {
         this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
         this.activityLogContextService = activityLogContextService;
         this.performanceEvaluationService = performanceEvaluationService;
@@ -41,6 +48,7 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
         this.evaluationLineService = evaluationLineService;
         this.evaluationLineMappingService = evaluationLineMappingService;
         this.evaluationWbsAssignmentService = evaluationWbsAssignmentService;
+        this.wbsAssignmentRepository = wbsAssignmentRepository;
     }
     async WBS를_할당한다(params) {
         this.logger.log('WBS 할당 비즈니스 로직 시작', {
@@ -640,6 +648,214 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
             assignment,
         };
     }
+    async WBS를_사이에_생성하고_할당한다(params) {
+        this.logger.log('WBS 사이에 생성 및 할당 비즈니스 로직 시작', {
+            title: params.title,
+            projectId: params.projectId,
+            employeeId: params.employeeId,
+            previousWbsItemId: params.previousWbsItemId,
+            nextWbsItemId: params.nextWbsItemId,
+        });
+        const wbsItem = await this.evaluationCriteriaManagementService.WBS_항목을_생성하고_코드를_자동_생성한다({
+            title: params.title,
+            status: wbs_item_types_1.WbsItemStatus.PENDING,
+            level: 1,
+            assignedToId: params.employeeId,
+            projectId: params.projectId,
+            parentWbsId: undefined,
+            startDate: undefined,
+            endDate: undefined,
+            progressPercentage: 0,
+        }, params.createdBy);
+        this.logger.log('WBS 항목 생성 완료', {
+            wbsItemId: wbsItem.id,
+            wbsCode: wbsItem.wbsCode,
+        });
+        let targetIndex = undefined;
+        if (params.previousWbsItemId || params.nextWbsItemId) {
+            const allAssignments = await this.evaluationCriteriaManagementService.WBS_할당_목록을_조회한다({
+                employeeId: params.employeeId,
+                projectId: params.projectId,
+                periodId: params.periodId,
+            }, 1, 1000, 'displayOrder', 'ASC');
+            const sortedAssignments = allAssignments.assignments.sort((a, b) => {
+                if (a.displayOrder !== b.displayOrder) {
+                    return a.displayOrder - b.displayOrder;
+                }
+                return (new Date(a.assignedDate).getTime() - new Date(b.assignedDate).getTime());
+            });
+            this.logger.log('기존 WBS 할당 목록 조회', {
+                count: sortedAssignments.length,
+                assignments: sortedAssignments.map((a) => ({
+                    wbsItemId: a.wbsItemId,
+                    displayOrder: a.displayOrder,
+                    assignedDate: a.assignedDate,
+                })),
+            });
+            if (params.previousWbsItemId && params.nextWbsItemId) {
+                const prevIndex = sortedAssignments.findIndex((a) => a.wbsItemId === params.previousWbsItemId);
+                const nextIdx = sortedAssignments.findIndex((a) => a.wbsItemId === params.nextWbsItemId);
+                if (prevIndex !== -1 && nextIdx !== -1) {
+                    targetIndex = prevIndex + 1;
+                }
+                else {
+                    targetIndex = sortedAssignments.length;
+                }
+            }
+            else if (params.previousWbsItemId) {
+                const prevIndex = sortedAssignments.findIndex((a) => a.wbsItemId === params.previousWbsItemId);
+                if (prevIndex !== -1) {
+                    targetIndex = prevIndex + 1;
+                }
+                else {
+                    targetIndex = sortedAssignments.length;
+                }
+            }
+            else if (params.nextWbsItemId) {
+                const nextIdx = sortedAssignments.findIndex((a) => a.wbsItemId === params.nextWbsItemId);
+                if (nextIdx !== -1) {
+                    targetIndex = nextIdx;
+                }
+                else {
+                    targetIndex = 0;
+                }
+            }
+            this.logger.log('삽입 위치 계산', { targetIndex });
+        }
+        const data = {
+            employeeId: params.employeeId,
+            wbsItemId: wbsItem.id,
+            projectId: params.projectId,
+            periodId: params.periodId,
+            assignedBy: params.createdBy,
+            displayOrder: 999999,
+        };
+        const assignment = await this.evaluationCriteriaManagementService.WBS를_할당한다(data, params.createdBy);
+        const existingCriteria = await this.evaluationCriteriaManagementService.특정_WBS항목의_평가기준을_조회한다(wbsItem.id);
+        if (!existingCriteria || existingCriteria.length === 0) {
+            this.logger.log('WBS 평가기준이 없어 빈 기준을 생성합니다', {
+                wbsItemId: wbsItem.id,
+            });
+            await this.evaluationCriteriaManagementService.WBS_평가기준을_생성한다({
+                wbsItemId: wbsItem.id,
+                criteria: '',
+                importance: 5,
+            }, params.createdBy);
+        }
+        await this.평가라인을_자동으로_구성한다(params.employeeId, wbsItem.id, params.projectId, params.periodId, params.createdBy);
+        this.logger.log('WBS별 평가라인 구성 시작', {
+            employeeId: params.employeeId,
+            wbsItemId: wbsItem.id,
+            periodId: params.periodId,
+        });
+        const wbsEvaluationLineResult = await this.evaluationCriteriaManagementService.직원_WBS별_평가라인을_구성한다(params.employeeId, wbsItem.id, params.periodId, params.createdBy);
+        this.logger.log('WBS별 평가라인 구성 완료', {
+            createdLines: wbsEvaluationLineResult.createdLines,
+            createdMappings: wbsEvaluationLineResult.createdMappings,
+        });
+        try {
+            await this.activityLogContextService.활동내역을_기록한다({
+                periodId: params.periodId,
+                employeeId: params.employeeId,
+                activityType: 'wbs_assignment',
+                activityAction: 'created',
+                activityTitle: 'WBS 사이에 생성 및 할당',
+                relatedEntityType: 'wbs_assignment',
+                relatedEntityId: assignment.id,
+                performedBy: params.createdBy,
+                activityMetadata: {
+                    wbsItemId: wbsItem.id,
+                    projectId: params.projectId,
+                    previousWbsItemId: params.previousWbsItemId,
+                    nextWbsItemId: params.nextWbsItemId,
+                    displayOrder: assignment.displayOrder,
+                },
+            });
+        }
+        catch (error) {
+            this.logger.warn('WBS 사이에 생성 활동 내역 기록 실패', {
+                assignmentId: assignment.id,
+                error: error.message,
+            });
+        }
+        await this.전체_WBS_할당_순서를_재정렬한다(params.employeeId, params.projectId, params.periodId, params.createdBy, wbsItem.id, targetIndex);
+        this.logger.log('WBS 사이에 생성, 할당, 평가기준 생성, 평가라인 구성 완료', {
+            wbsItemId: wbsItem.id,
+            assignmentId: assignment.id,
+            displayOrder: assignment.displayOrder,
+        });
+        return {
+            wbsItem,
+            assignment,
+        };
+    }
+    async 전체_WBS_할당_순서를_재정렬한다(employeeId, projectId, periodId, updatedBy, newWbsItemId, targetIndex) {
+        this.logger.log('WBS 할당 순서 재정렬 시작', {
+            employeeId,
+            projectId,
+            periodId,
+            newWbsItemId,
+            targetIndex,
+        });
+        const allAssignments = await this.evaluationCriteriaManagementService.WBS_할당_목록을_조회한다({
+            employeeId,
+            projectId,
+            periodId,
+        }, 1, 1000, 'displayOrder', 'ASC');
+        let existingAssignments = allAssignments.assignments;
+        let newAssignment = undefined;
+        if (newWbsItemId) {
+            newAssignment = existingAssignments.find((a) => a.wbsItemId === newWbsItemId);
+            existingAssignments = existingAssignments.filter((a) => a.wbsItemId !== newWbsItemId);
+        }
+        const sortedExistingAssignments = existingAssignments.sort((a, b) => {
+            if (a.displayOrder !== b.displayOrder) {
+                return a.displayOrder - b.displayOrder;
+            }
+            return (new Date(a.assignedDate).getTime() - new Date(b.assignedDate).getTime());
+        });
+        let finalSortedAssignments = [...sortedExistingAssignments];
+        if (newAssignment && targetIndex !== undefined) {
+            finalSortedAssignments.splice(targetIndex, 0, newAssignment);
+            this.logger.log('새 WBS 삽입', {
+                newWbsItemId,
+                targetIndex,
+                wbsItemId: newAssignment.wbsItemId,
+            });
+        }
+        this.logger.log('정렬된 WBS 할당 목록', {
+            count: finalSortedAssignments.length,
+            assignments: finalSortedAssignments.map((a, index) => ({
+                index,
+                wbsItemId: a.wbsItemId,
+                currentDisplayOrder: a.displayOrder,
+                willBeDisplayOrder: index,
+            })),
+        });
+        const updatePromises = [];
+        for (let i = 0; i < finalSortedAssignments.length; i++) {
+            const assignment = finalSortedAssignments[i];
+            if (assignment.displayOrder !== i) {
+                this.logger.log('displayOrder 업데이트 예정', {
+                    assignmentId: assignment.id,
+                    wbsItemId: assignment.wbsItemId,
+                    oldOrder: assignment.displayOrder,
+                    newOrder: i,
+                });
+                const updatePromise = this.wbsAssignmentRepository.update({ id: assignment.id }, {
+                    displayOrder: i,
+                    updatedAt: new Date(),
+                    updatedBy: updatedBy,
+                });
+                updatePromises.push(updatePromise);
+            }
+        }
+        await Promise.all(updatePromises);
+        this.logger.log('WBS 할당 순서 재정렬 완료', {
+            count: finalSortedAssignments.length,
+            updatedCount: updatePromises.length,
+        });
+    }
     async WBS_항목_이름을_수정한다(params) {
         this.logger.log('WBS 항목 이름 수정 시작', {
             wbsItemId: params.wbsItemId,
@@ -656,6 +872,7 @@ let WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = class WbsAss
 exports.WbsAssignmentBusinessService = WbsAssignmentBusinessService;
 exports.WbsAssignmentBusinessService = WbsAssignmentBusinessService = WbsAssignmentBusinessService_1 = __decorate([
     (0, common_1.Injectable)(),
+    __param(8, (0, typeorm_1.InjectRepository)(evaluation_wbs_assignment_entity_1.EvaluationWbsAssignment)),
     __metadata("design:paramtypes", [evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         evaluation_activity_log_context_service_1.EvaluationActivityLogContextService,
         performance_evaluation_service_1.PerformanceEvaluationService,
@@ -663,6 +880,7 @@ exports.WbsAssignmentBusinessService = WbsAssignmentBusinessService = WbsAssignm
         project_service_1.ProjectService,
         evaluation_line_service_1.EvaluationLineService,
         evaluation_line_mapping_service_1.EvaluationLineMappingService,
-        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService])
+        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService,
+        typeorm_2.Repository])
 ], WbsAssignmentBusinessService);
 //# sourceMappingURL=wbs-assignment-business.service.js.map

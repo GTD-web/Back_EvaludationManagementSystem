@@ -12,4 +12,5 @@ export declare const ResetProjectWbsAssignments: () => <TFunction extends Functi
 export declare const ResetEmployeeWbsAssignments: () => <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;
 export declare const ChangeWbsAssignmentOrderByWbs: () => <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;
 export declare const CreateAndAssignWbs: () => <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;
+export declare const CreateAndAssignWbsBetween: () => <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;
 export declare const UpdateWbsItemTitle: () => <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;

@@ -119,6 +119,12 @@ export declare class CreateAndAssignWbsDto {
     employeeId: string;
     periodId: string;
 }
+export declare class CreateAndAssignWbsBetweenDto {
+    title: string;
+    projectId: string;
+    employeeId: string;
+    periodId: string;
+}
 export declare class UpdateWbsItemTitleDto {
     title: string;
 }

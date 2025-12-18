@@ -31,6 +31,7 @@ export interface UpdateProjectManagerDto {
 export interface ProjectManagerFilter {
     isActive?: boolean;
     search?: string;
+    includeDeleted?: boolean;
 }
 export interface ProjectManagerListOptions {
     page?: number;

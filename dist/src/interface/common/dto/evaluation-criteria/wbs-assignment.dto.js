@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateWbsItemTitleDto = exports.CreateAndAssignWbsDto = exports.ChangeWbsAssignmentOrderBodyDto = exports.ChangeWbsAssignmentOrderByWbsDto = exports.ChangeWbsAssignmentOrderQueryDto = exports.ResetWbsAssignmentsDto = exports.WbsAssignmentDetailResponseDto = exports.UnassignedWbsItemsResponseDto = exports.GetUnassignedWbsItemsDto = exports.WbsItemAssignmentsResponseDto = exports.ProjectWbsAssignmentsResponseDto = exports.EmployeeWbsAssignmentsResponseDto = exports.BulkCreateWbsAssignmentDto = exports.WbsAssignmentFilterDto = exports.CreateWbsAssignmentDto = exports.CancelWbsAssignmentByWbsDto = void 0;
+exports.UpdateWbsItemTitleDto = exports.CreateAndAssignWbsBetweenDto = exports.CreateAndAssignWbsDto = exports.ChangeWbsAssignmentOrderBodyDto = exports.ChangeWbsAssignmentOrderByWbsDto = exports.ChangeWbsAssignmentOrderQueryDto = exports.ResetWbsAssignmentsDto = exports.WbsAssignmentDetailResponseDto = exports.UnassignedWbsItemsResponseDto = exports.GetUnassignedWbsItemsDto = exports.WbsItemAssignmentsResponseDto = exports.ProjectWbsAssignmentsResponseDto = exports.EmployeeWbsAssignmentsResponseDto = exports.BulkCreateWbsAssignmentDto = exports.WbsAssignmentFilterDto = exports.CreateWbsAssignmentDto = exports.CancelWbsAssignmentByWbsDto = void 0;
 const evaluation_wbs_assignment_types_1 = require("../../../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -604,6 +604,49 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateAndAssignWbsDto.prototype, "periodId", void 0);
+class CreateAndAssignWbsBetweenDto {
+    title;
+    projectId;
+    employeeId;
+    periodId;
+}
+exports.CreateAndAssignWbsBetweenDto = CreateAndAssignWbsBetweenDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'WBS 제목',
+        example: 'API 개발',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAndAssignWbsBetweenDto.prototype, "title", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '프로젝트 ID',
+        example: 'c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f',
+    }),
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAndAssignWbsBetweenDto.prototype, "projectId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '직원 ID',
+        example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    }),
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAndAssignWbsBetweenDto.prototype, "employeeId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '평가기간 ID',
+        example: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
+    }),
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAndAssignWbsBetweenDto.prototype, "periodId", void 0);
 class UpdateWbsItemTitleDto {
     title;
 }

@@ -1,9 +1,5 @@
 export declare class CreateProjectManagerDto {
-    managerId: string;
-    name: string;
-    email?: string;
-    employeeNumber?: string;
-    departmentName?: string;
+    employeeId: string;
     isActive?: boolean;
     note?: string;
 }

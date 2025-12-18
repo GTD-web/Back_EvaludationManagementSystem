@@ -15,6 +15,7 @@ const cqrs_1 = require("@nestjs/cqrs");
 const create_audit_log_handler_1 = require("./handlers/commands/create-audit-log.handler");
 const get_audit_log_list_handler_1 = require("./handlers/queries/get-audit-log-list.handler");
 const get_audit_log_detail_handler_1 = require("./handlers/queries/get-audit-log-detail.handler");
+const get_audit_log_stats_handler_1 = require("./handlers/queries/get-audit-log-stats.handler");
 let AuditLogContextService = class AuditLogContextService {
     commandBus;
     queryBus;
@@ -32,6 +33,10 @@ let AuditLogContextService = class AuditLogContextService {
     }
     async audit로그상세를_조회한다(id) {
         const query = new get_audit_log_detail_handler_1.GetAuditLogDetailQuery(id);
+        return await this.queryBus.execute(query);
+    }
+    async audit로그통계를_조회한다(startDate, endDate, interval = 60) {
+        const query = new get_audit_log_stats_handler_1.GetAuditLogStatsQuery(startDate, endDate, interval);
         return await this.queryBus.execute(query);
     }
 };

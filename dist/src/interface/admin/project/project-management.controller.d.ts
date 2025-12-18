@@ -2,7 +2,7 @@ import { ProjectService } from '@domain/common/project/project.service';
 import { ProjectManagerService } from '@domain/common/project/project-manager.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CreateProjectDto, CreateProjectsBulkDto, UpdateProjectDto, GetProjectListQueryDto, GetProjectManagersQueryDto, ProjectResponseDto, ProjectListResponseDto, ProjectsBulkCreateResponseDto, AvailableProjectManagerListResponseDto } from '@interface/common/dto/project/project.dto';
-import { CreateProjectManagerDto as CreatePMDto, UpdateProjectManagerDto as UpdatePMDto, GetProjectManagersQueryDto as GetPMQueryDto, ProjectManagerResponseDto as PMResponseDto, ProjectManagerListResponseDto as PMListResponseDto } from '@interface/common/dto/project/project-manager.dto';
+import { CreateProjectManagerDto as CreatePMDto, UpdateProjectManagerDto as UpdatePMDto, ProjectManagerResponseDto as PMResponseDto } from '@interface/common/dto/project/project-manager.dto';
 import { GenerateChildProjectsDto, GenerateChildProjectsResultDto } from '@interface/common/dto/project/generate-child-projects.dto';
 import { DeleteChildProjectsDto, DeleteChildProjectsResultDto } from '@interface/common/dto/project/delete-child-projects.dto';
 import type { ISSOService } from '@domain/common/sso/interfaces';
@@ -24,8 +24,7 @@ export declare class ProjectManagementController {
     generateChildProjects(dto: GenerateChildProjectsDto, user: AuthenticatedUser): Promise<GenerateChildProjectsResultDto>;
     deleteChildProjects(dto: DeleteChildProjectsDto, user: AuthenticatedUser): Promise<DeleteChildProjectsResultDto>;
     createProjectManager(createDto: CreatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
-    getProjectManagerListAdmin(query: GetPMQueryDto): Promise<PMListResponseDto>;
-    getProjectManagerDetail(id: string): Promise<PMResponseDto>;
-    updateProjectManager(id: string, updateDto: UpdatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
-    deleteProjectManager(id: string, user: AuthenticatedUser): Promise<void>;
+    getProjectManagerDetail(managerId: string): Promise<PMResponseDto>;
+    updateProjectManager(managerId: string, updateDto: UpdatePMDto, user: AuthenticatedUser): Promise<PMResponseDto>;
+    deleteProjectManager(managerId: string, user: AuthenticatedUser): Promise<void>;
 }

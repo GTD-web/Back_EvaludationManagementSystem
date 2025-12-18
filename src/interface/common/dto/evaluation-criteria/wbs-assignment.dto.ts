@@ -581,6 +581,43 @@ export class CreateAndAssignWbsDto {
 }
 
 /**
+ * WBS 사이에 생성하면서 할당 DTO
+ */
+export class CreateAndAssignWbsBetweenDto {
+  @ApiProperty({
+    description: 'WBS 제목',
+    example: 'API 개발',
+  })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiProperty({
+    description: '프로젝트 ID',
+    example: 'c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  projectId: string;
+
+  @ApiProperty({
+    description: '직원 ID',
+    example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  employeeId: string;
+
+  @ApiProperty({
+    description: '평가기간 ID',
+    example: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  periodId: string;
+}
+
+/**
  * WBS 항목 이름 수정 DTO
  */
 export class UpdateWbsItemTitleDto {

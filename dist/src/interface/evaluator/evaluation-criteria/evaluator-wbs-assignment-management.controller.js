@@ -56,6 +56,20 @@ let EvaluatorWbsAssignmentManagementController = class EvaluatorWbsAssignmentMan
             createdBy: createdBy,
         });
     }
+    async createAndAssignWbsBetween(previousWbsItemId, nextWbsItemId, createDto, user) {
+        const createdBy = user.id;
+        const previousId = previousWbsItemId === 'none' ? undefined : previousWbsItemId;
+        const nextId = nextWbsItemId === 'none' ? undefined : nextWbsItemId;
+        return await this.wbsAssignmentBusinessService.WBS를_사이에_생성하고_할당한다({
+            title: createDto.title,
+            projectId: createDto.projectId,
+            employeeId: createDto.employeeId,
+            periodId: createDto.periodId,
+            previousWbsItemId: previousId,
+            nextWbsItemId: nextId,
+            createdBy: createdBy,
+        });
+    }
     async updateWbsItemTitle(wbsItemId, updateDto, user) {
         const updatedBy = user.id;
         return await this.wbsAssignmentBusinessService.WBS_항목_이름을_수정한다({
@@ -92,6 +106,16 @@ __decorate([
     __metadata("design:paramtypes", [wbs_assignment_dto_1.CreateAndAssignWbsDto, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluatorWbsAssignmentManagementController.prototype, "createAndAssignWbs", null);
+__decorate([
+    (0, wbs_assignment_api_decorators_1.CreateAndAssignWbsBetween)(),
+    __param(0, (0, common_1.Param)('previousWbsItemId')),
+    __param(1, (0, common_1.Param)('nextWbsItemId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, wbs_assignment_dto_1.CreateAndAssignWbsBetweenDto, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluatorWbsAssignmentManagementController.prototype, "createAndAssignWbsBetween", null);
 __decorate([
     (0, wbs_assignment_api_decorators_1.UpdateWbsItemTitle)(),
     __param(0, (0, common_1.Param)('wbsItemId', common_1.ParseUUIDPipe)),

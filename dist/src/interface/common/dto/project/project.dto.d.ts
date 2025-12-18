@@ -105,7 +105,7 @@ export declare class ProjectManagerDto {
     jobTitleName?: string;
     hasManagementAuthority?: boolean;
 }
-export declare class ProjectManagerListResponseDto {
+export declare class AvailableProjectManagerListResponseDto {
     managers: ProjectManagerDto[];
     total: number;
 }

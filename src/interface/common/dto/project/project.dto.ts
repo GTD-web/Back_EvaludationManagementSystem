@@ -15,6 +15,7 @@ import {
 import { Type } from 'class-transformer';
 import { DateToUTC, OptionalDateToUTC } from '@interface/common/decorators';
 import { ProjectStatus } from '@domain/common/project/project.types';
+import { ProjectManagerListResponseDto } from './project-manager.dto';
 
 /**
  * 하위 프로젝트 생성 DTO
@@ -783,9 +784,9 @@ export class ProjectManagerDto {
 }
 
 /**
- * PM 목록 응답 DTO
+ * PM으로 지정 가능한 직원 목록 응답 DTO (SSO 기반)
  */
-export class ProjectManagerListResponseDto {
+export class AvailableProjectManagerListResponseDto {
   @ApiProperty({
     description: 'PM 목록',
     type: [ProjectManagerDto],

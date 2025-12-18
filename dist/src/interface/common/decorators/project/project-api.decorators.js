@@ -395,12 +395,16 @@ function GetProjectManagers() {
 
 **동작:**
 - SSO 서비스에서 재직중인 전체 직원 정보를 조회합니다
-- 허용된 PM 이름 목록으로 필터링합니다 (남명용, 김경민, 홍연창, 강남규, 전구영, 고영훈, 박일수, 모현민, 하태식, 정석화)
+- 허용된 PM 이름 목록으로 필터링합니다 (남명용, 김경민, 홍연창, 강남규, 전구영, 고영훈, 박일수, 모현민, 하태식, 정석화, 이봉은, 김종식)
 - 관리 권한 여부와 무관하게 지정된 이름만 조회됩니다
 - 로컬 Employee 테이블과 매핑하여 employeeId를 포함합니다
 - 부서, 직책, 직급 정보를 포함하여 반환합니다
 - 검색어로 이름, 사번, 이메일 필터링이 가능합니다
 - 부서 ID로 특정 부서의 PM만 조회 가능합니다
+
+**참고:**
+- 이 API는 SSO에서 직원 정보를 실시간으로 조회합니다
+- PM 목록을 관리하려면 별도의 PM 관리 API를 사용하세요 (POST/PUT/DELETE /admin/projects/managers)
 
 **반환 데이터:**
 - managerId: SSO의 매니저 ID
@@ -417,7 +421,7 @@ function GetProjectManagers() {
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.OK,
         description: 'PM 목록이 성공적으로 조회되었습니다.',
-        type: project_dto_1.ProjectManagerListResponseDto,
+        type: project_dto_1.AvailableProjectManagerListResponseDto,
     }), (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.SERVICE_UNAVAILABLE,
         description: 'SSO 서비스 연결 실패',

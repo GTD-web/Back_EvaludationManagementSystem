@@ -66,6 +66,8 @@ export interface CreateEvaluationWbsAssignmentData {
   wbsItemId: string;
   /** 할당자 ID */
   assignedBy: string;
+  /** 표시 순서 (선택적, 지정하지 않으면 자동 계산) */
+  displayOrder?: number;
 }
 
 /**

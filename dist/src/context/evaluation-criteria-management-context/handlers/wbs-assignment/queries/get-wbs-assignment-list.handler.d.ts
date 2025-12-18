@@ -30,6 +30,7 @@ export interface WbsAssignmentListItem {
     assignedDate: Date;
     assignedBy: string;
     assignedByName: string;
+    displayOrder: number;
 }
 export declare class GetWbsAssignmentListHandler implements IQueryHandler<GetWbsAssignmentListQuery> {
     private readonly wbsAssignmentRepository;

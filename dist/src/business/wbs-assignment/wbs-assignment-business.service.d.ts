@@ -1,3 +1,4 @@
+import { Repository } from 'typeorm';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
@@ -6,6 +7,7 @@ import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import type { OrderDirection } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types';
 import type { WbsItemDto } from '@domain/common/wbs-item/wbs-item.types';
 export declare class WbsAssignmentBusinessService {
@@ -17,8 +19,9 @@ export declare class WbsAssignmentBusinessService {
     private readonly evaluationLineService;
     private readonly evaluationLineMappingService;
     private readonly evaluationWbsAssignmentService;
+    private readonly wbsAssignmentRepository;
     private readonly logger;
-    constructor(evaluationCriteriaManagementService: EvaluationCriteriaManagementService, activityLogContextService: EvaluationActivityLogContextService, performanceEvaluationService: PerformanceEvaluationService, employeeService: EmployeeService, projectService: ProjectService, evaluationLineService: EvaluationLineService, evaluationLineMappingService: EvaluationLineMappingService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService);
+    constructor(evaluationCriteriaManagementService: EvaluationCriteriaManagementService, activityLogContextService: EvaluationActivityLogContextService, performanceEvaluationService: PerformanceEvaluationService, employeeService: EmployeeService, projectService: ProjectService, evaluationLineService: EvaluationLineService, evaluationLineMappingService: EvaluationLineMappingService, evaluationWbsAssignmentService: EvaluationWbsAssignmentService, wbsAssignmentRepository: Repository<EvaluationWbsAssignment>);
     WBS를_할당한다(params: {
         employeeId: string;
         wbsItemId: string;
@@ -102,6 +105,19 @@ export declare class WbsAssignmentBusinessService {
         wbsItem: WbsItemDto;
         assignment: any;
     }>;
+    WBS를_사이에_생성하고_할당한다(params: {
+        title: string;
+        projectId: string;
+        employeeId: string;
+        periodId: string;
+        previousWbsItemId?: string;
+        nextWbsItemId?: string;
+        createdBy: string;
+    }): Promise<{
+        wbsItem: WbsItemDto;
+        assignment: any;
+    }>;
+    private 전체_WBS_할당_순서를_재정렬한다;
     WBS_항목_이름을_수정한다(params: {
         wbsItemId: string;
         title: string;

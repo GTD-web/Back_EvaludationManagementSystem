@@ -27,6 +27,7 @@ export interface CreateEvaluationWbsAssignmentData {
     projectId: string;
     wbsItemId: string;
     assignedBy: string;
+    displayOrder?: number;
 }
 export interface UpdateEvaluationWbsAssignmentData {
     assignedBy?: string;

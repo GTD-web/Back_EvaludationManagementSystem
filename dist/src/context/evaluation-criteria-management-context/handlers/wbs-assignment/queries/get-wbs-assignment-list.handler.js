@@ -78,6 +78,7 @@ let GetWbsAssignmentListHandler = class GetWbsAssignmentListHandler {
                 assignedDate: assignment.assignedDate,
                 assignedBy: assignment.assignedBy,
                 assignedByName: assignedByEmployee?.name || '',
+                displayOrder: assignment.displayOrder,
             };
         });
         return {

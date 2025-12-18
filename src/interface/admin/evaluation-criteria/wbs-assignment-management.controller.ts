@@ -1,6 +1,6 @@
 import { WbsAssignmentBusinessService } from '@business/wbs-assignment/wbs-assignment-business.service';
 import { WbsAssignmentListResult } from '@context/evaluation-criteria-management-context/handlers/wbs-assignment/queries/get-wbs-assignment-list.handler';
-import type { AuthenticatedUser} from '@interface/common/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import { Roles } from '@interface/common/decorators';
 import {
@@ -8,6 +8,7 @@ import {
   CancelWbsAssignmentByWbs,
   ChangeWbsAssignmentOrderByWbs,
   CreateAndAssignWbs,
+  CreateAndAssignWbsBetween,
   CreateWbsAssignment,
   GetEmployeeWbsAssignments,
   GetProjectWbsAssignments,
@@ -18,13 +19,14 @@ import {
   ResetEmployeeWbsAssignments,
   ResetPeriodWbsAssignments,
   ResetProjectWbsAssignments,
-  UpdateWbsItemTitle
+  UpdateWbsItemTitle,
 } from '@interface/common/decorators/evaluation-criteria/wbs-assignment-api.decorators';
 import {
   BulkCreateWbsAssignmentDto,
   CancelWbsAssignmentByWbsDto,
   ChangeWbsAssignmentOrderByWbsDto,
   CreateAndAssignWbsDto,
+  CreateAndAssignWbsBetweenDto,
   CreateWbsAssignmentDto,
   EmployeeWbsAssignmentsResponseDto,
   GetUnassignedWbsItemsDto,
@@ -33,7 +35,7 @@ import {
   UpdateWbsItemTitleDto,
   WbsAssignmentDetailResponseDto,
   WbsAssignmentFilterDto,
-  WbsItemAssignmentsResponseDto
+  WbsItemAssignmentsResponseDto,
 } from '@interface/common/dto/evaluation-criteria/wbs-assignment.dto';
 import {
   Body,
@@ -76,8 +78,6 @@ export class WbsAssignmentManagementController {
       assignedBy: assignedBy,
     });
   }
-
-
 
   /**
    * WBS 할당 취소 (WBS ID 기반)
@@ -285,8 +285,6 @@ export class WbsAssignmentManagementController {
     );
   }
 
-
-
   /**
    * WBS 할당 순서 변경 (WBS ID 기반)
    */
@@ -326,6 +324,36 @@ export class WbsAssignmentManagementController {
       periodId: createDto.periodId,
       createdBy: createdBy,
     });
+  }
+
+  /**
+   * WBS 사이에 생성하면서 할당
+   */
+  @CreateAndAssignWbsBetween()
+  async createAndAssignWbsBetween(
+    @Param('previousWbsItemId') previousWbsItemId: string,
+    @Param('nextWbsItemId') nextWbsItemId: string,
+    @Body() createDto: CreateAndAssignWbsBetweenDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<any> {
+    const createdBy = user.id;
+
+    // "none"이 전달되면 undefined로 처리
+    const previousId =
+      previousWbsItemId === 'none' ? undefined : previousWbsItemId;
+    const nextId = nextWbsItemId === 'none' ? undefined : nextWbsItemId;
+
+    return await this.wbsAssignmentBusinessService.WBS를_사이에_생성하고_할당한다(
+      {
+        title: createDto.title,
+        projectId: createDto.projectId,
+        employeeId: createDto.employeeId,
+        periodId: createDto.periodId,
+        previousWbsItemId: previousId,
+        nextWbsItemId: nextId,
+        createdBy: createdBy,
+      },
+    );
   }
 
   /**

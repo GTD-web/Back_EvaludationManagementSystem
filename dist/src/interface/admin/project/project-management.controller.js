@@ -192,6 +192,7 @@ let ProjectManagementController = class ProjectManagementController {
             '정석화',
             '이봉은',
             '김종식',
+            '김형중',
         ];
         const registeredPMs = await this.projectManagerService.목록_조회한다({
             page: 1,

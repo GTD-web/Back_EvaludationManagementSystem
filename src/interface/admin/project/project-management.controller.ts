@@ -300,6 +300,7 @@ export class ProjectManagementController {
       '정석화',
       '이봉은',
       '김종식',
+      '김형중',
     ];
 
     // 1. ProjectManager 테이블에 등록된 활성 PM들의 managerId 목록 조회

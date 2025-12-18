@@ -14,10 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectManagementController = void 0;
 const project_service_1 = require("../../../domain/common/project/project.service");
+const project_manager_service_1 = require("../../../domain/common/project/project-manager.service");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const project_api_decorators_1 = require("../../common/decorators/project/project-api.decorators");
 const delete_child_projects_api_decorator_1 = require("../../common/decorators/project/delete-child-projects-api.decorator");
+const project_manager_api_decorators_1 = require("../../common/decorators/project/project-manager-api.decorators");
 const project_dto_1 = require("../../common/dto/project/project.dto");
+const project_manager_dto_1 = require("../../common/dto/project/project-manager.dto");
 const generate_child_projects_dto_1 = require("../../common/dto/project/generate-child-projects.dto");
 const delete_child_projects_dto_1 = require("../../common/dto/project/delete-child-projects.dto");
 const common_1 = require("@nestjs/common");
@@ -27,10 +30,12 @@ const sso_module_1 = require("../../../domain/common/sso/sso.module");
 const employee_service_1 = require("../../../domain/common/employee/employee.service");
 let ProjectManagementController = class ProjectManagementController {
     projectService;
+    projectManagerService;
     ssoService;
     employeeService;
-    constructor(projectService, ssoService, employeeService) {
+    constructor(projectService, projectManagerService, ssoService, employeeService) {
         this.projectService = projectService;
+        this.projectManagerService = projectManagerService;
         this.ssoService = ssoService;
         this.employeeService = employeeService;
     }
@@ -186,6 +191,7 @@ let ProjectManagementController = class ProjectManagementController {
             '하태식',
             '정석화',
             '이봉은',
+            '김종식',
         ];
         const employees = await this.ssoService.여러직원정보를조회한다({
             withDetail: true,
@@ -390,6 +396,42 @@ let ProjectManagementController = class ProjectManagementController {
         const result = await this.projectService.하위_프로젝트들_일괄_삭제한다(dto.forceDelete ?? false, dto.hardDelete ?? false, deletedBy);
         return result;
     }
+    async createProjectManager(createDto, user) {
+        const createdBy = user.id;
+        const manager = await this.projectManagerService.생성한다(createDto, createdBy);
+        return manager;
+    }
+    async getProjectManagerListAdmin(query) {
+        const result = await this.projectManagerService.목록_조회한다({
+            page: query.page,
+            limit: query.limit,
+            filter: {
+                isActive: query.isActive,
+                search: query.search,
+            },
+        });
+        const totalPages = Math.ceil(result.total / result.limit);
+        return {
+            ...result,
+            totalPages,
+        };
+    }
+    async getProjectManagerDetail(id) {
+        const manager = await this.projectManagerService.ID로_조회한다(id);
+        if (!manager) {
+            throw new common_1.NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
+        }
+        return manager;
+    }
+    async updateProjectManager(id, updateDto, user) {
+        const updatedBy = user.id;
+        const manager = await this.projectManagerService.수정한다(id, updateDto, updatedBy);
+        return manager;
+    }
+    async deleteProjectManager(id, user) {
+        const deletedBy = user.id;
+        await this.projectManagerService.삭제한다(id, deletedBy);
+    }
 };
 exports.ProjectManagementController = ProjectManagementController;
 __decorate([
@@ -462,12 +504,52 @@ __decorate([
     __metadata("design:paramtypes", [delete_child_projects_dto_1.DeleteChildProjectsDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProjectManagementController.prototype, "deleteChildProjects", null);
+__decorate([
+    (0, project_manager_api_decorators_1.CreateProjectManager)(),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [project_manager_dto_1.CreateProjectManagerDto, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "createProjectManager", null);
+__decorate([
+    (0, project_manager_api_decorators_1.GetProjectManagerList)(),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [project_manager_dto_1.GetProjectManagersQueryDto]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "getProjectManagerListAdmin", null);
+__decorate([
+    (0, project_manager_api_decorators_1.GetProjectManagerDetail)(),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "getProjectManagerDetail", null);
+__decorate([
+    (0, project_manager_api_decorators_1.UpdateProjectManager)(),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, project_manager_dto_1.UpdateProjectManagerDto, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "updateProjectManager", null);
+__decorate([
+    (0, project_manager_api_decorators_1.DeleteProjectManager)(),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ProjectManagementController.prototype, "deleteProjectManager", null);
 exports.ProjectManagementController = ProjectManagementController = __decorate([
     (0, swagger_1.ApiTags)('B-0. 관리자 - 프로젝트 관리'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),
     (0, decorators_1.Roles)('admin'),
     (0, common_1.Controller)('admin/projects'),
-    __param(1, (0, common_1.Inject)(sso_module_1.SSOService)),
-    __metadata("design:paramtypes", [project_service_1.ProjectService, Object, employee_service_1.EmployeeService])
+    __param(2, (0, common_1.Inject)(sso_module_1.SSOService)),
+    __metadata("design:paramtypes", [project_service_1.ProjectService,
+        project_manager_service_1.ProjectManagerService, Object, employee_service_1.EmployeeService])
 ], ProjectManagementController);
 //# sourceMappingURL=project-management.controller.js.map

@@ -12,6 +12,8 @@ const typeorm_1 = require("@nestjs/typeorm");
 const project_entity_1 = require("./project.entity");
 const project_service_1 = require("./project.service");
 const project_test_service_1 = require("./project-test.service");
+const project_manager_entity_1 = require("./project-manager.entity");
+const project_manager_service_1 = require("./project-manager.service");
 const employee_entity_1 = require("../employee/employee.entity");
 const evaluation_project_assignment_entity_1 = require("../../core/evaluation-project-assignment/evaluation-project-assignment.entity");
 let ProjectModule = class ProjectModule {
@@ -20,10 +22,20 @@ exports.ProjectModule = ProjectModule;
 exports.ProjectModule = ProjectModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([project_entity_1.Project, employee_entity_1.Employee, evaluation_project_assignment_entity_1.EvaluationProjectAssignment]),
+            typeorm_1.TypeOrmModule.forFeature([
+                project_entity_1.Project,
+                project_manager_entity_1.ProjectManager,
+                employee_entity_1.Employee,
+                evaluation_project_assignment_entity_1.EvaluationProjectAssignment,
+            ]),
         ],
-        providers: [project_service_1.ProjectService, project_test_service_1.ProjectTestService],
-        exports: [project_service_1.ProjectService, project_test_service_1.ProjectTestService, typeorm_1.TypeOrmModule],
+        providers: [project_service_1.ProjectService, project_manager_service_1.ProjectManagerService, project_test_service_1.ProjectTestService],
+        exports: [
+            project_service_1.ProjectService,
+            project_manager_service_1.ProjectManagerService,
+            project_test_service_1.ProjectTestService,
+            typeorm_1.TypeOrmModule,
+        ],
     })
 ], ProjectModule);
 //# sourceMappingURL=project.module.js.map

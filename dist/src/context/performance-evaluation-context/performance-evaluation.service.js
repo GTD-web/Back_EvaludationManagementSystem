@@ -177,7 +177,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const result = await this.commandBus.execute(command);
         return result;
     }
-    async 일차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy) {
+    async 일차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy, approveAllBelow = true) {
         const actualPrimaryEvaluatorId = await this.stepApprovalContextService.일차평가자를_조회한다(periodId, evaluateeId);
         if (!actualPrimaryEvaluatorId) {
             throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId})`);
@@ -199,7 +199,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`1차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
             }
             const evaluation = newResult.evaluations[0];
-            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy, approveAllBelow);
             await this.commandBus.execute(command);
             return;
         }
@@ -211,10 +211,10 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
                 `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualPrimaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'primary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
-        const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+        const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy, approveAllBelow);
         await this.commandBus.execute(command);
     }
-    async 이차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy) {
+    async 이차_하향평가를_제출한다(evaluateeId, periodId, wbsId, evaluatorId, submittedBy, approveAllBelow = true) {
         const actualSecondaryEvaluatorId = await this.stepApprovalContextService.이차평가자를_조회한다(periodId, evaluateeId, wbsId);
         if (!actualSecondaryEvaluatorId) {
             throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 평가자를 찾을 수 없습니다. (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
@@ -236,7 +236,7 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
                 throw new downward_evaluation_exceptions_1.DownwardEvaluationNotFoundException(`2차 하향평가 생성 실패 (evaluateeId: ${evaluateeId}, periodId: ${periodId}, wbsId: ${wbsId})`);
             }
             const evaluation = newResult.evaluations[0];
-            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+            const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy, approveAllBelow);
             await this.commandBus.execute(command);
             return;
         }
@@ -248,15 +248,15 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
                 `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             await this.하향평가를_저장한다(actualSecondaryEvaluatorId, evaluateeId, periodId, wbsId, evaluation.selfEvaluationId, 'secondary', defaultContent, evaluation.downwardEvaluationScore, submittedBy);
         }
-        const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy);
+        const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluation.id, submittedBy, approveAllBelow);
         await this.commandBus.execute(command);
     }
     async 하향평가를_제출한다(evaluationId, submittedBy) {
         const command = new downward_evaluation_1.SubmitDownwardEvaluationCommand(evaluationId, submittedBy || '시스템');
         await this.commandBus.execute(command);
     }
-    async 피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit = false) {
-        const command = new downward_evaluation_1.BulkSubmitDownwardEvaluationsCommand(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit);
+    async 피평가자의_모든_하향평가를_일괄_제출한다(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit = false, approveAllBelow = true) {
+        const command = new downward_evaluation_1.BulkSubmitDownwardEvaluationsCommand(evaluatorId, evaluateeId, periodId, evaluationType, submittedBy, forceSubmit, approveAllBelow);
         return await this.commandBus.execute(command);
     }
     async 피평가자의_모든_하향평가를_일괄_초기화한다(evaluatorId, evaluateeId, periodId, evaluationType, resetBy) {
@@ -482,6 +482,17 @@ let PerformanceEvaluationService = PerformanceEvaluationService_1 = class Perfor
         const query = new query_1.GetDeliverableDetailQuery(id);
         const deliverable = await this.queryBus.execute(query);
         return deliverable;
+    }
+    async 산출물을_ID로_조회한다(id) {
+        try {
+            return await this.산출물_상세를_조회한다(id);
+        }
+        catch (error) {
+            if (error.name === 'DeliverableNotFoundException') {
+                return null;
+            }
+            throw error;
+        }
     }
 };
 exports.PerformanceEvaluationService = PerformanceEvaluationService;

@@ -38,6 +38,7 @@ export class UserWbsEvaluationCriteriaManagementController {
       wbsItemId,
       dto.criteria,
       dto.importance,
+      dto.subProject,
       actionBy,
     );
   }

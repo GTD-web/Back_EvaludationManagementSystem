@@ -627,10 +627,6 @@ export interface MyEvaluationTargetStatusDto {
     submittedToManagerCount: number;
     /** 모든 자기평가가 관리자에게 제출되었는지 여부 */
     isSubmittedToManager: boolean;
-    /** 가중치 기반 자기평가 총점 (0-100) */
-    totalScore: number | null;
-    /** 평가기간 등급 기준에 따른 자기평가 등급 (예: S+, A-, B 등) */
-    grade: string | null;
     /** 1차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공) */
     viewedByPrimaryEvaluator?: boolean;
     /** 2차 평가자가 제출된 자기평가를 확인했는지 여부 (자기평가 제출 시에만 제공) */

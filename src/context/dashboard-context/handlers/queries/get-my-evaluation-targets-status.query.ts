@@ -265,11 +265,15 @@ export class GetMyEvaluationTargetsStatusHandler
             this.evaluationPeriodRepository,
           );
 
-          // 자기평가 상태 계산
-          const selfEvaluationStatusType = 자기평가_상태를_계산한다(
-            selfEvaluationStatus.totalMappingCount,
-            selfEvaluationStatus.completedMappingCount,
-          );
+          // 자기평가 상태 계산 (관리자 제출 여부 기반)
+          let selfEvaluationStatusType: 'none' | 'in_progress' | 'complete';
+          if (selfEvaluationStatus.totalMappingCount === 0) {
+            selfEvaluationStatusType = 'none';
+          } else if (selfEvaluationStatus.isSubmittedToManager) {
+            selfEvaluationStatusType = 'complete';
+          } else {
+            selfEvaluationStatusType = 'in_progress';
+          }
 
           // 내가 담당하는 하향평가 현황 조회
           const downwardEvaluationStatus =
@@ -321,7 +325,7 @@ export class GetMyEvaluationTargetsStatusHandler
             );
           }
 
-          // selfEvaluation 객체 생성 (자기평가 제출 시에만 viewedBy 필드 포함)
+          // selfEvaluation 객체 생성 (자기평가 제출 시에만 viewedBy 필드 포함, totalScore/grade 제거)
           const selfEvaluationResult: any = {
             status: selfEvaluationStatusType,
             totalMappingCount: selfEvaluationStatus.totalMappingCount,
@@ -333,8 +337,6 @@ export class GetMyEvaluationTargetsStatusHandler
             submittedToManagerCount:
               selfEvaluationStatus.submittedToManagerCount,
             isSubmittedToManager: selfEvaluationStatus.isSubmittedToManager,
-            totalScore: selfEvaluationStatus.totalScore,
-            grade: selfEvaluationStatus.grade,
           };
 
           // 평가자 유형에 따라 조건부로 viewedBy 필드 추가
@@ -487,10 +489,9 @@ export class GetMyEvaluationTargetsStatusHandler
         .getMany();
 
       const assignedWbsCount = evaluations.length;
+      // 제출(완료) 여부는 isCompleted로 판단 (점수 없이도 제출 가능)
       const completedEvaluationCount = evaluations.filter(
-        (e) =>
-          e.downwardEvaluationScore !== null &&
-          e.downwardEvaluationScore !== undefined,
+        (e) => e.isCompleted === true,
       ).length;
 
       // 모든 WBS가 완료되면 점수/등급 계산
@@ -554,10 +555,9 @@ export class GetMyEvaluationTargetsStatusHandler
         .getMany();
 
       const assignedWbsCount = evaluations.length;
+      // 제출(완료) 여부는 isCompleted로 판단 (점수 없이도 제출 가능)
       const completedEvaluationCount = evaluations.filter(
-        (e) =>
-          e.downwardEvaluationScore !== null &&
-          e.downwardEvaluationScore !== undefined,
+        (e) => e.isCompleted === true,
       ).length;
 
       // 모든 WBS가 완료되면 점수/등급 계산

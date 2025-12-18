@@ -14,20 +14,17 @@ exports.DeliverableBusinessService = void 0;
 const common_1 = require("@nestjs/common");
 const performance_evaluation_service_1 = require("../../context/performance-evaluation-context/performance-evaluation.service");
 const evaluation_activity_log_context_service_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.service");
-const evaluation_wbs_assignment_service_1 = require("../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service");
-const deliverable_service_1 = require("../../domain/core/deliverable/deliverable.service");
+const evaluation_criteria_management_service_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const deliverable_exceptions_1 = require("../../domain/core/deliverable/deliverable.exceptions");
 let DeliverableBusinessService = DeliverableBusinessService_1 = class DeliverableBusinessService {
     performanceEvaluationService;
     activityLogContextService;
-    evaluationWbsAssignmentService;
-    deliverableService;
+    evaluationCriteriaManagementService;
     logger = new common_1.Logger(DeliverableBusinessService_1.name);
-    constructor(performanceEvaluationService, activityLogContextService, evaluationWbsAssignmentService, deliverableService) {
+    constructor(performanceEvaluationService, activityLogContextService, evaluationCriteriaManagementService) {
         this.performanceEvaluationService = performanceEvaluationService;
         this.activityLogContextService = activityLogContextService;
-        this.evaluationWbsAssignmentService = evaluationWbsAssignmentService;
-        this.deliverableService = deliverableService;
+        this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
     }
     async 산출물을_생성한다(data) {
         this.logger.log('산출물 생성 시작', {
@@ -67,7 +64,7 @@ let DeliverableBusinessService = DeliverableBusinessService_1 = class Deliverabl
     }
     async 산출물을_수정한다(data) {
         this.logger.log('산출물 수정 시작', { id: data.id });
-        const existingDeliverable = await this.deliverableService.조회한다(data.id);
+        const existingDeliverable = await this.performanceEvaluationService.산출물을_ID로_조회한다(data.id);
         if (!existingDeliverable) {
             throw new deliverable_exceptions_1.DeliverableNotFoundException(data.id);
         }
@@ -107,7 +104,7 @@ let DeliverableBusinessService = DeliverableBusinessService_1 = class Deliverabl
     }
     async 산출물을_삭제한다(id, deletedBy) {
         this.logger.log('산출물 삭제 시작', { id });
-        const existingDeliverable = await this.deliverableService.조회한다(id);
+        const existingDeliverable = await this.performanceEvaluationService.산출물을_ID로_조회한다(id);
         if (!existingDeliverable) {
             throw new deliverable_exceptions_1.DeliverableNotFoundException(id);
         }
@@ -184,7 +181,7 @@ let DeliverableBusinessService = DeliverableBusinessService_1 = class Deliverabl
     }
     async 산출물을_벌크_삭제한다(data) {
         this.logger.log('산출물 벌크 삭제 시작', { count: data.ids.length });
-        const deliverables = await Promise.all(data.ids.map((id) => this.deliverableService.조회한다(id)));
+        const deliverables = await Promise.all(data.ids.map((id) => this.performanceEvaluationService.산출물을_ID로_조회한다(id)));
         const result = await this.performanceEvaluationService.산출물을_벌크_삭제한다(data);
         try {
             for (const deliverable of deliverables) {
@@ -233,7 +230,7 @@ let DeliverableBusinessService = DeliverableBusinessService_1 = class Deliverabl
     }
     async 평가기간을_조회한다(employeeId, wbsItemId) {
         try {
-            const wbsAssignments = await this.evaluationWbsAssignmentService.WBS항목별_조회한다(wbsItemId);
+            const wbsAssignments = await this.evaluationCriteriaManagementService.WBS항목에_할당된_모든_직원을_조회한다(wbsItemId);
             if (wbsAssignments && wbsAssignments.length > 0) {
                 const assignment = wbsAssignments.find((a) => a.employeeId === employeeId);
                 if (assignment) {
@@ -257,7 +254,6 @@ exports.DeliverableBusinessService = DeliverableBusinessService = DeliverableBus
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [performance_evaluation_service_1.PerformanceEvaluationService,
         evaluation_activity_log_context_service_1.EvaluationActivityLogContextService,
-        evaluation_wbs_assignment_service_1.EvaluationWbsAssignmentService,
-        deliverable_service_1.DeliverableService])
+        evaluation_criteria_management_service_1.EvaluationCriteriaManagementService])
 ], DeliverableBusinessService);
 //# sourceMappingURL=deliverable-business.service.js.map

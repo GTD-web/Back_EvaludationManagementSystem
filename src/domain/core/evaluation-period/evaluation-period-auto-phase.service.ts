@@ -191,6 +191,7 @@ export class EvaluationPeriodAutoPhaseService {
 
   /**
    * 특정 평가기간의 단계 전이를 확인하고 실행합니다.
+   * 중간 마감일이 없는 경우 해당 단계를 건너뛰고 계속 전이합니다.
    *
    * @param period 평가기간 엔티티
    * @param now 현재 시간
@@ -199,7 +200,8 @@ export class EvaluationPeriodAutoPhaseService {
     period: EvaluationPeriod,
     now: Date,
   ): Promise<boolean> {
-    const currentPhase = period.currentPhase;
+    let currentPhase = period.currentPhase;
+    let transitioned = false;
 
     if (!currentPhase) {
       this.logger.warn(
@@ -208,45 +210,68 @@ export class EvaluationPeriodAutoPhaseService {
       return false;
     }
 
-    // 다음 단계로 전이해야 하는지 확인
-    const nextPhase = this.getNextPhase(currentPhase);
-    if (!nextPhase) {
-      return false;
-    }
+    // 중간 마감일이 없으면 계속 전이하므로 최대 5번 반복 (무한 루프 방지)
+    let maxIterations = 5;
+    let iteration = 0;
 
-    // 다음 단계의 마감일이 지났는지 확인
-    const shouldTransition = this.shouldTransitionToNextPhase(
-      period,
-      nextPhase,
-      now,
-    );
+    while (iteration < maxIterations) {
+      iteration++;
 
-    if (shouldTransition) {
-      try {
-        this.logger.log(
-          `평가기간 ${period.id} 단계 변경: ${currentPhase} → ${nextPhase}`,
-        );
+      // 다음 단계로 전이해야 하는지 확인
+      const nextPhase = this.getNextPhase(currentPhase);
+      if (!nextPhase) {
+        // 더 이상 전이할 단계가 없음 (CLOSURE 도달)
+        break;
+      }
 
-        await this.evaluationPeriodService.단계_변경한다(
-          period.id,
-          nextPhase,
-          'SYSTEM_AUTO_PHASE', // 시스템 자동 변경
-        );
+      // 다음 단계의 마감일이 지났는지 확인
+      const shouldTransition = this.shouldTransitionToNextPhase(
+        period,
+        currentPhase,
+        nextPhase,
+        now,
+      );
 
-        this.logger.log(
-          `평가기간 ${period.id} 단계 변경 완료: ${currentPhase} → ${nextPhase}`,
-        );
-        return true;
-      } catch (error) {
-        this.logger.error(
-          `평가기간 ${period.id} 단계 변경 실패: ${error.message}`,
-          error.stack,
-        );
-        return false;
+      if (shouldTransition) {
+        try {
+          this.logger.log(
+            `평가기간 ${period.id} 단계 변경: ${currentPhase} → ${nextPhase}`,
+          );
+
+          await this.evaluationPeriodService.단계_변경한다(
+            period.id,
+            nextPhase,
+            'SYSTEM_AUTO_PHASE', // 시스템 자동 변경
+          );
+
+          this.logger.log(
+            `평가기간 ${period.id} 단계 변경 완료: ${currentPhase} → ${nextPhase}`,
+          );
+
+          transitioned = true;
+          currentPhase = nextPhase;
+
+          // 현재 평가기간 정보를 다시 로드하여 최신 상태 반영
+          const updatedPeriod = await this.evaluationPeriodRepository.findOne({
+            where: { id: period.id },
+          });
+          if (updatedPeriod) {
+            Object.assign(period, updatedPeriod);
+          }
+        } catch (error) {
+          this.logger.error(
+            `평가기간 ${period.id} 단계 변경 실패: ${error.message}`,
+            error.stack,
+          );
+          break; // 에러 발생 시 중단
+        }
+      } else {
+        // 전이 조건이 충족되지 않음 (마감일이 아직 지나지 않음)
+        break;
       }
     }
 
-    return false;
+    return transitioned;
   }
 
   /**
@@ -278,30 +303,29 @@ export class EvaluationPeriodAutoPhaseService {
 
   /**
    * 다음 단계로 전이해야 하는지 확인합니다.
+   * 중간 마감일이 없으면 즉시 전이하고, peerEvaluationDeadline이 지나면 CLOSURE까지 전이합니다.
    *
    * @param period 평가기간 엔티티
+   * @param currentPhase 현재 단계
    * @param nextPhase 다음 단계
    * @param now 현재 시간
    * @returns 전이 여부
    */
   private shouldTransitionToNextPhase(
     period: EvaluationPeriod,
+    currentPhase: EvaluationPeriodPhase,
     nextPhase: EvaluationPeriodPhase,
     now: Date,
   ): boolean {
     // 현재 단계의 마감일을 확인 (현재 단계가 끝나야 다음 단계로 전이)
-    const currentPhase = period.currentPhase;
-    const currentPhaseDeadline = this.getPhaseDeadline(
-      period,
-      currentPhase as EvaluationPeriodPhase,
-    );
+    const currentPhaseDeadline = this.getPhaseDeadline(period, currentPhase);
 
     if (!currentPhaseDeadline) {
-      // 마감일이 설정되지 않은 경우, 전이하지 않음
+      // 마감일이 설정되지 않은 경우, 즉시 다음 단계로 전이
       this.logger.debug(
-        `평가기간 ${period.id}의 ${currentPhase} 단계 마감일이 설정되지 않았습니다.`,
+        `평가기간 ${period.id}의 ${currentPhase} 단계 마감일이 설정되지 않았습니다. 다음 단계로 즉시 전이합니다.`,
       );
-      return false;
+      return true;
     }
 
     // 한국 시간대 기준으로 비교 (한국 시간 00시가 넘으면 마감일이 지난 것으로 판단)

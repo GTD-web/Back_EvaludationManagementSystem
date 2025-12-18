@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { RevisionRequestContextService } from '@context/revision-request-context/revision-request-context.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
+import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 import { RecipientType } from '@domain/sub/evaluation-revision-request';
+import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approval';
 import type { EvaluationPeriodEmployeeMappingDto } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.types';
 
 /**
@@ -21,6 +23,7 @@ export class EvaluationCriteriaBusinessService {
     private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
     private readonly revisionRequestContextService: RevisionRequestContextService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
+    private readonly stepApprovalContextService: StepApprovalContextService,
   ) {}
 
   /**
@@ -68,7 +71,27 @@ export class EvaluationCriteriaBusinessService {
       );
     }
 
-    // 3. 활동 내역 기록
+    // 3. StepApproval의 criteriaSettingStatus를 approved로 설정
+    try {
+      await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+        evaluationPeriodId,
+        employeeId,
+        status: 'approved' as StepApprovalStatus,
+        updatedBy: submittedBy,
+      });
+
+      this.logger.log(
+        `평가기준 제출 시 StepApproval 상태 자동 승인 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
+      );
+    } catch (error) {
+      // StepApproval 상태 변경 실패는 경고만 출력 (평가기준 제출은 성공)
+      this.logger.warn(
+        `평가기준 제출 시 StepApproval 상태 자동 승인 실패 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`,
+        error,
+      );
+    }
+
+    // 4. 활동 내역 기록
     try {
       await this.activityLogContextService.활동내역을_기록한다({
         periodId: evaluationPeriodId,

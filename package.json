@@ -35,7 +35,10 @@
     "docker:compose:up": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",
     "docker:compose:logs": "docker-compose logs -f",
-    "sso:fetch-mock-data": "ts-node -r tsconfig-paths/register scripts/sso-fetch-mock-data.ts"
+    "sso:fetch-mock-data": "ts-node -r tsconfig-paths/register scripts/sso-fetch-mock-data.ts",
+    "db:backup": "ts-node scripts/backup/backup-pure.ts",
+    "db:restore": "ts-node scripts/backup/restore-pure.ts",
+    "db:test:clear": "ts-node scripts/backup/test-clear-all-data.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
@@ -52,6 +55,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "dayjs": "^1.11.19",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
@@ -67,7 +71,7 @@
     "@testcontainers/postgresql": "^10.28.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.19.3",
     "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.2",
     "cross-env": "^7.0.3",

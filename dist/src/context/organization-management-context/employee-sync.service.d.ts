@@ -11,6 +11,7 @@ export declare class EmployeeSyncService implements OnModuleInit {
     private readonly logger;
     private readonly syncEnabled;
     private readonly systemUserId;
+    private readonly ADMIN_EMPLOYEE_NAMES;
     constructor(employeeService: EmployeeService, configService: ConfigService, ssoService: ISSOService);
     onModuleInit(): Promise<void>;
     fetchExternalEmployees(useHierarchyAPI?: boolean): Promise<any[]>;

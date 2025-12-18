@@ -228,8 +228,6 @@ export interface MyEvaluationTargetStatusDto {
         isSubmittedToEvaluator: boolean;
         submittedToManagerCount: number;
         isSubmittedToManager: boolean;
-        totalScore: number | null;
-        grade: string | null;
         viewedByPrimaryEvaluator?: boolean;
         viewedBySecondaryEvaluator?: boolean;
     };

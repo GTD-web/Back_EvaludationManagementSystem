@@ -158,6 +158,68 @@ export function GetAllEmployeesEvaluationPeriodStatus() {
 }
 
 /**
+ * 평가기간의 모든 직원 현황 엑셀 다운로드 API 데코레이터
+ */
+export function ExportAllEmployeesEvaluationPeriodStatusToExcel() {
+  return applyDecorators(
+    Get(':evaluationPeriodId/employees/status/export/excel'),
+    ApiOperation({
+      summary: '평가기간의 모든 직원 현황 엑셀 다운로드',
+      description: `특정 평가기간에 등록된 모든 직원의 평가 참여 현황을 엑셀 파일로 다운로드합니다.
+
+**동작:**
+- 평가기간에 등록된 모든 직원의 현황을 엑셀 파일로 생성하여 다운로드
+- 직원 정보(이름, 사번, 부서, 직급), 평가자 정보, 자기평가/1차/2차/동료/최종평가 현황 포함
+- 각 평가 단계별 상태, 점수, 등급 정보 제공
+- Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+- Content-Disposition: attachment; filename="평가현황_{평가기간명}_{날짜}.xlsx"
+
+**엑셀 컬럼:**
+- 부서 (부서별로 세로 병합되어 표시)
+- 이름
+- 직급
+- 1차 평가자
+- 2차 평가자
+- 재임여부
+- 평가선정
+- 자기평가 (상태, 점수, 등급)
+- 1차평가 (상태, 점수, 등급)
+- 2차평가 (상태, 점수, 등급)
+- 동료평가 (상태, 완료수/전체수)
+- 최종평가 (평가등급, 직무등급)
+
+**정렬 순서:**
+- SSO 부서 하이라키 API에서 조회한 부서 순서(order)대로 자동 정렬
+- 같은 부서 내에서는 직원 이름순 정렬`,
+    }),
+    ApiParam({
+      name: 'evaluationPeriodId',
+      description: '평가기간 ID',
+      type: 'string',
+      format: 'uuid',
+      example: '123e4567-e89b-12d3-a456-426614174000',
+    }),
+    ApiQuery({
+      name: 'includeUnregistered',
+      description: '등록 해제된 직원 포함 여부',
+      required: false,
+      type: 'boolean',
+      example: false,
+    }),
+    ApiOkResponse({
+      description: '엑셀 파일 다운로드 성공',
+      schema: {
+        type: 'string',
+        format: 'binary',
+      },
+    }),
+    ApiBadRequestResponse({
+      description: '잘못된 요청 (UUID 형식 오류 등)',
+    }),
+  );
+}
+
+/**
  * 내가 담당하는 평가 대상자 현황 조회 API 데코레이터
  */
 export function GetMyEvaluationTargetsStatus() {

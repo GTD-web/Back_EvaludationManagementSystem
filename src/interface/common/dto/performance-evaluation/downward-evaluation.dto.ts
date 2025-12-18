@@ -136,12 +136,12 @@ export class SubmitDownwardEvaluationDto {
  */
 export class SubmitDownwardEvaluationQueryDto {
   @ApiPropertyOptional({
-    description: '하위 단계 자동 승인 여부 (기본값: false)',
-    example: false,
+    description: '하위 단계 자동 승인 여부 (기본값: true)',
+    example: true,
     type: Boolean,
   })
   @IsOptional()
-  @ToBoolean(false)
+  @ToBoolean(true)
   @IsBoolean()
   approveAllBelow?: boolean;
 }

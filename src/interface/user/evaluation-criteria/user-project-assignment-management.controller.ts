@@ -1,17 +1,24 @@
+import { ProjectAssignmentBusinessService } from '@business/project-assignment/project-assignment-business.service';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
+import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
+import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import { Roles } from '@interface/common/decorators';
-import { GetAvailableProjects } from '@interface/common/decorators/evaluation-criteria/project-assignment-api.decorators';
+import {
+  CreateProjectAssignment,
+  GetAvailableProjects,
+} from '@interface/common/decorators/evaluation-criteria/project-assignment-api.decorators';
 import {
   AvailableProjectsResponseDto,
-  GetAvailableProjectsQueryDto
+  CreateProjectAssignmentDto,
+  GetAvailableProjectsQueryDto,
 } from '@interface/common/dto/evaluation-criteria/project-assignment.dto';
-import { Controller, Query } from '@nestjs/common';
+import { Body, Controller, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 /**
  * 사용자 프로젝트 할당 관리 컨트롤러
  *
- * 사용자가 할당 가능한 프로젝트를 조회할 수 있는 기능을 제공합니다.
+ * 사용자가 프로젝트 할당을 생성하고 할당 가능한 프로젝트를 조회할 수 있는 기능을 제공합니다.
  */
 @ApiTags('A-1. 사용자 - 평가 설정 - 프로젝트 할당')
 @ApiBearerAuth('Bearer')
@@ -20,7 +27,28 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 export class UserProjectAssignmentManagementController {
   constructor(
     private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
+    private readonly projectAssignmentBusinessService: ProjectAssignmentBusinessService,
   ) {}
+
+  /**
+   * 프로젝트 할당 생성
+   */
+  @CreateProjectAssignment()
+  async createProjectAssignment(
+    @Body() createDto: CreateProjectAssignmentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<any> {
+    const assignedBy = user.id;
+    return await this.projectAssignmentBusinessService.프로젝트를_할당한다(
+      {
+        employeeId: createDto.employeeId,
+        projectId: createDto.projectId,
+        periodId: createDto.periodId,
+        assignedBy: assignedBy,
+      },
+      assignedBy,
+    );
+  }
 
   /**
    * 할당 가능한 프로젝트 목록 조회 (매니저 정보 포함, 검색/페이징/정렬 지원)
@@ -55,4 +83,3 @@ export class UserProjectAssignmentManagementController {
     };
   }
 }
-

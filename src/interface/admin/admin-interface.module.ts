@@ -45,6 +45,7 @@ import { AuditLogController } from './audit-log/audit-log.controller';
 import { EvaluationActivityLogController } from './evaluation-activity-log/evaluation-activity-log.controller';
 import { ProjectManagementController } from './project/project-management.controller';
 import { NotificationController } from '../common/controllers/notification.controller';
+import { BackupController } from '../backup/backup.controller';
 
 /**
  * 관리자 인터페이스 모듈
@@ -101,6 +102,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     AuditLogController, // Audit 로그 컨트롤러
     EvaluationActivityLogController, // 평가 활동 내역 컨트롤러
     NotificationController, // 알림 컨트롤러
+    BackupController, // 백업 관리 컨트롤러
   ],
   providers: [],
   exports: [],

@@ -15,16 +15,19 @@ const common_1 = require("@nestjs/common");
 const evaluation_criteria_management_service_1 = require("../../context/evaluation-criteria-management-context/evaluation-criteria-management.service");
 const revision_request_context_service_1 = require("../../context/revision-request-context/revision-request-context.service");
 const evaluation_activity_log_context_service_1 = require("../../context/evaluation-activity-log-context/evaluation-activity-log-context.service");
+const step_approval_context_service_1 = require("../../context/step-approval-context/step-approval-context.service");
 const evaluation_revision_request_1 = require("../../domain/sub/evaluation-revision-request");
 let EvaluationCriteriaBusinessService = EvaluationCriteriaBusinessService_1 = class EvaluationCriteriaBusinessService {
     evaluationCriteriaManagementService;
     revisionRequestContextService;
     activityLogContextService;
+    stepApprovalContextService;
     logger = new common_1.Logger(EvaluationCriteriaBusinessService_1.name);
-    constructor(evaluationCriteriaManagementService, revisionRequestContextService, activityLogContextService) {
+    constructor(evaluationCriteriaManagementService, revisionRequestContextService, activityLogContextService, stepApprovalContextService) {
         this.evaluationCriteriaManagementService = evaluationCriteriaManagementService;
         this.revisionRequestContextService = revisionRequestContextService;
         this.activityLogContextService = activityLogContextService;
+        this.stepApprovalContextService = stepApprovalContextService;
     }
     async 평가기준을_제출하고_재작성요청을_완료한다(evaluationPeriodId, employeeId, submittedBy) {
         const result = await this.evaluationCriteriaManagementService.평가기준을_제출한다(evaluationPeriodId, employeeId, submittedBy);
@@ -34,6 +37,18 @@ let EvaluationCriteriaBusinessService = EvaluationCriteriaBusinessService_1 = cl
         }
         catch (error) {
             this.logger.debug(`재작성 요청 자동 완료 처리 실패 (재작성 요청이 없거나 이미 완료되었을 수 있음) - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
+        }
+        try {
+            await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
+                evaluationPeriodId,
+                employeeId,
+                status: 'approved',
+                updatedBy: submittedBy,
+            });
+            this.logger.log(`평가기준 제출 시 StepApproval 상태 자동 승인 완료 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`);
+        }
+        catch (error) {
+            this.logger.warn(`평가기준 제출 시 StepApproval 상태 자동 승인 실패 - 직원: ${employeeId}, 평가기간: ${evaluationPeriodId}`, error);
         }
         try {
             await this.activityLogContextService.활동내역을_기록한다({
@@ -59,6 +74,7 @@ exports.EvaluationCriteriaBusinessService = EvaluationCriteriaBusinessService = 
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [evaluation_criteria_management_service_1.EvaluationCriteriaManagementService,
         revision_request_context_service_1.RevisionRequestContextService,
-        evaluation_activity_log_context_service_1.EvaluationActivityLogContextService])
+        evaluation_activity_log_context_service_1.EvaluationActivityLogContextService,
+        step_approval_context_service_1.StepApprovalContextService])
 ], EvaluationCriteriaBusinessService);
 //# sourceMappingURL=evaluation-criteria-business.service.js.map

@@ -124,6 +124,9 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
       name: '테스트 직원',
       email: 'test@example.com',
       departmentId: departmentId,
+      externalId: 'EXT_TEST001',
+      externalCreatedAt: new Date(),
+      externalUpdatedAt: new Date(),
       joinDate: new Date('2023-01-01'),
       isActive: true,
       createdBy: systemAdminId,
@@ -161,11 +164,13 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
     // WBS Item 생성
     const wbsItem = wbsItemRepository.create({
       projectId: projectId,
-      code: 'WBS001',
-      name: '테스트 WBS',
-      description: 'subProject 테스트용 WBS',
-      depth: 1,
-      orderIndex: 1,
+      wbsCode: 'WBS001',
+      title: '테스트 WBS',
+      status: 'IN_PROGRESS',
+      level: 1,
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-03-31'),
+      progressPercentage: '0',
       createdBy: systemAdminId,
     });
     const savedWbsItem = await wbsItemRepository.save(wbsItem);
@@ -182,6 +187,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: 'subProject 테스트 자기평가',
         selfEvaluationScore: 100,
         performanceResult: '모바일 앱 개발 완료',
@@ -210,6 +216,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: 'subProject 없는 자기평가',
         selfEvaluationScore: 90,
         performanceResult: '일반 작업 완료',
@@ -218,7 +225,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
 
       // Then
       expect(result).toBeDefined();
-      expect(result.subProject).toBeUndefined();
+      expect(result.subProject).toBeNull();
 
       // DB 확인 - null로 저장되었는지 확인
       const dbRecord = await wbsSelfEvaluationRepository.findOne({
@@ -234,6 +241,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: 'subProject null 테스트',
         selfEvaluationScore: 80,
         performanceResult: '작업 완료',
@@ -262,6 +270,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '자기평가 내용',
         selfEvaluationScore: 95,
         performanceResult: 'API 개발 완료',
@@ -270,7 +279,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
       });
 
       // When
-      const result = await wbsSelfEvaluationService.단건_조회한다(created.id);
+      const result = await wbsSelfEvaluationService.조회한다(created.id);
 
       // Then
       expect(result).toBeDefined();
@@ -285,17 +294,18 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '자기평가 내용',
         selfEvaluationScore: 85,
         createdBy: systemAdminId,
       });
 
       // When
-      const result = await wbsSelfEvaluationService.단건_조회한다(created.id);
+      const result = await wbsSelfEvaluationService.조회한다(created.id);
 
       // Then
       expect(result).toBeDefined();
-      expect(result!.subProject).toBeUndefined();
+      expect(result!.subProject).toBeNull();
     });
   });
 
@@ -306,6 +316,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '초기 평가',
         selfEvaluationScore: 80,
         subProject: '백엔드 API',
@@ -343,6 +354,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '초기 평가',
         selfEvaluationScore: 90,
         subProject: '데이터베이스 설계',
@@ -379,12 +391,13 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '초기 평가',
         selfEvaluationScore: 75,
         createdBy: systemAdminId,
       });
 
-      expect(created.subProject).toBeUndefined();
+      expect(created.subProject).toBeNull();
 
       // When
       const updated = await wbsSelfEvaluationService.수정한다(
@@ -416,6 +429,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '제출 테스트',
         selfEvaluationScore: 100,
         subProject: '테스트 자동화',
@@ -423,8 +437,11 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
       });
 
       // When - 1차 평가자 제출
-      const submitted = await wbsSelfEvaluationService.일차평가자_제출한다(
-        created.id,
+      const evaluation = await wbsSelfEvaluationRepository.findOne({
+        where: { id: created.id },
+      });
+      const submitted = await wbsSelfEvaluationService.피평가자가_1차평가자에게_제출한다(
+        evaluation!,
         systemAdminId,
       );
 
@@ -446,20 +463,27 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '제출 테스트',
         selfEvaluationScore: 110,
         subProject: 'CI/CD 파이프라인',
         createdBy: systemAdminId,
       });
 
-      await wbsSelfEvaluationService.일차평가자_제출한다(
-        created.id,
+      const evaluation = await wbsSelfEvaluationRepository.findOne({
+        where: { id: created.id },
+      });
+      await wbsSelfEvaluationService.피평가자가_1차평가자에게_제출한다(
+        evaluation!,
         systemAdminId,
       );
 
       // When - 관리자 제출
-      const submitted = await wbsSelfEvaluationService.제출한다(
-        created.id,
+      const evaluation2 = await wbsSelfEvaluationRepository.findOne({
+        where: { id: created.id },
+      });
+      const submitted = await wbsSelfEvaluationService.일차평가자가_관리자에게_제출한다(
+        evaluation2!,
         systemAdminId,
       );
 
@@ -487,6 +511,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '긴 문자열 테스트',
         selfEvaluationScore: 90,
         subProject: longSubProject,
@@ -512,6 +537,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '특수 문자 테스트',
         selfEvaluationScore: 85,
         subProject: specialCharsSubProject,
@@ -534,6 +560,7 @@ describe('Performance Evaluation Context - WBS Self Evaluation SubProject', () =
         periodId: evaluationPeriodId,
         employeeId: employeeId,
         wbsItemId: wbsItemId,
+        assignedBy: systemAdminId,
         selfEvaluationContent: '빈 문자열 테스트',
         selfEvaluationScore: 80,
         subProject: '',

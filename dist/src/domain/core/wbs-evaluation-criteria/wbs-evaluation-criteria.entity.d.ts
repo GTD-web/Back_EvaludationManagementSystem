@@ -5,8 +5,9 @@ export declare class WbsEvaluationCriteria extends BaseEntity<WbsEvaluationCrite
     wbsItemId: string;
     criteria: string;
     importance: number;
+    subProject?: string | null;
     DTO로_변환한다(): WbsEvaluationCriteriaDto;
-    기준내용업데이트한다(criteria: string, importance: number, updatedBy: string): void;
+    기준내용업데이트한다(criteria: string, importance: number, subProject: string | null | undefined, updatedBy: string): void;
     WBS항목일치하는가(wbsItemId: string): boolean;
     유효한가(): boolean;
     기준내용이_유효한가(): boolean;

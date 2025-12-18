@@ -696,6 +696,7 @@ export class PerformanceEvaluationService
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
+    approveAllBelow: boolean = true,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 1차 평가자 ID 조회
     const actualPrimaryEvaluatorId =
@@ -768,6 +769,7 @@ export class PerformanceEvaluationService
       const command = new SubmitDownwardEvaluationCommand(
         evaluation.id,
         submittedBy,
+        approveAllBelow,
       );
 
       await this.commandBus.execute(command);
@@ -805,6 +807,7 @@ export class PerformanceEvaluationService
     const command = new SubmitDownwardEvaluationCommand(
       evaluation.id,
       submittedBy,
+      approveAllBelow,
     );
 
     await this.commandBus.execute(command);
@@ -822,6 +825,7 @@ export class PerformanceEvaluationService
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
+    approveAllBelow: boolean = true,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 2차 평가자 ID 조회 (WBS별)
     const actualSecondaryEvaluatorId =
@@ -895,6 +899,7 @@ export class PerformanceEvaluationService
       const command = new SubmitDownwardEvaluationCommand(
         evaluation.id,
         submittedBy,
+        approveAllBelow,
       );
 
       await this.commandBus.execute(command);
@@ -932,6 +937,7 @@ export class PerformanceEvaluationService
     const command = new SubmitDownwardEvaluationCommand(
       evaluation.id,
       submittedBy,
+      approveAllBelow,
     );
 
     await this.commandBus.execute(command);
@@ -963,6 +969,7 @@ export class PerformanceEvaluationService
     evaluationType: DownwardEvaluationType,
     submittedBy: string,
     forceSubmit: boolean = false, // 강제 제출 옵션 (승인 시 필수 항목 검증 건너뛰기)
+    approveAllBelow: boolean = true, // 하위 단계 자동 승인 여부
   ): Promise<{
     submittedCount: number;
     skippedCount: number;
@@ -978,6 +985,7 @@ export class PerformanceEvaluationService
       evaluationType,
       submittedBy,
       forceSubmit,
+      approveAllBelow,
     );
 
     return await this.commandBus.execute(command);
@@ -1669,5 +1677,24 @@ export class PerformanceEvaluationService
     const query = new GetDeliverableDetailQuery(id);
     const deliverable = await this.queryBus.execute(query);
     return deliverable;
+  }
+
+  /**
+   * 산출물을 ID로 조회한다 (nullable)
+   * 
+   * @param id 산출물 ID
+   * @returns 산출물 엔티티 또는 null
+   */
+  async 산출물을_ID로_조회한다(id: string): Promise<Deliverable | null> {
+    try {
+      return await this.산출물_상세를_조회한다(id);
+    } catch (error) {
+      // DeliverableNotFoundException인 경우 null 반환
+      if (error.name === 'DeliverableNotFoundException') {
+        return null;
+      }
+      // 다른 예외는 재throw
+      throw error;
+    }
   }
 }

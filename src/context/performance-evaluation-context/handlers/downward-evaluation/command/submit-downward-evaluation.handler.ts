@@ -18,12 +18,13 @@ import { StepApprovalContextService } from '@context/step-approval-context/step-
 import { EmployeeService } from '@domain/common/employee/employee.service';
 
 /**
- * ?�향?��? ?�출 커맨??
+ * 하향평가 제출 커맨드
  */
 export class SubmitDownwardEvaluationCommand {
   constructor(
     public readonly evaluationId: string,
     public readonly submittedBy: string = '시스템',
+    public readonly approveAllBelow: boolean = true,
   ) {}
 }
 
@@ -51,7 +52,7 @@ export class SubmitDownwardEvaluationHandler
   ) {}
 
   async execute(command: SubmitDownwardEvaluationCommand): Promise<void> {
-    const { evaluationId, submittedBy } = command;
+    const { evaluationId, submittedBy, approveAllBelow } = command;
 
     this.logger.log('하향평가 제출 핸들러 실행', { evaluationId });
 
@@ -104,19 +105,23 @@ export class SubmitDownwardEvaluationHandler
           });
         }
 
-        // 평가 유형에 따라 적절한 단계의 상태를 pending으로 변경
+        // 평가 유형에 따라 적절한 단계의 상태를 변경 (approveAllBelow에 따라 approved 또는 pending)
+        const approvalStatus = approveAllBelow
+          ? StepApprovalStatus.APPROVED
+          : StepApprovalStatus.PENDING;
+
         if (evaluation.evaluationType === 'primary') {
           this.stepApprovalService.단계_상태를_변경한다(
             stepApproval,
             'primary',
-            StepApprovalStatus.PENDING,
+            approvalStatus,
             submittedBy,
           );
         } else if (evaluation.evaluationType === 'secondary') {
           this.stepApprovalService.단계_상태를_변경한다(
             stepApproval,
             'secondary',
-            StepApprovalStatus.PENDING,
+            approvalStatus,
             submittedBy,
           );
         }
@@ -124,7 +129,7 @@ export class SubmitDownwardEvaluationHandler
         await this.stepApprovalService.저장한다(stepApproval);
 
         this.logger.debug(
-          `단계 승인 상태를 pending으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`,
+          `단계 승인 상태를 ${approveAllBelow ? 'approved' : 'pending'}으로 변경 완료 - 피평가자: ${evaluation.employeeId}, 평가유형: ${evaluation.evaluationType}`,
         );
       }
 

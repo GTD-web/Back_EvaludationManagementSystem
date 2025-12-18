@@ -1,15 +1,18 @@
-import { Controller, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Query, NotFoundException, Res } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { DashboardService } from '@context/dashboard-context/dashboard.service';
 import { ParseUUID, Roles } from '@interface/common/decorators';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { EmployeeSyncService } from '@context/organization-management-context/employee-sync.service';
+import { OrganizationManagementService } from '@context/organization-management-context';
 import { GetAllEmployeesEvaluationPeriodStatusQueryDto } from '@interface/common/dto/dashboard/get-all-employees-evaluation-period-status-query.dto';
 import {
   GetEmployeeEvaluationPeriodStatus,
   GetAllEmployeesEvaluationPeriodStatus,
+  ExportAllEmployeesEvaluationPeriodStatusToExcel,
   GetMyEvaluationTargetsStatus,
   GetEmployeeAssignedData,
   GetMyAssignedData,
@@ -49,6 +52,7 @@ export class DashboardController {
     private readonly dashboardService: DashboardService,
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly employeeSyncService: EmployeeSyncService,
+    private readonly organizationManagementService: OrganizationManagementService,
   ) {}
 
   // ==================== GET: 조회 ====================
@@ -73,6 +77,60 @@ export class DashboardController {
         result as any;
       return rest as EmployeeEvaluationPeriodStatusResponseDto;
     });
+  }
+
+  /**
+   * 평가기간의 모든 직원 현황을 엑셀로 다운로드합니다.
+   */
+  @ExportAllEmployeesEvaluationPeriodStatusToExcel()
+  async exportAllEmployeesEvaluationPeriodStatusToExcel(
+    @ParseUUID('evaluationPeriodId') evaluationPeriodId: string,
+    @Query() queryDto: GetAllEmployeesEvaluationPeriodStatusQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    // 평가기간 정보 조회
+    const period =
+      await this.evaluationPeriodService.ID로_조회한다(evaluationPeriodId);
+    if (!period) {
+      throw new NotFoundException(
+        `평가기간을 찾을 수 없습니다. (ID: ${evaluationPeriodId})`,
+      );
+    }
+
+    // 부서 하이라키 구조 조회
+    const departmentHierarchy =
+      await this.organizationManagementService.부서하이라키_직원포함_조회();
+
+    // 직원 현황 데이터 조회
+    const results =
+      await this.dashboardService.평가기간의_모든_피평가자_현황을_조회한다(
+        evaluationPeriodId,
+        queryDto.includeUnregistered,
+      );
+
+    // 엑셀 파일 생성
+    const buffer = await this.dashboardService.직원_현황을_엑셀로_생성한다(
+      results,
+      period.name,
+      departmentHierarchy,
+    );
+
+    // 파일명 생성 (날짜 포함)
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `평가현황_${period.name}_${date}.xlsx`;
+
+    // 응답 헤더 설정
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+
+    // 엑셀 파일 전송
+    res.send(buffer);
   }
 
   /**

@@ -94,13 +94,16 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
         return this.executeSafeDomainOperation(async () => {
             await this.validationService.생성데이터검증한다(createData, manager);
             const repository = this.transactionManager.getRepository(wbs_evaluation_criteria_entity_1.WbsEvaluationCriteria, this.wbsEvaluationCriteriaRepository, manager);
+            this.logger.log(`[생성] 입력 데이터 - subProject: "${createData.subProject}", type: ${typeof createData.subProject}`);
             const criteria = repository.create({
                 wbsItemId: createData.wbsItemId,
                 criteria: createData.criteria,
                 importance: createData.importance,
+                subProject: createData.subProject,
             });
+            this.logger.log(`[생성] 생성된 엔티티 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`);
             const savedCriteria = await repository.save(criteria);
-            this.logger.log(`WBS 평가 기준 생성 완료 - ID: ${savedCriteria.id}, WBS 항목: ${savedCriteria.wbsItemId}`);
+            this.logger.log(`WBS 평가 기준 생성 완료 - ID: ${savedCriteria.id}, WBS 항목: ${savedCriteria.wbsItemId}, subProject: "${savedCriteria.subProject}"`);
             return savedCriteria;
         }, '생성한다');
     }
@@ -113,15 +116,23 @@ let WbsEvaluationCriteriaService = WbsEvaluationCriteriaService_1 = class WbsEva
             }
             await this.validationService.업데이트데이터검증한다(id, updateData, manager);
             if (updateData.criteria !== undefined ||
-                updateData.importance !== undefined) {
+                updateData.importance !== undefined ||
+                updateData.subProject !== undefined) {
+                this.logger.log(`[업데이트] 입력 데이터 - subProject: "${updateData.subProject}", type: ${typeof updateData.subProject}`);
+                this.logger.log(`[업데이트] 기존 데이터 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`);
                 const newCriteria = updateData.criteria !== undefined
                     ? updateData.criteria
                     : criteria.criteria;
                 const newImportance = updateData.importance ?? criteria.importance;
-                criteria.기준내용업데이트한다(newCriteria, newImportance, updatedBy);
+                const newSubProject = updateData.subProject !== undefined
+                    ? updateData.subProject
+                    : criteria.subProject;
+                this.logger.log(`[업데이트] 적용할 값 - newSubProject: "${newSubProject}", type: ${typeof newSubProject}`);
+                criteria.기준내용업데이트한다(newCriteria, newImportance, newSubProject, updatedBy);
+                this.logger.log(`[업데이트] 엔티티 업데이트 후 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`);
             }
             const updatedCriteria = await repository.save(criteria);
-            this.logger.log(`WBS 평가 기준 업데이트 완료 - ID: ${id}, 수정자: ${updatedBy}`);
+            this.logger.log(`WBS 평가 기준 업데이트 완료 - ID: ${id}, 수정자: ${updatedBy}, subProject: "${updatedCriteria.subProject}"`);
             return updatedCriteria;
         }, '업데이트한다');
     }

@@ -21,14 +21,14 @@ export class CreateWbsEvaluationCriteriaDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance: number;
 }
 
@@ -50,15 +50,23 @@ export class UpsertWbsEvaluationCriteriaBodyDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+  })
+  @IsOptional()
+  @IsString()
+  subProject?: string;
 }
 
 /**
@@ -74,16 +82,24 @@ export class UpdateWbsEvaluationCriteriaDto {
   criteria?: string;
 
   @ApiPropertyOptional({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
     minimum: 1,
-    maximum: 10,
+    maximum: 5,
   })
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(5)
   importance?: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+  })
+  @IsOptional()
+  @IsString()
+  subProject?: string;
 }
 
 /**
@@ -162,10 +178,17 @@ export class WbsEvaluationCriteriaDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
   })
   importance: number;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
 
   @ApiProperty({ description: '생성일시', example: '2024-10-01T09:00:00Z' })
   createdAt: Date;
@@ -208,8 +231,8 @@ export class WbsEvaluationCriteriaDetailDto {
   criteria: string;
 
   @ApiProperty({
-    description: '중요도 (1~10)',
-    example: 5,
+    description: '중요도 (1~5)',
+    example: 3,
   })
   importance: number;
 

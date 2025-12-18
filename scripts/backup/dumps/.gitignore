@@ -1,0 +1,6 @@
+# 백업 파일 제외
+scripts/backup/dumps/*.sql
+
+# 하지만 디렉토리는 유지
+!scripts/backup/dumps/.gitkeep
+

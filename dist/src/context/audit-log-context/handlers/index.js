@@ -17,4 +17,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./commands/create-audit-log.handler"), exports);
 __exportStar(require("./queries/get-audit-log-list.handler"), exports);
 __exportStar(require("./queries/get-audit-log-detail.handler"), exports);
+__exportStar(require("./queries/get-audit-log-stats.handler"), exports);
 //# sourceMappingURL=index.js.map

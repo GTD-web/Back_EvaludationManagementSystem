@@ -38,3 +38,13 @@ export interface AuditLogListResult {
     page: number;
     limit: number;
 }
+export interface AuditLogStatsItem {
+    time: string;
+    timestamp: number;
+    success: number;
+    errors: number;
+    total: number;
+}
+export interface AuditLogStatsResult {
+    stats: AuditLogStatsItem[];
+}

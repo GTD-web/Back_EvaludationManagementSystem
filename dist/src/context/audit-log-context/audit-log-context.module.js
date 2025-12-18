@@ -29,6 +29,7 @@ exports.AuditLogContextModule = AuditLogContextModule = __decorate([
             handlers_1.CreateAuditLogHandler,
             handlers_1.GetAuditLogListHandler,
             handlers_1.GetAuditLogDetailHandler,
+            handlers_1.GetAuditLogStatsHandler,
         ],
         exports: [audit_log_context_service_1.AuditLogContextService],
     })

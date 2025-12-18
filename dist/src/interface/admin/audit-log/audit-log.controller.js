@@ -20,10 +20,19 @@ const audit_log_context_service_1 = require("../../../context/audit-log-context/
 const audit_log_response_dto_1 = require("../../common/dto/audit-log/audit-log-response.dto");
 const get_audit_log_list_query_dto_1 = require("../../common/dto/audit-log/get-audit-log-list-query.dto");
 const audit_log_response_dto_2 = require("../../common/dto/audit-log/audit-log-response.dto");
+const get_audit_log_stats_query_dto_1 = require("../../common/dto/audit-log/get-audit-log-stats-query.dto");
+const audit_log_stats_response_dto_1 = require("../../common/dto/audit-log/audit-log-stats-response.dto");
 let AuditLogController = class AuditLogController {
     auditLogContextService;
     constructor(auditLogContextService) {
         this.auditLogContextService = auditLogContextService;
+    }
+    async getAuditLogStats(query) {
+        const { startDate, endDate, interval = 60 } = query;
+        const result = await this.auditLogContextService.audit로그통계를_조회한다(startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined, interval);
+        return {
+            stats: result.stats,
+        };
     }
     async getAuditLogs(query) {
         const { userId, userEmail, employeeNumber, requestMethod, requestUrl, responseStatusCode, startDate, endDate, page = 1, limit = 10, } = query;
@@ -50,6 +59,37 @@ let AuditLogController = class AuditLogController {
     }
 };
 exports.AuditLogController = AuditLogController;
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Audit 로그 통계 조회',
+        description: '시간 범위에 따라 시간대별 요청 통계를 조회합니다.',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Audit 로그 통계 조회 성공',
+        type: audit_log_stats_response_dto_1.AuditLogStatsResponseDto,
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'startDate',
+        required: false,
+        description: '시작 날짜 (ISO 8601)',
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'endDate',
+        required: false,
+        description: '종료 날짜 (ISO 8601)',
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'interval',
+        required: false,
+        description: '시간 간격 (분 단위, 기본값: 60)',
+    }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [get_audit_log_stats_query_dto_1.GetAuditLogStatsQueryDto]),
+    __metadata("design:returntype", Promise)
+], AuditLogController.prototype, "getAuditLogStats", null);
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiOperation)({

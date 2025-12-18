@@ -398,7 +398,19 @@ let ProjectManagementController = class ProjectManagementController {
     }
     async createProjectManager(createDto, user) {
         const createdBy = user.id;
-        const manager = await this.projectManagerService.생성한다(createDto, createdBy);
+        const employee = await this.employeeService.findById(createDto.employeeId);
+        if (!employee) {
+            throw new common_1.NotFoundException(`ID ${createDto.employeeId}에 해당하는 직원을 찾을 수 없습니다.`);
+        }
+        const manager = await this.projectManagerService.생성한다({
+            managerId: employee.externalId,
+            name: employee.name,
+            email: employee.email,
+            employeeNumber: employee.employeeNumber,
+            departmentName: employee.departmentName,
+            isActive: createDto.isActive,
+            note: createDto.note,
+        }, createdBy);
         return manager;
     }
     async getProjectManagerDetail(id) {

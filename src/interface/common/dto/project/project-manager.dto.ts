@@ -13,42 +13,11 @@ import { Type } from 'class-transformer';
  */
 export class CreateProjectManagerDto {
   @ApiProperty({
-    description: 'SSO의 매니저 ID',
-    example: 'ff463c9b-69ba-4df4-9126-997b1a13aa3b',
+    description: '직원 ID (Employee UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsString()
-  managerId: string;
-
-  @ApiProperty({
-    description: '매니저 이름',
-    example: '김철수',
-  })
-  @IsString()
-  name: string;
-
-  @ApiPropertyOptional({
-    description: '이메일',
-    example: 'kim@lumir.space',
-  })
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @ApiPropertyOptional({
-    description: '사번',
-    example: '24001',
-  })
-  @IsOptional()
-  @IsString()
-  employeeNumber?: string;
-
-  @ApiPropertyOptional({
-    description: '부서명',
-    example: '연구소',
-  })
-  @IsOptional()
-  @IsString()
-  departmentName?: string;
+  employeeId: string;
 
   @ApiPropertyOptional({
     description: '활성 상태',

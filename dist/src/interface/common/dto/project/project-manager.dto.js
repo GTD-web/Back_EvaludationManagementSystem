@@ -14,58 +14,19 @@ const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateProjectManagerDto {
-    managerId;
-    name;
-    email;
-    employeeNumber;
-    departmentName;
+    employeeId;
     isActive;
     note;
 }
 exports.CreateProjectManagerDto = CreateProjectManagerDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'SSO의 매니저 ID',
-        example: 'ff463c9b-69ba-4df4-9126-997b1a13aa3b',
+        description: '직원 ID (Employee UUID)',
+        example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateProjectManagerDto.prototype, "managerId", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: '매니저 이름',
-        example: '김철수',
-    }),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateProjectManagerDto.prototype, "name", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: '이메일',
-        example: 'kim@lumir.space',
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEmail)(),
-    __metadata("design:type", String)
-], CreateProjectManagerDto.prototype, "email", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: '사번',
-        example: '24001',
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateProjectManagerDto.prototype, "employeeNumber", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: '부서명',
-        example: '연구소',
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateProjectManagerDto.prototype, "departmentName", void 0);
+], CreateProjectManagerDto.prototype, "employeeId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: '활성 상태',

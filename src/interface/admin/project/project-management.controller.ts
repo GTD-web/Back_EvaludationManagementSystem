@@ -624,8 +624,26 @@ export class ProjectManagementController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PMResponseDto> {
     const createdBy = user.id;
+
+    // employeeId로 직원 조회
+    const employee = await this.employeeService.findById(createDto.employeeId);
+    if (!employee) {
+      throw new NotFoundException(
+        `ID ${createDto.employeeId}에 해당하는 직원을 찾을 수 없습니다.`,
+      );
+    }
+
+    // Employee 정보로 PM 생성
     const manager = await this.projectManagerService.생성한다(
-      createDto,
+      {
+        managerId: employee.externalId, // SSO의 ID
+        name: employee.name,
+        email: employee.email,
+        employeeNumber: employee.employeeNumber,
+        departmentName: employee.departmentName,
+        isActive: createDto.isActive,
+        note: createDto.note,
+      },
       createdBy,
     );
     return manager;

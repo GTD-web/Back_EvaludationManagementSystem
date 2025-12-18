@@ -45,9 +45,9 @@ import { PublicInterfaceModule } from './public/public-interface.module';
     {
       provide: ROLES_GUARD_OPTIONS,
       useValue: {
-        // admin과 user 역할은 isAccessible 체크 수행
-        // evaluator 역할은 isAccessible 체크 하지 않음
-        rolesRequiringAccessibilityCheck: ['admin', 'user'],
+        // admin 역할만 isAccessible 체크 수행
+        // evaluator, user 역할은 isAccessible 체크 하지 않음
+        rolesRequiringAccessibilityCheck: ['admin'],
       },
     },
     {

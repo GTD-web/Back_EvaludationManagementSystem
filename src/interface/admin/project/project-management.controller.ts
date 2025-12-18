@@ -1,4 +1,5 @@
 import { ProjectService } from '@domain/common/project/project.service';
+import { ProjectManagerService } from '@domain/common/project/project-manager.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -13,6 +14,13 @@ import {
 } from '@interface/common/decorators/project/project-api.decorators';
 import { DeleteChildProjects } from '@interface/common/decorators/project/delete-child-projects-api.decorator';
 import {
+  CreateProjectManager,
+  GetProjectManagerList,
+  GetProjectManagerDetail,
+  UpdateProjectManager,
+  DeleteProjectManager,
+} from '@interface/common/decorators/project/project-manager-api.decorators';
+import {
   CreateProjectDto,
   CreateProjectsBulkDto,
   UpdateProjectDto,
@@ -20,10 +28,17 @@ import {
   GetProjectManagersQueryDto,
   ProjectResponseDto,
   ProjectListResponseDto,
-  ProjectManagerListResponseDto,
   ProjectManagerDto,
   ProjectsBulkCreateResponseDto,
+  AvailableProjectManagerListResponseDto,
 } from '@interface/common/dto/project/project.dto';
+import {
+  CreateProjectManagerDto as CreatePMDto,
+  UpdateProjectManagerDto as UpdatePMDto,
+  GetProjectManagersQueryDto as GetPMQueryDto,
+  ProjectManagerResponseDto as PMResponseDto,
+  ProjectManagerListResponseDto as PMListResponseDto,
+} from '@interface/common/dto/project/project-manager.dto';
 import {
   GenerateChildProjectsDto,
   GenerateChildProjectsResultDto,
@@ -62,6 +77,7 @@ import { EmployeeService } from '@domain/common/employee/employee.service';
 export class ProjectManagementController {
   constructor(
     private readonly projectService: ProjectService,
+    private readonly projectManagerService: ProjectManagerService,
     @Inject(SSOService) private readonly ssoService: ISSOService,
     private readonly employeeService: EmployeeService,
   ) {}
@@ -269,7 +285,7 @@ export class ProjectManagementController {
   @GetProjectManagers()
   async getProjectManagers(
     @Query() query: GetProjectManagersQueryDto,
-  ): Promise<ProjectManagerListResponseDto> {
+  ): Promise<AvailableProjectManagerListResponseDto> {
     // PM으로 지정 가능한 직원 이름 목록
     const ALLOWED_PM_NAMES = [
       '남명용',
@@ -283,6 +299,7 @@ export class ProjectManagementController {
       '하태식',
       '정석화',
       '이봉은',
+      '김종식',
     ];
 
     // SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
@@ -534,9 +551,7 @@ export class ProjectManagementController {
               const errorMsg = `${level}차 하위 생성 실패: ${error.message}`;
               detail.errors = detail.errors || [];
               detail.errors.push(errorMsg);
-              errors.push(
-                `[${parentProject.name}] ${errorMsg}`,
-              );
+              errors.push(`[${parentProject.name}] ${errorMsg}`);
               failedCount++;
               break; // 실패하면 더 이상 진행하지 않음
             }
@@ -596,5 +611,98 @@ export class ProjectManagementController {
     );
 
     return result;
+  }
+
+  // ==================== PM 관리 ====================
+
+  /**
+   * PM 추가
+   * PM으로 지정 가능한 직원을 추가합니다.
+   */
+  @CreateProjectManager()
+  async createProjectManager(
+    @Body() createDto: CreatePMDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<PMResponseDto> {
+    const createdBy = user.id;
+    const manager = await this.projectManagerService.생성한다(
+      createDto,
+      createdBy,
+    );
+    return manager;
+  }
+
+  /**
+   * PM 목록 조회 (관리자용)
+   * 등록된 PM 목록을 조회합니다.
+   */
+  @GetProjectManagerList()
+  async getProjectManagerListAdmin(
+    @Query() query: GetPMQueryDto,
+  ): Promise<PMListResponseDto> {
+    const result = await this.projectManagerService.목록_조회한다({
+      page: query.page,
+      limit: query.limit,
+      filter: {
+        isActive: query.isActive,
+        search: query.search,
+      },
+    });
+
+    const totalPages = Math.ceil(result.total / result.limit);
+
+    return {
+      ...result,
+      totalPages,
+    };
+  }
+
+  /**
+   * PM 상세 조회
+   * 특정 PM의 상세 정보를 조회합니다.
+   */
+  @GetProjectManagerDetail()
+  async getProjectManagerDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PMResponseDto> {
+    const manager = await this.projectManagerService.ID로_조회한다(id);
+
+    if (!manager) {
+      throw new NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
+    }
+
+    return manager;
+  }
+
+  /**
+   * PM 수정
+   * 기존 PM의 정보를 수정합니다.
+   */
+  @UpdateProjectManager()
+  async updateProjectManager(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdatePMDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<PMResponseDto> {
+    const updatedBy = user.id;
+    const manager = await this.projectManagerService.수정한다(
+      id,
+      updateDto,
+      updatedBy,
+    );
+    return manager;
+  }
+
+  /**
+   * PM 삭제 (소프트 삭제)
+   * PM을 소프트 삭제합니다.
+   */
+  @DeleteProjectManager()
+  async deleteProjectManager(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const deletedBy = user.id;
+    await this.projectManagerService.삭제한다(id, deletedBy);
   }
 }

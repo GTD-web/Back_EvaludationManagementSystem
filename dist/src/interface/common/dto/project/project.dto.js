@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectsBulkCreateResponseDto = exports.BulkCreateFailedItemDto = exports.ProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.SimpleProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectsBulkDto = exports.CreateProjectDto = exports.ChildProjectInputDto = void 0;
+exports.ProjectsBulkCreateResponseDto = exports.BulkCreateFailedItemDto = exports.AvailableProjectManagerListResponseDto = exports.ProjectManagerDto = exports.GetProjectManagersQueryDto = exports.ProjectListResponseDto = exports.ProjectResponseDto = exports.SimpleProjectResponseDto = exports.ManagerInfoDto = exports.GetProjectListQueryDto = exports.UpdateProjectDto = exports.CreateProjectsBulkDto = exports.CreateProjectDto = exports.ChildProjectInputDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
@@ -917,25 +917,25 @@ __decorate([
     }),
     __metadata("design:type", Boolean)
 ], ProjectManagerDto.prototype, "hasManagementAuthority", void 0);
-class ProjectManagerListResponseDto {
+class AvailableProjectManagerListResponseDto {
     managers;
     total;
 }
-exports.ProjectManagerListResponseDto = ProjectManagerListResponseDto;
+exports.AvailableProjectManagerListResponseDto = AvailableProjectManagerListResponseDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'PM 목록',
         type: [ProjectManagerDto],
     }),
     __metadata("design:type", Array)
-], ProjectManagerListResponseDto.prototype, "managers", void 0);
+], AvailableProjectManagerListResponseDto.prototype, "managers", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '전체 PM 수',
         example: 15,
     }),
     __metadata("design:type", Number)
-], ProjectManagerListResponseDto.prototype, "total", void 0);
+], AvailableProjectManagerListResponseDto.prototype, "total", void 0);
 class BulkCreateFailedItemDto {
     index;
     data;

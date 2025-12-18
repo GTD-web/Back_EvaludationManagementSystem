@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Project } from './project.entity';
 import { ProjectService } from './project.service';
 import { ProjectTestService } from './project-test.service';
+import { ProjectManager } from './project-manager.entity';
+import { ProjectManagerService } from './project-manager.service';
 import { Employee } from '@domain/common/employee/employee.entity';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 
@@ -14,9 +16,19 @@ import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-ass
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Project, Employee, EvaluationProjectAssignment]),
+    TypeOrmModule.forFeature([
+      Project,
+      ProjectManager,
+      Employee,
+      EvaluationProjectAssignment,
+    ]),
   ],
-  providers: [ProjectService, ProjectTestService],
-  exports: [ProjectService, ProjectTestService, TypeOrmModule],
+  providers: [ProjectService, ProjectManagerService, ProjectTestService],
+  exports: [
+    ProjectService,
+    ProjectManagerService,
+    ProjectTestService,
+    TypeOrmModule,
+  ],
 })
 export class ProjectModule {}

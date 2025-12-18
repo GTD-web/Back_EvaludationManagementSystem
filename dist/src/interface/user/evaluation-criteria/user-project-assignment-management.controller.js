@@ -58,6 +58,14 @@ let UserProjectAssignmentManagementController = class UserProjectAssignmentManag
             sortOrder: result.sortOrder,
         };
     }
+    async cancelProjectAssignmentByProject(projectId, bodyDto, user) {
+        const cancelledBy = user.id;
+        return await this.projectAssignmentBusinessService.프로젝트_할당을_프로젝트_ID로_취소한다(bodyDto.employeeId, projectId, bodyDto.periodId, cancelledBy);
+    }
+    async changeProjectAssignmentOrderByProject(projectId, bodyDto, user) {
+        const updatedBy = user.id;
+        return await this.evaluationCriteriaManagementService.프로젝트_할당_순서를_프로젝트_ID로_변경한다(bodyDto.employeeId, projectId, bodyDto.periodId, bodyDto.direction, updatedBy);
+    }
 };
 exports.UserProjectAssignmentManagementController = UserProjectAssignmentManagementController;
 __decorate([
@@ -75,6 +83,24 @@ __decorate([
     __metadata("design:paramtypes", [project_assignment_dto_1.GetAvailableProjectsQueryDto]),
     __metadata("design:returntype", Promise)
 ], UserProjectAssignmentManagementController.prototype, "getAvailableProjects", null);
+__decorate([
+    (0, project_assignment_api_decorators_1.CancelProjectAssignmentByProject)(),
+    __param(0, (0, common_1.Param)('projectId', common_1.ParseUUIDPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, project_assignment_dto_1.CancelProjectAssignmentByProjectDto, Object]),
+    __metadata("design:returntype", Promise)
+], UserProjectAssignmentManagementController.prototype, "cancelProjectAssignmentByProject", null);
+__decorate([
+    (0, project_assignment_api_decorators_1.ChangeProjectAssignmentOrderByProject)(),
+    __param(0, (0, common_1.Param)('projectId', common_1.ParseUUIDPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, project_assignment_dto_1.ChangeProjectAssignmentOrderByProjectDto, Object]),
+    __metadata("design:returntype", Promise)
+], UserProjectAssignmentManagementController.prototype, "changeProjectAssignmentOrderByProject", null);
 exports.UserProjectAssignmentManagementController = UserProjectAssignmentManagementController = __decorate([
     (0, swagger_1.ApiTags)('A-1. 사용자 - 평가 설정 - 프로젝트 할당'),
     (0, swagger_1.ApiBearerAuth)('Bearer'),

@@ -110,16 +110,14 @@ let WbsItem = WbsItem_1 = class WbsItem extends base_entity_1.BaseEntity {
 exports.WbsItem = WbsItem;
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'varchar',
-        length: 50,
+        type: 'text',
         comment: 'WBS 코드',
     }),
     __metadata("design:type", String)
 ], WbsItem.prototype, "wbsCode", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'varchar',
-        length: 255,
+        type: 'text',
         comment: 'WBS 제목',
     }),
     __metadata("design:type", String)

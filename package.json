@@ -38,7 +38,12 @@
     "sso:fetch-mock-data": "ts-node -r tsconfig-paths/register scripts/sso-fetch-mock-data.ts",
     "db:backup": "ts-node scripts/backup/backup-pure.ts",
     "db:restore": "ts-node scripts/backup/restore-pure.ts",
-    "db:test:clear": "ts-node scripts/backup/test-clear-all-data.ts"
+    "db:test:clear": "ts-node scripts/backup/test-clear-all-data.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d typeorm.config.ts",
+    "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d typeorm.config.ts",
+    "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d typeorm.config.ts",
+    "migration:show": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d typeorm.config.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

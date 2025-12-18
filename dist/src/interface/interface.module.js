@@ -46,7 +46,7 @@ exports.InterfaceModule = InterfaceModule = __decorate([
             {
                 provide: guards_1.ROLES_GUARD_OPTIONS,
                 useValue: {
-                    rolesRequiringAccessibilityCheck: ['admin', 'user'],
+                    rolesRequiringAccessibilityCheck: ['admin'],
                 },
             },
             {

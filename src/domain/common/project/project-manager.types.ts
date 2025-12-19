@@ -26,8 +26,6 @@ export interface ProjectManagerDto {
   createdAt: Date;
   /** 수정 일시 */
   updatedAt: Date;
-  /** 삭제 일시 */
-  deletedAt?: Date;
 }
 
 /**
@@ -76,8 +74,6 @@ export interface ProjectManagerFilter {
   isActive?: boolean;
   /** 검색어 (이름, 이메일, 사번) */
   search?: string;
-  /** 삭제된 레코드 포함 여부 */
-  includeDeleted?: boolean;
 }
 
 /**
@@ -91,4 +87,3 @@ export interface ProjectManagerListOptions {
   /** 필터 조건 */
   filter?: ProjectManagerFilter;
 }
-

@@ -4,7 +4,7 @@ import { ProjectManagerDto } from './project-manager.types';
 
 /**
  * 프로젝트 매니저 엔티티
- * 
+ *
  * PM으로 지정 가능한 직원 목록을 관리합니다.
  * SSO의 직원 정보와 연동하여 사용됩니다.
  */
@@ -96,7 +96,6 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
       note: this.note,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
-      deletedAt: this.deletedAt,
     };
   }
 
@@ -141,13 +140,4 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
     Object.assign(this, filteredData);
     this.수정자를_설정한다(updatedBy);
   }
-
-  /**
-   * ProjectManager를 삭제한다 (소프트 삭제)
-   */
-  삭제한다(deletedBy: string): void {
-    this.deletedAt = new Date();
-    this.수정자를_설정한다(deletedBy);
-  }
 }
-

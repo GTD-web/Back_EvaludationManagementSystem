@@ -109,14 +109,14 @@ export function GetAllEmployeesEvaluationPeriodStatus() {
 - 평가기간에 등록된 모든 직원의 현황을 배열로 반환
 - 각 직원의 평가 대상 여부, 평가항목 설정 상태, WBS 평가기준 설정 상태, 평가라인 지정 상태 포함
   * **프로젝트/WBS 할당 개수는 취소된 프로젝트 할당(소프트 딜리트) 제외**
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 등록된 직원이 없으면 빈 배열 반환
 - 상태 값: complete(완료), in_progress(설정중), none(미존재)
 
 **테스트 케이스:**
 - 등록된 모든 직원의 현황을 조회할 수 있어야 한다
 - 실제처럼 다양한 설정 상태를 가진 직원들을 조회할 수 있어야 한다 (none, in_progress, complete)
-- 제외된 직원은 결과에 포함되지 않아야 한다
+- **조회하지 않기로 한 직원은 결과에 포함되지 않아야 한다**
 - 응답에 모든 필수 필드가 포함되어야 한다 (평가기간, 직원, 제외정보, 평가항목, WBS기준, 평가라인)
 - 등록된 직원이 없으면 빈 배열을 반환해야 한다
 - 여러 프로젝트와 WBS가 배정된 직원의 현황이 정확해야 한다 (카운트 정확성)
@@ -169,10 +169,14 @@ export function ExportAllEmployeesEvaluationPeriodStatusToExcel() {
 
 **동작:**
 - 평가기간에 등록된 모든 직원의 현황을 엑셀 파일로 생성하여 다운로드
-- 직원 정보(이름, 사번, 부서, 직급), 평가자 정보, 자기평가/1차/2차/동료/최종평가 현황 포함
-- 각 평가 단계별 상태, 점수, 등급 정보 제공
+- 엑셀 파일 최상단에 "{평가기간명} 평가 결과" 제목 포함
+- 직원 정보(이름, 사번, 부서, 직급), 평가자 정보 포함
+- 자기평가/1차/2차평가: 점수와 등급만 표시 (상태는 표시하지 않음)
+- 동료평가: 완료수/전체수만 표시 (상태는 표시하지 않음)
+- 최종평가: 평가등급과 직무등급 표시
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 엑셀 파일에 자동 제외됨**
 - Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-- Content-Disposition: attachment; filename="평가현황_{평가기간명}_{날짜}.xlsx"
+- Content-Disposition: attachment; filename="평가결과_{평가기간명}_{날짜}.xlsx"
 
 **엑셀 컬럼:**
 - 부서 (부서별로 세로 병합되어 표시)
@@ -182,11 +186,11 @@ export function ExportAllEmployeesEvaluationPeriodStatusToExcel() {
 - 2차 평가자
 - 재임여부
 - 평가선정
-- 자기평가 (상태, 점수, 등급)
-- 1차평가 (상태, 점수, 등급)
-- 2차평가 (상태, 점수, 등급)
-- 동료평가 (상태, 완료수/전체수)
-- 최종평가 (평가등급, 직무등급)
+- 자기평가 (점수 / 등급)
+- 1차평가 (점수 / 등급)
+- 2차평가 (점수 / 등급)
+- 동료평가 (완료수/전체수)
+- 최종평가 (평가등급(직무등급))
 
 **정렬 순서:**
 - SSO 부서 하이라키 API에서 조회한 부서 순서(order)대로 자동 정렬
@@ -579,7 +583,7 @@ export function GetFinalEvaluationsByPeriod() {
 - 평가기간 정보를 최상단에 한 번만 제공
 - 각 직원별 최종평가 정보를 배열로 제공
 - 직원 사번 오름차순으로 정렬
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 삭제된 최종평가는 조회되지 않음
 
 
@@ -705,7 +709,7 @@ export function GetAllEmployeesFinalEvaluations() {
 - 날짜 범위로 필터링된 평가기간 목록을 최상단에 제공 (시작일 내림차순)
 - 각 직원별로 평가기간 순서에 맞는 최종평가 배열 제공 (사번 오름차순)
 - 평가기간 배열과 최종평가 배열의 인덱스가 일치 (특정 평가기간에 평가 없으면 null)
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 삭제된 최종평가는 조회되지 않음
 
 **참고:** finalEvaluations 배열의 인덱스는 evaluationPeriods 배열의 인덱스와 일치합니다. 특정 평가기간에 평가가 없으면 해당 위치에 null이 들어갑니다.

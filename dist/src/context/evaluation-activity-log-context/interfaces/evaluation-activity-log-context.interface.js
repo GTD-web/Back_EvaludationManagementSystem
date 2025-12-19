@@ -1,3 +1,0 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-//# sourceMappingURL=evaluation-activity-log-context.interface.js.map

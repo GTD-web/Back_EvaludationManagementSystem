@@ -7,6 +7,7 @@ import {
   EvaluationPeriodDto,
   EvaluationPeriodPhase,
 } from '../../domain/core/evaluation-period/evaluation-period.types';
+import { EvaluationPeriod } from '../../domain/core/evaluation-period/evaluation-period.entity';
 import { EvaluationPeriodService } from '../../domain/core/evaluation-period/evaluation-period.service';
 import { EvaluationPeriodAutoPhaseService } from '../../domain/core/evaluation-period/evaluation-period-auto-phase.service';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
@@ -107,6 +108,8 @@ export class EvaluationPeriodManagementContextService
     private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService,
+    @InjectRepository(EvaluationPeriod)
+    private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
     @InjectRepository(EvaluationProjectAssignment)
     private readonly projectAssignmentRepository: Repository<EvaluationProjectAssignment>,
     @InjectRepository(EvaluationWbsAssignment)
@@ -283,6 +286,30 @@ export class EvaluationPeriodManagementContextService
       updatedBy,
     );
     return await this.commandBus.execute(command);
+  }
+
+  /**
+   * 결재 문서 ID를 설정한다
+   */
+  async 결재문서ID_설정한다(
+    periodId: string,
+    approvalDocumentId: string,
+    setBy: string,
+  ): Promise<EvaluationPeriodDto> {
+    const period = await this.evaluationPeriodService.ID로_조회한다(periodId);
+    if (!period) {
+      throw new NotFoundException(
+        `평가 기간을 찾을 수 없습니다. (ID: ${periodId})`,
+      );
+    }
+
+    // 도메인 엔티티의 메서드를 통해 결재 문서 ID 설정
+    period.결재문서ID_설정한다(approvalDocumentId, setBy);
+
+    // Repository를 통해 직접 저장
+    const savedPeriod = await this.evaluationPeriodRepository.save(period);
+
+    return savedPeriod.DTO로_변환한다();
   }
 
   /**
@@ -746,7 +773,12 @@ export class EvaluationPeriodManagementContextService
 
     // 4. 업데이트된 타겟 평가기간 반환
     const updatedPeriod = await this.평가기간상세_조회한다(targetPeriodId);
-    return updatedPeriod!;
+    if (!updatedPeriod) {
+      throw new NotFoundException(
+        `타겟 평가기간을 찾을 수 없습니다. (ID: ${targetPeriodId})`,
+      );
+    }
+    return updatedPeriod;
   }
 
   /**
@@ -1180,7 +1212,9 @@ export class EvaluationPeriodManagementContextService
 
     // 6. 할당된 WBS ID 목록 추출 (WBS 할당 기반)
     // 이전 평가기간 데이터 복사를 위해 평가라인 매핑이 없어도 모든 WBS 할당을 조회합니다
-    const assignedWbsIds = wbsAssignments.map((assignment) => assignment.wbsItemId);
+    const assignedWbsIds = wbsAssignments.map(
+      (assignment) => assignment.wbsItemId,
+    );
 
     this.logger.log(`실제 할당된 WBS ${assignedWbsIds.length}개`);
 

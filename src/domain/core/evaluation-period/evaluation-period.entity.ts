@@ -10,6 +10,7 @@ import {
   SelfEvaluationRateSettingNotAllowedException,
 } from './evaluation-period.exceptions';
 import {
+  ApprovalStatus,
   EvaluationPeriodDto,
   EvaluationPeriodPhase,
   EvaluationPeriodStatus,
@@ -163,6 +164,22 @@ export class EvaluationPeriod
     comment: '등급 구간 설정 (JSON)',
   })
   gradeRanges: GradeRange[];
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '결재 문서 ID',
+  })
+  approvalDocumentId?: string;
+
+  @Column({
+    type: 'enum',
+    enum: [...Object.values(ApprovalStatus)],
+    default: 'none',
+    comment: '결재 상태',
+  })
+  approvalStatus: ApprovalStatus;
 
   /**
    * 평가 기간을 시작한다
@@ -617,10 +634,7 @@ export class EvaluationPeriod
    * @param startDate 새로운 시작일
    * @param updatedBy 수정자 ID
    */
-  일정_업데이트한다(
-    startDate?: Date,
-    updatedBy?: string,
-  ): void {
+  일정_업데이트한다(startDate?: Date, updatedBy?: string): void {
     if (startDate) this.startDate = startDate;
 
     if (updatedBy) {
@@ -868,9 +882,30 @@ export class EvaluationPeriod
       finalEvaluationSettingEnabled: this.finalEvaluationSettingEnabled,
       maxSelfEvaluationRate: this.maxSelfEvaluationRate,
       gradeRanges: this.gradeRanges || [],
+      approvalDocumentId: this.approvalDocumentId,
+      approvalStatus: this.approvalStatus,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
+  }
+
+  /**
+   * 결재 문서 ID를 설정한다
+   */
+  결재문서ID_설정한다(approvalDocumentId: string, setBy: string): void {
+    this.approvalDocumentId = approvalDocumentId;
+    this.approvalStatus = ApprovalStatus.PENDING;
+    this.updatedBy = setBy;
+    this.updatedAt = new Date();
+  }
+
+  /**
+   * 결재 상태를 변경한다
+   */
+  결재상태_변경한다(approvalStatus: ApprovalStatus, changedBy: string): void {
+    this.approvalStatus = approvalStatus;
+    this.updatedBy = changedBy;
+    this.updatedAt = new Date();
   }
 
   /**

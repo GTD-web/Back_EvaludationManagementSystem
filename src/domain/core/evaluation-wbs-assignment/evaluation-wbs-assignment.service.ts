@@ -4,10 +4,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EvaluationWbsAssignmentValidationService } from './evaluation-wbs-assignment-validation.service';
 import { EvaluationWbsAssignment } from './evaluation-wbs-assignment.entity';
-import {
-  EvaluationWbsAssignmentNotFoundException,
-  EvaluationWbsAssignmentBusinessRuleViolationException,
-} from './evaluation-wbs-assignment.exceptions';
+import { EvaluationWbsAssignmentNotFoundException } from './evaluation-wbs-assignment.exceptions';
 import {
   CreateEvaluationWbsAssignmentData,
   UpdateEvaluationWbsAssignmentData,

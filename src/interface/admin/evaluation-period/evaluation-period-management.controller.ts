@@ -48,6 +48,7 @@ import {
   GetEvaluationPeriodDetail,
   GetEvaluationPeriodForCopy,
   GetEvaluationPeriods,
+  SetApprovalDocumentId,
   StartEvaluationPeriod,
   UpdateCriteriaSettingPermission,
   UpdateDefaultGradeRanges,
@@ -70,6 +71,7 @@ import {
   CreateEvaluationPeriodApiDto,
   ManualPermissionSettingDto,
   PaginationQueryDto,
+  SetApprovalDocumentIdApiDto,
   UpdateDefaultGradeRangesApiDto,
   UpdateEvaluationPeriodBasicApiDto,
   UpdateEvaluationPeriodScheduleApiDto,
@@ -658,6 +660,23 @@ export class EvaluationPeriodManagementController {
       periodId,
       contextDto,
       updatedBy,
+    );
+  }
+
+  /**
+   * 결재 문서 ID를 설정합니다.
+   */
+  @SetApprovalDocumentId()
+  async setApprovalDocumentId(
+    @ParseId() periodId: string,
+    @Body() approvalData: SetApprovalDocumentIdApiDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EvaluationPeriodDto> {
+    const setBy = user.id;
+    return await this.evaluationPeriodManagementService.결재문서ID_설정한다(
+      periodId,
+      approvalData.approvalDocumentId,
+      setBy,
     );
   }
 

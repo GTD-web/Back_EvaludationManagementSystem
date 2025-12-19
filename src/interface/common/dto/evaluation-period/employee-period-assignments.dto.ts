@@ -245,4 +245,3 @@ export class EmployeePeriodAssignmentsResponseDto {
   })
   totalWbs: number;
 }
-

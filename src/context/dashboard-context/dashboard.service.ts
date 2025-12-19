@@ -174,21 +174,19 @@ export class DashboardService implements IDashboardContext {
     departmentHierarchy: DepartmentHierarchyWithEmployeesDto[],
   ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('평가 현황');
+    const worksheet = workbook.addWorksheet('평가 결과');
 
-    // 상태 텍스트 변환 함수
-    const getStatusText = (status: string): string => {
-      const statusMap: Record<string, string> = {
-        none: '미설정',
-        in_progress: '진행중',
-        complete: '완료',
-        pending: '대기',
-        approved: '승인',
-        revision_requested: '재작성 요청',
-        revision_completed: '재작성 완료',
-      };
-      return statusMap[status] || status;
-    };
+    // 제목 행 추가 (평가기간명)
+    const titleRow = worksheet.addRow([`${periodName} 평가 결과`]);
+    titleRow.font = { bold: true, size: 16, color: { argb: 'FF000000' } };
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    titleRow.height = 30;
+
+    // 제목 셀 병합 (A1:L1 - 12개 컬럼)
+    worksheet.mergeCells('A1:L1');
+
+    // 빈 행 추가 (제목과 헤더 사이 간격)
+    worksheet.addRow([]);
 
     // 부서 하이라키에서 부서 순서 정보 추출
     interface DepartmentOrderInfo {
@@ -368,40 +366,32 @@ export class DashboardService implements IDashboardContext {
             .map((e) => e.evaluator.name)
             .join(', ') || '-';
 
-        // 자기평가 정보
-        const selfEvalStatus = getStatusText(item.selfEvaluation.status);
+        // 자기평가 정보 (점수만 표시)
         const selfEvalScore =
           item.selfEvaluation.totalScore !== null
             ? `${item.selfEvaluation.totalScore.toFixed(1)}점`
             : '-';
         const selfEvalGrade = item.selfEvaluation.grade || '-';
-        const selfEvalInfo = `${selfEvalStatus} (${selfEvalScore} / ${selfEvalGrade})`;
+        const selfEvalInfo = `${selfEvalScore} / ${selfEvalGrade}`;
 
-        // 1차평가 정보
-        const primaryStatus = getStatusText(
-          item.downwardEvaluation.primary.status,
-        );
+        // 1차평가 정보 (점수만 표시)
         const primaryScore =
           item.downwardEvaluation.primary.totalScore !== null
             ? `${item.downwardEvaluation.primary.totalScore.toFixed(1)}점`
             : '-';
         const primaryGrade = item.downwardEvaluation.primary.grade || '-';
-        const primaryInfo = `${primaryStatus} (${primaryScore} / ${primaryGrade})`;
+        const primaryInfo = `${primaryScore} / ${primaryGrade}`;
 
-        // 2차평가 정보
-        const secondaryStatus = getStatusText(
-          item.downwardEvaluation.secondary.status,
-        );
+        // 2차평가 정보 (점수만 표시)
         const secondaryScore =
           item.downwardEvaluation.secondary.totalScore !== null
             ? `${item.downwardEvaluation.secondary.totalScore.toFixed(1)}점`
             : '-';
         const secondaryGrade = item.downwardEvaluation.secondary.grade || '-';
-        const secondaryInfo = `${secondaryStatus} (${secondaryScore} / ${secondaryGrade})`;
+        const secondaryInfo = `${secondaryScore} / ${secondaryGrade}`;
 
-        // 동료평가 정보
-        const peerStatus = getStatusText(item.peerEvaluation.status);
-        const peerInfo = `${peerStatus} (${item.peerEvaluation.completedRequestCount}/${item.peerEvaluation.totalRequestCount})`;
+        // 동료평가 정보 (완료수/전체수만 표시)
+        const peerInfo = `${item.peerEvaluation.completedRequestCount}/${item.peerEvaluation.totalRequestCount}`;
 
         // 최종평가 정보
         const finalGrade = item.finalEvaluation.evaluationGrade || '-';

@@ -17,6 +17,10 @@ import { SecondaryEvaluationStepApproval } from '@domain/sub/secondary-evaluatio
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
+import { Project } from '@domain/common/project/project.entity';
+import { ProjectStatus } from '@domain/common/project/project.types';
+import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
+import { WbsItemStatus } from '@domain/common/wbs-item/wbs-item.types';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
@@ -55,6 +59,10 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
   let evaluationLineMappingRepository: Repository<EvaluationLineMapping>;
   let revisionRequestRepository: Repository<EvaluationRevisionRequest>;
   let recipientRepository: Repository<EvaluationRevisionRequestRecipient>;
+  let projectRepository: Repository<Project>;
+  let wbsItemRepository: Repository<WbsItem>;
+  let wbsAssignmentRepository: Repository<EvaluationWbsAssignment>;
+  let wbsCriteriaRepository: Repository<WbsEvaluationCriteria>;
 
   // 테스트 데이터 ID
   let evaluationPeriodId: string;
@@ -93,6 +101,8 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
           FinalEvaluation,
           EvaluationRevisionRequest,
           EvaluationRevisionRequestRecipient,
+          Project,
+          WbsItem,
         ]),
       ],
       providers: [GetEmployeeEvaluationPeriodStatusHandler],
@@ -126,6 +136,10 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
     recipientRepository = dataSource.getRepository(
       EvaluationRevisionRequestRecipient,
     );
+    projectRepository = dataSource.getRepository(Project);
+    wbsItemRepository = dataSource.getRepository(WbsItem);
+    wbsAssignmentRepository = dataSource.getRepository(EvaluationWbsAssignment);
+    wbsCriteriaRepository = dataSource.getRepository(WbsEvaluationCriteria);
 
     // 데이터베이스 스키마 동기화
     await dataSource.synchronize(true);
@@ -631,6 +645,101 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
         await evaluationLineRepository.save(secondaryLine);
 
       // 평가라인 매핑 생성
+      // 프로젝트 생성 (EvaluationLineMapping에 wbsItemId를 설정하기 위해 먼저 생성)
+      const project = projectRepository.create({
+        name: '테스트 프로젝트',
+        projectCode: 'TEST-001',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        status: ProjectStatus.ACTIVE,
+        createdBy: systemAdminId,
+      });
+      const savedProject = await projectRepository.save(project);
+
+      // WBS 아이템 생성 (2차 평가자 1용)
+      const wbsItem1 = wbsItemRepository.create({
+        projectId: savedProject.id,
+        wbsCode: 'WBS-001',
+        title: 'WBS 작업 1',
+        status: WbsItemStatus.IN_PROGRESS,
+        level: 1,
+        createdBy: systemAdminId,
+      });
+      const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+      // WBS 아이템 생성 (2차 평가자 2용)
+      const wbsItem2 = wbsItemRepository.create({
+        projectId: savedProject.id,
+        wbsCode: 'WBS-002',
+        title: 'WBS 작업 2',
+        status: WbsItemStatus.IN_PROGRESS,
+        level: 1,
+        createdBy: systemAdminId,
+      });
+      const savedWbsItem2 = await wbsItemRepository.save(wbsItem2);
+
+      // WBS 할당 (직원 -> 2차 평가자 1)
+      const wbsAssignment1 = wbsAssignmentRepository.create({
+        periodId: evaluationPeriodId,
+        employeeId: employeeId,
+        projectId: savedProject.id,
+        wbsItemId: savedWbsItem1.id,
+        assignedDate: new Date(),
+        assignedBy: systemAdminId,
+        displayOrder: 0,
+        weight: 50,
+        createdBy: systemAdminId,
+      });
+      await wbsAssignmentRepository.save(wbsAssignment1);
+
+      // WBS 할당 (직원 -> 2차 평가자 2)
+      const wbsAssignment2 = wbsAssignmentRepository.create({
+        periodId: evaluationPeriodId,
+        employeeId: employeeId,
+        projectId: savedProject.id,
+        wbsItemId: savedWbsItem2.id,
+        assignedDate: new Date(),
+        assignedBy: systemAdminId,
+        displayOrder: 1,
+        weight: 50,
+        createdBy: systemAdminId,
+      });
+      await wbsAssignmentRepository.save(wbsAssignment2);
+
+      // WBS 평가 기준 생성 (WBS 1용)
+      const wbsCriteria1 = wbsCriteriaRepository.create({
+        wbsItemId: savedWbsItem1.id,
+        criteria: '작업 완료도: WBS 작업의 완료 정도를 평가',
+        importance: 3,
+        createdBy: systemAdminId,
+      });
+      await wbsCriteriaRepository.save(wbsCriteria1);
+
+      // WBS 평가 기준 생성 (WBS 2용)
+      const wbsCriteria2 = wbsCriteriaRepository.create({
+        wbsItemId: savedWbsItem2.id,
+        criteria: '작업 품질: WBS 작업의 품질을 평가',
+        importance: 3,
+        createdBy: systemAdminId,
+      });
+      await wbsCriteriaRepository.save(wbsCriteria2);
+
+      // 프로젝트 할당 생성 (평가자별_하향평가_상태를_조회한다에서 필요)
+      const projectAssignmentRepository = dataSource.getRepository(
+        EvaluationProjectAssignment,
+      );
+      const projectAssignment = projectAssignmentRepository.create({
+        periodId: evaluationPeriodId,
+        employeeId: employeeId,
+        projectId: savedProject.id,
+        assignedDate: new Date(),
+        assignedBy: systemAdminId,
+        displayOrder: 0,
+        createdBy: systemAdminId,
+      });
+      await projectAssignmentRepository.save(projectAssignment);
+
+      // 평가라인 매핑 생성 (WBS 생성 후)
       const primaryLineMapping = evaluationLineMappingRepository.create({
         evaluationPeriodId: evaluationPeriodId,
         employeeId: employeeId,
@@ -638,15 +747,17 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
         evaluationLineId: savedPrimaryLine.id,
         version: 1,
         createdBy: systemAdminId,
+        // 1차 평가자는 WBS와 무관하므로 wbsItemId는 null
       });
       await evaluationLineMappingRepository.save(primaryLineMapping);
 
-      // 2차 평가자들은 같은 평가라인을 사용하지만 다른 평가자 ID
+      // 2차 평가자들은 각각의 WBS와 연결
       const secondaryLineMapping1 = evaluationLineMappingRepository.create({
         evaluationPeriodId: evaluationPeriodId,
         employeeId: employeeId,
         evaluatorId: secondaryEvaluatorId1,
         evaluationLineId: savedSecondaryLine.id,
+        wbsItemId: savedWbsItem1.id, // 2차 평가자는 WBS와 연결
         version: 1,
         createdBy: systemAdminId,
       });
@@ -657,6 +768,7 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
         employeeId: employeeId,
         evaluatorId: secondaryEvaluatorId2,
         evaluationLineId: savedSecondaryLine.id,
+        wbsItemId: savedWbsItem2.id, // 2차 평가자는 WBS와 연결
         version: 1,
         createdBy: systemAdminId,
       });
@@ -715,6 +827,8 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
       expect(
         Array.isArray(result!.stepApproval.secondaryEvaluationStatuses),
       ).toBe(true);
+
+      // 2차 평가자가 조회되어야 함
       expect(result!.stepApproval.secondaryEvaluationStatuses.length).toBe(2);
 
       // 각 평가자 정보 확인
@@ -1554,6 +1668,409 @@ describe('GetEmployeeEvaluationPeriodStatusHandler - StepApproval Integration', 
         expect(status1!.approvedAt).toBeInstanceOf(Date);
         expect(status1!.approvedAt!.getTime()).toBe(approvedAt.getTime());
       });
+    });
+  });
+
+  describe('1차 평가자 상태 검증', () => {
+    /**
+     * 1차 평가자 포함 테스트 데이터 생성
+     */
+    async function 일차평가자_포함_테스트데이터를_생성한다(): Promise<void> {
+      await 기본_테스트데이터를_생성한다();
+
+      // 1차 평가자 생성
+      const primaryEvaluator = employeeRepository.create({
+        name: '이일차평가자',
+        employeeNumber: 'EMP002',
+        email: 'primary@test.com',
+        externalId: 'EXT002',
+        departmentId: departmentId,
+        status: '재직중',
+        createdBy: systemAdminId,
+      });
+      const savedPrimaryEvaluator =
+        await employeeRepository.save(primaryEvaluator);
+      primaryEvaluatorId = savedPrimaryEvaluator.id;
+
+      // 평가라인 생성
+      const primaryLine = evaluationLineRepository.create({
+        evaluatorType: EvaluatorType.PRIMARY,
+        order: 1,
+        isRequired: true,
+        isAutoAssigned: false,
+        version: 1,
+        createdBy: systemAdminId,
+      });
+      const savedPrimaryLine = await evaluationLineRepository.save(primaryLine);
+
+      // 프로젝트 생성
+      const project = projectRepository.create({
+        name: '테스트 프로젝트',
+        projectCode: 'TEST-001',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        status: ProjectStatus.ACTIVE,
+        createdBy: systemAdminId,
+      });
+      const savedProject = await projectRepository.save(project);
+
+      // WBS 아이템 생성
+      const wbsItem = wbsItemRepository.create({
+        projectId: savedProject.id,
+        wbsCode: 'WBS-001',
+        title: 'WBS 작업 1',
+        status: WbsItemStatus.IN_PROGRESS,
+        level: 1,
+        createdBy: systemAdminId,
+      });
+      const savedWbsItem = await wbsItemRepository.save(wbsItem);
+
+      // WBS 할당
+      const wbsAssignment = wbsAssignmentRepository.create({
+        periodId: evaluationPeriodId,
+        employeeId: employeeId,
+        projectId: savedProject.id,
+        wbsItemId: savedWbsItem.id,
+        assignedDate: new Date(),
+        assignedBy: systemAdminId,
+        displayOrder: 0,
+        weight: 100,
+        createdBy: systemAdminId,
+      });
+      await wbsAssignmentRepository.save(wbsAssignment);
+
+      // WBS 평가 기준 생성
+      const wbsCriteria = wbsCriteriaRepository.create({
+        wbsItemId: savedWbsItem.id,
+        criteria: '작업 완료도: WBS 작업의 완료 정도를 평가',
+        importance: 3,
+        createdBy: systemAdminId,
+      });
+      await wbsCriteriaRepository.save(wbsCriteria);
+
+      // 프로젝트 할당 생성
+      const projectAssignmentRepository = dataSource.getRepository(
+        EvaluationProjectAssignment,
+      );
+      const projectAssignment = projectAssignmentRepository.create({
+        periodId: evaluationPeriodId,
+        employeeId: employeeId,
+        projectId: savedProject.id,
+        assignedDate: new Date(),
+        assignedBy: systemAdminId,
+        displayOrder: 0,
+        createdBy: systemAdminId,
+      });
+      await projectAssignmentRepository.save(projectAssignment);
+
+      // 평가라인 매핑 생성
+      const primaryLineMapping = evaluationLineMappingRepository.create({
+        evaluationPeriodId: evaluationPeriodId,
+        employeeId: employeeId,
+        evaluatorId: primaryEvaluatorId,
+        evaluationLineId: savedPrimaryLine.id,
+        version: 1,
+        createdBy: systemAdminId,
+      });
+      await evaluationLineMappingRepository.save(primaryLineMapping);
+    }
+
+    it('1차 평가자 정보가 올바르게 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.PENDING,
+        selfEvaluationStatus: StepApprovalStatus.PENDING,
+        primaryEvaluationStatus: StepApprovalStatus.PENDING,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.downwardEvaluation).toBeDefined();
+      expect(result!.downwardEvaluation.primary).toBeDefined();
+      expect(result!.downwardEvaluation.primary.evaluator).toBeDefined();
+
+      // 1차 평가자 정보 검증
+      const primaryEvaluator = result!.downwardEvaluation.primary.evaluator;
+      expect(primaryEvaluator!.id).toBe(primaryEvaluatorId);
+      expect(primaryEvaluator!.name).toBe('이일차평가자');
+      expect(primaryEvaluator!.employeeNumber).toBe('EMP002');
+      expect(primaryEvaluator!.email).toBe('primary@test.com');
+    });
+
+    it('1차 평가 상태가 pending일 때 올바르게 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.PENDING,
+        selfEvaluationStatus: StepApprovalStatus.PENDING,
+        primaryEvaluationStatus: StepApprovalStatus.PENDING,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.stepApproval.primaryEvaluationStatus).toBe('pending');
+      expect(result!.stepApproval.primaryEvaluationApprovedBy).toBeNull();
+      expect(result!.stepApproval.primaryEvaluationApprovedAt).toBeNull();
+    });
+
+    it('1차 평가 상태가 approved일 때 올바르게 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const approvedAt = new Date();
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.APPROVED,
+        selfEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationApprovedBy: adminId,
+        primaryEvaluationApprovedAt: approvedAt,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.stepApproval.primaryEvaluationStatus).toBe('approved');
+      expect(result!.stepApproval.primaryEvaluationApprovedBy).toBe(adminId);
+      expect(result!.stepApproval.primaryEvaluationApprovedAt).toBeInstanceOf(
+        Date,
+      );
+      expect(result!.stepApproval.primaryEvaluationApprovedAt!.getTime()).toBe(
+        approvedAt.getTime(),
+      );
+    });
+
+    it('1차 평가에 대한 재작성 요청이 있는 경우 상태가 revision_requested로 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.APPROVED,
+        selfEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationStatus: StepApprovalStatus.REVISION_REQUESTED,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // 재작성 요청 생성
+      const requestedAt = new Date();
+      const revisionRequest = revisionRequestRepository.create({
+        evaluationPeriodId: evaluationPeriodId,
+        employeeId: employeeId,
+        step: 'primary',
+        comment: '1차 평가를 다시 작성해주세요',
+        requestedBy: adminId,
+        requestedAt: requestedAt,
+        createdBy: adminId,
+      });
+      const savedRevisionRequest =
+        await revisionRequestRepository.save(revisionRequest);
+
+      // 재작성 요청 수신자 생성
+      const recipient = recipientRepository.create({
+        revisionRequestId: savedRevisionRequest.id,
+        recipientType: RecipientType.PRIMARY_EVALUATOR,
+        recipientId: primaryEvaluatorId,
+        createdBy: adminId,
+      });
+      await recipientRepository.save(recipient);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.stepApproval.primaryEvaluationStatus).toBe(
+        'revision_requested',
+      );
+      // 1차 평가자는 재작성 요청 상세 정보가 DTO에 포함되지 않음 (2차 평가자와 다름)
+      expect(result!.stepApproval.primaryEvaluationApprovedBy).toBeNull();
+      expect(result!.stepApproval.primaryEvaluationApprovedAt).toBeNull();
+    });
+
+    it('1차 평가 재작성이 완료된 경우 상태가 revision_completed로 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      // 재작성 완료 후에는 상태를 REVISION_COMPLETED로 업데이트
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.APPROVED,
+        selfEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationStatus: StepApprovalStatus.REVISION_COMPLETED,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // 재작성 요청 생성
+      const requestedAt = new Date();
+      const revisionRequest = revisionRequestRepository.create({
+        evaluationPeriodId: evaluationPeriodId,
+        employeeId: employeeId,
+        step: 'primary',
+        comment: '1차 평가를 다시 작성해주세요',
+        requestedBy: adminId,
+        requestedAt: requestedAt,
+        createdBy: adminId,
+      });
+      const savedRevisionRequest =
+        await revisionRequestRepository.save(revisionRequest);
+
+      // 재작성 요청 수신자 생성 (완료 상태)
+      const completedAt = new Date();
+      const recipient = recipientRepository.create({
+        revisionRequestId: savedRevisionRequest.id,
+        recipientType: RecipientType.PRIMARY_EVALUATOR,
+        recipientId: primaryEvaluatorId,
+        isCompleted: true,
+        completedAt: completedAt,
+        responseComment: '재작성 완료했습니다',
+        createdBy: adminId,
+      });
+      await recipientRepository.save(recipient);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.stepApproval.primaryEvaluationStatus).toBe(
+        'revision_completed',
+      );
+      // 1차 평가자는 재작성 요청 상세 정보가 DTO에 포함되지 않음
+      expect(result!.stepApproval.primaryEvaluationApprovedBy).toBeNull();
+      expect(result!.stepApproval.primaryEvaluationApprovedAt).toBeNull();
+    });
+
+    it('1차 평가 필드가 모두 올바르게 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const approvedAt = new Date();
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.APPROVED,
+        selfEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationStatus: StepApprovalStatus.APPROVED,
+        primaryEvaluationApprovedBy: adminId,
+        primaryEvaluationApprovedAt: approvedAt,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.stepApproval).toBeDefined();
+
+      // 1차 평가 관련 필수 필드 검증 (재작성 요청 상세 필드는 1차 평가자에 없음)
+      const requiredFields = [
+        'primaryEvaluationStatus',
+        'primaryEvaluationApprovedBy',
+        'primaryEvaluationApprovedAt',
+      ];
+
+      for (const field of requiredFields) {
+        expect(result!.stepApproval).toHaveProperty(field);
+      }
+
+      // 상태 값 검증
+      expect(result!.stepApproval.primaryEvaluationStatus).toBe('approved');
+      expect(result!.stepApproval.primaryEvaluationApprovedBy).toBe(adminId);
+      expect(result!.stepApproval.primaryEvaluationApprovedAt).toBeInstanceOf(
+        Date,
+      );
+      expect(result!.stepApproval.primaryEvaluationApprovedAt!.getTime()).toBe(
+        approvedAt.getTime(),
+      );
+    });
+
+    it('1차 평가자의 하향평가 상태 정보가 올바르게 반환되어야 한다', async () => {
+      // Given
+      await 일차평가자_포함_테스트데이터를_생성한다();
+
+      const stepApproval = stepApprovalRepository.create({
+        evaluationPeriodEmployeeMappingId: mappingId,
+        criteriaSettingStatus: StepApprovalStatus.PENDING,
+        selfEvaluationStatus: StepApprovalStatus.PENDING,
+        primaryEvaluationStatus: StepApprovalStatus.PENDING,
+        secondaryEvaluationStatus: StepApprovalStatus.PENDING,
+        createdBy: systemAdminId,
+      });
+      await stepApprovalRepository.save(stepApproval);
+
+      // When
+      const query = new GetEmployeeEvaluationPeriodStatusQuery(
+        evaluationPeriodId,
+        employeeId,
+      );
+      const result = await handler.execute(query);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result!.downwardEvaluation.primary).toBeDefined();
+
+      // 하향평가 상태 정보 검증
+      expect(result!.downwardEvaluation.primary.status).toBe('none'); // 아직 평가 안 함
+      expect(result!.downwardEvaluation.primary.assignedWbsCount).toBe(1);
+      expect(result!.downwardEvaluation.primary.completedEvaluationCount).toBe(
+        0,
+      );
+      expect(result!.downwardEvaluation.primary.isSubmitted).toBe(false);
+      expect(result!.downwardEvaluation.primary.totalScore).toBeNull();
+      expect(result!.downwardEvaluation.primary.grade).toBeNull();
     });
   });
 });

@@ -751,6 +751,11 @@ export class EvaluationPeriod
   등급구간_설정한다(gradeRanges: GradeRange[], setBy: string): void {
     this.등급구간_유효성_검증한다(gradeRanges);
     this.gradeRanges = [...gradeRanges].sort((a, b) => b.minRange - a.minRange);
+    
+    // 등급 구간의 최대값을 maxSelfEvaluationRate로 설정
+    const maxRange = Math.max(...gradeRanges.map((range) => range.maxRange));
+    this.maxSelfEvaluationRate = maxRange;
+    
     this.updatedBy = setBy;
     this.updatedAt = new Date();
   }

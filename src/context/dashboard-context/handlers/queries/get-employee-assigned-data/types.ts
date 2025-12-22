@@ -25,8 +25,8 @@ export interface AssignedProjectWithWbs {
   projectManager?: {
     id: string;
     name: string;
-    realPM?: string;
   } | null;
+  realPM?: string;
   wbsList: AssignedWbsInfo[];
 }
 

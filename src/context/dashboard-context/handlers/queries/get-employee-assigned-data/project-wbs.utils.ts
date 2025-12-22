@@ -21,8 +21,13 @@ import {
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 
 // 임시로 로거 비활성화 (디버깅용)
-// const logger = new Logger('ProjectWbsUtils');
-const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
+const logger = new Logger('ProjectWbsUtils');
+// const logger = {
+//   log: () => {},
+//   warn: () => {},
+//   error: () => {},
+//   debug: () => {},
+// } as any;
 
 /**
  * 프로젝트별 할당 정보 조회 (WBS 목록 포함)
@@ -53,9 +58,9 @@ export async function getProjectsWithWbs(
       'project.id = assignment.projectId AND project.deletedAt IS NULL',
     )
     .leftJoin(
-      'project_manager',
-      'pm',
-      'pm.managerId = project.managerId AND pm.deletedAt IS NULL',
+      Employee,
+      'manager',
+      'manager.externalId = project.managerId AND manager.deletedAt IS NULL',
     )
     .select([
       'assignment.id AS assignment_id',
@@ -69,8 +74,9 @@ export async function getProjectsWithWbs(
       'project.startDate AS project_start_date',
       'project.endDate AS project_end_date',
       'project.managerId AS project_manager_id',
-      'pm.id AS pm_id',
-      'pm.realPM AS real_pm',
+      'project.realPM AS project_real_pm',
+      'manager.id AS manager_id',
+      'manager.name AS manager_name',
     ])
     .where('assignment.periodId = :periodId', {
       periodId: evaluationPeriodId,
@@ -399,7 +405,10 @@ export async function getProjectsWithWbs(
     if (allEvaluatorIds.size > 0) {
       const evaluators = await employeeRepository
         .createQueryBuilder('employee')
-        .select(['employee.id AS employee_id', 'employee.name AS employee_name'])
+        .select([
+          'employee.id AS employee_id',
+          'employee.name AS employee_name',
+        ])
         .where('employee.id IN (:...ids)', {
           ids: Array.from(allEvaluatorIds),
         })
@@ -616,19 +625,17 @@ export async function getProjectsWithWbs(
       continue;
     }
 
-    // 프로젝트 매니저 정보 - realPM 기준으로 구성
+    // 프로젝트 매니저 정보 (PM 기본 정보만)
     const projectManager =
-      row.real_pm
+      row.manager_id && row.manager_name
         ? {
-            id: row.pm_id || '',
-            name: row.real_pm,
-            realPM: '',
+            id: row.manager_id,
+            name: row.manager_name,
           }
-        : {
-            id: '',
-            name: '',
-            realPM: '',
-          };
+        : null;
+
+    // 실 PM은 프로젝트 테이블에서 가져온 realPM 값 사용
+    const realPM = row.project_real_pm || '';
 
     // 해당 프로젝트의 WBS 목록 필터링
     const projectWbsAssignments = wbsAssignments.filter(
@@ -658,10 +665,15 @@ export async function getProjectsWithWbs(
 
       // 2차 평가자 설정: 매핑이 있으면 사용, 없으면 프로젝트 PM을 기본값으로 설정
       let secondaryEval = downwardEvalData.secondary;
-      
+
       if (secondaryEval) {
         // 매핑이 있지만 evaluatorName이 비어있는 경우, PM 이름으로 채움
-        if (!secondaryEval.evaluatorName && projectManager.id && secondaryEval.evaluatorId === projectManager.id) {
+        if (
+          !secondaryEval.evaluatorName &&
+          projectManager &&
+          projectManager.id &&
+          secondaryEval.evaluatorId === projectManager.id
+        ) {
           logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
             wbsId: wbsItemId,
             evaluatorId: secondaryEval.evaluatorId,
@@ -673,7 +685,7 @@ export async function getProjectsWithWbs(
             evaluatorName: projectManager.name,
           };
         }
-      } else if (projectManager.id) {
+      } else if (projectManager && projectManager.id) {
         // 2차 평가자 매핑이 없으면 프로젝트 PM을 기본값으로 설정
         logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
           wbsId: wbsItemId,
@@ -708,6 +720,7 @@ export async function getProjectsWithWbs(
       projectCode: row.project_project_code || '',
       assignedAt: row.assignment_assigned_date,
       projectManager,
+      realPM,
       wbsList,
     });
   }

@@ -134,6 +134,14 @@ export class CreateProjectDto {
   managerId?: string;
 
   @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+  })
+  @IsOptional()
+  @IsString()
+  realPM?: string;
+
+  @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
     example: '660e9500-f30c-52e5-b827-557766551111',
   })
@@ -289,6 +297,14 @@ export class UpdateProjectDto {
     message: 'managerId must be a UUID',
   })
   managerId?: string;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+  })
+  @IsOptional()
+  @IsString()
+  realPM?: string;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',
@@ -592,6 +608,12 @@ export class ProjectResponseDto {
     type: ManagerInfoDto,
   })
   manager?: ManagerInfoDto;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+  })
+  realPM?: string;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (하위 프로젝트인 경우)',

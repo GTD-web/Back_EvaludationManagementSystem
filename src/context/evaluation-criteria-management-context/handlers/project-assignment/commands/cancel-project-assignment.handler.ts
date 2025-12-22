@@ -11,6 +11,8 @@ import { TransactionManagerService } from '@libs/database/transaction-manager.se
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
 import { WbsSelfEvaluationService } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.service';
+import { DownwardEvaluationService } from '@domain/core/downward-evaluation/downward-evaluation.service';
+import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 
 /**
  * 프로젝트 할당 취소 커맨드
@@ -38,6 +40,8 @@ export class CancelProjectAssignmentHandler
     private readonly evaluationPeriodService: EvaluationPeriodService,
     private readonly wbsAssignmentService: EvaluationWbsAssignmentService,
     private readonly wbsSelfEvaluationService: WbsSelfEvaluationService,
+    private readonly downwardEvaluationService: DownwardEvaluationService,
+    private readonly lineMappingService: EvaluationLineMappingService,
     private readonly transactionManager: TransactionManagerService,
   ) {}
 
@@ -105,7 +109,7 @@ export class CancelProjectAssignmentHandler
         },
       );
 
-      // 2. WBS 할당별로 관련 자기평가 삭제
+      // 2. WBS 할당별로 관련 데이터 삭제
       for (const wbsAssignment of wbsAssignments) {
         // 2-1. 해당 WBS 항목의 자기평가 조회
         const selfEvaluations =
@@ -130,13 +134,78 @@ export class CancelProjectAssignmentHandler
           );
         }
 
-        // 2-3. WBS 할당 삭제
+        // 2-3. 해당 WBS 항목의 하향평가 조회 및 삭제
+        const downwardEvaluations =
+          await this.downwardEvaluationService.필터_조회한다({
+            periodId: assignment.periodId,
+            employeeId: assignment.employeeId,
+            wbsId: wbsAssignment.wbsItemId,
+          });
+
+        for (const evaluation of downwardEvaluations) {
+          await this.downwardEvaluationService.삭제한다(
+            evaluation.id,
+            cancelledBy,
+          );
+          this.logger.debug(
+            `하향평가 삭제: ${evaluation.id} (WBS: ${wbsAssignment.wbsItemId}, 평가자: ${evaluation.evaluatorId})`,
+          );
+        }
+
+        // 2-4. 해당 WBS 항목의 평가라인 매핑 삭제
+        await this.lineMappingService.WBS항목_맵핑_전체삭제한다(
+          wbsAssignment.wbsItemId,
+          cancelledBy,
+          manager,
+        );
+        this.logger.debug(
+          `평가라인 매핑 삭제: WBS ${wbsAssignment.wbsItemId}의 모든 매핑`,
+        );
+
+        // 2-5. WBS 할당 삭제
         await this.wbsAssignmentService.삭제한다(
           wbsAssignment.id,
           cancelledBy,
           manager,
         );
         this.logger.debug(`WBS 할당 삭제: ${wbsAssignment.id}`);
+      }
+
+      // 2-6. 모든 WBS가 삭제되었는지 확인 후, 직원-평가자 레벨의 평가라인 매핑도 삭제
+      // (wbsItemId = NULL인 1차 평가자 매핑 등)
+      const remainingWbsList = await this.wbsAssignmentService.필터_조회한다(
+        {
+          periodId: assignment.periodId,
+          employeeId: assignment.employeeId,
+        },
+        manager,
+      );
+
+      if (remainingWbsList.length === 0) {
+        // 해당 직원의 모든 WBS가 삭제되었으므로, 평가라인 매핑도 모두 삭제
+        const employeeLineMappings =
+          await this.lineMappingService.필터_조회한다(
+            {
+              evaluationPeriodId: assignment.periodId,
+              employeeId: assignment.employeeId,
+            },
+            manager,
+          );
+
+        for (const lineMapping of employeeLineMappings) {
+          await this.lineMappingService.삭제한다(
+            lineMapping.id,
+            cancelledBy,
+            manager,
+          );
+          this.logger.debug(
+            `직원 평가라인 매핑 삭제: ${lineMapping.id} (평가자: ${lineMapping.evaluatorId})`,
+          );
+        }
+
+        this.logger.log(
+          `직원의 모든 WBS가 삭제되어 평가라인 매핑 전체 삭제 - 직원: ${assignment.employeeId}, 매핑 수: ${employeeLineMappings.length}`,
+        );
       }
 
       // 3. 프로젝트 배정 삭제

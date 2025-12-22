@@ -644,6 +644,7 @@ export async function getProjectsWithWbs(
 
       const criteria = criteriaMap.get(wbsItemId) || [];
       const performance = performanceMap.get(wbsItemId) || null;
+      const subProject = subProjectMap.get(wbsItemId) || null;
       const downwardEvalData = downwardEvaluationMap.get(wbsItemId) || {
         primary: null,
         secondary: null,
@@ -689,6 +690,7 @@ export async function getProjectsWithWbs(
         assignedAt: wbsRow.assignment_assigned_date,
         criteria,
         performance,
+        subProject,
         primaryDownwardEvaluation: downwardEvalData.primary || null,
         secondaryDownwardEvaluation: secondaryEval || null,
         deliverables,

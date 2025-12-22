@@ -6,6 +6,7 @@ import { EvaluationPeriodManagementApiClient } from '../../api-clients/evaluatio
 import { EvaluationLineApiClient } from '../../api-clients/evaluation-line.api-client';
 import { ProjectAssignmentApiClient } from '../../api-clients/project-assignment.api-client';
 import { DashboardApiClient } from '../../api-clients/dashboard.api-client';
+import { WbsSelfEvaluationApiClient } from '../../api-clients/wbs-self-evaluation.api-client';
 
 /**
  * 이전 평가기간 데이터 복사 E2E 테스트
@@ -28,6 +29,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
   let lineApiClient: EvaluationLineApiClient;
   let projectAssignmentApiClient: ProjectAssignmentApiClient;
   let dashboardApiClient: DashboardApiClient;
+  let selfEvalApiClient: WbsSelfEvaluationApiClient;
 
   let sourcePeriodId: string;
   let targetPeriodId: string;
@@ -47,6 +49,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
     lineApiClient = new EvaluationLineApiClient(testSuite);
     projectAssignmentApiClient = new ProjectAssignmentApiClient(testSuite);
     dashboardApiClient = new DashboardApiClient(testSuite);
+    selfEvalApiClient = new WbsSelfEvaluationApiClient(testSuite);
 
     // 시드 데이터 생성
     const seedResult = await seedDataScenario.시드_데이터를_생성한다({
@@ -71,9 +74,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
         employeeNumber: 'TEST001',
         roles: ['admin', 'user'],
       });
-      console.log(
-        `🔐 현재 로그인 사용자 설정: ${employeeIds[0]}`,
-      );
+      console.log(`🔐 현재 로그인 사용자 설정: ${employeeIds[0]}`);
     }
 
     console.log(
@@ -209,6 +210,33 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       );
     });
 
+    it('6.5단계: 원본 평가기간에 WBS별 subProject 데이터를 설정한다', async () => {
+      // WBS 자기평가 저장 (subProject 설정)
+      await selfEvalApiClient.upsertWbsSelfEvaluation({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        periodId: sourcePeriodId,
+        selfEvaluationContent: '테스트 자기평가 내용',
+        selfEvaluationScore: 80,
+        performanceResult: '테스트 성과 결과',
+        subProject: '테스트 서브프로젝트 A',
+      });
+
+      await selfEvalApiClient.upsertWbsSelfEvaluation({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[1],
+        periodId: sourcePeriodId,
+        selfEvaluationContent: '테스트 자기평가 내용 2',
+        selfEvaluationScore: 90,
+        performanceResult: '테스트 성과 결과 2',
+        subProject: '테스트 서브프로젝트 B',
+      });
+
+      console.log(
+        `✅ WBS별 subProject 설정 완료: WBS ${wbsItemIds[0]}, ${wbsItemIds[1]}`,
+      );
+    });
+
     it('7단계: 대상 평가기간을 생성한다', async () => {
       const today = new Date();
       // 원본 평가기간과 겹치지 않도록 3개월 후 시작
@@ -238,13 +266,14 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
     it('8단계: 이전 평가기간 데이터를 복사한다 (Admin API)', async () => {
       console.log(`\n🔍 복사 API 호출 정보:`);
       console.log(`   - targetPeriodId: ${targetPeriodId}`);
+      console.log(`   - employeeId: ${employeeIds[0]}`);
       console.log(`   - sourcePeriodId: ${sourcePeriodId}`);
       console.log(`   - 현재 로그인 사용자: JWT에서 자동 추출`);
 
       const response = await testSuite
         .request()
         .post(
-          `/admin/evaluation-periods/${targetPeriodId}/copy-from/${sourcePeriodId}`,
+          `/admin/evaluation-periods/${targetPeriodId}/employees/${employeeIds[0]}/copy-from/${sourcePeriodId}`,
         )
         .send({}); // 모든 프로젝트와 WBS 복사
 
@@ -260,7 +289,9 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBeDefined();
       expect(response.body.copiedProjectAssignments).toBeGreaterThanOrEqual(0);
-      expect(response.body.copiedEvaluationLineMappings).toBeGreaterThanOrEqual(0);
+      expect(response.body.copiedEvaluationLineMappings).toBeGreaterThanOrEqual(
+        0,
+      );
 
       console.log(
         `✅ 이전 평가기간 데이터 복사 완료: 프로젝트 할당 ${response.body.copiedProjectAssignments}개, 평가라인 매핑 ${response.body.copiedEvaluationLineMappings}개`,
@@ -315,12 +346,8 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       expect(targetData.projects.length).toBe(sourceData.projects.length);
 
       // 프로젝트 ID 일치 확인
-      const sourceProjectIds = sourceData.projects.map(
-        (p: any) => p.projectId,
-      );
-      const targetProjectIds = targetData.projects.map(
-        (p: any) => p.projectId,
-      );
+      const sourceProjectIds = sourceData.projects.map((p: any) => p.projectId);
+      const targetProjectIds = targetData.projects.map((p: any) => p.projectId);
 
       expect(targetProjectIds.sort()).toEqual(sourceProjectIds.sort());
 
@@ -361,11 +388,85 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       console.log(
         `✅ 평가라인 매핑 복사 확인: ${targetSettings.evaluationLineMappings.length}개 매핑`,
       );
+      console.log(`   - 원본 평가자: ${sourceEvaluatorIds.join(', ')}`);
+      console.log(`   - 대상 평가자: ${targetEvaluatorIds.join(', ')}`);
+    });
+
+    it('12단계: subProject가 제대로 복사되었는지 확인한다', async () => {
+      // 원본 평가기간의 할당 데이터 조회 (subProject 포함)
+      const sourceData = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: sourcePeriodId,
+        employeeId: employeeIds[0],
+      });
+
+      // 대상 평가기간의 할당 데이터 조회 (subProject 포함)
+      const targetData = await dashboardApiClient.getEmployeeAssignedData({
+        periodId: targetPeriodId,
+        employeeId: employeeIds[0],
+      });
+
+      // 디버깅: 원본 데이터 확인
+      console.log('\n📋 원본 평가기간 WBS 데이터:');
+      console.log(`원본 프로젝트 개수: ${sourceData.projects.length}`);
+      sourceData.projects.forEach((p: any, idx: number) => {
+        console.log(`  [${idx}] 프로젝트: ${p.projectName}`);
+        console.log(
+          `      wbsList 존재 여부: ${!!p.wbsList}, 길이: ${p.wbsList?.length || 0}`,
+        );
+        p.wbsList?.forEach((wbs: any) => {
+          console.log(
+            `      WBS: ${wbs.wbsCode} (${wbs.wbsId}) - subProject: "${wbs.subProject}"`,
+          );
+        });
+      });
+
+      // 디버깅: 대상 데이터 확인
+      console.log('\n📋 대상 평가기간 WBS 데이터:');
+      console.log(`대상 프로젝트 개수: ${targetData.projects.length}`);
+      targetData.projects.forEach((p: any, idx: number) => {
+        console.log(`  [${idx}] 프로젝트: ${p.projectName}`);
+        console.log(
+          `      wbsList 존재 여부: ${!!p.wbsList}, 길이: ${p.wbsList?.length || 0}`,
+        );
+        p.wbsList?.forEach((wbs: any) => {
+          console.log(
+            `      WBS: ${wbs.wbsCode} (${wbs.wbsId}) - subProject: "${wbs.subProject}"`,
+          );
+        });
+      });
+
+      // 원본과 대상에서 subProject가 있는 WBS 찾기
+      const sourceWbsWithSubProject = sourceData.projects
+        .flatMap((p: any) => p.wbsList || [])
+        .filter((wbs: any) => wbs.subProject);
+
+      const targetWbsWithSubProject = targetData.projects
+        .flatMap((p: any) => p.wbsList || [])
+        .filter((wbs: any) => wbs.subProject);
+
+      // subProject가 있는 WBS 개수 확인
+      expect(targetWbsWithSubProject.length).toBeGreaterThan(0);
+      expect(targetWbsWithSubProject.length).toBe(
+        sourceWbsWithSubProject.length,
+      );
+
+      // 각 WBS의 subProject 값이 일치하는지 확인
+      for (const sourceWbs of sourceWbsWithSubProject) {
+        const targetWbs = targetWbsWithSubProject.find(
+          (w: any) => w.wbsId === sourceWbs.wbsId,
+        );
+        expect(targetWbs).toBeDefined();
+        expect(targetWbs.subProject).toBe(sourceWbs.subProject);
+      }
+
       console.log(
-        `   - 원본 평가자: ${sourceEvaluatorIds.join(', ')}`,
+        `✅ subProject 복사 확인: ${targetWbsWithSubProject.length}개 WBS`,
       );
       console.log(
-        `   - 대상 평가자: ${targetEvaluatorIds.join(', ')}`,
+        `   - WBS ${wbsItemIds[0]}: subProject="${targetWbsWithSubProject.find((w: any) => w.wbsId === wbsItemIds[0])?.subProject}"`,
+      );
+      console.log(
+        `   - WBS ${wbsItemIds[1]}: subProject="${targetWbsWithSubProject.find((w: any) => w.wbsId === wbsItemIds[1])?.subProject}"`,
       );
     });
   });
@@ -384,9 +485,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
           employeeNumber: 'USER002',
           roles: ['user'],
         });
-        console.log(
-          `🔐 User API 테스트용 현재 사용자 설정: ${employeeIds[2]}`,
-        );
+        console.log(`🔐 User API 테스트용 현재 사용자 설정: ${employeeIds[2]}`);
       }
     });
 
@@ -465,7 +564,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       const response = await testSuite
         .request()
         .post(
-          `/user/evaluation-periods/${userTargetPeriodId}/copy-from/${userSourcePeriodId}`,
+          `/user/evaluation-periods/${userTargetPeriodId}/copy-my-previous-data/${userSourcePeriodId}`,
         )
         .send({})
         .expect(200);
@@ -534,9 +633,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
           employeeNumber: 'USER003',
           roles: ['admin'],
         });
-        console.log(
-          `🔐 필터링 테스트용 현재 사용자 설정: ${employeeIds[3]}`,
-        );
+        console.log(`🔐 필터링 테스트용 현재 사용자 설정: ${employeeIds[3]}`);
       }
     });
 
@@ -627,7 +724,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       const response = await testSuite
         .request()
         .post(
-          `/admin/evaluation-periods/${filterTargetPeriodId}/copy-from/${filterSourcePeriodId}`,
+          `/admin/evaluation-periods/${filterTargetPeriodId}/employees/${employeeIds[3]}/copy-from/${filterSourcePeriodId}`,
         )
         .send({
           projects: [
@@ -680,16 +777,15 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
         maxSelfEvaluationRate: 150,
       };
 
-      const periodResult = await periodApiClient.createEvaluationPeriod(
-        createData,
-      );
+      const periodResult =
+        await periodApiClient.createEvaluationPeriod(createData);
       const wbsFilterTargetPeriodId = periodResult.id;
 
       // 프로젝트 0의 첫 번째 WBS만 복사
       const response = await testSuite
         .request()
         .post(
-          `/admin/evaluation-periods/${wbsFilterTargetPeriodId}/copy-from/${filterSourcePeriodId}`,
+          `/admin/evaluation-periods/${wbsFilterTargetPeriodId}/employees/${employeeIds[3]}/copy-from/${filterSourcePeriodId}`,
         )
         .send({
           projects: [
@@ -704,15 +800,16 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.copiedProjectAssignments).toBe(1);
 
-      console.log(
-        `✅ WBS 필터링 복사 완료: 프로젝트 1개, WBS 필터 적용`,
-      );
+      console.log(`✅ WBS 필터링 복사 완료: 프로젝트 1개, WBS 필터 적용`);
 
       // 정리
       try {
         await periodApiClient.deleteEvaluationPeriod(wbsFilterTargetPeriodId);
       } catch (error) {
-        console.log('WBS 필터링 테스트용 평가기간 삭제 중 오류:', error.message);
+        console.log(
+          'WBS 필터링 테스트용 평가기간 삭제 중 오류:',
+          error.message,
+        );
       }
     });
 
@@ -722,7 +819,10 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
         try {
           await periodApiClient.deleteEvaluationPeriod(filterTargetPeriodId);
         } catch (error) {
-          console.log('필터링 테스트용 대상 평가기간 삭제 중 오류:', error.message);
+          console.log(
+            '필터링 테스트용 대상 평가기간 삭제 중 오류:',
+            error.message,
+          );
         }
       }
 
@@ -730,10 +830,12 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
         try {
           await periodApiClient.deleteEvaluationPeriod(filterSourcePeriodId);
         } catch (error) {
-          console.log('필터링 테스트용 원본 평가기간 삭제 중 오류:', error.message);
+          console.log(
+            '필터링 테스트용 원본 평가기간 삭제 중 오류:',
+            error.message,
+          );
         }
       }
     });
   });
 });
-

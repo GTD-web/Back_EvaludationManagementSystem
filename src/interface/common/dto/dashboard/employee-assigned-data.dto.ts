@@ -427,6 +427,13 @@ export class AssignedWbsInfoDto implements AssignedWbsInfo {
   @Type(() => WbsPerformanceDto)
   performance?: WbsPerformanceDto | null;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트/업무 (subProject)',
+    example: '결제 모듈 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
+
   @ApiProperty({
     description: 'WBS 1차 하향평가 정보 (PRIMARY 평가자가 작성)',
     type: WbsDownwardEvaluationDto,

@@ -73,6 +73,7 @@ export interface AssignedWbsInfo {
   assignedAt: Date;
   criteria: WbsEvaluationCriterion[];
   performance?: WbsPerformance | null;
+  subProject?: string | null;
   primaryDownwardEvaluation?: WbsDownwardEvaluationInfo | null;
   secondaryDownwardEvaluation?: WbsDownwardEvaluationInfo | null;
   deliverables: DeliverableInfo[];

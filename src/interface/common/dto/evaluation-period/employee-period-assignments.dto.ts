@@ -147,6 +147,14 @@ export class AssignedWbsItemDto {
   wbsCode: string;
 
   @ApiProperty({
+    description: '세부 프로젝트 (서브 프로젝트)',
+    example: '모바일 앱 개발',
+    nullable: true,
+    required: false,
+  })
+  subProject?: string | null;
+
+  @ApiProperty({
     description: '평가기준 목록',
     type: [WbsEvaluationCriterionDto],
   })

@@ -691,6 +691,10 @@ export function UpdateEvaluationPeriodGradeRanges() {
       summary: '평가 기간 등급 구간 수정',
       description: `**중요**: 평가 기간의 등급 구간 설정을 전체 교체합니다. 기존 등급 구간은 모두 삭제되고 새로운 등급 구간으로 대체됩니다.
 
+**동작:**
+- 등급 구간 설정 시 등급 구간의 최대값(maxRange)을 maxSelfEvaluationRate로 자동 설정합니다.
+- 이는 자기평가 점수의 상한선을 등급 구간과 일치시키기 위함입니다.
+
 **테스트 케이스:**
 - 기본 수정: 유효한 등급 구간 배열로 전체 교체
 - 완전 교체: 기존과 완전히 다른 등급 구간으로 변경

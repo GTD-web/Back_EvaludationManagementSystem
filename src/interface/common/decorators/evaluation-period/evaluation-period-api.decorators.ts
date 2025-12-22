@@ -23,6 +23,7 @@ import {
   UpdateDefaultGradeRangesApiDto,
   CopyPreviousPeriodDataApiDto,
   CopyPreviousPeriodDataResponseDto,
+  SetApprovalDocumentIdApiDto,
 } from '../../dto/evaluation-period/evaluation-management.dto';
 
 // ==================== GET 엔드포인트 데코레이터 ====================
@@ -932,6 +933,59 @@ export function UpdateManualSettingPermissions() {
     ApiResponse({
       status: 422,
       description: '비즈니스 로직 오류로 처리할 수 없습니다.',
+    }),
+    ApiResponse({
+      status: 500,
+      description: '서버 내부 오류',
+    }),
+  );
+}
+
+/**
+ * 결재 문서 ID 설정 엔드포인트 데코레이터
+ */
+export function SetApprovalDocumentId() {
+  return applyDecorators(
+    Patch(':id/approval-document'),
+    ApiOperation({
+      summary: '결재 문서 ID 설정',
+      description: `평가기간에 결재 문서 ID를 설정하고 결재 상태를 'pending'으로 변경합니다.
+
+**동작:**
+- 프론트엔드에서 LIAS 결재관리시스템으로 결재 요청을 보낸 후 받은 documentId를 저장합니다.
+- 결재 상태가 'none'에서 'pending'으로 변경됩니다.
+- 백엔드 스케줄러가 주기적으로 LIAS 서버에 결재 상태를 확인하여 동기화합니다.
+
+**테스트 케이스:**
+- 기본 설정: 유효한 documentId로 결재 문서 ID 설정
+- 상태 변경 확인: 설정 후 approvalStatus가 'pending'으로 변경됨
+- 중복 설정: 이미 설정된 경우 덮어쓰기 가능
+- 필수 필드 누락: approvalDocumentId 누락 시 400 에러
+- 잘못된 UUID: 평가기간 ID 형식 오류 시 400 에러
+- 존재하지 않는 평가기간: 404 에러`,
+    }),
+    ApiParam({
+      name: 'id',
+      description: '평가 기간 ID (UUID 형식)',
+      example: '123e4567-e89b-12d3-a456-426614174000',
+      schema: { type: 'string', format: 'uuid' },
+    }),
+    ApiBody({
+      type: SetApprovalDocumentIdApiDto,
+      description: '결재 문서 ID',
+    }),
+    ApiResponse({
+      status: 200,
+      description: '결재 문서 ID가 성공적으로 설정되었습니다.',
+      type: EvaluationPeriodResponseDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 데이터입니다.',
+    }),
+    ApiResponse({
+      status: 404,
+      description: '평가 기간을 찾을 수 없습니다.',
     }),
     ApiResponse({
       status: 500,

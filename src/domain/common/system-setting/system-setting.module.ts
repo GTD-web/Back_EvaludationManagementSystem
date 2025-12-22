@@ -14,7 +14,3 @@ import { SystemSettingService } from './system-setting.service';
   exports: [SystemSettingService],
 })
 export class SystemSettingModule {}
-
-
-
-

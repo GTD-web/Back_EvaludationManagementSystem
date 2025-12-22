@@ -51,6 +51,14 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
   departmentName?: string;
 
   @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '실 PM',
+  })
+  realPM?: string;
+
+  @Column({
     type: 'boolean',
     default: true,
     comment: '활성 상태',
@@ -70,6 +78,7 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
     email?: string,
     employeeNumber?: string,
     departmentName?: string,
+    realPM?: string,
     isActive: boolean = true,
   ) {
     super();
@@ -78,6 +87,7 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
     if (email) this.email = email;
     if (employeeNumber) this.employeeNumber = employeeNumber;
     if (departmentName) this.departmentName = departmentName;
+    if (realPM) this.realPM = realPM;
     this.isActive = isActive;
   }
 
@@ -92,6 +102,7 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
       email: this.email,
       employeeNumber: this.employeeNumber,
       departmentName: this.departmentName,
+      realPM: this.realPM,
       isActive: this.isActive,
       note: this.note,
       createdAt: this.createdAt,
@@ -109,6 +120,7 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
       email?: string;
       employeeNumber?: string;
       departmentName?: string;
+      realPM?: string;
       isActive?: boolean;
       note?: string;
     },
@@ -129,6 +141,7 @@ export class ProjectManager extends BaseEntity<ProjectManagerDto> {
       email?: string;
       employeeNumber?: string;
       departmentName?: string;
+      realPM?: string;
       isActive?: boolean;
       note?: string;
     },

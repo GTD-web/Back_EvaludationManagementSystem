@@ -18,6 +18,8 @@ export interface ProjectManagerDto {
   employeeNumber?: string;
   /** 부서명 */
   departmentName?: string;
+  /** 실 PM */
+  realPM?: string;
   /** 활성 상태 */
   isActive: boolean;
   /** 비고 */
@@ -42,6 +44,8 @@ export interface CreateProjectManagerDto {
   employeeNumber?: string;
   /** 부서명 */
   departmentName?: string;
+  /** 실 PM */
+  realPM?: string;
   /** 활성 상태 */
   isActive?: boolean;
   /** 비고 */
@@ -60,6 +64,8 @@ export interface UpdateProjectManagerDto {
   employeeNumber?: string;
   /** 부서명 */
   departmentName?: string;
+  /** 실 PM */
+  realPM?: string;
   /** 활성 상태 */
   isActive?: boolean;
   /** 비고 */

@@ -1285,14 +1285,15 @@ export class EvaluationPeriodManagementContextService
 
     this.logger.log(`프로젝트 할당 ${projectAssignments.length}개 발견`);
 
-    // 5. 직원에게 할당된 WBS 할당 조회 (소프트 삭제된 항목 제외)
-    const wbsAssignments = await this.wbsAssignmentRepository.find({
-      where: {
-        periodId: periodId,
-        employeeId: employeeId,
-        deletedAt: IsNull(),
-      },
-    });
+    // 5. 직원에게 할당된 WBS 할당 조회 (소프트 삭제된 항목 제외, displayOrder/assignedDate 순으로 정렬)
+    const wbsAssignments = await this.wbsAssignmentRepository
+      .createQueryBuilder('assignment')
+      .where('assignment.periodId = :periodId', { periodId })
+      .andWhere('assignment.employeeId = :employeeId', { employeeId })
+      .andWhere('assignment.deletedAt IS NULL')
+      .orderBy('assignment.displayOrder', 'ASC')
+      .addOrderBy('assignment.assignedDate', 'DESC')
+      .getMany();
 
     this.logger.log(`WBS 할당 ${wbsAssignments.length}개 발견`);
 
@@ -1327,26 +1328,44 @@ export class EvaluationPeriodManagementContextService
       };
     }
 
-    // 8. 할당된 WBS 정보 조회 (삭제되지 않은 WBS 아이템만)
+    // 8. 할당된 WBS 정보 조회 (할당 순서 유지)
+    // wbsAssignments의 순서를 유지하기 위해 Map 사용
+    const wbsAssignmentMap = new Map<
+      string,
+      { wbsItemId: string; projectId: string; displayOrder: number; assignedDate: Date }
+    >();
+    for (const assignment of wbsAssignments) {
+      wbsAssignmentMap.set(assignment.wbsItemId, {
+        wbsItemId: assignment.wbsItemId,
+        projectId: assignment.projectId,
+        displayOrder: assignment.displayOrder,
+        assignedDate: assignment.assignedDate,
+      });
+    }
+
     const assignedWbsList = await this.wbsItemRepository.find({
       where: {
         id: In(assignedWbsIds),
         deletedAt: IsNull(),
       },
-      order: { level: 'ASC', wbsCode: 'ASC' },
     });
 
     this.logger.log(`조회된 WBS 아이템 ${assignedWbsList.length}개`);
 
-    // 9. WBS를 프로젝트별로 그룹화
+    // 9. WBS를 프로젝트별로 그룹화 (할당 순서 유지)
     // WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 모두 포함
     // (이전 평가기간 데이터 복사를 위해 WBS 할당이 있는 모든 프로젝트를 보여줌)
     const projectWbsMap = new Map<string, WbsItem[]>();
-    for (const wbs of assignedWbsList) {
-      if (!projectWbsMap.has(wbs.projectId)) {
-        projectWbsMap.set(wbs.projectId, []);
+    
+    // wbsAssignments 순서대로 처리 (이미 정렬되어 있음: displayOrder ASC, assignedDate DESC)
+    for (const assignment of wbsAssignments) {
+      const wbs = assignedWbsList.find((w) => w.id === assignment.wbsItemId);
+      if (wbs) {
+        if (!projectWbsMap.has(assignment.projectId)) {
+          projectWbsMap.set(assignment.projectId, []);
+        }
+        projectWbsMap.get(assignment.projectId)!.push(wbs);
       }
-      projectWbsMap.get(wbs.projectId)!.push(wbs);
     }
 
     // 10. 프로젝트 정보 조회 (삭제되지 않은 프로젝트만)

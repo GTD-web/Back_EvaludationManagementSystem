@@ -5,6 +5,7 @@ import { SeedDataScenario } from '../../seed-data.scenario';
 import { EvaluationPeriodManagementApiClient } from '../../api-clients/evaluation-period-management.api-client';
 import { EvaluationLineApiClient } from '../../api-clients/evaluation-line.api-client';
 import { ProjectAssignmentApiClient } from '../../api-clients/project-assignment.api-client';
+import { WbsAssignmentApiClient } from '../../api-clients/wbs-assignment.api-client';
 import { DashboardApiClient } from '../../api-clients/dashboard.api-client';
 import { WbsSelfEvaluationApiClient } from '../../api-clients/wbs-self-evaluation.api-client';
 
@@ -28,6 +29,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
   let periodApiClient: EvaluationPeriodManagementApiClient;
   let lineApiClient: EvaluationLineApiClient;
   let projectAssignmentApiClient: ProjectAssignmentApiClient;
+  let wbsAssignmentApiClient: WbsAssignmentApiClient;
   let dashboardApiClient: DashboardApiClient;
   let selfEvalApiClient: WbsSelfEvaluationApiClient;
 
@@ -48,6 +50,7 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
     periodApiClient = new EvaluationPeriodManagementApiClient(testSuite);
     lineApiClient = new EvaluationLineApiClient(testSuite);
     projectAssignmentApiClient = new ProjectAssignmentApiClient(testSuite);
+    wbsAssignmentApiClient = new WbsAssignmentApiClient(testSuite);
     dashboardApiClient = new DashboardApiClient(testSuite);
     selfEvalApiClient = new WbsSelfEvaluationApiClient(testSuite);
 
@@ -160,6 +163,27 @@ describe('이전 평가기간 데이터 복사 E2E 테스트', () => {
 
       console.log(
         `✅ 원본 평가기간에 프로젝트 2개 할당 완료 (직원: ${employeeIds[0]})`,
+      );
+    });
+
+    it('3.5단계: 원본 평가기간에 WBS를 할당한다', async () => {
+      // 프로젝트 0의 WBS 2개 할당 (wbsItemIds[0], wbsItemIds[1])
+      await wbsAssignmentApiClient.create({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[0],
+        projectId: projectIds[0],
+        periodId: sourcePeriodId,
+      });
+
+      await wbsAssignmentApiClient.create({
+        employeeId: employeeIds[0],
+        wbsItemId: wbsItemIds[1],
+        projectId: projectIds[0],
+        periodId: sourcePeriodId,
+      });
+
+      console.log(
+        `✅ 원본 평가기간에 WBS 2개 할당 완료 (프로젝트: ${projectIds[0]})`,
       );
     });
 

@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationPeriodManagementContextService } from '@context/evaluation-period-management-context/evaluation-period-management.service';
@@ -8,10 +6,9 @@ import { RevisionRequestContextService } from '@context/revision-request-context
 import { StepApprovalContextService } from '@context/step-approval-context/step-approval-context.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { GetDownwardEvaluationListQuery } from '@context/performance-evaluation-context/handlers/downward-evaluation';
+import { GetEmployeeSelfEvaluationsQuery } from '@context/performance-evaluation-context/handlers/self-evaluation';
 import { RecipientType } from '@domain/sub/evaluation-revision-request';
 import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
-import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
-import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
 import { StepApprovalStatus } from '@domain/sub/employee-evaluation-step-approval';
 import { NotificationHelperService } from '@domain/common/notification';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
@@ -39,10 +36,6 @@ export class DownwardEvaluationBusinessService {
     private readonly activityLogContextService: EvaluationActivityLogContextService,
     private readonly notificationHelper: NotificationHelperService,
     private readonly evaluationPeriodService: EvaluationPeriodService,
-    @InjectRepository(WbsSelfEvaluation)
-    private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
-    @InjectRepository(DownwardEvaluation)
-    private readonly downwardEvaluationRepository: Repository<DownwardEvaluation>,
   ) {}
 
   /**
@@ -343,15 +336,11 @@ export class DownwardEvaluationBusinessService {
           `하위 단계 자동 승인 완료 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
         );
       } catch (error) {
-        this.logger.error(
-          '하위 단계 자동 승인 실패 (계속 진행)',
-          error.stack,
-          {
-            evaluateeId,
-            periodId,
-            submittedBy,
-          },
-        );
+        this.logger.error('하위 단계 자동 승인 실패 (계속 진행)', error.stack, {
+          evaluateeId,
+          periodId,
+          submittedBy,
+        });
       }
     }
 
@@ -502,16 +491,12 @@ export class DownwardEvaluationBusinessService {
           `하위 단계 자동 승인 완료 (2차) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
         );
       } catch (error) {
-        this.logger.error(
-          '하위 단계 자동 승인 실패 (계속 진행)',
-          error.stack,
-          {
-            evaluateeId,
-            periodId,
-            evaluatorId,
-            submittedBy,
-          },
-        );
+        this.logger.error('하위 단계 자동 승인 실패 (계속 진행)', error.stack, {
+          evaluateeId,
+          periodId,
+          evaluatorId,
+          submittedBy,
+        });
       }
     }
 
@@ -766,12 +751,14 @@ export class DownwardEvaluationBusinessService {
         // 1차 평가 일괄 제출인 경우: 평가기준, 자기평가, 1차평가를 승인
         if (evaluationType === DownwardEvaluationType.PRIMARY) {
           // 평가기준 설정 승인
-          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
-            evaluationPeriodId: periodId,
-            employeeId: evaluateeId,
-            status: StepApprovalStatus.APPROVED,
-            updatedBy: submittedBy,
-          });
+          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다(
+            {
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            },
+          );
 
           // 자기평가 승인
           await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
@@ -782,12 +769,14 @@ export class DownwardEvaluationBusinessService {
           });
 
           // 1차 하향평가 승인
-          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다({
-            evaluationPeriodId: periodId,
-            employeeId: evaluateeId,
-            status: StepApprovalStatus.APPROVED,
-            updatedBy: submittedBy,
-          });
+          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다(
+            {
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            },
+          );
 
           this.logger.log(
             `하위 단계 자동 승인 완료 (1차 일괄) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
@@ -796,12 +785,14 @@ export class DownwardEvaluationBusinessService {
         // 2차 평가 일괄 제출인 경우: 평가기준, 자기평가, 1차평가, 2차평가를 승인
         else if (evaluationType === DownwardEvaluationType.SECONDARY) {
           // 평가기준 설정 승인
-          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다({
-            evaluationPeriodId: periodId,
-            employeeId: evaluateeId,
-            status: StepApprovalStatus.APPROVED,
-            updatedBy: submittedBy,
-          });
+          await this.stepApprovalContextService.평가기준설정_확인상태를_변경한다(
+            {
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            },
+          );
 
           // 자기평가 승인
           await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
@@ -812,38 +803,38 @@ export class DownwardEvaluationBusinessService {
           });
 
           // 1차 하향평가 승인
-          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다({
-            evaluationPeriodId: periodId,
-            employeeId: evaluateeId,
-            status: StepApprovalStatus.APPROVED,
-            updatedBy: submittedBy,
-          });
+          await this.stepApprovalContextService.일차하향평가_확인상태를_변경한다(
+            {
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            },
+          );
 
           // 2차 하향평가 승인
-          await this.stepApprovalContextService.이차하향평가_확인상태를_변경한다({
-            evaluationPeriodId: periodId,
-            employeeId: evaluateeId,
-            evaluatorId,
-            status: StepApprovalStatus.APPROVED,
-            updatedBy: submittedBy,
-          });
+          await this.stepApprovalContextService.이차하향평가_확인상태를_변경한다(
+            {
+              evaluationPeriodId: periodId,
+              employeeId: evaluateeId,
+              evaluatorId,
+              status: StepApprovalStatus.APPROVED,
+              updatedBy: submittedBy,
+            },
+          );
 
           this.logger.log(
             `하위 단계 자동 승인 완료 (2차 일괄) - 피평가자: ${evaluateeId}, 평가기간: ${periodId}`,
           );
         }
       } catch (error) {
-        this.logger.error(
-          '하위 단계 자동 승인 실패 (계속 진행)',
-          error.stack,
-          {
-            evaluatorId,
-            evaluateeId,
-            periodId,
-            evaluationType,
-            submittedBy,
-          },
-        );
+        this.logger.error('하위 단계 자동 승인 실패 (계속 진행)', error.stack, {
+          evaluatorId,
+          evaluateeId,
+          periodId,
+          evaluationType,
+          submittedBy,
+        });
       }
     }
 
@@ -907,19 +898,34 @@ export class DownwardEvaluationBusinessService {
         `자기평가 자동 제출 시작 - 직원: ${employeeId}, 평가기간: ${periodId}, WBS: ${wbsId}`,
       );
 
-      // 1. 해당 WBS와 피평가자의 자기평가 조회
-      const selfEvaluation = await this.wbsSelfEvaluationRepository.findOne({
-        where: {
-          employeeId,
-          periodId,
-          wbsItemId: wbsId,
-          deletedAt: IsNull(),
-        },
-      });
+      // 1. 해당 WBS와 피평가자의 자기평가 조회 (Context Service 사용)
+      const query = new GetEmployeeSelfEvaluationsQuery(
+        employeeId,
+        periodId,
+        undefined, // projectId
+        1,
+        100, // 충분히 큰 limit로 모든 평가를 조회
+      );
+      const result =
+        await this.performanceEvaluationService.직원의_자기평가_목록을_조회한다(
+          query,
+        );
+
+      if (!result.evaluations || result.evaluations.length === 0) {
+        this.logger.warn(
+          `자기평가를 찾을 수 없습니다 - 직원: ${employeeId}, 평가기간: ${periodId}`,
+        );
+        return;
+      }
+
+      // wbsId로 필터링
+      const selfEvaluation = result.evaluations.find(
+        (e) => e.wbsItemId === wbsId,
+      );
 
       if (!selfEvaluation) {
         this.logger.warn(
-          `자기평가를 찾을 수 없습니다 - 직원: ${employeeId}, 평가기간: ${periodId}, WBS: ${wbsId}`,
+          `해당 WBS의 자기평가를 찾을 수 없습니다 - 직원: ${employeeId}, 평가기간: ${periodId}, WBS: ${wbsId}`,
         );
         return;
       }
@@ -979,25 +985,28 @@ export class DownwardEvaluationBusinessService {
         return;
       }
 
-      // 2. 해당 WBS와 피평가자의 1차 하향평가 조회
-      const downwardEvaluation =
-        await this.downwardEvaluationRepository.findOne({
-          where: {
-            employeeId: evaluateeId,
-            evaluatorId: primaryEvaluatorId,
-            periodId,
-            wbsId,
-            evaluationType: DownwardEvaluationType.PRIMARY,
-            deletedAt: IsNull(),
-          },
-        });
+      // 2. 해당 WBS와 피평가자의 1차 하향평가 조회 (Context Service 사용)
+      const query = new GetDownwardEvaluationListQuery(
+        primaryEvaluatorId,
+        evaluateeId,
+        periodId,
+        wbsId,
+        'primary',
+        undefined,
+        1,
+        1,
+      );
+      const result =
+        await this.performanceEvaluationService.하향평가_목록을_조회한다(query);
 
-      if (!downwardEvaluation) {
+      if (!result.evaluations || result.evaluations.length === 0) {
         this.logger.warn(
           `1차 하향평가를 찾을 수 없습니다 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, WBS: ${wbsId}`,
         );
         return;
       }
+
+      const downwardEvaluation = result.evaluations[0];
 
       // 3. 이미 제출된 1차 하향평가는 건너뛰기
       if (downwardEvaluation.isCompleted) {

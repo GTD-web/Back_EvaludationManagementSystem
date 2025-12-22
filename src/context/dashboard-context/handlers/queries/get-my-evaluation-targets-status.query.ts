@@ -127,37 +127,22 @@ export class GetMyEvaluationTargetsStatusHandler
         ...new Set(myTargetMappings.map((m) => m.employeeId)),
       ];
 
-      // 실제로 WBS 할당이 있는 직원만 필터링
-      const employeeIdsWithWbs: string[] = [];
-      for (const employeeId of employeeIds) {
-        const wbsCount = await this.wbsAssignmentRepository.count({
-          where: {
-            periodId: evaluationPeriodId,
-            employeeId: employeeId,
-            deletedAt: IsNull(),
-          },
-        });
-
-        if (wbsCount > 0) {
-          employeeIdsWithWbs.push(employeeId);
-        }
-      }
-
-      if (employeeIdsWithWbs.length === 0) {
+      if (employeeIds.length === 0) {
         this.logger.debug(
-          `WBS 할당이 있는 평가 대상자가 없습니다 - 평가자: ${evaluatorId}`,
+          `담당하는 평가 대상자가 없습니다 - 평가자: ${evaluatorId}`,
         );
         return [];
       }
 
       // 2. 피평가자들의 평가기간 매핑 정보 조회 (해당 평가기간에 속한 직원, 제외된 직원 포함)
+      // 평가자에게 할당된 피평가자는 WBS 할당 여부와 관계없이 모두 조회
       const employeeMappings = await this.mappingRepository
         .createQueryBuilder('mapping')
         .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
           evaluationPeriodId,
         })
         .andWhere('mapping.employeeId IN (:...employeeIds)', {
-          employeeIds: employeeIdsWithWbs,
+          employeeIds: employeeIds,
         })
         .getMany();
 
@@ -223,13 +208,8 @@ export class GetMyEvaluationTargetsStatusHandler
             },
           });
 
-          // WBS 할당이 없으면 평가 대상이 아니므로 스킵
-          if (wbsCount === 0) {
-            this.logger.debug(
-              `WBS 할당이 없어 스킵: 직원 ${employeeId}, 평가자 ${evaluatorId}`,
-            );
-            continue;
-          }
+          // WBS 할당이 없어도 평가자에게 할당된 피평가자는 조회
+          // (WBS가 없으면 status는 'none'으로 표시됨)
 
           // 평가항목 상태 계산
           const evaluationCriteriaStatus: EvaluationCriteriaStatus =

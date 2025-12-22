@@ -17,6 +17,7 @@ import { Project } from '../../domain/common/project/project.entity';
 import { WbsItem } from '../../domain/common/wbs-item/wbs-item.entity';
 import { WbsEvaluationCriteria } from '../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { EvaluationLine } from '../../domain/core/evaluation-line/evaluation-line.entity';
+import { WbsSelfEvaluation } from '../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriodManagementContextService } from './evaluation-period-management.service';
 import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
 
@@ -40,6 +41,7 @@ import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
       WbsItem,
       WbsEvaluationCriteria,
       EvaluationLine,
+      WbsSelfEvaluation,
     ]),
     EvaluationPeriodModule,
     EvaluationPeriodEmployeeMappingModule,

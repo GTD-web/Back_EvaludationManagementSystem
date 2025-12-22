@@ -22,6 +22,7 @@ import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
 import { Employee } from '@domain/common/employee/employee.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
+import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import type {
   EmployeePeriodAssignmentsResponseDto,
   SimplifiedEvaluationPeriodDto,
@@ -126,6 +127,8 @@ export class EvaluationPeriodManagementContextService
     private readonly wbsEvaluationCriteriaRepository: Repository<WbsEvaluationCriteria>,
     @InjectRepository(EvaluationLine)
     private readonly evaluationLineRepository: Repository<EvaluationLine>,
+    @InjectRepository(WbsSelfEvaluation)
+    private readonly wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>,
   ) {}
   /**
    * 평가 기간을 생성한다 (최소 필수 정보만)
@@ -1088,8 +1091,91 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
+    // 12. WBS별 subProject 복사
+    // 복사된 WBS의 subProject를 복사 (자기평가 데이터에서 조회)
+    let copiedSubProjectCount = 0;
+
+    if (copiedWbsIds.size > 0) {
+      this.logger.log(
+        `복사된 WBS ${copiedWbsIds.size}개의 subProject 복사 시작`,
+      );
+
+      // 원본 평가기간의 자기평가에서 subProject 조회
+      const sourceSelfEvaluations = await this.wbsSelfEvaluationRepository.find(
+        {
+          where: {
+            periodId: sourcePeriodId,
+            employeeId: employeeId,
+            deletedAt: IsNull(),
+          },
+        },
+      );
+
+      this.logger.log(
+        `원본 평가기간의 자기평가 ${sourceSelfEvaluations.length}개 발견`,
+      );
+
+      for (const sourceSelfEval of sourceSelfEvaluations) {
+        // 복사된 WBS인지 확인
+        if (copiedWbsIds.has(sourceSelfEval.wbsItemId)) {
+          try {
+            // 대상 평가기간에 이미 자기평가가 있는지 확인
+            let targetSelfEval = await this.wbsSelfEvaluationRepository.findOne(
+              {
+                where: {
+                  periodId: targetPeriodId,
+                  employeeId: employeeId,
+                  wbsItemId: sourceSelfEval.wbsItemId,
+                  deletedAt: IsNull(),
+                },
+              },
+            );
+
+            if (targetSelfEval) {
+              // 이미 존재하면 subProject만 업데이트
+              targetSelfEval.subProject = sourceSelfEval.subProject;
+              await this.wbsSelfEvaluationRepository.save(targetSelfEval);
+              this.logger.log(
+                `subProject 업데이트 완료 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
+              );
+            } else {
+              // 없으면 새로 생성 (subProject만 설정)
+              const newSelfEval = this.wbsSelfEvaluationRepository.create({
+                periodId: targetPeriodId,
+                employeeId: employeeId,
+                wbsItemId: sourceSelfEval.wbsItemId,
+                assignedBy: copiedBy,
+                assignedDate: new Date(),
+                submittedToEvaluator: false,
+                submittedToManager: false,
+                evaluationDate: new Date(),
+                subProject: sourceSelfEval.subProject,
+                createdBy: copiedBy,
+              });
+              await this.wbsSelfEvaluationRepository.save(newSelfEval);
+              this.logger.log(
+                `subProject 복사 완료 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
+              );
+            }
+
+            copiedSubProjectCount++;
+          } catch (error) {
+            this.logger.error(
+              `subProject 복사 실패 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
+              error.stack,
+            );
+            // 에러가 발생해도 계속 진행
+          }
+        }
+      }
+
+      this.logger.log(
+        `subProject 복사 완료: ${copiedSubProjectCount}개 (총 ${copiedWbsIds.size}개 WBS 중)`,
+      );
+    }
+
     this.logger.log(
-      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준: ${copiedCriteriaCount}개`,
+      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준: ${copiedCriteriaCount}개, subProject: ${copiedSubProjectCount}개`,
     );
 
     return {
@@ -1287,26 +1373,54 @@ export class EvaluationPeriodManagementContextService
 
     const wbsWithEvaluationLineSet = new Set(assignedWbsIds);
 
-    // 11. WBS 평가기준 조회
-    const wbsCriteria = await this.wbsEvaluationCriteriaRepository.find({
-      where: {
-        wbsItemId: In(assignedWbsIds),
-        deletedAt: IsNull(),
-      },
-      order: {
-        createdAt: 'ASC', // 생성 순서대로 정렬
-      },
-    });
+    // 11. WBS 평가기준 조회 (대시보드 API와 동일하게 subProject 포함)
+    const wbsCriteriaMap = new Map<
+      string,
+      Array<{
+        criterionId: string;
+        criteria: string;
+        importance: number;
+        subProject?: string | null;
+        createdAt: Date;
+      }>
+    >();
 
-    this.logger.log(`WBS 평가기준 ${wbsCriteria.length}개 조회됨`);
+    if (assignedWbsIds.length > 0) {
+      const criteriaRows = await this.wbsEvaluationCriteriaRepository
+        .createQueryBuilder('criteria')
+        .select([
+          'criteria.id AS criteria_id',
+          'criteria.wbsItemId AS criteria_wbs_item_id',
+          'criteria.criteria AS criteria_criteria',
+          'criteria.importance AS criteria_importance',
+          'criteria.subProject AS criteria_sub_project',
+          'criteria.createdAt AS criteria_created_at',
+        ])
+        .where('criteria.wbsItemId IN (:...wbsItemIds)', {
+          wbsItemIds: assignedWbsIds,
+        })
+        .andWhere('criteria.deletedAt IS NULL')
+        .orderBy('criteria.createdAt', 'ASC')
+        .getRawMany();
 
-    // WBS ID별 평가기준 목록 매핑
-    const wbsCriteriaMap = new Map<string, WbsEvaluationCriteria[]>();
-    for (const criteria of wbsCriteria) {
-      if (!wbsCriteriaMap.has(criteria.wbsItemId)) {
-        wbsCriteriaMap.set(criteria.wbsItemId, []);
+      this.logger.log(`WBS 평가기준 ${criteriaRows.length}개 조회됨`);
+
+      for (const row of criteriaRows) {
+        const wbsId = row.criteria_wbs_item_id;
+        if (!wbsId) continue;
+
+        if (!wbsCriteriaMap.has(wbsId)) {
+          wbsCriteriaMap.set(wbsId, []);
+        }
+
+        wbsCriteriaMap.get(wbsId)!.push({
+          criterionId: row.criteria_id,
+          criteria: row.criteria_criteria || '',
+          importance: row.criteria_importance || 5,
+          subProject: row.criteria_sub_project || null,
+          createdAt: row.criteria_created_at,
+        });
       }
-      wbsCriteriaMap.get(criteria.wbsItemId)!.push(criteria);
     }
 
     // 12. 평가라인 정보 조회
@@ -1507,12 +1621,13 @@ export class EvaluationPeriodManagementContextService
       const wbsItemDtos: AssignedWbsItemDto[] = wbsList.map((wbs) => {
         totalWbs++;
 
-        // 평가기준 목록 변환
+        // 평가기준 목록 변환 (대시보드 API와 동일하게 subProject 포함)
         const wbsCriteriaList = wbsCriteriaMap.get(wbs.id) || [];
         const criteriaDto = wbsCriteriaList.map((criteria) => ({
-          criterionId: criteria.id,
+          criterionId: criteria.criterionId,
           criteria: criteria.criteria,
           importance: criteria.importance,
+          subProject: criteria.subProject, // ⭐ 평가기준에 subProject 포함
           createdAt: criteria.createdAt,
         }));
 
@@ -1520,7 +1635,7 @@ export class EvaluationPeriodManagementContextService
           wbsId: wbs.id,
           wbsName: wbs.title, // WbsItem 엔티티의 실제 속성은 'title'
           wbsCode: wbs.wbsCode, // WbsItem 엔티티의 실제 속성은 'wbsCode'
-          criteria: criteriaDto, // 평가기준 목록 추가
+          criteria: criteriaDto, // 평가기준 목록 (criteria 레벨에 subProject 포함)
           primaryDownwardEvaluation: wbsPrimaryEvaluatorMap.get(wbs.id),
           secondaryDownwardEvaluation: wbsSecondaryEvaluatorMap.get(wbs.id),
         };

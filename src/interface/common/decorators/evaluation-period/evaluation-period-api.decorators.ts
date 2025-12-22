@@ -1481,7 +1481,7 @@ export function GetEmployeePeriodAssignments() {
 - 해당 평가기간에 직원에게 할당된 모든 WBS를 조회합니다.
 - WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 해당 프로젝트도 함께 조회됩니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
-- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다 (평가기준에 subProject 포함).
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
 - **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
@@ -1497,7 +1497,7 @@ export function GetEmployeePeriodAssignments() {
 - projects: 프로젝트 및 WBS 할당 목록
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
-    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, **subProject**, createdAt)
     - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
     - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
@@ -1506,6 +1506,7 @@ export function GetEmployeePeriodAssignments() {
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- subProject 포함: 각 평가기준에 subProject가 포함되어 반환됨
 - 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
 - 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
@@ -1634,7 +1635,7 @@ export function GetMyPeriodAssignments() {
 - 해당 평가기간에 사용자에게 할당된 모든 WBS를 조회합니다.
 - WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 해당 프로젝트도 함께 조회됩니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
-- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다 (평가기준에 subProject 포함).
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
 - **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
@@ -1650,7 +1651,7 @@ export function GetMyPeriodAssignments() {
 - projects: 프로젝트 및 WBS 할당 목록
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
-    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, **subProject**, createdAt)
     - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
     - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
@@ -1659,6 +1660,7 @@ export function GetMyPeriodAssignments() {
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- subProject 포함: 각 평가기준에 subProject가 포함되어 반환됨
 - 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
 - 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환

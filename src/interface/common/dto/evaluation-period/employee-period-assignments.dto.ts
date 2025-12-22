@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 /**
@@ -117,6 +117,13 @@ export class WbsEvaluationCriterionDto {
   })
   importance: number;
 
+  @ApiPropertyOptional({
+    description: '세부 프로젝트명 (평가기준에 연결된 경우)',
+    example: '프로젝트 A 1차 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
+
   @ApiProperty({
     description: '생성일시',
     example: '2024-01-15T09:00:00.000Z',
@@ -147,7 +154,7 @@ export class AssignedWbsItemDto {
   wbsCode: string;
 
   @ApiProperty({
-    description: '평가기준 목록',
+    description: '평가기준 목록 (각 평가기준에 subProject 포함)',
     type: [WbsEvaluationCriterionDto],
   })
   @Type(() => WbsEvaluationCriterionDto)

@@ -44,7 +44,7 @@ export async function getProjectsWithWbs(
   deliverableRepository: Repository<Deliverable>,
   employeeRepository: Repository<Employee>,
 ): Promise<AssignedProjectWithWbs[]> {
-  // 1. 평가 프로젝트 할당 조회 (Project와 PM 직원 정보 join)
+  // 1. 평가 프로젝트 할당 조회 (Project와 PM 정보 join)
   const projectAssignments = await projectAssignmentRepository
     .createQueryBuilder('assignment')
     .leftJoin(
@@ -53,9 +53,9 @@ export async function getProjectsWithWbs(
       'project.id = assignment.projectId AND project.deletedAt IS NULL',
     )
     .leftJoin(
-      Employee,
-      'manager',
-      'manager.externalId = project.managerId AND manager.deletedAt IS NULL',
+      'project_manager',
+      'pm',
+      'pm.managerId = project.managerId AND pm.deletedAt IS NULL',
     )
     .select([
       'assignment.id AS assignment_id',
@@ -69,8 +69,8 @@ export async function getProjectsWithWbs(
       'project.startDate AS project_start_date',
       'project.endDate AS project_end_date',
       'project.managerId AS project_manager_id',
-      'manager.externalId AS manager_id',
-      'manager.name AS manager_name',
+      'pm.id AS pm_id',
+      'pm.realPM AS real_pm',
     ])
     .where('assignment.periodId = :periodId', {
       periodId: evaluationPeriodId,
@@ -616,14 +616,19 @@ export async function getProjectsWithWbs(
       continue;
     }
 
-    // 프로젝트 매니저 정보
+    // 프로젝트 매니저 정보 - realPM 기준으로 구성
     const projectManager =
-      row.manager_id && row.manager_name
+      row.real_pm
         ? {
-            id: row.manager_id,
-            name: row.manager_name,
+            id: row.pm_id || '',
+            name: row.real_pm,
+            realPM: '',
           }
-        : null;
+        : {
+            id: '',
+            name: '',
+            realPM: '',
+          };
 
     // 해당 프로젝트의 WBS 목록 필터링
     const projectWbsAssignments = wbsAssignments.filter(
@@ -656,7 +661,7 @@ export async function getProjectsWithWbs(
       
       if (secondaryEval) {
         // 매핑이 있지만 evaluatorName이 비어있는 경우, PM 이름으로 채움
-        if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+        if (!secondaryEval.evaluatorName && projectManager.id && secondaryEval.evaluatorId === projectManager.id) {
           logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
             wbsId: wbsItemId,
             evaluatorId: secondaryEval.evaluatorId,
@@ -668,7 +673,7 @@ export async function getProjectsWithWbs(
             evaluatorName: projectManager.name,
           };
         }
-      } else if (projectManager) {
+      } else if (projectManager.id) {
         // 2차 평가자 매핑이 없으면 프로젝트 PM을 기본값으로 설정
         logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
           wbsId: wbsItemId,

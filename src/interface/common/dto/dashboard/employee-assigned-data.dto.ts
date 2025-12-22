@@ -473,6 +473,13 @@ export class ProjectManagerDto {
     example: '박프로',
   })
   name: string;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+    nullable: true,
+  })
+  realPM?: string;
 }
 
 /**

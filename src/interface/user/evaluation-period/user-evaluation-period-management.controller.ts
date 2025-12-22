@@ -4,12 +4,13 @@ import {
   ParseUUID,
 } from '@interface/common/decorators/parse-uuid.decorator';
 import { Roles } from '@interface/common/decorators';
-import { Body, Controller, Query } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { EvaluationPeriodDto } from '@domain/core/evaluation-period/evaluation-period.types';
 import {
   CopyPreviousPeriodData,
   GetActiveEvaluationPeriods,
+  GetEmployeePeriodAssignments,
   GetEvaluationPeriodDetail,
   GetEvaluationPeriods,
   GetMyPeriodAssignments,
@@ -88,16 +89,40 @@ export class UserEvaluationPeriodManagementController {
   }
 
   /**
+   * 직원의 평가기간별 할당 정보를 조회합니다 (본인 데이터만 조회 가능).
+   */
+  @GetEmployeePeriodAssignments()
+  async getEmployeePeriodAssignments(
+    @ParseUUID('periodId') periodId: string,
+    @ParseUUID('employeeId') employeeId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EmployeePeriodAssignmentsResponseDto> {
+    // User는 본인의 데이터만 조회 가능
+    if (employeeId !== user.id) {
+      throw new ForbiddenException('본인의 데이터만 조회할 수 있습니다.');
+    }
+    return await this.evaluationPeriodManagementService.직원_평가기간별_할당정보_조회한다(
+      periodId,
+      employeeId,
+    );
+  }
+
+  /**
    * 내 이전 평가기간 데이터를 복사합니다.
    */
   @CopyPreviousPeriodData()
   async copyMyPreviousPeriodData(
     @ParseUUID('targetPeriodId') targetPeriodId: string,
+    @ParseUUID('employeeId') employeeId: string,
     @ParseUUID('sourcePeriodId') sourcePeriodId: string,
     @Body() body: CopyPreviousPeriodDataApiDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CopyPreviousPeriodDataResponseDto> {
-    const employeeId = user.id; // JWT에서 현재 사용자 ID 추출
+    // User는 본인의 데이터만 복사 가능
+    if (employeeId !== user.id) {
+      throw new ForbiddenException('본인의 데이터만 복사할 수 있습니다.');
+    }
+
     const copiedBy = user.id;
 
     const result =

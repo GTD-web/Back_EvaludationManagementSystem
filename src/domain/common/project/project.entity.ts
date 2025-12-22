@@ -1,4 +1,11 @@
-import { Entity, Column, Index, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  Index,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { BaseEntity } from '@libs/database/base/base.entity';
 import {
   ProjectStatus,
@@ -13,7 +20,7 @@ import { IProject } from './project.interface';
  *
  * 평가 시스템에서 사용하는 프로젝트 정보만 관리합니다.
  * 외부 시스템 연동 없이 독립적으로 운영됩니다.
- * 
+ *
  * 계층 구조:
  * - 상위 프로젝트: PM(Project Manager)이 관리
  * - 하위 프로젝트: 기본적으로 최상단 프로젝트의 PM으로 설정되며, 별도 지정도 가능
@@ -62,9 +69,18 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     type: 'varchar',
     length: 255,
     nullable: true,
-    comment: '프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정)',
+    comment:
+      '프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정)',
   })
   managerId?: string;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '실 PM',
+  })
+  realPM?: string;
 
   // 상위 프로젝트 ID (FK로 관리, 관계는 서비스 레벨에서 처리)
   @Column({
@@ -82,6 +98,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     startDate?: Date,
     endDate?: Date,
     managerId?: string,
+    realPM?: string,
     parentProjectId?: string,
   ) {
     super();
@@ -91,6 +108,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     if (startDate) this.startDate = startDate;
     if (endDate) this.endDate = endDate;
     if (managerId) this.managerId = managerId;
+    if (realPM) this.realPM = realPM;
     if (parentProjectId) this.parentProjectId = parentProjectId;
     this.status = status || ProjectStatus.ACTIVE;
   }

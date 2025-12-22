@@ -65,6 +65,8 @@ export interface ProjectDto {
   managerId?: string;
   /** 프로젝트 매니저 정보 */
   manager?: ManagerInfo;
+  /** 실 PM */
+  realPM?: string;
 
   // 계층 구조 필드들
   /** 상위 프로젝트 ID (하위 프로젝트인 경우) */
@@ -111,6 +113,7 @@ export interface CreateProjectDto {
   startDate?: Date;
   endDate?: Date;
   managerId?: string;
+  realPM?: string;
   /** 상위 프로젝트 ID (하위 프로젝트 생성 시) */
   parentProjectId?: string;
   /** 하위 프로젝트 목록 (평면 구조, orderLevel로 재귀 체인 생성) */
@@ -125,6 +128,7 @@ export interface UpdateProjectDto {
   startDate?: Date;
   endDate?: Date;
   managerId?: string;
+  realPM?: string;
   /** 상위 프로젝트 ID (하위 프로젝트로 변경 또는 상위 프로젝트 변경 시) */
   parentProjectId?: string;
   /** 하위 프로젝트 목록 (기존 하위 삭제 후 재생성, undefined: 변경 없음) */

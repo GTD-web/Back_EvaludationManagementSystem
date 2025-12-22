@@ -473,13 +473,6 @@ export class ProjectManagerDto {
     example: '박프로',
   })
   name: string;
-
-  @ApiPropertyOptional({
-    description: '실 PM',
-    example: '김실무',
-    nullable: true,
-  })
-  realPM?: string;
 }
 
 /**
@@ -761,6 +754,13 @@ export class AssignedProjectWithWbsDto implements AssignedProjectWithWbs {
   })
   @Type(() => ProjectManagerDto)
   projectManager?: ProjectManagerDto | null;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+    nullable: true,
+  })
+  realPM?: string;
 
   @ApiProperty({
     description: '프로젝트에 할당된 WBS 목록',

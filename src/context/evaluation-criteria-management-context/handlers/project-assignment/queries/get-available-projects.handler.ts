@@ -43,6 +43,7 @@ export interface AvailableProjectsResult {
       phoneNumber?: string;
       departmentName?: string;
     } | null;
+    realPM?: string | null;
   }>;
   total: number;
   page: number;
@@ -101,6 +102,7 @@ export class GetAvailableProjectsHandler
       startDate: project.startDate,
       endDate: project.endDate,
       manager: project.manager || null,
+      realPM: project.realPM || null,
     }));
 
     // 검색 필터링

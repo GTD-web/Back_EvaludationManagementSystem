@@ -82,6 +82,15 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   })
   realPM?: string;
 
+  // 프로젝트 중요도 ID (FK)
+  @Column({
+    type: 'uuid',
+    nullable: true,
+    comment: '프로젝트 중요도 ID',
+  })
+  @Index()
+  importanceId?: string;
+
   // 상위 프로젝트 ID (FK로 관리, 관계는 서비스 레벨에서 처리)
   @Column({
     type: 'uuid',
@@ -99,6 +108,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     endDate?: Date,
     managerId?: string,
     realPM?: string,
+    importanceId?: string,
     parentProjectId?: string,
   ) {
     super();
@@ -109,6 +119,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     if (endDate) this.endDate = endDate;
     if (managerId) this.managerId = managerId;
     if (realPM) this.realPM = realPM;
+    if (importanceId) this.importanceId = importanceId;
     if (parentProjectId) this.parentProjectId = parentProjectId;
     this.status = status || ProjectStatus.ACTIVE;
   }

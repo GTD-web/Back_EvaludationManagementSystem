@@ -142,6 +142,14 @@ export class CreateProjectDto {
   realPMId?: string;
 
   @ApiPropertyOptional({
+    description: '프로젝트 중요도 ID (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  importanceId?: string;
+
+  @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
     example: '660e9500-f30c-52e5-b827-557766551111',
   })
@@ -305,6 +313,14 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsUUID()
   realPMId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 중요도 ID (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  importanceId?: string;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',

@@ -1,5 +1,6 @@
 import { ProjectService } from '@domain/common/project/project.service';
 import { ProjectManagerService } from '@domain/common/project/project-manager.service';
+import { ProjectImportanceService } from '@domain/common/project/project-importance.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -21,6 +22,14 @@ import {
   BulkRegisterProjectManagers,
 } from '@interface/common/decorators/project/project-manager-api.decorators';
 import {
+  CreateProjectImportance,
+  GetProjectImportances,
+  GetProjectImportanceDetail,
+  UpdateProjectImportance,
+  DeleteProjectImportance,
+  InitializeProjectImportances,
+} from '@interface/common/decorators/project/project-importance-api.decorators';
+import {
   CreateProjectDto,
   CreateProjectsBulkDto,
   UpdateProjectDto,
@@ -39,6 +48,12 @@ import {
   ProjectManagerResponseDto as PMResponseDto,
   ProjectManagerListResponseDto as PMListResponseDto,
 } from '@interface/common/dto/project/project-manager.dto';
+import {
+  CreateProjectImportanceDto,
+  UpdateProjectImportanceDto,
+  ProjectImportanceResponseDto,
+  ProjectImportanceListResponseDto,
+} from '@interface/common/dto/project/project-importance.dto';
 import {
   GenerateChildProjectsDto,
   GenerateChildProjectsResultDto,
@@ -81,6 +96,7 @@ export class ProjectManagementController {
   constructor(
     private readonly projectService: ProjectService,
     private readonly projectManagerService: ProjectManagerService,
+    private readonly projectImportanceService: ProjectImportanceService,
     @Inject(SSOService) private readonly ssoService: ISSOService,
     private readonly employeeService: EmployeeService,
   ) {}
@@ -121,6 +137,7 @@ export class ProjectManagementController {
         endDate: createDto.endDate,
         managerId: createDto.managerId, // PM/DPM 설정
         realPM: realPMName, // 직원 이름 저장
+        importanceId: createDto.importanceId, // 중요도 설정
         parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
         childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
@@ -410,6 +427,93 @@ export class ProjectManagementController {
     };
   }
 
+  // ==================== 프로젝트 중요도 관리 ====================
+
+  /**
+   * 기본 프로젝트 중요도 생성
+   * 기본 중요도 값들(1A, 1B, 2A, 2B, 3A)을 생성합니다.
+   */
+  @InitializeProjectImportances()
+  async initializeProjectImportances(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string }> {
+    const createdBy = user.id;
+    await this.projectImportanceService.기본값_생성한다(createdBy);
+    return { message: '기본 중요도 값들이 생성되었습니다.' };
+  }
+
+  /**
+   * 프로젝트 중요도 생성
+   */
+  @CreateProjectImportance()
+  async createProjectImportance(
+    @Body() createDto: CreateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const createdBy = user.id;
+    return await this.projectImportanceService.생성한다(createDto, createdBy);
+  }
+
+  /**
+   * 프로젝트 중요도 목록 조회
+   * 모든 활성 중요도를 반환합니다.
+   */
+  @GetProjectImportances()
+  async getProjectImportances(): Promise<ProjectImportanceListResponseDto> {
+    const importances = await this.projectImportanceService.목록_조회한다();
+
+    return {
+      importances,
+    };
+  }
+
+  /**
+   * 프로젝트 중요도 상세 조회
+   */
+  @GetProjectImportanceDetail()
+  async getProjectImportanceDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ProjectImportanceResponseDto> {
+    const importance = await this.projectImportanceService.ID로_조회한다(id);
+
+    if (!importance) {
+      throw new NotFoundException(
+        `ID ${id}에 해당하는 프로젝트 중요도를 찾을 수 없습니다.`,
+      );
+    }
+
+    return importance;
+  }
+
+  /**
+   * 프로젝트 중요도 수정
+   */
+  @UpdateProjectImportance()
+  async updateProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const updatedBy = user.id;
+    return await this.projectImportanceService.수정한다(
+      id,
+      updateDto,
+      updatedBy,
+    );
+  }
+
+  /**
+   * 프로젝트 중요도 삭제
+   */
+  @DeleteProjectImportance()
+  async deleteProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const deletedBy = user.id;
+    await this.projectImportanceService.삭제한다(id, deletedBy);
+  }
+
   /**
    * 프로젝트 상세 조회
    * 하위 프로젝트 목록을 포함하여 반환합니다.
@@ -496,6 +600,7 @@ export class ProjectManagementController {
         endDate: updateDto.endDate,
         managerId: updateDto.managerId, // PM/DPM 변경
         realPM: realPMName, // 직원 이름 저장
+        importanceId: updateDto.importanceId, // 중요도 변경
         parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
         childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },

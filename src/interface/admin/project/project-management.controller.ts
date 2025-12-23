@@ -96,6 +96,22 @@ export class ProjectManagementController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectResponseDto> {
     const createdBy = user.id;
+
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (createDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        createDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${createDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.생성한다(
       {
         name: createDto.name,
@@ -104,6 +120,7 @@ export class ProjectManagementController {
         startDate: createDto.startDate,
         endDate: createDto.endDate,
         managerId: createDto.managerId, // PM/DPM 설정
+        realPM: realPMName, // 직원 이름 저장
         parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
         childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
@@ -143,8 +160,29 @@ export class ProjectManagementController {
   ): Promise<ProjectsBulkCreateResponseDto> {
     const createdBy = user.id;
 
+    // 각 프로젝트의 realPMId를 이름으로 변환
+    const projectsWithRealPMNames = await Promise.all(
+      bulkDto.projects.map(async (projectDto) => {
+        let realPMName: string | undefined = undefined;
+        if (projectDto.realPMId) {
+          const realPMEmployee = await this.employeeService.findById(
+            projectDto.realPMId,
+          );
+          if (realPMEmployee) {
+            realPMName = realPMEmployee.name;
+          }
+          // 일괄 생성에서는 에러를 던지지 않고 null로 처리
+        }
+
+        return {
+          ...projectDto,
+          realPM: realPMName,
+        };
+      }),
+    );
+
     const result = await this.projectService.일괄_생성한다(
-      bulkDto.projects,
+      projectsWithRealPMNames,
       createdBy,
     );
 
@@ -433,6 +471,21 @@ export class ProjectManagementController {
   ): Promise<ProjectResponseDto> {
     const updatedBy = user.id;
 
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (updateDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        updateDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${updateDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.수정한다(
       id,
       {
@@ -442,6 +495,7 @@ export class ProjectManagementController {
         startDate: updateDto.startDate,
         endDate: updateDto.endDate,
         managerId: updateDto.managerId, // PM/DPM 변경
+        realPM: realPMName, // 직원 이름 저장
         parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
         childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },

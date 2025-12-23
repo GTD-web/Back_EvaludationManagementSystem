@@ -1092,11 +1092,14 @@ export function CopyPreviousPeriodData() {
 **동작:**
 - 지정한 직원(:employeeId)의 이전 평가기간 데이터를 복사합니다.
 - 이전 평가기간(:sourcePeriodId)의 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
+- **중요**: WBS Item은 평가기간별로 독립적으로 관리됩니다. 복사 시 새로운 WBS ID가 생성되어 평가기간 간 완전히 독립적으로 운영됩니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
-  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
-  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
-  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
+  * WBS Item (WbsItem) - **새로운 ID로 생성됨** (평가기간별 독립성 보장)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록 (새 WBS ID 사용)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정 (새 WBS ID 사용)
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance), **목표(subProject)**, **추가성과 여부(isAdditional)** (새 WBS ID 사용)
+  * 목표 (subProject) - WBS별 목표 정보 (새 WBS ID 사용)
 - 선택적 필터링:
   * projects: 특정 프로젝트와 해당 프로젝트의 WBS만 복사 (미지정 시 모든 프로젝트와 WBS)
   * 각 프로젝트별로 wbsIds를 지정하여 프로젝트 내 특정 WBS만 선택 가능
@@ -1106,9 +1109,14 @@ export function CopyPreviousPeriodData() {
   * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
-- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
-- 성과 입력 데이터
-- 평가 제출 상태
+- 성과 입력 (performanceResult)
+- 자가평가 내용 (selfEvaluationContent)
+- 성과 달성률/점수 (selfEvaluationScore)
+- 하향평가 결과 (DownwardEvaluation)
+- 동료평가 결과 (PeerEvaluation)
+- 최종평가 결과 (FinalEvaluation)
+- 산출물 목록 (Deliverable)
+- 평가 제출 상태 (submittedToEvaluator, submittedToManager 플래그는 초기화됨)
 
 **사용 시나리오:**
 - 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때
@@ -1215,11 +1223,14 @@ export function CopyMyPreviousPeriodData() {
 **동작:**
 - JWT 토큰에서 현재 로그인한 사용자 ID 추출
 - 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사
+- **중요**: WBS Item은 평가기간별로 독립적으로 관리됩니다. 복사 시 새로운 WBS ID가 생성되어 평가기간 간 완전히 독립적으로 운영됩니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
-  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
-  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
-  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
+  * WBS Item (WbsItem) - **새로운 ID로 생성됨** (평가기간별 독립성 보장)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록 (새 WBS ID 사용)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정 (새 WBS ID 사용)
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance), **목표(subProject)**, **추가성과 여부(isAdditional)** (새 WBS ID 사용)
+  * 목표 (subProject) - WBS별 목표 정보 (새 WBS ID 사용)
 - 선택적 필터링:
   * projectIds: 특정 프로젝트만 복사 (미지정 시 모든 프로젝트)
   * wbsIds: 특정 WBS만 복사 (미지정 시 모든 WBS)
@@ -1229,9 +1240,14 @@ export function CopyMyPreviousPeriodData() {
   * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
-- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
-- 성과 입력 데이터
-- 평가 제출 상태
+- 성과 입력 (performanceResult)
+- 자가평가 내용 (selfEvaluationContent)
+- 성과 달성률/점수 (selfEvaluationScore)
+- 하향평가 결과 (DownwardEvaluation)
+- 동료평가 결과 (PeerEvaluation)
+- 최종평가 결과 (FinalEvaluation)
+- 산출물 목록 (Deliverable)
+- 평가 제출 상태 (submittedToEvaluator, submittedToManager 플래그는 초기화됨)
 
 **사용 시나리오:**
 - 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때

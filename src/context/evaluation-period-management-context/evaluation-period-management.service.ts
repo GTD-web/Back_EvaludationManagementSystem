@@ -19,6 +19,7 @@ import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mappi
 import { EvaluationPeriodEmployeeMappingService } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.service';
 import { Project } from '@domain/common/project/project.entity';
 import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
+import { WbsItemService } from '@domain/common/wbs-item/wbs-item.service';
 import { Employee } from '@domain/common/employee/employee.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
@@ -109,6 +110,7 @@ export class EvaluationPeriodManagementContextService
     private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationPeriodEmployeeMappingService: EvaluationPeriodEmployeeMappingService,
+    private readonly wbsItemService: WbsItemService,
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
     @InjectRepository(EvaluationProjectAssignment)
@@ -920,55 +922,134 @@ export class EvaluationPeriodManagementContextService
       `원본 평가기간의 WBS 할당 ${sourceWbsAssignments.length}개 발견`,
     );
 
-    // 7. WBS 할당 필터링 및 복사
-    let copiedWbsAssignmentsCount = 0;
-    const copiedWbsIds = new Set<string>(); // 복사된 WBS ID 추적
+    // 7. WBS Item 복사 및 ID 매핑 생성
+    const wbsIdMapping = new Map<string, string>(); // 원본 WBS ID -> 새 WBS ID 매핑
+    let copiedWbsItemsCount = 0;
 
-    for (const wbsAssignment of sourceWbsAssignments) {
-      // 프로젝트 필터링
-      if (copiedProjectIds.has(wbsAssignment.projectId)) {
+    // 복사할 WBS 목록 필터링
+    const wbsAssignmentsToProcess = sourceWbsAssignments.filter(
+      (wbsAssignment) => {
+        // 프로젝트 필터링
+        if (!copiedProjectIds.has(wbsAssignment.projectId)) {
+          return false;
+        }
+
         // wbsIds 필터링 (프로젝트별로 특정 WBS만 복사하도록 지정된 경우)
         const allowedWbsIds = projectWbsMap.get(wbsAssignment.projectId);
         const shouldCopyWbs =
           !allowedWbsIds || allowedWbsIds.includes(wbsAssignment.wbsItemId);
 
-        if (shouldCopyWbs) {
-          try {
-            await this.evaluationWbsAssignmentService.생성한다({
-              periodId: targetPeriodId,
-              employeeId: employeeId,
-              projectId: wbsAssignment.projectId,
-              wbsItemId: wbsAssignment.wbsItemId,
-              assignedBy: copiedBy,
-            });
-            copiedWbsAssignmentsCount++;
-            copiedWbsIds.add(wbsAssignment.wbsItemId);
-            this.logger.log(
-              `WBS 할당 복사 완료 - WBS: ${wbsAssignment.wbsItemId}, 프로젝트: ${wbsAssignment.projectId}`,
-            );
-          } catch (error) {
-            // 중복 에러는 무시 (이미 존재하는 할당)
-            if (
-              error.message?.includes('이미 존재') ||
-              error.code === 'DUPLICATE_ASSIGNMENT'
-            ) {
-              copiedWbsIds.add(wbsAssignment.wbsItemId); // 이미 존재하는 WBS도 추적
-              this.logger.log(
-                `WBS 할당 건너뜀 (이미 존재): WBS=${wbsAssignment.wbsItemId}, 프로젝트=${wbsAssignment.projectId}`,
-              );
-            } else {
-              this.logger.error(
-                `WBS 할당 복사 실패 - WBS: ${wbsAssignment.wbsItemId}`,
-                error.stack,
-              );
-              // 에러가 발생해도 계속 진행
-            }
-          }
+        return shouldCopyWbs;
+      },
+    );
+
+    this.logger.log(
+      `필터링 후 복사할 WBS 할당 ${wbsAssignmentsToProcess.length}개`,
+    );
+
+    // WBS Item 복사 (평가기간별 독립성 보장)
+    for (const wbsAssignment of wbsAssignmentsToProcess) {
+      try {
+        // 원본 WBS Item 조회
+        const sourceWbsItem = await this.wbsItemService.ID로_조회한다(
+          wbsAssignment.wbsItemId,
+        );
+
+        if (!sourceWbsItem) {
+          this.logger.warn(
+            `원본 WBS Item을 찾을 수 없습니다: ${wbsAssignment.wbsItemId}`,
+          );
+          continue;
+        }
+
+        // 새로운 WBS Item 생성 (평가기간별 독립)
+        // WBS 코드 중복을 피하기 위해 timestamp 추가
+        const timestamp = Date.now();
+        const newWbsCode = `${sourceWbsItem.wbsCode}-copy-${timestamp}`;
+
+        const newWbsItem = await this.wbsItemService.생성한다(
+          {
+            wbsCode: newWbsCode,
+            title: sourceWbsItem.title,
+            status: sourceWbsItem.status,
+            startDate: sourceWbsItem.startDate,
+            endDate: sourceWbsItem.endDate,
+            progressPercentage: sourceWbsItem.progressPercentage,
+            assignedToId: sourceWbsItem.assignedToId,
+            projectId: sourceWbsItem.projectId,
+            parentWbsId: sourceWbsItem.parentWbsId,
+            level: sourceWbsItem.level,
+          },
+          copiedBy,
+        );
+
+        // ID 매핑 저장
+        wbsIdMapping.set(wbsAssignment.wbsItemId, newWbsItem.id);
+        copiedWbsItemsCount++;
+
+        this.logger.log(
+          `WBS Item 복사 완료 - 원본: ${wbsAssignment.wbsItemId}, 새로운: ${newWbsItem.id}, 코드: ${newWbsCode}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `WBS Item 복사 실패 - WBS: ${wbsAssignment.wbsItemId}`,
+          error.stack,
+        );
+        // 에러가 발생해도 계속 진행
+      }
+    }
+
+    this.logger.log(
+      `WBS Item 복사 완료: ${copiedWbsItemsCount}개, ID 매핑: ${wbsIdMapping.size}개`,
+    );
+
+    // 8. WBS 할당 생성 (새로운 WBS ID 사용)
+    let copiedWbsAssignmentsCount = 0;
+    const copiedWbsIds = new Set<string>(); // 복사된 새 WBS ID 추적
+
+    for (const wbsAssignment of wbsAssignmentsToProcess) {
+      const newWbsId = wbsIdMapping.get(wbsAssignment.wbsItemId);
+      if (!newWbsId) {
+        this.logger.warn(
+          `WBS ID 매핑을 찾을 수 없습니다: ${wbsAssignment.wbsItemId}`,
+        );
+        continue;
+      }
+
+      try {
+        await this.evaluationWbsAssignmentService.생성한다({
+          periodId: targetPeriodId,
+          employeeId: employeeId,
+          projectId: wbsAssignment.projectId,
+          wbsItemId: newWbsId, // 새로운 WBS ID 사용
+          assignedBy: copiedBy,
+        });
+        copiedWbsAssignmentsCount++;
+        copiedWbsIds.add(newWbsId);
+        this.logger.log(
+          `WBS 할당 복사 완료 - 원본 WBS: ${wbsAssignment.wbsItemId}, 새 WBS: ${newWbsId}, 프로젝트: ${wbsAssignment.projectId}`,
+        );
+      } catch (error) {
+        // 중복 에러는 무시 (이미 존재하는 할당)
+        if (
+          error.message?.includes('이미 존재') ||
+          error.code === 'DUPLICATE_ASSIGNMENT'
+        ) {
+          copiedWbsIds.add(newWbsId); // 이미 존재하는 WBS도 추적
+          this.logger.log(
+            `WBS 할당 건너뜀 (이미 존재): 새 WBS=${newWbsId}, 프로젝트=${wbsAssignment.projectId}`,
+          );
+        } else {
+          this.logger.error(
+            `WBS 할당 복사 실패 - 새 WBS: ${newWbsId}`,
+            error.stack,
+          );
+          // 에러가 발생해도 계속 진행
         }
       }
     }
 
-    // 8. 원본 평가기간의 평가라인 매핑 조회
+    // 9. 원본 평가기간의 평가라인 매핑 조회
     const sourceLineMappings = await this.lineMappingRepository.find({
       where: {
         evaluationPeriodId: sourcePeriodId,
@@ -980,29 +1061,64 @@ export class EvaluationPeriodManagementContextService
       `원본 평가기간의 평가라인 매핑 ${sourceLineMappings.length}개 발견`,
     );
 
-    // 9. 평가라인 매핑 필터링 (복사된 WBS만)
-    let filteredLineMappings = sourceLineMappings.filter(
-      (mapping) => !mapping.wbsItemId || copiedWbsIds.has(mapping.wbsItemId), // WBS가 없는 경우(직원별 고정) 또는 복사된 WBS인 경우
-    );
-
-    this.logger.log(`필터링 후 평가라인 매핑 ${filteredLineMappings.length}개`);
-
-    // 10. 평가라인 매핑 복사
+    // 10. 평가라인 매핑 필터링 및 복사 (새로운 WBS ID 사용)
     let copiedLineMappingsCount = 0;
 
-    for (const mapping of filteredLineMappings) {
+    for (const mapping of sourceLineMappings) {
+      // WBS가 없는 경우(직원별 고정)는 그대로 복사
+      if (!mapping.wbsItemId) {
+        try {
+          await this.evaluationLineMappingService.생성한다({
+            evaluationPeriodId: targetPeriodId,
+            employeeId: employeeId,
+            evaluatorId: mapping.evaluatorId,
+            wbsItemId: undefined,
+            evaluationLineId: mapping.evaluationLineId,
+            createdBy: copiedBy,
+          });
+          copiedLineMappingsCount++;
+          this.logger.log(
+            `평가라인 매핑 복사 완료 (직원별 고정) - 평가자: ${mapping.evaluatorId}`,
+          );
+        } catch (error) {
+          if (
+            error.message?.includes('이미 존재') ||
+            error.code === 'DUPLICATE_MAPPING'
+          ) {
+            this.logger.log(
+              `평가라인 매핑 건너뜀 (이미 존재): 평가자=${mapping.evaluatorId}`,
+            );
+          } else {
+            this.logger.error(
+              `평가라인 매핑 복사 실패 (직원별 고정)`,
+              error.stack,
+            );
+          }
+        }
+        continue;
+      }
+
+      // WBS가 있는 경우: 매핑된 새 WBS ID 사용
+      const newWbsId = wbsIdMapping.get(mapping.wbsItemId);
+      if (!newWbsId) {
+        this.logger.log(
+          `평가라인 매핑 건너뜀 (WBS ID 매핑 없음): 원본 WBS=${mapping.wbsItemId}`,
+        );
+        continue;
+      }
+
       try {
         await this.evaluationLineMappingService.생성한다({
           evaluationPeriodId: targetPeriodId,
           employeeId: employeeId,
           evaluatorId: mapping.evaluatorId,
-          wbsItemId: mapping.wbsItemId,
+          wbsItemId: newWbsId, // 새로운 WBS ID 사용
           evaluationLineId: mapping.evaluationLineId,
           createdBy: copiedBy,
         });
         copiedLineMappingsCount++;
         this.logger.log(
-          `평가라인 매핑 복사 완료 - WBS: ${mapping.wbsItemId}, 평가자: ${mapping.evaluatorId}`,
+          `평가라인 매핑 복사 완료 - 원본 WBS: ${mapping.wbsItemId}, 새 WBS: ${newWbsId}, 평가자: ${mapping.evaluatorId}`,
         );
       } catch (error) {
         // 중복 에러는 무시 (이미 존재하는 매핑)
@@ -1011,11 +1127,11 @@ export class EvaluationPeriodManagementContextService
           error.code === 'DUPLICATE_MAPPING'
         ) {
           this.logger.log(
-            `평가라인 매핑 건너뜀 (이미 존재): WBS=${mapping.wbsItemId}, 평가자=${mapping.evaluatorId}`,
+            `평가라인 매핑 건너뜀 (이미 존재): 새 WBS=${newWbsId}, 평가자=${mapping.evaluatorId}`,
           );
         } else {
           this.logger.error(
-            `평가라인 매핑 복사 실패 - WBS: ${mapping.wbsItemId}`,
+            `평가라인 매핑 복사 실패 - 새 WBS: ${newWbsId}`,
             error.stack,
           );
           // 에러가 발생해도 계속 진행
@@ -1023,48 +1139,49 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
-    // 11. WBS 평가 기준 복사
-    // 복사된 WBS의 평가 기준을 복사
+    // 11. WBS 평가 기준 복사 (원본 WBS -> 새 WBS)
     let copiedCriteriaCount = 0;
 
-    if (copiedWbsIds.size > 0) {
+    if (wbsIdMapping.size > 0) {
       this.logger.log(
-        `복사된 WBS ${copiedWbsIds.size}개의 평가 기준 복사 시작`,
+        `WBS ID 매핑 ${wbsIdMapping.size}개의 평가 기준 복사 시작`,
       );
 
       // 각 WBS의 평가 기준 복사
-      for (const wbsItemId of copiedWbsIds) {
+      for (const [sourceWbsId, newWbsId] of wbsIdMapping.entries()) {
         const sourceCriteria = await this.wbsEvaluationCriteriaRepository.find({
           where: {
-            wbsItemId: wbsItemId,
+            wbsItemId: sourceWbsId, // 원본 WBS ID로 조회
             deletedAt: IsNull(),
           },
         });
 
         if (sourceCriteria.length > 0) {
           this.logger.log(
-            `WBS ${wbsItemId}의 평가 기준 ${sourceCriteria.length}개 복사 시작`,
+            `원본 WBS ${sourceWbsId}의 평가 기준 ${sourceCriteria.length}개를 새 WBS ${newWbsId}로 복사 시작`,
           );
 
           for (const criteria of sourceCriteria) {
             try {
-              // 대상 평가기간에 동일한 평가 기준이 이미 있는지 확인
+              // 대상 평가기간의 새 WBS에 동일한 평가 기준이 이미 있는지 확인
               const existingCriteria =
                 await this.wbsEvaluationCriteriaRepository.findOne({
                   where: {
-                    wbsItemId: criteria.wbsItemId,
+                    wbsItemId: newWbsId, // 새 WBS ID로 확인
                     criteria: criteria.criteria,
                     deletedAt: IsNull(),
                   },
                 });
 
               if (!existingCriteria) {
-                // 평가 기준 복사
+                // 평가 기준 복사 (새 WBS ID로, 모든 필드 포함)
                 const newCriteria = this.wbsEvaluationCriteriaRepository.create(
                   {
-                    wbsItemId: criteria.wbsItemId,
+                    wbsItemId: newWbsId, // 새 WBS ID 사용
                     criteria: criteria.criteria,
                     importance: criteria.importance,
+                    subProject: criteria.subProject, // 목표 복사
+                    isAdditional: criteria.isAdditional, // 추가성과 여부 복사
                     createdBy: copiedBy,
                   },
                 );
@@ -1072,16 +1189,16 @@ export class EvaluationPeriodManagementContextService
                 copiedCriteriaCount++;
 
                 this.logger.log(
-                  `평가 기준 복사 완료 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}", 중요도: ${criteria.importance}`,
+                  `평가 기준 복사 완료 - 원본 WBS: ${sourceWbsId}, 새 WBS: ${newWbsId}, 기준: "${criteria.criteria}", 중요도: ${criteria.importance}, 목표: "${criteria.subProject || 'null'}", 추가성과: ${criteria.isAdditional}`,
                 );
               } else {
                 this.logger.log(
-                  `평가 기준 건너뜀 (이미 존재): WBS=${criteria.wbsItemId}, 기준="${criteria.criteria}"`,
+                  `평가 기준 건너뜀 (이미 존재): 새 WBS=${newWbsId}, 기준="${criteria.criteria}"`,
                 );
               }
             } catch (error) {
               this.logger.error(
-                `평가 기준 복사 실패 - WBS: ${criteria.wbsItemId}, 기준: "${criteria.criteria}"`,
+                `평가 기준 복사 실패 - 원본 WBS: ${sourceWbsId}, 새 WBS: ${newWbsId}, 기준: "${criteria.criteria}"`,
                 error.stack,
               );
               // 에러가 발생해도 계속 진행
@@ -1091,13 +1208,12 @@ export class EvaluationPeriodManagementContextService
       }
     }
 
-    // 12. WBS별 subProject 복사
-    // 복사된 WBS의 subProject를 복사 (자기평가 데이터에서 조회)
+    // 12. WBS별 목표(subProject) 복사 (원본 WBS -> 새 WBS)
     let copiedSubProjectCount = 0;
 
-    if (copiedWbsIds.size > 0) {
+    if (wbsIdMapping.size > 0) {
       this.logger.log(
-        `복사된 WBS ${copiedWbsIds.size}개의 subProject 복사 시작`,
+        `WBS ID 매핑 ${wbsIdMapping.size}개의 목표(subProject) 복사 시작`,
       );
 
       // 원본 평가기간의 자기평가에서 subProject 조회
@@ -1116,66 +1232,73 @@ export class EvaluationPeriodManagementContextService
       );
 
       for (const sourceSelfEval of sourceSelfEvaluations) {
-        // 복사된 WBS인지 확인
-        if (copiedWbsIds.has(sourceSelfEval.wbsItemId)) {
-          try {
-            // 대상 평가기간에 이미 자기평가가 있는지 확인
-            let targetSelfEval = await this.wbsSelfEvaluationRepository.findOne(
-              {
-                where: {
-                  periodId: targetPeriodId,
-                  employeeId: employeeId,
-                  wbsItemId: sourceSelfEval.wbsItemId,
-                  deletedAt: IsNull(),
-                },
-              },
-            );
+        // WBS ID 매핑 확인
+        const newWbsId = wbsIdMapping.get(sourceSelfEval.wbsItemId);
+        if (!newWbsId) {
+          this.logger.log(
+            `subProject 건너뜀 (WBS ID 매핑 없음): 원본 WBS=${sourceSelfEval.wbsItemId}`,
+          );
+          continue;
+        }
 
-            if (targetSelfEval) {
-              // 이미 존재하면 subProject만 업데이트
-              targetSelfEval.subProject = sourceSelfEval.subProject;
-              await this.wbsSelfEvaluationRepository.save(targetSelfEval);
-              this.logger.log(
-                `subProject 업데이트 완료 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
-              );
-            } else {
-              // 없으면 새로 생성 (subProject만 설정)
-              const newSelfEval = this.wbsSelfEvaluationRepository.create({
-                periodId: targetPeriodId,
-                employeeId: employeeId,
-                wbsItemId: sourceSelfEval.wbsItemId,
-                assignedBy: copiedBy,
-                assignedDate: new Date(),
-                submittedToEvaluator: false,
-                submittedToManager: false,
-                evaluationDate: new Date(),
-                subProject: sourceSelfEval.subProject,
-                createdBy: copiedBy,
-              });
-              await this.wbsSelfEvaluationRepository.save(newSelfEval);
-              this.logger.log(
-                `subProject 복사 완료 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
-              );
-            }
+        try {
+          // 대상 평가기간에 이미 자기평가가 있는지 확인 (새 WBS ID로)
+          let targetSelfEval = await this.wbsSelfEvaluationRepository.findOne({
+            where: {
+              periodId: targetPeriodId,
+              employeeId: employeeId,
+              wbsItemId: newWbsId, // 새 WBS ID로 조회
+              deletedAt: IsNull(),
+            },
+          });
 
-            copiedSubProjectCount++;
-          } catch (error) {
-            this.logger.error(
-              `subProject 복사 실패 - WBS: ${sourceSelfEval.wbsItemId}, subProject: "${sourceSelfEval.subProject || 'null'}"`,
-              error.stack,
+          if (targetSelfEval) {
+            // 이미 존재하면 목표만 업데이트
+            targetSelfEval.subProject = sourceSelfEval.subProject;
+            await this.wbsSelfEvaluationRepository.save(targetSelfEval);
+            this.logger.log(
+              `목표 업데이트 완료 - 원본 WBS: ${sourceSelfEval.wbsItemId}, 새 WBS: ${newWbsId}, 목표: "${sourceSelfEval.subProject || 'null'}"`,
             );
-            // 에러가 발생해도 계속 진행
+          } else {
+            // 없으면 새로 생성 (목표만 설정, 새 WBS ID 사용)
+            const newSelfEval = this.wbsSelfEvaluationRepository.create({
+              periodId: targetPeriodId,
+              employeeId: employeeId,
+              wbsItemId: newWbsId, // 새 WBS ID 사용
+              assignedBy: copiedBy,
+              assignedDate: new Date(),
+              submittedToEvaluator: false,
+              submittedToManager: false,
+              evaluationDate: new Date(),
+              subProject: sourceSelfEval.subProject, // 목표만 복사
+              createdBy: copiedBy,
+            });
+            await this.wbsSelfEvaluationRepository.save(newSelfEval);
+            this.logger.log(
+              `목표 복사 완료 - 원본 WBS: ${sourceSelfEval.wbsItemId}, 새 WBS: ${newWbsId}, 목표: "${sourceSelfEval.subProject || 'null'}"`,
+            );
           }
+
+          copiedSubProjectCount++;
+        } catch (error) {
+          this.logger.error(
+            `목표 복사 실패 - 원본 WBS: ${sourceSelfEval.wbsItemId}, 새 WBS: ${newWbsId}, 목표: "${sourceSelfEval.subProject || 'null'}"`,
+            error.stack,
+          );
+          // 에러가 발생해도 계속 진행
         }
       }
 
       this.logger.log(
-        `subProject 복사 완료: ${copiedSubProjectCount}개 (총 ${copiedWbsIds.size}개 WBS 중)`,
+        `목표 복사 완료: ${copiedSubProjectCount}개 (총 ${wbsIdMapping.size}개 WBS 중)`,
       );
     }
 
     this.logger.log(
-      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}, 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준: ${copiedCriteriaCount}개, subProject: ${copiedSubProjectCount}개`,
+      `이전 평가기간 데이터 복사 완료 - 원본: ${sourcePeriodId}, 대상: ${targetPeriodId}, 직원: ${employeeId}`,
+    );
+    this.logger.log(
+      `복사 결과 - 프로젝트 할당: ${copiedProjectAssignmentsCount}개, WBS Item: ${copiedWbsItemsCount}개, WBS 할당: ${copiedWbsAssignmentsCount}개, 평가라인 매핑: ${copiedLineMappingsCount}개, WBS 평가 기준(목표/추가성과 포함): ${copiedCriteriaCount}개, 목표(subProject): ${copiedSubProjectCount}개`,
     );
 
     return {

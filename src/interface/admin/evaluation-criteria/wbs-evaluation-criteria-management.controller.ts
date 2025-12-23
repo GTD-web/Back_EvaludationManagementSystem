@@ -102,6 +102,7 @@ export class WbsEvaluationCriteriaManagementController {
       dto.criteria,
       dto.importance,
       dto.subProject,
+      dto.isAdditional,
       actionBy,
     );
   }

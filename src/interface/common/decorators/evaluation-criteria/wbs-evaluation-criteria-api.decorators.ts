@@ -336,12 +336,14 @@ export const UpsertWbsEvaluationCriteria = () =>
 - wbsItemId에 평가기준이 있으면: 기존 평가기준 수정
 - Body에 id 값을 보낼 필요 없음 (내부적으로 wbsItemId로 조회)
 - 빈 문자열 criteria 전송 시: 평가기준 내용을 빈 문자열로 초기화
+- isAdditional 필드로 추가 과제 여부 설정 가능 (true: 추가 과제, false: 일반 과제)
 
 **사용 사례:**
-- 평가기준 최초 작성 시: criteria만 전송
-- 평가기준 수정 시: criteria만 전송 (시스템이 자동으로 기존 평가기준 찾아 수정)
+- 평가기준 최초 작성 시: criteria와 isAdditional 값 전송
+- 평가기준 수정 시: criteria와 isAdditional 값 전송 (시스템이 자동으로 기존 평가기준 찾아 수정)
 - 평가기준 내용 초기화: 빈 문자열 criteria 전송으로 내용 초기화
 - WBS 항목당 단일 평가기준 관리
+- 추가 과제 표시: isAdditional=true로 설정하여 추가로 할당된 과제임을 표시
 
 **테스트 케이스:**
 - 기본 생성: 새로운 WBS 평가기준을 성공적으로 생성

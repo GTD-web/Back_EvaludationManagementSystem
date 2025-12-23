@@ -1,5 +1,6 @@
 import { ProjectService } from '@domain/common/project/project.service';
 import { ProjectManagerService } from '@domain/common/project/project-manager.service';
+import { ProjectImportanceService } from '@domain/common/project/project-importance.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -21,6 +22,14 @@ import {
   BulkRegisterProjectManagers,
 } from '@interface/common/decorators/project/project-manager-api.decorators';
 import {
+  CreateProjectImportance,
+  GetProjectImportances,
+  GetProjectImportanceDetail,
+  UpdateProjectImportance,
+  DeleteProjectImportance,
+  InitializeProjectImportances,
+} from '@interface/common/decorators/project/project-importance-api.decorators';
+import {
   CreateProjectDto,
   CreateProjectsBulkDto,
   UpdateProjectDto,
@@ -39,6 +48,12 @@ import {
   ProjectManagerResponseDto as PMResponseDto,
   ProjectManagerListResponseDto as PMListResponseDto,
 } from '@interface/common/dto/project/project-manager.dto';
+import {
+  CreateProjectImportanceDto,
+  UpdateProjectImportanceDto,
+  ProjectImportanceResponseDto,
+  ProjectImportanceListResponseDto,
+} from '@interface/common/dto/project/project-importance.dto';
 import {
   GenerateChildProjectsDto,
   GenerateChildProjectsResultDto,
@@ -81,6 +96,7 @@ export class ProjectManagementController {
   constructor(
     private readonly projectService: ProjectService,
     private readonly projectManagerService: ProjectManagerService,
+    private readonly projectImportanceService: ProjectImportanceService,
     @Inject(SSOService) private readonly ssoService: ISSOService,
     private readonly employeeService: EmployeeService,
   ) {}
@@ -96,6 +112,22 @@ export class ProjectManagementController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectResponseDto> {
     const createdBy = user.id;
+
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (createDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        createDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${createDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.생성한다(
       {
         name: createDto.name,
@@ -104,6 +136,8 @@ export class ProjectManagementController {
         startDate: createDto.startDate,
         endDate: createDto.endDate,
         managerId: createDto.managerId, // PM/DPM 설정
+        realPM: realPMName, // 직원 이름 저장
+        importanceId: createDto.importanceId, // 중요도 설정
         parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
         childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
@@ -143,8 +177,29 @@ export class ProjectManagementController {
   ): Promise<ProjectsBulkCreateResponseDto> {
     const createdBy = user.id;
 
+    // 각 프로젝트의 realPMId를 이름으로 변환
+    const projectsWithRealPMNames = await Promise.all(
+      bulkDto.projects.map(async (projectDto) => {
+        let realPMName: string | undefined = undefined;
+        if (projectDto.realPMId) {
+          const realPMEmployee = await this.employeeService.findById(
+            projectDto.realPMId,
+          );
+          if (realPMEmployee) {
+            realPMName = realPMEmployee.name;
+          }
+          // 일괄 생성에서는 에러를 던지지 않고 null로 처리
+        }
+
+        return {
+          ...projectDto,
+          realPM: realPMName,
+        };
+      }),
+    );
+
     const result = await this.projectService.일괄_생성한다(
-      bulkDto.projects,
+      projectsWithRealPMNames,
       createdBy,
     );
 
@@ -372,6 +427,93 @@ export class ProjectManagementController {
     };
   }
 
+  // ==================== 프로젝트 중요도 관리 ====================
+
+  /**
+   * 기본 프로젝트 중요도 생성
+   * 기본 중요도 값들(1A, 1B, 2A, 2B, 3A)을 생성합니다.
+   */
+  @InitializeProjectImportances()
+  async initializeProjectImportances(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string }> {
+    const createdBy = user.id;
+    await this.projectImportanceService.기본값_생성한다(createdBy);
+    return { message: '기본 중요도 값들이 생성되었습니다.' };
+  }
+
+  /**
+   * 프로젝트 중요도 생성
+   */
+  @CreateProjectImportance()
+  async createProjectImportance(
+    @Body() createDto: CreateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const createdBy = user.id;
+    return await this.projectImportanceService.생성한다(createDto, createdBy);
+  }
+
+  /**
+   * 프로젝트 중요도 목록 조회
+   * 모든 활성 중요도를 반환합니다.
+   */
+  @GetProjectImportances()
+  async getProjectImportances(): Promise<ProjectImportanceListResponseDto> {
+    const importances = await this.projectImportanceService.목록_조회한다();
+
+    return {
+      importances,
+    };
+  }
+
+  /**
+   * 프로젝트 중요도 상세 조회
+   */
+  @GetProjectImportanceDetail()
+  async getProjectImportanceDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ProjectImportanceResponseDto> {
+    const importance = await this.projectImportanceService.ID로_조회한다(id);
+
+    if (!importance) {
+      throw new NotFoundException(
+        `ID ${id}에 해당하는 프로젝트 중요도를 찾을 수 없습니다.`,
+      );
+    }
+
+    return importance;
+  }
+
+  /**
+   * 프로젝트 중요도 수정
+   */
+  @UpdateProjectImportance()
+  async updateProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const updatedBy = user.id;
+    return await this.projectImportanceService.수정한다(
+      id,
+      updateDto,
+      updatedBy,
+    );
+  }
+
+  /**
+   * 프로젝트 중요도 삭제
+   */
+  @DeleteProjectImportance()
+  async deleteProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const deletedBy = user.id;
+    await this.projectImportanceService.삭제한다(id, deletedBy);
+  }
+
   /**
    * 프로젝트 상세 조회
    * 하위 프로젝트 목록을 포함하여 반환합니다.
@@ -433,6 +575,21 @@ export class ProjectManagementController {
   ): Promise<ProjectResponseDto> {
     const updatedBy = user.id;
 
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (updateDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        updateDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${updateDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.수정한다(
       id,
       {
@@ -442,6 +599,8 @@ export class ProjectManagementController {
         startDate: updateDto.startDate,
         endDate: updateDto.endDate,
         managerId: updateDto.managerId, // PM/DPM 변경
+        realPM: realPMName, // 직원 이름 저장
+        importanceId: updateDto.importanceId, // 중요도 변경
         parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
         childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },

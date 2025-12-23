@@ -134,12 +134,20 @@ export class CreateProjectDto {
   managerId?: string;
 
   @ApiPropertyOptional({
-    description: '실 PM',
-    example: '김실무',
+    description: '실 PM의 직원 ID (UUID) - 직원 목록에서 선택하여 이름이 자동으로 저장됩니다',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsOptional()
-  @IsString()
-  realPM?: string;
+  @IsUUID()
+  realPMId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 중요도 ID (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  importanceId?: string;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
@@ -299,12 +307,20 @@ export class UpdateProjectDto {
   managerId?: string;
 
   @ApiPropertyOptional({
-    description: '실 PM',
-    example: '김실무',
+    description: '실 PM의 직원 ID (UUID) - 직원 목록에서 선택하여 이름이 자동으로 저장됩니다',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsOptional()
-  @IsString()
-  realPM?: string;
+  @IsUUID()
+  realPMId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 중요도 ID (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  importanceId?: string;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',

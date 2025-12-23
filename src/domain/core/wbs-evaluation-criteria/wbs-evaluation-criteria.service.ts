@@ -177,7 +177,7 @@ export class WbsEvaluationCriteriaService
       );
 
       this.logger.log(
-        `[생성] 입력 데이터 - subProject: "${createData.subProject}", type: ${typeof createData.subProject}`,
+        `[생성] 입력 데이터 - subProject: "${createData.subProject}", type: ${typeof createData.subProject}, isAdditional: ${createData.isAdditional}`,
       );
 
       const criteria = repository.create({
@@ -185,10 +185,11 @@ export class WbsEvaluationCriteriaService
         criteria: createData.criteria,
         importance: createData.importance,
         subProject: createData.subProject,
+        isAdditional: createData.isAdditional ?? false,
       });
 
       this.logger.log(
-        `[생성] 생성된 엔티티 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`,
+        `[생성] 생성된 엔티티 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}, isAdditional: ${criteria.isAdditional}`,
       );
 
       const savedCriteria = await repository.save(criteria);
@@ -233,13 +234,14 @@ export class WbsEvaluationCriteriaService
       if (
         updateData.criteria !== undefined ||
         updateData.importance !== undefined ||
-        updateData.subProject !== undefined
+        updateData.subProject !== undefined ||
+        updateData.isAdditional !== undefined
       ) {
         this.logger.log(
-          `[업데이트] 입력 데이터 - subProject: "${updateData.subProject}", type: ${typeof updateData.subProject}`,
+          `[업데이트] 입력 데이터 - subProject: "${updateData.subProject}", type: ${typeof updateData.subProject}, isAdditional: ${updateData.isAdditional}`,
         );
         this.logger.log(
-          `[업데이트] 기존 데이터 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`,
+          `[업데이트] 기존 데이터 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}, isAdditional: ${criteria.isAdditional}`,
         );
 
         // criteria가 undefined가 아닌 경우 (빈 문자열 포함) 업데이트
@@ -252,20 +254,25 @@ export class WbsEvaluationCriteriaService
           updateData.subProject !== undefined
             ? updateData.subProject
             : criteria.subProject;
+        const newIsAdditional =
+          updateData.isAdditional !== undefined
+            ? updateData.isAdditional
+            : criteria.isAdditional;
 
         this.logger.log(
-          `[업데이트] 적용할 값 - newSubProject: "${newSubProject}", type: ${typeof newSubProject}`,
+          `[업데이트] 적용할 값 - newSubProject: "${newSubProject}", type: ${typeof newSubProject}, newIsAdditional: ${newIsAdditional}`,
         );
 
         criteria.기준내용업데이트한다(
           newCriteria,
           newImportance,
           newSubProject,
+          newIsAdditional,
           updatedBy,
         );
 
         this.logger.log(
-          `[업데이트] 엔티티 업데이트 후 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}`,
+          `[업데이트] 엔티티 업데이트 후 - subProject: "${criteria.subProject}", type: ${typeof criteria.subProject}, isAdditional: ${criteria.isAdditional}`,
         );
       }
 

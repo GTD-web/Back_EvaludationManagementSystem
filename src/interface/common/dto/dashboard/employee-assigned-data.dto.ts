@@ -207,6 +207,12 @@ export class WbsEvaluationCriterionDto implements WbsEvaluationCriterion {
   subProject?: string | null;
 
   @ApiProperty({
+    description: '추가 과제 여부 (true인 경우 추가로 할당된 과제)',
+    example: false,
+  })
+  isAdditional: boolean;
+
+  @ApiProperty({
     description: '생성일',
     type: 'string',
     format: 'date-time',

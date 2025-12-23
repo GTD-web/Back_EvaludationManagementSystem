@@ -787,6 +787,13 @@ export class AvailableProjectInfoDto {
     type: ProjectManagerInfoDto,
   })
   manager?: ProjectManagerInfoDto | null;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+    required: false,
+  })
+  realPM?: string | null;
 }
 
 /**

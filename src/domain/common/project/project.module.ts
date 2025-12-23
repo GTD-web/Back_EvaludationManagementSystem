@@ -5,6 +5,8 @@ import { ProjectService } from './project.service';
 import { ProjectTestService } from './project-test.service';
 import { ProjectManager } from './project-manager.entity';
 import { ProjectManagerService } from './project-manager.service';
+import { ProjectImportance } from './project-importance.entity';
+import { ProjectImportanceService } from './project-importance.service';
 import { Employee } from '@domain/common/employee/employee.entity';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 
@@ -19,14 +21,21 @@ import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-ass
     TypeOrmModule.forFeature([
       Project,
       ProjectManager,
+      ProjectImportance,
       Employee,
       EvaluationProjectAssignment,
     ]),
   ],
-  providers: [ProjectService, ProjectManagerService, ProjectTestService],
+  providers: [
+    ProjectService,
+    ProjectManagerService,
+    ProjectImportanceService,
+    ProjectTestService,
+  ],
   exports: [
     ProjectService,
     ProjectManagerService,
+    ProjectImportanceService,
     ProjectTestService,
     TypeOrmModule,
   ],

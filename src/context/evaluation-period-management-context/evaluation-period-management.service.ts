@@ -1392,7 +1392,7 @@ export class EvaluationPeriodManagementContextService
 
     const wbsWithEvaluationLineSet = new Set(assignedWbsIds);
 
-    // 11. WBS 평가기준 조회 (대시보드 API와 동일하게 subProject 포함)
+    // 11. WBS 평가기준 조회 (대시보드 API와 동일하게 subProject, isAdditional 포함)
     const wbsCriteriaMap = new Map<
       string,
       Array<{
@@ -1400,6 +1400,7 @@ export class EvaluationPeriodManagementContextService
         criteria: string;
         importance: number;
         subProject?: string | null;
+        isAdditional: boolean;
         createdAt: Date;
       }>
     >();
@@ -1413,6 +1414,7 @@ export class EvaluationPeriodManagementContextService
           'criteria.criteria AS criteria_criteria',
           'criteria.importance AS criteria_importance',
           'criteria.subProject AS criteria_sub_project',
+          'criteria.isAdditional AS criteria_is_additional',
           'criteria.createdAt AS criteria_created_at',
         ])
         .where('criteria.wbsItemId IN (:...wbsItemIds)', {
@@ -1437,6 +1439,7 @@ export class EvaluationPeriodManagementContextService
           criteria: row.criteria_criteria || '',
           importance: row.criteria_importance || 5,
           subProject: row.criteria_sub_project || null,
+          isAdditional: row.criteria_is_additional || false,
           createdAt: row.criteria_created_at,
         });
       }
@@ -1640,13 +1643,14 @@ export class EvaluationPeriodManagementContextService
       const wbsItemDtos: AssignedWbsItemDto[] = wbsList.map((wbs) => {
         totalWbs++;
 
-        // 평가기준 목록 변환 (대시보드 API와 동일하게 subProject 포함)
+        // 평가기준 목록 변환 (대시보드 API와 동일하게 subProject, isAdditional 포함)
         const wbsCriteriaList = wbsCriteriaMap.get(wbs.id) || [];
         const criteriaDto = wbsCriteriaList.map((criteria) => ({
           criterionId: criteria.criterionId,
           criteria: criteria.criteria,
           importance: criteria.importance,
           subProject: criteria.subProject, // ⭐ 평가기준에 subProject 포함
+          isAdditional: criteria.isAdditional, // ⭐ 추가 과제 여부 포함
           createdAt: criteria.createdAt,
         }));
 

@@ -340,6 +340,7 @@ export function GetEmployeeAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가, 하향평가 포함)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수, 평가 점수 및 등급)
   * **summary의 평가자별 assignedWbsCount는 취소된 프로젝트 할당의 WBS 제외**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
@@ -426,6 +427,7 @@ export function GetMyAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
   * **2차 하향평가 정보는 평가자 정보만 제공 (evaluatorId, evaluatorName, isCompleted)**
   * **2차 하향평가 내용은 제거됨 (evaluationContent, score, submittedAt)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수)
@@ -787,6 +789,7 @@ export function GetEmployeeCompleteStatus() {
 - 프로젝트별 WBS 목록 (평가기준, 성과, 자기평가, 하향평가 상세 내용 포함)
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
 - 중복 필드 제거로 최적화된 구조 제공
 
 **기존 엔드포인트와의 차이:**

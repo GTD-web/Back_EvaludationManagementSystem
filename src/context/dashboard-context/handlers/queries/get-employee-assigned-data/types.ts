@@ -38,6 +38,7 @@ export interface WbsEvaluationCriterion {
   criteria: string;
   importance: number;
   subProject?: string | null;
+  isAdditional: boolean;
   createdAt: Date;
 }
 

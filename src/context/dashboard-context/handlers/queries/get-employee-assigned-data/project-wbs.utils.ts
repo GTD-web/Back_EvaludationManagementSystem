@@ -150,6 +150,7 @@ export async function getProjectsWithWbs(
         'criteria.criteria AS criteria_criteria',
         'criteria.importance AS criteria_importance',
         'criteria.subProject AS criteria_sub_project',
+        'criteria.isAdditional AS criteria_is_additional',
         'criteria.createdAt AS criteria_created_at',
       ])
       .where('criteria.wbsItemId IN (:...wbsItemIds)', { wbsItemIds })
@@ -170,6 +171,7 @@ export async function getProjectsWithWbs(
         criteria: row.criteria_criteria || '',
         importance: row.criteria_importance || 5,
         subProject: row.criteria_sub_project || null,
+        isAdditional: row.criteria_is_additional || false,
         createdAt: row.criteria_created_at,
       });
     }

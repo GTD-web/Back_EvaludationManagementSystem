@@ -19,6 +19,7 @@ import {
   CancelWbsAssignmentByWbsDto,
   ChangeWbsAssignmentOrderByWbsDto,
   CreateAndAssignWbsDto,
+  CreateAndAssignWbsBetweenDto,
   CreateWbsAssignmentDto,
   UpdateWbsItemTitleDto,
 } from '../../dto/evaluation-criteria/wbs-assignment.dto';
@@ -1568,6 +1569,125 @@ export const CreateAndAssignWbs = () =>
     ApiResponse({
       status: 404,
       description: '직원, 프로젝트 또는 평가기간을 찾을 수 없습니다.',
+    }),
+    ApiResponse({
+      status: 409,
+      description:
+        '중복된 할당입니다. (동일한 직원-WBS-프로젝트-평가기간 조합)',
+    }),
+    ApiResponse({
+      status: 422,
+      description: '비즈니스 로직 오류 (완료된 평가기간에 할당 생성 불가 등)',
+    }),
+    ApiResponse({
+      status: 500,
+      description: '서버 내부 오류',
+    }),
+  );
+
+/**
+ * WBS 사이에 생성하면서 할당 API 데코레이터
+ */
+export const CreateAndAssignWbsBetween = () =>
+  applyDecorators(
+    Post('create-and-assign-between/:previousWbsItemId/:nextWbsItemId'),
+    HttpCode(HttpStatus.CREATED),
+    ApiOperation({
+      summary: 'WBS 사이에 생성하면서 할당',
+      description: `**중요**: WBS 항목을 새로 생성하면서 두 기존 WBS 사이의 순서에 삽입하여 직원에게 할당합니다. WBS 코드는 자동으로 생성되며, 평가기준과 평가라인도 자동으로 구성됩니다.
+
+**자동 수행 작업:**
+- WBS 코드 자동 생성: 프로젝트 내 기존 WBS 개수를 조회하여 "WBS-001", "WBS-002" 형식으로 순차 생성
+- WBS 기본값 설정: status는 PENDING, level은 1(최상위), assignedToId는 employeeId와 동일
+- 순서 자동 계산: previousWbsItemId와 nextWbsItemId 사이의 displayOrder를 계산하여 삽입
+- 순서 재정렬: 필요시 인접한 WBS 항목들의 displayOrder를 자동 재정렬
+- WBS 평가기준 자동 생성: 해당 WBS 항목에 빈 평가기준을 자동으로 생성
+- 평가라인 자동 구성: 직원의 관리자를 1차 평가자, 프로젝트 PM을 2차 평가자로 자동 설정
+
+**동작:**
+- previousWbsItemId와 nextWbsItemId가 모두 제공된 경우: 두 WBS 사이에 삽입
+- previousWbsItemId가 "none"인 경우: nextWbsItemId 이전에 추가 (처음에 추가)
+- nextWbsItemId가 "none"인 경우: previousWbsItemId 다음에 추가 (마지막에 추가)
+- 둘 다 "none"인 경우: 마지막에 추가 (CreateAndAssignWbs와 동일)
+
+**테스트 케이스:**
+- 두 WBS 사이에 삽입: previousWbsItemId와 nextWbsItemId 제공 시 그 사이에 올바르게 삽입
+- 마지막에 추가: previousWbsItemId 제공, nextWbsItemId를 "none" 시 마지막에 추가
+- 처음에 추가: nextWbsItemId 제공, previousWbsItemId를 "none" 시 처음에 추가
+- 순서 자동 계산: displayOrder가 올바르게 계산됨
+- 순서 재정렬: 필요시 다른 WBS 항목들의 순서가 자동 재정렬됨
+- WBS 코드 자동 생성: 코드가 순차적으로 생성됨
+- 평가기준 자동 생성: WBS 평가기준이 자동 생성됨
+- 평가라인 자동 구성: 1차, 2차 평가자가 자동 설정됨
+- 필수 필드 검증: title, projectId, employeeId, periodId 누락 시 400 에러
+- UUID 형식 검증: 잘못된 UUID 형식 시 400 에러
+- 존재하지 않는 WBS 검증: previousWbsItemId 또는 nextWbsItemId가 유효하지 않은 경우 404 에러
+- 완료된 평가기간 제한: 완료된 평가기간에 할당 생성 시 422 에러`,
+    }),
+    ApiParam({
+      name: 'previousWbsItemId',
+      description:
+        '이전 WBS 항목 ID (이 WBS 다음에 새 WBS가 추가됨, "none"을 전달하면 처음에 추가)',
+      type: 'string',
+      example: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+    }),
+    ApiParam({
+      name: 'nextWbsItemId',
+      description:
+        '다음 WBS 항목 ID (이 WBS 이전에 새 WBS가 추가됨, "none"을 전달하면 마지막에 추가)',
+      type: 'string',
+      example: 'c3d4e5f6-a7b8-4b9c-0d1e-2f3a4b5c6d7e',
+    }),
+    ApiBody({
+      type: CreateAndAssignWbsBetweenDto,
+      description: 'WBS 사이에 생성 및 할당 데이터',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'WBS가 성공적으로 생성되고 두 WBS 사이에 할당되었습니다.',
+      schema: {
+        type: 'object',
+        properties: {
+          wbsItem: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              wbsCode: { type: 'string', example: 'WBS-001' },
+              title: { type: 'string', example: 'API 개발' },
+              status: { type: 'string', example: 'PENDING' },
+              level: { type: 'number', example: 1 },
+              projectId: { type: 'string', format: 'uuid' },
+              assignedToId: { type: 'string', format: 'uuid' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          assignment: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              employeeId: { type: 'string', format: 'uuid' },
+              wbsItemId: { type: 'string', format: 'uuid' },
+              projectId: { type: 'string', format: 'uuid' },
+              periodId: { type: 'string', format: 'uuid' },
+              assignedBy: { type: 'string', format: 'uuid' },
+              assignedDate: { type: 'string', format: 'date-time' },
+              displayOrder: { type: 'number', example: 2 },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 데이터 (필수 필드 누락, UUID 형식 오류 등)',
+    }),
+    ApiResponse({
+      status: 404,
+      description:
+        '직원, 프로젝트, 평가기간 또는 참조 WBS 항목을 찾을 수 없습니다.',
     }),
     ApiResponse({
       status: 409,

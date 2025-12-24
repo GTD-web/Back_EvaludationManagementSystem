@@ -182,19 +182,16 @@ export abstract class BaseEntity<T> implements IBaseEntity<T> {
 
   /**
    * 엔티티 메타데이터를 업데이트한다
+   *
+   * @remarks
+   * createdAt과 updatedAt은 TypeORM의 @CreateDateColumn과 @UpdateDateColumn 데코레이터가 자동으로 관리합니다.
+   * 이 메서드에서는 createdBy와 updatedBy만 설정합니다.
    */
   메타데이터를_업데이트한다(userId?: string): void {
-    const now = new Date();
-
-    if (this.새로_생성되었는가()) {
-      this.createdAt = now;
-      if (userId) {
+    if (userId) {
+      if (this.새로_생성되었는가()) {
         this.createdBy = userId;
       }
-    }
-
-    this.updatedAt = now;
-    if (userId) {
       this.updatedBy = userId;
     }
   }
@@ -307,19 +304,16 @@ export abstract class BaseEntityWithNumericId<T>
 
   /**
    * 엔티티 메타데이터를 업데이트한다
+   *
+   * @remarks
+   * createdAt과 updatedAt은 TypeORM의 @CreateDateColumn과 @UpdateDateColumn 데코레이터가 자동으로 관리합니다.
+   * 이 메서드에서는 createdBy와 updatedBy만 설정합니다.
    */
   메타데이터를_업데이트한다(userId?: string): void {
-    const now = new Date();
-
-    if (this.새로_생성되었는가()) {
-      this.createdAt = now;
-      if (userId) {
+    if (userId) {
+      if (this.새로_생성되었는가()) {
         this.createdBy = userId;
       }
-    }
-
-    this.updatedAt = now;
-    if (userId) {
       this.updatedBy = userId;
     }
   }

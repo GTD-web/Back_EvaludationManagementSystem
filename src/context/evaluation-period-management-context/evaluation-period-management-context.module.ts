@@ -6,6 +6,7 @@ import { EvaluationPeriodEmployeeMappingModule } from '../../domain/core/evaluat
 import { EvaluationProjectAssignmentModule } from '../../domain/core/evaluation-project-assignment/evaluation-project-assignment.module';
 import { EvaluationWbsAssignmentModule } from '../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module';
 import { EvaluationLineMappingModule } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
+import { WbsItemModule } from '../../domain/common/wbs-item/wbs-item.module';
 import { EvaluationPeriod } from '../../domain/core/evaluation-period/evaluation-period.entity';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { Department } from '../../domain/common/department/department.entity';
@@ -17,6 +18,7 @@ import { Project } from '../../domain/common/project/project.entity';
 import { WbsItem } from '../../domain/common/wbs-item/wbs-item.entity';
 import { WbsEvaluationCriteria } from '../../domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
 import { EvaluationLine } from '../../domain/core/evaluation-line/evaluation-line.entity';
+import { WbsSelfEvaluation } from '../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriodManagementContextService } from './evaluation-period-management.service';
 import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
 
@@ -40,12 +42,14 @@ import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
       WbsItem,
       WbsEvaluationCriteria,
       EvaluationLine,
+      WbsSelfEvaluation,
     ]),
     EvaluationPeriodModule,
     EvaluationPeriodEmployeeMappingModule,
     EvaluationProjectAssignmentModule,
     EvaluationWbsAssignmentModule,
     EvaluationLineMappingModule,
+    WbsItemModule,
   ],
   providers: [
     EvaluationPeriodManagementContextService,

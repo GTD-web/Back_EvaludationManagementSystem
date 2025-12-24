@@ -10,6 +10,8 @@ export interface CreateWbsEvaluationCriteriaData {
   importance: number;
   /** 세부 프로젝트 (서브 프로젝트) */
   subProject?: string | null;
+  /** 추가 과제 여부 */
+  isAdditional?: boolean;
 }
 
 /**
@@ -22,6 +24,8 @@ export interface UpdateWbsEvaluationCriteriaData {
   importance?: number;
   /** 세부 프로젝트 (서브 프로젝트) */
   subProject?: string | null;
+  /** 추가 과제 여부 */
+  isAdditional?: boolean;
 }
 
 /**
@@ -38,6 +42,8 @@ export interface WbsEvaluationCriteriaDto {
   importance: number;
   /** 세부 프로젝트 (서브 프로젝트) */
   subProject?: string | null;
+  /** 추가 과제 여부 */
+  isAdditional: boolean;
   /** 생성일시 */
   createdAt: Date;
   /** 수정일시 */

@@ -55,3 +55,21 @@ export interface AuditLogListResult {
   limit: number;
 }
 
+/**
+ * Audit 로그 통계 아이템
+ */
+export interface AuditLogStatsItem {
+  time: string;
+  timestamp: number;
+  success: number;
+  errors: number;
+  total: number;
+}
+
+/**
+ * Audit 로그 통계 결과
+ */
+export interface AuditLogStatsResult {
+  stats: AuditLogStatsItem[];
+}
+

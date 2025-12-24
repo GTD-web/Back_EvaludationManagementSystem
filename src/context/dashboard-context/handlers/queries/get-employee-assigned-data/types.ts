@@ -26,6 +26,7 @@ export interface AssignedProjectWithWbs {
     id: string;
     name: string;
   } | null;
+  realPM?: string;
   wbsList: AssignedWbsInfo[];
 }
 
@@ -37,6 +38,7 @@ export interface WbsEvaluationCriterion {
   criteria: string;
   importance: number;
   subProject?: string | null;
+  isAdditional: boolean;
   createdAt: Date;
 }
 
@@ -73,6 +75,7 @@ export interface AssignedWbsInfo {
   assignedAt: Date;
   criteria: WbsEvaluationCriterion[];
   performance?: WbsPerformance | null;
+  subProject?: string | null;
   primaryDownwardEvaluation?: WbsDownwardEvaluationInfo | null;
   secondaryDownwardEvaluation?: WbsDownwardEvaluationInfo | null;
   deliverables: DeliverableInfo[];

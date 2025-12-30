@@ -7,6 +7,7 @@ import { EvaluationProjectAssignmentModule } from '../../domain/core/evaluation-
 import { EvaluationWbsAssignmentModule } from '../../domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.module';
 import { EvaluationLineMappingModule } from '../../domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { WbsItemModule } from '../../domain/common/wbs-item/wbs-item.module';
+import { ApprovalSystemModule } from '../../domain/common/approval-system/approval-system.module';
 import { EvaluationPeriod } from '../../domain/core/evaluation-period/evaluation-period.entity';
 import { Employee } from '../../domain/common/employee/employee.entity';
 import { Department } from '../../domain/common/department/department.entity';
@@ -20,6 +21,7 @@ import { WbsEvaluationCriteria } from '../../domain/core/wbs-evaluation-criteria
 import { EvaluationLine } from '../../domain/core/evaluation-line/evaluation-line.entity';
 import { WbsSelfEvaluation } from '../../domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { EvaluationPeriodManagementContextService } from './evaluation-period-management.service';
+import { EvaluationPeriodApprovalSyncService } from './services/evaluation-period-approval-sync.service';
 import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
 
 /**
@@ -50,9 +52,11 @@ import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
     EvaluationWbsAssignmentModule,
     EvaluationLineMappingModule,
     WbsItemModule,
+    ApprovalSystemModule,
   ],
   providers: [
     EvaluationPeriodManagementContextService,
+    EvaluationPeriodApprovalSyncService,
     ...COMMAND_HANDLERS,
     ...QUERY_HANDLERS,
   ],

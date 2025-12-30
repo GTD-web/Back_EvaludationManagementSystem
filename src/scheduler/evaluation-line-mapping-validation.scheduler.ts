@@ -7,8 +7,8 @@ import { EvaluationPeriodStatus } from '@domain/core/evaluation-period/evaluatio
 
 /**
  * 평가라인 매핑 배치 검증 스케줄러
- * 
- * 매 1분마다 활성 평가기간의 평가라인 매핑을 검증하고
+ *
+ * 매 1시간마다 활성 평가기간의 평가라인 매핑을 검증하고
  * 무효한 매핑을 자동으로 정리합니다.
  */
 @Injectable()
@@ -29,7 +29,7 @@ export class EvaluationLineMappingValidationScheduler {
       ) !== 'false';
   }
 
-  @Cron('0 * * * * *', {
+  @Cron('0 0 * * * *', {
     name: 'validate-evaluation-line-mappings',
     timeZone: 'Asia/Seoul',
   })
@@ -116,7 +116,7 @@ export class EvaluationLineMappingValidationScheduler {
   onModuleInit() {
     if (this.isEnabled) {
       this.logger.log(
-        '✅ 평가라인 매핑 검증 스케줄러가 활성화되었습니다. (매 1분마다 실행)',
+        '✅ 평가라인 매핑 검증 스케줄러가 활성화되었습니다. (매 1시간마다 실행)',
       );
     } else {
       this.logger.warn(
@@ -125,4 +125,3 @@ export class EvaluationLineMappingValidationScheduler {
     }
   }
 }
-

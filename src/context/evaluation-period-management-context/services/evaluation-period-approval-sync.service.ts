@@ -1,77 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { firstValueFrom } from 'rxjs';
-import { AxiosResponse } from 'axios';
-import { EvaluationPeriod } from './evaluation-period.entity';
-import { ApprovalStatus } from './evaluation-period.types';
-
-/**
- * LIAS 서버 결재 상태 응답 DTO
- */
-interface LiasApprovalDocumentResponse {
-  documentId: string;
-  documentStatus:
-    | 'DRAFT'
-    | 'PENDING'
-    | 'APPROVED'
-    | 'REJECTED'
-    | 'CANCELLED'
-    | 'IMPLEMENTED';
-  steps: {
-    id: string;
-    documentId: string;
-    stepOrder: number;
-    stepType: 'AGREEMENT' | 'APPROVAL' | 'IMPLEMENTATION' | 'REFERENCE';
-    approverId: string;
-    approverSnapshot: {
-      departmentId: string;
-      departmentName: string;
-      positionId: string;
-      positionTitle: string;
-      rankId: string;
-      rankTitle: string;
-      employeeName: string;
-      employeeNumber: string;
-    };
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-    comment?: string;
-    approvedAt?: string;
-    createdAt: string;
-    updatedAt: string;
-  }[];
-}
+import { EvaluationPeriod } from '@domain/core/evaluation-period/evaluation-period.entity';
+import { ApprovalStatus } from '@domain/core/evaluation-period/evaluation-period.types';
+import { ApprovalSystemService } from '@domain/common/approval-system';
 
 /**
  * 평가기간 결재 상태 동기화 서비스
  *
  * LIAS 결재관리시스템과 주기적으로 통신하여 평가기간의 결재 상태를 동기화합니다.
+ * 이 서비스는 컨텍스트 레이어에서 도메인 로직과 외부 시스템 연동을 조율합니다.
  */
 @Injectable()
 export class EvaluationPeriodApprovalSyncService {
   private readonly logger = new Logger(
     EvaluationPeriodApprovalSyncService.name,
   );
-  private readonly liasBaseUrl: string;
 
   constructor(
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-  ) {
-    this.liasBaseUrl = this.configService.get<string>(
-      'LIAS_URL',
-      'http://localhost:3001',
-    );
-    this.logger.log(`LIAS 서버 URL: ${this.liasBaseUrl}`);
-  }
+    private readonly approvalSystemService: ApprovalSystemService,
+  ) {}
 
   /**
-   * 1시간마다 결재 상태를 동기화합니다.
+   * 10분마다 결재 상태를 동기화합니다.
    */
   @Cron(CronExpression.EVERY_10_MINUTES)
   async 결재상태_동기화한다(): Promise<void> {
@@ -130,17 +84,11 @@ export class EvaluationPeriodApprovalSyncService {
 
     try {
       // LIAS 서버에 결재 상태 조회
-      const url = `${this.liasBaseUrl}/api/approval-process/document/${period.approvalDocumentId}/steps`;
-      this.logger.debug(`LIAS 서버 요청: GET ${url}`);
-
-      const response: AxiosResponse<LiasApprovalDocumentResponse> =
-        await firstValueFrom(
-          this.httpService.get<LiasApprovalDocumentResponse>(url, {
-            timeout: 5000, // 5초 타임아웃
-          }),
+      const documentData =
+        await this.approvalSystemService.결재문서_상태를_조회한다(
+          period.approvalDocumentId,
         );
 
-      const documentData = response.data;
       const documentStatus = documentData.documentStatus;
 
       this.logger.log(
@@ -169,18 +117,8 @@ export class EvaluationPeriodApprovalSyncService {
         );
       }
     } catch (error) {
-      // HTTP 요청 실패 처리
-      if (error.code === 'ECONNREFUSED') {
-        this.logger.warn(
-          `LIAS 서버 연결 실패 (평가기간: ${period.id.substring(0, 8)}...). 서버가 실행 중인지 확인하세요.`,
-        );
-      } else if (error.response?.status === 404) {
-        this.logger.warn(
-          `결재 문서를 찾을 수 없음 (documentId: ${period.approvalDocumentId}). 평가기간: ${period.id.substring(0, 8)}...`,
-        );
-      } else {
-        throw error; // 다른 오류는 재발생
-      }
+      // 에러는 상위로 전파
+      throw error;
     }
   }
 

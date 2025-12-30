@@ -25,9 +25,9 @@ export class EvaluationPeriodApprovalSyncService {
   ) {}
 
   /**
-   * 10분마다 결재 상태를 동기화합니다.
+   * 1분마다 결재 상태를 동기화합니다.
    */
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async 결재상태_동기화한다(): Promise<void> {
     try {
       // 결재 대기 중(pending)인 평가기간만 조회

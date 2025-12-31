@@ -39,7 +39,6 @@ export class EvaluationPeriodApprovalSyncService {
       });
 
       if (pendingPeriods.length === 0) {
-        this.logger.debug('결재 대기 중인 평가기간이 없습니다.');
         return;
       }
 
@@ -116,9 +115,6 @@ export class EvaluationPeriodApprovalSyncService {
             );
           } catch (error) {
             // 이미 완료된 경우 등의 에러는 무시
-            this.logger.debug(
-              `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - 평가기간 완료 처리 실패 (이미 완료됨): ${error.message}`,
-            );
           }
         }
 
@@ -126,10 +122,6 @@ export class EvaluationPeriodApprovalSyncService {
 
         this.logger.log(
           `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - 결재 상태 업데이트 완료`,
-        );
-      } else {
-        this.logger.debug(
-          `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - 결재 상태 변경 없음 (${period.approvalStatus})`,
         );
       }
     } catch (error) {

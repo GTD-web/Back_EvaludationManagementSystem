@@ -9,6 +9,30 @@ export enum ProjectStatus {
   CANCELLED = 'CANCELLED',
 }
 
+// 프로젝트 등급 enum
+export enum ProjectGrade {
+  GRADE_1A = '1A',
+  GRADE_1B = '1B',
+  GRADE_2A = '2A',
+  GRADE_2B = '2B',
+  GRADE_3A = '3A',
+}
+
+/**
+ * 프로젝트 등급에 따른 우선순위 반환
+ * 1A=5, 1B=4, 2A=3, 2B=2, 3A=1
+ */
+export function getProjectGradePriority(grade: ProjectGrade): number {
+  const priorityMap: Record<ProjectGrade, number> = {
+    [ProjectGrade.GRADE_1A]: 5,
+    [ProjectGrade.GRADE_1B]: 4,
+    [ProjectGrade.GRADE_2A]: 3,
+    [ProjectGrade.GRADE_2B]: 2,
+    [ProjectGrade.GRADE_3A]: 1,
+  };
+  return priorityMap[grade] || 0;
+}
+
 /**
  * 프로젝트 매니저 정보
  */
@@ -55,10 +79,6 @@ export interface ProjectDto {
   projectCode?: string;
   /** 프로젝트 상태 */
   status: ProjectStatus;
-  /** 시작일 */
-  startDate?: Date;
-  /** 종료일 */
-  endDate?: Date;
 
   // 조인된 정보 필드들
   /** 프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정) */
@@ -71,6 +91,10 @@ export interface ProjectDto {
   realPMId?: string;
   /** 프로젝트 중요도 ID */
   importanceId?: string;
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  grade?: ProjectGrade;
+  /** 프로젝트 우선순위 (등급에 따라 자동 설정: 1A=5, 1B=4, 2A=3, 2B=2, 3A=1) */
+  priority?: number;
 
   // 계층 구조 필드들
   /** 상위 프로젝트 ID (하위 프로젝트인 경우) */
@@ -114,12 +138,12 @@ export interface CreateProjectDto {
   name: string;
   projectCode?: string;
   status: ProjectStatus;
-  startDate?: Date;
-  endDate?: Date;
   managerId?: string;
   realPM?: string;
   realPMId?: string;
   importanceId?: string;
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  grade?: ProjectGrade;
   /** 상위 프로젝트 ID (하위 프로젝트 생성 시) */
   parentProjectId?: string;
   /** 하위 프로젝트 목록 (평면 구조, orderLevel로 재귀 체인 생성) */
@@ -131,12 +155,12 @@ export interface UpdateProjectDto {
   name?: string;
   projectCode?: string;
   status?: ProjectStatus;
-  startDate?: Date;
-  endDate?: Date;
   managerId?: string;
   realPM?: string;
   realPMId?: string;
   importanceId?: string;
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  grade?: ProjectGrade;
   /** 상위 프로젝트 ID (하위 프로젝트로 변경 또는 상위 프로젝트 변경 시) */
   parentProjectId?: string;
   /** 하위 프로젝트 목록 (기존 하위 삭제 후 재생성, undefined: 변경 없음) */
@@ -147,10 +171,6 @@ export interface UpdateProjectDto {
 export interface ProjectFilter {
   status?: ProjectStatus;
   managerId?: string;
-  startDateFrom?: Date;
-  startDateTo?: Date;
-  endDateFrom?: Date;
-  endDateTo?: Date;
   /** 상위 프로젝트 ID로 필터링 (하위 프로젝트 조회 시) */
   parentProjectId?: string;
   /** 계층 레벨 필터 (null: 상위 프로젝트만, 'all': 전체) */
@@ -174,7 +194,7 @@ export interface ProjectStatistics {
 export interface ProjectListOptions {
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'projectCode' | 'startDate' | 'endDate' | 'createdAt';
+  sortBy?: 'name' | 'projectCode' | 'createdAt';
   sortOrder?: 'ASC' | 'DESC';
   filter?: ProjectFilter;
 }

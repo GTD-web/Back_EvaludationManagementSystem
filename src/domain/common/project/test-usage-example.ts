@@ -33,8 +33,6 @@ export class ProjectTestUsageExample {
         name: '커스텀프로젝트',
         projectCode: 'CUSTOM-001',
         status: ProjectStatus.ACTIVE,
-        startDate: new Date('2024-06-01'),
-        endDate: new Date('2024-12-31'),
         managerId: 'custom-manager',
       });
     console.log('커스텀 프로젝트 생성:', customProject);

@@ -99,8 +99,6 @@ export class GetAvailableProjectsHandler
       name: project.name,
       projectCode: project.projectCode,
       status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       manager: project.manager || null,
       realPM: project.realPM || null,
     }));
@@ -118,7 +116,7 @@ export class GetAvailableProjectsHandler
     }
 
     // 정렬 기준 검증 및 정규화
-    const validSortBy = ['name', 'projectCode', 'startDate', 'endDate', 'managerName'];
+    const validSortBy = ['name', 'projectCode', 'managerName'];
     const normalizedSortBy = validSortBy.includes(sortBy) ? sortBy : 'name';
 
     // 정렬
@@ -134,14 +132,6 @@ export class GetAvailableProjectsHandler
         case 'projectCode':
           aValue = a.projectCode || '';
           bValue = b.projectCode || '';
-          break;
-        case 'startDate':
-          aValue = a.startDate || new Date(0);
-          bValue = b.startDate || new Date(0);
-          break;
-        case 'endDate':
-          aValue = a.endDate || new Date(0);
-          bValue = b.endDate || new Date(0);
           break;
         case 'managerName':
           aValue = a.manager?.name || '';

@@ -133,11 +133,10 @@ export class ProjectManagementController {
         name: createDto.name,
         projectCode: createDto.projectCode,
         status: createDto.status,
-        startDate: createDto.startDate,
-        endDate: createDto.endDate,
         managerId: createDto.managerId, // PM/DPM 설정
         realPM: realPMName, // 직원 이름 저장
         importanceId: createDto.importanceId, // 중요도 설정
+        grade: createDto.grade, // 등급 설정
         parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
         childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
@@ -149,10 +148,10 @@ export class ProjectManagementController {
       name: project.name,
       projectCode: project.projectCode,
       status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects, // 하위 프로젝트 포함
       childProjectCount: project.childProjects?.length,
@@ -209,10 +208,10 @@ export class ProjectManagementController {
         name: project.name,
         projectCode: project.projectCode,
         status: project.status,
-        startDate: project.startDate,
-        endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
+        grade: project.grade,
+        priority: project.priority,
         parentProjectId: project.parentProjectId,
         childProjects: project.childProjects?.map((child) =>
           this.mapProjectToResponseDto(child),
@@ -244,6 +243,8 @@ export class ProjectManagementController {
       status: project.status,
       managerId: project.managerId,
       manager: project.manager,
+      grade: project.grade,
+      priority: project.priority,
       childProjects: project.childProjects?.map((child) =>
         this.mapProjectToResponseDto(child),
       ), // ✅ 재귀 호출
@@ -271,15 +272,11 @@ export class ProjectManagementController {
       result = await this.projectService.계층구조_목록_조회한다({
         page: query.page,
         limit: query.limit,
-        sortBy: query.sortBy,
+        sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
           status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           search: query.search,
         },
       });
@@ -288,15 +285,11 @@ export class ProjectManagementController {
       result = await this.projectService.목록_조회한다({
         page: query.page,
         limit: query.limit,
-        sortBy: query.sortBy,
+        sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
           status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           parentProjectId: query.parentProjectId,
           hierarchyLevel: query.hierarchyLevel,
           search: query.search,
@@ -312,10 +305,10 @@ export class ProjectManagementController {
         name: project.name,
         projectCode: project.projectCode,
         status: project.status,
-        startDate: project.startDate,
-        endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
+        grade: project.grade,
+        priority: project.priority,
         parentProjectId: project.parentProjectId,
         childProjects: project.childProjects?.map((child) =>
           this.mapProjectToResponseDto(child),
@@ -528,10 +521,10 @@ export class ProjectManagementController {
       name: project.name,
       projectCode: project.projectCode,
       status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects?.map((child) => ({
         id: child.id,
@@ -540,6 +533,8 @@ export class ProjectManagementController {
         status: child.status,
         managerId: child.managerId,
         manager: child.manager,
+        grade: child.grade,
+        priority: child.priority,
       })),
       childProjectCount,
       createdAt: project.createdAt,
@@ -585,11 +580,10 @@ export class ProjectManagementController {
         name: updateDto.name,
         projectCode: updateDto.projectCode,
         status: updateDto.status,
-        startDate: updateDto.startDate,
-        endDate: updateDto.endDate,
         managerId: updateDto.managerId, // PM/DPM 변경
         realPM: realPMName, // 직원 이름 저장
         importanceId: updateDto.importanceId, // 중요도 변경
+        grade: updateDto.grade, // 등급 변경
         parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
         childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },
@@ -601,10 +595,10 @@ export class ProjectManagementController {
       name: project.name,
       projectCode: project.projectCode,
       status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects, // 하위 프로젝트 포함
       childProjectCount: project.childProjects?.length,
@@ -695,8 +689,6 @@ export class ProjectManagementController {
                   name: `${topLevelProjectName} - ${level}차 하위 프로젝트`, // ✅ 최상위 이름 사용
                   projectCode: `${topLevelProjectCode}-SUB${level}`, // ✅ 최상위 코드 사용
                   status: parentProject.status,
-                  startDate: parentProject.startDate,
-                  endDate: parentProject.endDate,
                   managerId: parentProject.managerId,
                   parentProjectId: currentParentId,
                 },

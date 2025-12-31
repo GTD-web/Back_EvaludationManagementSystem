@@ -552,16 +552,6 @@ export class Phase1OrganizationGenerator {
             ? ProjectStatus.COMPLETED
             : ProjectStatus.CANCELLED;
 
-      // 날짜 생성
-      const { startDate, endDate } = DateGeneratorUtil.generateDateRange(
-        DateGeneratorUtil.addMonths(now, -6),
-        dist.dateGeneration.project.durationMonths.min,
-        dist.dateGeneration.project.durationMonths.max,
-        'months',
-      );
-      project.startDate = startDate;
-      project.endDate = endDate;
-
       // 매니저 할당 (생성된 직원 중에서 랜덤 선택, 시스템 관리자는 제외)
       // 시스템 관리자가 아닌 직원들만 필터링
       const nonSystemAdminEmployees = employeeIds.filter(

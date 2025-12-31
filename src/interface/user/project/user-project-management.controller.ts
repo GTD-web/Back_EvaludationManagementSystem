@@ -57,10 +57,6 @@ export class UserProjectManagementController {
         filter: {
           status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           search: query.search,
         },
       });
@@ -74,10 +70,6 @@ export class UserProjectManagementController {
         filter: {
           status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           parentProjectId: query.parentProjectId,
           hierarchyLevel: query.hierarchyLevel,
           search: query.search,
@@ -141,8 +133,6 @@ export class UserProjectManagementController {
       name: project.name,
       projectCode: project.projectCode,
       status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
       parentProjectId: project.parentProjectId,

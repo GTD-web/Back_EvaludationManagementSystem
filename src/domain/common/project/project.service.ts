@@ -57,14 +57,11 @@ export class ProjectService {
 
       // managerId가 없으면 최상단 프로젝트의 PM 사용
       if (!finalManagerId) {
-        console.log('🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
         const topLevelProject = await this.최상단_프로젝트_조회한다(data.parentProjectId);
         finalManagerId = topLevelProject.managerId;
-        console.log('✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
       }
     }
 
-    console.log('📋 최종 사용할 managerId:', finalManagerId);
 
     // 프로젝트 생성 (managerId 자동 설정)
     const project = Project.생성한다(
@@ -75,20 +72,14 @@ export class ProjectService {
       createdBy,
     );
     const savedProject = await this.projectRepository.save(project);
-    console.log('✅ 프로젝트 생성 완료 - ID:', savedProject.id, ', managerId:', savedProject.managerId);
 
     // 하위 프로젝트 생성 (childProjects가 있는 경우)
     if (data.childProjects && data.childProjects.length > 0) {
-      console.log('\n📦 하위 프로젝트 생성 시작');
-      console.log('  - 전달할 defaultManagerId:', finalManagerId);
-      
       await this.하위_프로젝트들_생성한다(
         savedProject.id,
         savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
         data.childProjects,
         data.status,
-        data.startDate,
-        data.endDate,
         finalManagerId, // 최종 managerId 전달
         createdBy,
       );
@@ -123,16 +114,9 @@ export class ProjectService {
       managerId?: string;
     }>,
     status: ProjectStatus,
-    startDate?: Date,
-    endDate?: Date,
     defaultManagerId?: string,
     createdBy: string = 'system',
   ): Promise<void> {
-    console.log('🔍 [하위_프로젝트들_생성한다] 시작');
-    console.log('📋 defaultManagerId (최상단 PM):', defaultManagerId);
-    console.log('📋 childProjects 개수:', childProjects.length);
-    console.log('📋 childProjects 상세:', JSON.stringify(childProjects, null, 2));
-
     // orderLevel별로 그룹화
     const groupedByLevel = new Map<number, typeof childProjects>();
     for (const child of childProjects) {
@@ -156,18 +140,10 @@ export class ProjectService {
       for (let index = 0; index < childrenInLevel.length; index++) {
         const child = childrenInLevel[index];
         
-        console.log(`\n🔹 Level ${level}, Index ${index} 처리 중`);
-        console.log('  - child.name:', child.name);
-        console.log('  - child.managerId (입력값):', child.managerId);
-        console.log('  - defaultManagerId (최상단 PM):', defaultManagerId);
-        console.log('  - 최종 사용할 managerId (무조건 최상단):', defaultManagerId);
-        
         // 프로젝트 코드 자동 생성 (미입력 시)
         const childProjectCode =
           child.projectCode ||
           `${topLevelProjectCode}-SUB${level}-${String.fromCharCode(65 + index)}`; // A, B, C...
-
-        console.log('  - 실제 저장될 managerId:', defaultManagerId);
 
         const createdChild = await this.projectRepository.save(
           Project.생성한다(
@@ -175,16 +151,12 @@ export class ProjectService {
               name: child.name,
               projectCode: childProjectCode,
               status,
-              startDate,
-              endDate,
               managerId: defaultManagerId, // 무조건 최상단 프로젝트의 PM 사용 (child.managerId 무시)
               parentProjectId: lastCreatedIdOfPreviousLevel, // 이전 레벨의 마지막 프로젝트
             },
             createdBy,
           ),
         );
-
-        console.log('  ✅ 생성 완료 - ID:', createdChild.id, ', managerId:', createdChild.managerId);
 
         lastCreatedInThisLevel = createdChild;
       }
@@ -209,8 +181,6 @@ export class ProjectService {
     success: ProjectDto[];
     failed: Array<{ index: number; data: CreateProjectDto; error: string }>;
   }> {
-    console.log('\n🚀 [일괄_생성한다] 일괄 생성 시작 - 총', dataList.length, '개');
-    
     const success: ProjectDto[] = [];
     const failed: Array<{
       index: number;
@@ -220,43 +190,29 @@ export class ProjectService {
 
     // 각 프로젝트 생성 시도
     for (let i = 0; i < dataList.length; i++) {
-      console.log(`\n📦 [${i + 1}/${dataList.length}] 프로젝트 생성 중`);
-      console.log('  - name:', dataList[i].name);
-      console.log('  - managerId (입력값):', dataList[i].managerId);
-      console.log('  - parentProjectId:', dataList[i].parentProjectId);
-      console.log('  - childProjects:', dataList[i].childProjects ? `${dataList[i].childProjects!.length}개` : '없음');
-      
       try {
         let finalManagerId = dataList[i].managerId;
 
         // 하위 프로젝트이고 managerId가 없으면 최상단 프로젝트의 PM 사용
         if (dataList[i].parentProjectId && !finalManagerId) {
-          console.log('  🔍 managerId 없음 → 최상단 프로젝트 PM 찾기 시작');
           const topLevelProject = await this.최상단_프로젝트_조회한다(dataList[i].parentProjectId!);
           finalManagerId = topLevelProject.managerId;
-          console.log('  ✅ 최상단 프로젝트 PM 찾음:', finalManagerId);
         }
 
-        console.log('  📋 최종 사용할 managerId:', finalManagerId);
 
         const project = Project.생성한다({
           ...dataList[i],
           managerId: finalManagerId,
         }, createdBy);
         const savedProject = await this.projectRepository.save(project);
-        console.log('  ✅ 프로젝트 생성 완료 - managerId:', savedProject.managerId);
 
         // 하위 프로젝트 생성 (childProjects가 있는 경우)
         if (dataList[i].childProjects && dataList[i].childProjects!.length > 0) {
-          console.log('  📦 하위 프로젝트 생성 - defaultManagerId:', finalManagerId);
-          
           await this.하위_프로젝트들_생성한다(
             savedProject.id,
             savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
             dataList[i].childProjects!,
             dataList[i].status,
-            dataList[i].startDate,
-            dataList[i].endDate,
             finalManagerId,
             createdBy,
           );
@@ -313,7 +269,7 @@ export class ProjectService {
 
     // 프로젝트 기본 정보 수정
     project.업데이트한다(data, updatedBy);
-    await this.projectRepository.save(project);
+    const savedProject = await this.projectRepository.save(project);
 
     // 하위 프로젝트 재생성 (childProjects가 명시적으로 제공된 경우)
     if (data.childProjects !== undefined) {
@@ -330,8 +286,6 @@ export class ProjectService {
           project.projectCode || id, // projectCode가 없으면 ID 사용
           data.childProjects,
           project.status,
-          project.startDate,
-          project.endDate,
           project.managerId,
           updatedBy,
         );
@@ -431,7 +385,6 @@ export class ProjectService {
       currentProject = parentProject;
     }
 
-    console.log('  🔝 최상단 프로젝트 찾음 - ID:', currentProject.id, ', name:', currentProject.name, ', managerId:', currentProject.managerId);
     return currentProject;
   }
 
@@ -478,12 +431,12 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.grade AS grade',
+        'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
@@ -512,12 +465,12 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
       managerId: result.managerId,
+      grade: result.grade,
+      priority: result.priority,
       parentProjectId: result.parentProjectId,
       manager: result.manager_external_id
         ? {
@@ -566,8 +519,6 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -592,8 +543,6 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -641,8 +590,6 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -667,8 +614,6 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -716,8 +661,6 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.realPM AS "realPM"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
@@ -741,30 +684,6 @@ export class ProjectService {
     if (filter.managerId) {
       queryBuilder.andWhere('project.managerId = :managerId', {
         managerId: filter.managerId,
-      });
-    }
-
-    if (filter.startDateFrom) {
-      queryBuilder.andWhere('project.startDate >= :startDateFrom', {
-        startDateFrom: filter.startDateFrom,
-      });
-    }
-
-    if (filter.startDateTo) {
-      queryBuilder.andWhere('project.startDate <= :startDateTo', {
-        startDateTo: filter.startDateTo,
-      });
-    }
-
-    if (filter.endDateFrom) {
-      queryBuilder.andWhere('project.endDate >= :endDateFrom', {
-        endDateFrom: filter.endDateFrom,
-      });
-    }
-
-    if (filter.endDateTo) {
-      queryBuilder.andWhere('project.endDate <= :endDateTo', {
-        endDateTo: filter.endDateTo,
       });
     }
 
@@ -793,8 +712,6 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       realPM: result.realPM,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
@@ -862,30 +779,6 @@ export class ProjectService {
       });
     }
 
-    if (filter.startDateFrom) {
-      countQueryBuilder.andWhere('project.startDate >= :startDateFrom', {
-        startDateFrom: filter.startDateFrom,
-      });
-    }
-
-    if (filter.startDateTo) {
-      countQueryBuilder.andWhere('project.startDate <= :startDateTo', {
-        startDateTo: filter.startDateTo,
-      });
-    }
-
-    if (filter.endDateFrom) {
-      countQueryBuilder.andWhere('project.endDate >= :endDateFrom', {
-        endDateFrom: filter.endDateFrom,
-      });
-    }
-
-    if (filter.endDateTo) {
-      countQueryBuilder.andWhere('project.endDate <= :endDateTo', {
-        endDateTo: filter.endDateTo,
-      });
-    }
-
     // 프로젝트명 검색 (부분 일치)
     if (filter.search) {
       countQueryBuilder.andWhere('project.name ILIKE :search', {
@@ -923,12 +816,12 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.grade AS grade',
+        'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
@@ -950,30 +843,6 @@ export class ProjectService {
     if (filter.managerId) {
       queryBuilder.andWhere('project.managerId = :managerId', {
         managerId: filter.managerId,
-      });
-    }
-
-    if (filter.startDateFrom) {
-      queryBuilder.andWhere('project.startDate >= :startDateFrom', {
-        startDateFrom: filter.startDateFrom,
-      });
-    }
-
-    if (filter.startDateTo) {
-      queryBuilder.andWhere('project.startDate <= :startDateTo', {
-        startDateTo: filter.startDateTo,
-      });
-    }
-
-    if (filter.endDateFrom) {
-      queryBuilder.andWhere('project.endDate >= :endDateFrom', {
-        endDateFrom: filter.endDateFrom,
-      });
-    }
-
-    if (filter.endDateTo) {
-      queryBuilder.andWhere('project.endDate <= :endDateTo', {
-        endDateTo: filter.endDateTo,
       });
     }
 
@@ -1013,12 +882,12 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
       managerId: result.managerId,
+      grade: result.grade,
+      priority: result.priority,
       parentProjectId: result.parentProjectId,
       manager: result.manager_external_id
         ? {
@@ -1070,11 +939,12 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
+        'project.managerId AS "managerId"',
+        'project.grade AS grade',
+        'project.priority AS priority',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
         'manager.name AS manager_name',
@@ -1092,11 +962,12 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
+      managerId: result.managerId,
+      grade: result.grade,
+      priority: result.priority,
       manager: result.manager_external_id
         ? {
             managerId: result.manager_external_id,
@@ -1140,8 +1011,6 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -1163,8 +1032,6 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -1212,8 +1079,6 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -1235,8 +1100,6 @@ export class ProjectService {
       name: result.name,
       projectCode: result.projectCode,
       status: result.status,
-      startDate: result.startDate,
-      endDate: result.endDate,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -1378,12 +1241,12 @@ export class ProjectService {
         'project.name AS name',
         'project.projectCode AS "projectCode"',
         'project.status AS status',
-        'project.startDate AS "startDate"',
-        'project.endDate AS "endDate"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.grade AS grade',
+        'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
@@ -1419,6 +1282,8 @@ export class ProjectService {
           updatedAt: result.updatedAt,
           deletedAt: result.deletedAt,
           managerId: result.managerId,
+          grade: result.grade,
+          priority: result.priority,
           parentProjectId: result.parentProjectId,
           manager: result.manager_external_id
             ? {

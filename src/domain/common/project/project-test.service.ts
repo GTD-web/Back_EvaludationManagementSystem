@@ -31,8 +31,6 @@ export class ProjectTestService {
         name: '루미르 통합 포탈 개발',
         projectCode: 'LUMIR-001',
         status: ProjectStatus.ACTIVE,
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-12-31'),
         managerId: 'emp-001',
       },
       {
@@ -155,8 +153,6 @@ export class ProjectTestService {
         proj.name,
         proj.projectCode,
         proj.status,
-        proj.startDate,
-        proj.endDate,
         managerUuid,
       );
       return project;
@@ -181,16 +177,12 @@ export class ProjectTestService {
     name: string;
     projectCode?: string;
     status?: ProjectStatus;
-    startDate?: Date;
-    endDate?: Date;
     managerId?: string;
   }): Promise<ProjectDto> {
     const project = new Project(
       projectData.name,
       projectData.projectCode,
       projectData.status || ProjectStatus.ACTIVE,
-      projectData.startDate,
-      projectData.endDate,
       projectData.managerId,
     );
 
@@ -232,15 +224,10 @@ export class ProjectTestService {
       const startDay = Math.floor(Math.random() * 28) + 1;
       const duration = Math.floor(Math.random() * 12) + 1; // 1-12개월
 
-      const startDate = new Date(startYear, startMonth, startDay);
-      const endDate = new Date(startYear, startMonth + duration, startDay);
-
       const project = new Project(
         `테스트${projectType}프로젝트${i + 1}`,
         `TEST${String(i + 1).padStart(3, '0')}`,
         status,
-        startDate,
-        endDate,
         `manager-${Math.floor(Math.random() * 5) + 1}`,
       );
       projects.push(project);
@@ -297,20 +284,10 @@ export class ProjectTestService {
     for (let i = 0; i < count; i++) {
       const projectType =
         projectTypes[Math.floor(Math.random() * projectTypes.length)];
-      const startYear = 2023 + Math.floor(Math.random() * 2);
-      const startMonth = Math.floor(Math.random() * 12);
-      const startDay = Math.floor(Math.random() * 28) + 1;
-      const duration = Math.floor(Math.random() * 12) + 1;
-
-      const startDate = new Date(startYear, startMonth, startDay);
-      const endDate = new Date(startYear, startMonth + duration, startDay);
-
       const project = new Project(
         `${status}${projectType}프로젝트${i + 1}`,
         `${status.slice(0, 3).toUpperCase()}${String(i + 1).padStart(3, '0')}`,
         status,
-        startDate,
-        endDate,
         `manager-${Math.floor(Math.random() * 5) + 1}`,
       );
       projects.push(project);
@@ -356,15 +333,10 @@ export class ProjectTestService {
       const startDay = Math.floor(Math.random() * 28) + 1;
       const duration = Math.floor(Math.random() * 12) + 1;
 
-      const startDate = new Date(startYear, startMonth, startDay);
-      const endDate = new Date(startYear, startMonth + duration, startDay);
-
       const project = new Project(
         `${managerId}매니저${projectType}프로젝트${i + 1}`,
         `${managerId.slice(-3).toUpperCase()}${String(i + 1).padStart(3, '0')}`,
         status,
-        startDate,
-        endDate,
         managerId,
       );
       projects.push(project);
@@ -413,15 +385,10 @@ export class ProjectTestService {
       const day = Math.floor(Math.random() * 28) + 1;
       const duration = Math.floor(Math.random() * 12) + 1;
 
-      const startDate = new Date(year, month, day);
-      const endDate = new Date(year, month + duration, day);
-
       const project = new Project(
         `${year}년${projectType}프로젝트${i + 1}`,
         `${year}${String(i + 1).padStart(3, '0')}`,
         status,
-        startDate,
-        endDate,
         `manager-${Math.floor(Math.random() * 5) + 1}`,
       );
       projects.push(project);

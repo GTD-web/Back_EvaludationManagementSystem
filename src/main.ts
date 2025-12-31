@@ -19,9 +19,9 @@ dayjs.tz.setDefault('Asia/Seoul');
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bodyParser: true,
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-  });
+      bodyParser: true,
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
 
   // ConfigService 가져오기
   const configService = app.get(ConfigService);
@@ -74,19 +74,19 @@ async function bootstrap() {
     includeModules: [EvaluatorInterfaceModule],
   });
 
-  const port = configService.get<number>('PORT', 4000);
-  await app.listen(port);
+    const port = configService.get<number>('PORT', 4000);
+    await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(
-    `📚 Admin API documentation: http://localhost:${port}/admin/api-docs`,
-  );
-  console.log(
-    `📚 User API documentation: http://localhost:${port}/user/api-docs`,
-  );
-  console.log(
-    `📚 Evaluator API documentation: http://localhost:${port}/evaluator/api-docs`,
-  );
-}
+    console.log(`🚀 Application is running on: http://localhost:${port}`);
+    console.log(
+      `📚 Admin API documentation: http://localhost:${port}/admin/api-docs`,
+    );
+    console.log(
+      `📚 User API documentation: http://localhost:${port}/user/api-docs`,
+    );
+    console.log(
+      `📚 Evaluator API documentation: http://localhost:${port}/evaluator/api-docs`,
+    );
+  }
 
-bootstrap();
+  bootstrap();

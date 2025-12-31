@@ -3,7 +3,6 @@ import { IQuery, IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EmployeeService } from '@domain/common/employee/employee.service';
-import { ProjectStatus } from '@domain/common/project/project.types';
 import { EmployeeDto } from '@domain/common/employee/employee.types';
 
 /**
@@ -41,7 +40,7 @@ export interface AvailableProjectsResult {
       departmentName?: string;
     } | null;
     realPM?: string | null;
-    grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+    grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
     priority?: number;
   }>;
   total: number;

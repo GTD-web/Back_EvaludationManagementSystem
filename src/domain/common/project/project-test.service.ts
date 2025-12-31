@@ -181,6 +181,7 @@ export class ProjectTestService {
       ProjectGrade.GRADE_2A,
       ProjectGrade.GRADE_2B,
       ProjectGrade.GRADE_3A,
+      ProjectGrade.GRADE_3B,
     ];
     const projectTypes = [
       '개발',
@@ -302,6 +303,7 @@ export class ProjectTestService {
       ProjectGrade.GRADE_2A,
       ProjectGrade.GRADE_2B,
       ProjectGrade.GRADE_3A,
+      ProjectGrade.GRADE_3B,
     ];
 
     for (let i = 0; i < count; i++) {
@@ -353,6 +355,7 @@ export class ProjectTestService {
       ProjectGrade.GRADE_2A,
       ProjectGrade.GRADE_2B,
       ProjectGrade.GRADE_3A,
+      ProjectGrade.GRADE_3B,
     ];
 
     for (let i = 0; i < count; i++) {

@@ -381,7 +381,7 @@ export interface IEvaluationCriteriaManagementService {
       id: string;
       name: string;
       projectCode?: string;
-      grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+      grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
       priority?: number;
       manager?: {
         managerId: string;

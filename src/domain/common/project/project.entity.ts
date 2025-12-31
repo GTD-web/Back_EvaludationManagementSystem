@@ -75,7 +75,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     type: 'enum',
     enum: [...Object.values(ProjectGrade)],
     nullable: true,
-    comment: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A)',
+    comment: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A, 3B)',
   })
   @Index()
   grade?: ProjectGrade;
@@ -84,7 +84,7 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   @Column({
     type: 'int',
     nullable: true,
-    comment: '프로젝트 우선순위 (등급에 따라 자동 설정: 1A=5, 1B=4, 2A=3, 2B=2, 3A=1)',
+    comment: '프로젝트 우선순위 (등급에 따라 자동 설정: 1A=6, 1B=5, 2A=4, 2B=3, 3A=2, 3B=1)',
   })
   @Index()
   priority?: number;

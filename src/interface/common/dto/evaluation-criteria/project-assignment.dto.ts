@@ -410,9 +410,9 @@ export class ProjectInfoDto {
   @ApiPropertyOptional({
     description: '프로젝트 등급',
     example: '1A',
-    enum: ['1A', '1B', '2A', '2B', '3A'],
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
   })
-  grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
 
   @ApiPropertyOptional({
     description: '프로젝트 우선순위',
@@ -771,10 +771,10 @@ export class AvailableProjectInfoDto {
   @ApiPropertyOptional({
     description: '프로젝트 등급',
     example: '1A',
-    enum: ['1A', '1B', '2A', '2B', '3A'],
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
     required: false,
   })
-  grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
 
   @ApiPropertyOptional({
     description: '프로젝트 우선순위',

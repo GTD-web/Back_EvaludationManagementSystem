@@ -16,19 +16,21 @@ export enum ProjectGrade {
   GRADE_2A = '2A',
   GRADE_2B = '2B',
   GRADE_3A = '3A',
+  GRADE_3B = '3B',
 }
 
 /**
  * 프로젝트 등급에 따른 우선순위 반환
- * 1A=5, 1B=4, 2A=3, 2B=2, 3A=1
+ * 1A=6, 1B=5, 2A=4, 2B=3, 3A=2, 3B=1
  */
 export function getProjectGradePriority(grade: ProjectGrade): number {
   const priorityMap: Record<ProjectGrade, number> = {
-    [ProjectGrade.GRADE_1A]: 5,
-    [ProjectGrade.GRADE_1B]: 4,
-    [ProjectGrade.GRADE_2A]: 3,
-    [ProjectGrade.GRADE_2B]: 2,
-    [ProjectGrade.GRADE_3A]: 1,
+    [ProjectGrade.GRADE_1A]: 6,
+    [ProjectGrade.GRADE_1B]: 5,
+    [ProjectGrade.GRADE_2A]: 4,
+    [ProjectGrade.GRADE_2B]: 3,
+    [ProjectGrade.GRADE_3A]: 2,
+    [ProjectGrade.GRADE_3B]: 1,
   };
   return priorityMap[grade] || 0;
 }
@@ -89,9 +91,9 @@ export interface ProjectDto {
   realPMId?: string;
   /** 프로젝트 중요도 ID */
   importanceId?: string;
-  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A, 3B) */
   grade?: ProjectGrade;
-  /** 프로젝트 우선순위 (등급에 따라 자동 설정: 1A=5, 1B=4, 2A=3, 2B=2, 3A=1) */
+  /** 프로젝트 우선순위 (등급에 따라 자동 설정: 1A=6, 1B=5, 2A=4, 2B=3, 3A=2, 3B=1) */
   priority?: number;
 
   // 계층 구조 필드들
@@ -133,7 +135,7 @@ export interface CreateProjectDto {
   realPM?: string;
   realPMId?: string;
   importanceId?: string;
-  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A, 3B) */
   grade?: ProjectGrade;
   /** 상위 프로젝트 ID (하위 프로젝트 생성 시) */
   parentProjectId?: string;
@@ -149,7 +151,7 @@ export interface UpdateProjectDto {
   realPM?: string;
   realPMId?: string;
   importanceId?: string;
-  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A) */
+  /** 프로젝트 등급 (1A, 1B, 2A, 2B, 3A, 3B) */
   grade?: ProjectGrade;
   /** 상위 프로젝트 ID (하위 프로젝트로 변경 또는 상위 프로젝트 변경 시) */
   parentProjectId?: string;

@@ -543,15 +543,6 @@ export class Phase1OrganizationGenerator {
       project.name = `${faker.company.catchPhrase()} 프로젝트`;
       project.projectCode = `PRJ-${String(i + 1).padStart(4, '0')}`;
 
-      // 상태 결정
-      const statusKey = ProbabilityUtil.selectByProbability(dist.projectStatus);
-      project.status =
-        statusKey === 'active'
-          ? ProjectStatus.ACTIVE
-          : statusKey === 'completed'
-            ? ProjectStatus.COMPLETED
-            : ProjectStatus.CANCELLED;
-
       // 매니저 할당 (생성된 직원 중에서 랜덤 선택, 시스템 관리자는 제외)
       // 시스템 관리자가 아닌 직원들만 필터링
       const nonSystemAdminEmployees = employeeIds.filter(

@@ -12,7 +12,6 @@ import {
   ProjectDto,
   ProjectFilter,
   ProjectListOptions,
-  ProjectStatus,
 } from './project.types';
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { ProjectHasAssignmentsException } from './project.exceptions';
@@ -79,7 +78,6 @@ export class ProjectService {
         savedProject.id,
         savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
         data.childProjects,
-        data.status,
         finalManagerId, // 최종 managerId 전달
         createdBy,
       );
@@ -113,7 +111,6 @@ export class ProjectService {
       projectCode?: string;
       managerId?: string;
     }>,
-    status: ProjectStatus,
     defaultManagerId?: string,
     createdBy: string = 'system',
   ): Promise<void> {
@@ -150,7 +147,6 @@ export class ProjectService {
             {
               name: child.name,
               projectCode: childProjectCode,
-              status,
               managerId: defaultManagerId, // 무조건 최상단 프로젝트의 PM 사용 (child.managerId 무시)
               parentProjectId: lastCreatedIdOfPreviousLevel, // 이전 레벨의 마지막 프로젝트
             },
@@ -212,7 +208,6 @@ export class ProjectService {
             savedProject.id,
             savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
             dataList[i].childProjects!,
-            dataList[i].status,
             finalManagerId,
             createdBy,
           );
@@ -285,7 +280,6 @@ export class ProjectService {
           id,
           project.projectCode || id, // projectCode가 없으면 ID 사용
           data.childProjects,
-          project.status,
           project.managerId,
           updatedBy,
         );
@@ -430,7 +424,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -464,7 +457,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -486,15 +478,6 @@ export class ProjectService {
       childProjects,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     };
   }
@@ -518,7 +501,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -542,7 +524,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -559,15 +540,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     };
   }
@@ -589,7 +561,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -613,7 +584,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -630,15 +600,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     };
   }
@@ -660,7 +621,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.realPM AS "realPM"',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
@@ -674,12 +634,6 @@ export class ProjectService {
         'manager.rankName AS manager_rank_name',
       ])
       .where('project.deletedAt IS NULL');
-
-    if (filter.status) {
-      queryBuilder.andWhere('project.status = :status', {
-        status: filter.status,
-      });
-    }
 
     if (filter.managerId) {
       queryBuilder.andWhere('project.managerId = :managerId', {
@@ -711,7 +665,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       realPM: result.realPM,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
@@ -729,15 +682,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     }));
   }
@@ -767,12 +711,6 @@ export class ProjectService {
     countQueryBuilder.where('project.deletedAt IS NULL');
 
     // 필터 적용 (총 개수용)
-    if (filter.status) {
-      countQueryBuilder.andWhere('project.status = :status', {
-        status: filter.status,
-      });
-    }
-
     if (filter.managerId) {
       countQueryBuilder.andWhere('project.managerId = :managerId', {
         managerId: filter.managerId,
@@ -815,7 +753,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -834,12 +771,6 @@ export class ProjectService {
       .where('project.deletedAt IS NULL');
 
     // 필터 적용
-    if (filter.status) {
-      queryBuilder.andWhere('project.status = :status', {
-        status: filter.status,
-      });
-    }
-
     if (filter.managerId) {
       queryBuilder.andWhere('project.managerId = :managerId', {
         managerId: filter.managerId,
@@ -881,7 +812,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -902,15 +832,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     }));
 
@@ -938,7 +859,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -961,7 +881,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -982,15 +901,6 @@ export class ProjectService {
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
       },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
-      },
     }));
   }
 
@@ -1010,7 +920,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -1023,7 +932,6 @@ export class ProjectService {
         'manager.rankName AS manager_rank_name',
       ])
       .where('project.deletedAt IS NULL')
-      .andWhere('project.status = :status', { status: ProjectStatus.ACTIVE })
       .orderBy('project.name', 'ASC')
       .getRawMany();
 
@@ -1031,7 +939,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -1048,15 +955,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     }));
   }
@@ -1078,7 +976,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -1099,7 +996,6 @@ export class ProjectService {
       id: result.id,
       name: result.name,
       projectCode: result.projectCode,
-      status: result.status,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
@@ -1116,15 +1012,6 @@ export class ProjectService {
         : undefined,
       get isDeleted() {
         return result.deletedAt !== null && result.deletedAt !== undefined;
-      },
-      get isActive() {
-        return result.status === 'ACTIVE';
-      },
-      get isCompleted() {
-        return result.status === 'COMPLETED';
-      },
-      get isCancelled() {
-        return result.status === 'CANCELLED';
       },
     }));
   }
@@ -1163,54 +1050,6 @@ export class ProjectService {
     return count > 0;
   }
 
-  /**
-   * 프로젝트 상태를 변경한다
-   * @param id 프로젝트 ID
-   * @param status 새로운 상태
-   * @param updatedBy 수정자 ID
-   * @returns 수정된 프로젝트 정보
-   */
-  async 상태_변경한다(
-    id: string,
-    status: ProjectStatus,
-    updatedBy: string,
-  ): Promise<ProjectDto> {
-    const project = await this.projectRepository.findOne({
-      where: { id, deletedAt: IsNull() },
-    });
-
-    if (!project) {
-      throw new NotFoundException(
-        `ID ${id}에 해당하는 프로젝트를 찾을 수 없습니다.`,
-      );
-    }
-
-    project.status = status;
-    project.수정자를_설정한다(updatedBy);
-
-    const savedProject = await this.projectRepository.save(project);
-    return savedProject.DTO로_변환한다();
-  }
-
-  /**
-   * 프로젝트를 완료 처리한다
-   * @param id 프로젝트 ID
-   * @param updatedBy 수정자 ID
-   * @returns 수정된 프로젝트 정보
-   */
-  async 완료_처리한다(id: string, updatedBy: string): Promise<ProjectDto> {
-    return this.상태_변경한다(id, ProjectStatus.COMPLETED, updatedBy);
-  }
-
-  /**
-   * 프로젝트를 취소 처리한다
-   * @param id 프로젝트 ID
-   * @param updatedBy 수정자 ID
-   * @returns 수정된 프로젝트 정보
-   */
-  async 취소_처리한다(id: string, updatedBy: string): Promise<ProjectDto> {
-    return this.상태_변경한다(id, ProjectStatus.CANCELLED, updatedBy);
-  }
 
   /**
    * 특정 프로젝트의 하위 프로젝트 목록을 재귀적으로 조회한다
@@ -1240,7 +1079,6 @@ export class ProjectService {
         'project.id AS id',
         'project.name AS name',
         'project.projectCode AS "projectCode"',
-        'project.status AS status',
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
@@ -1275,7 +1113,6 @@ export class ProjectService {
           id: result.id,
           name: result.name,
           projectCode: result.projectCode,
-          status: result.status,
           startDate: result.startDate,
           endDate: result.endDate,
           createdAt: result.createdAt,
@@ -1299,15 +1136,6 @@ export class ProjectService {
           childProjects: children.length > 0 ? children : undefined,
           get isDeleted() {
             return result.deletedAt !== null && result.deletedAt !== undefined;
-          },
-          get isActive() {
-            return result.status === 'ACTIVE';
-          },
-          get isCompleted() {
-            return result.status === 'COMPLETED';
-          },
-          get isCancelled() {
-            return result.status === 'CANCELLED';
           },
         };
       }),

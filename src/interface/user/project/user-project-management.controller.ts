@@ -55,7 +55,6 @@ export class UserProjectManagementController {
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
           search: query.search,
         },
@@ -68,7 +67,6 @@ export class UserProjectManagementController {
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
           parentProjectId: query.parentProjectId,
           hierarchyLevel: query.hierarchyLevel,
@@ -84,9 +82,6 @@ export class UserProjectManagementController {
         id: project.id,
         name: project.name,
         projectCode: project.projectCode,
-        status: project.status,
-        startDate: project.startDate,
-        endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
         parentProjectId: project.parentProjectId,
@@ -132,7 +127,6 @@ export class UserProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       parentProjectId: project.parentProjectId,
@@ -140,7 +134,6 @@ export class UserProjectManagementController {
         id: child.id,
         name: child.name,
         projectCode: child.projectCode,
-        status: child.status,
         managerId: child.managerId,
         manager: child.manager,
       })),
@@ -148,9 +141,6 @@ export class UserProjectManagementController {
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -163,7 +153,6 @@ export class UserProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       childProjects: project.childProjects?.map((child) =>

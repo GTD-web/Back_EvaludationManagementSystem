@@ -32,9 +32,6 @@ export interface AvailableProjectsResult {
     id: string;
     name: string;
     projectCode?: string;
-    status: string;
-    startDate?: Date;
-    endDate?: Date;
     manager?: {
       managerId: string;
       employeeId?: string;
@@ -70,7 +67,6 @@ export class GetAvailableProjectsHandler
   async execute(query: GetAvailableProjectsQuery): Promise<AvailableProjectsResult> {
     const { periodId, options } = query;
     const {
-      status = ProjectStatus.ACTIVE,
       search,
       page = 1,
       limit = 20,
@@ -88,17 +84,14 @@ export class GetAvailableProjectsHandler
       );
     }
 
-    // 프로젝트 목록 조회 (상태 필터 적용)
-    const allProjects = await this.projectService.필터_조회한다({
-      status: status as any,
-    });
+    // 프로젝트 목록 조회
+    const allProjects = await this.projectService.필터_조회한다({});
 
     // 프로젝트 목록에 매니저 정보 포함 (이미 service에서 join되어 있음)
     let projectsWithManager = allProjects.map((project) => ({
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       manager: project.manager || null,
       realPM: project.realPM || null,
     }));

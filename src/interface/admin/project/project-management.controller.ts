@@ -132,7 +132,6 @@ export class ProjectManagementController {
       {
         name: createDto.name,
         projectCode: createDto.projectCode,
-        status: createDto.status,
         managerId: createDto.managerId, // PM/DPM 설정
         realPM: realPMName, // 직원 이름 저장
         importanceId: createDto.importanceId, // 중요도 설정
@@ -147,7 +146,6 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       grade: project.grade,
@@ -158,9 +156,6 @@ export class ProjectManagementController {
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -207,7 +202,6 @@ export class ProjectManagementController {
         id: project.id,
         name: project.name,
         projectCode: project.projectCode,
-        status: project.status,
         managerId: project.managerId,
         manager: project.manager,
         grade: project.grade,
@@ -220,9 +214,6 @@ export class ProjectManagementController {
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,
-        isActive: project.isActive,
-        isCompleted: project.isCompleted,
-        isCancelled: project.isCancelled,
       })),
       failed: result.failed,
       successCount: result.success.length,
@@ -240,7 +231,6 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       grade: project.grade,
@@ -275,7 +265,6 @@ export class ProjectManagementController {
         sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
           search: query.search,
         },
@@ -288,7 +277,6 @@ export class ProjectManagementController {
         sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
           parentProjectId: query.parentProjectId,
           hierarchyLevel: query.hierarchyLevel,
@@ -304,7 +292,6 @@ export class ProjectManagementController {
         id: project.id,
         name: project.name,
         projectCode: project.projectCode,
-        status: project.status,
         managerId: project.managerId,
         manager: project.manager,
         grade: project.grade,
@@ -317,9 +304,6 @@ export class ProjectManagementController {
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,
-        isActive: project.isActive,
-        isCompleted: project.isCompleted,
-        isCancelled: project.isCancelled,
       })),
       total: result.total,
       page: result.page,
@@ -520,7 +504,6 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       grade: project.grade,
@@ -530,7 +513,6 @@ export class ProjectManagementController {
         id: child.id,
         name: child.name,
         projectCode: child.projectCode,
-        status: child.status,
         managerId: child.managerId,
         manager: child.manager,
         grade: child.grade,
@@ -540,9 +522,6 @@ export class ProjectManagementController {
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -579,7 +558,6 @@ export class ProjectManagementController {
       {
         name: updateDto.name,
         projectCode: updateDto.projectCode,
-        status: updateDto.status,
         managerId: updateDto.managerId, // PM/DPM 변경
         realPM: realPMName, // 직원 이름 저장
         importanceId: updateDto.importanceId, // 중요도 변경
@@ -594,7 +572,6 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
       grade: project.grade,
@@ -605,9 +582,6 @@ export class ProjectManagementController {
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -688,7 +662,6 @@ export class ProjectManagementController {
                 {
                   name: `${topLevelProjectName} - ${level}차 하위 프로젝트`, // ✅ 최상위 이름 사용
                   projectCode: `${topLevelProjectCode}-SUB${level}`, // ✅ 최상위 코드 사용
-                  status: parentProject.status,
                   managerId: parentProject.managerId,
                   parentProjectId: currentParentId,
                 },

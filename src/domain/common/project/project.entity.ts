@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { BaseEntity } from '@libs/database/base/base.entity';
 import {
-  ProjectStatus,
   ProjectGrade,
   getProjectGradePriority,
   ProjectDto,
@@ -44,14 +43,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     comment: '프로젝트 코드',
   })
   projectCode?: string;
-
-  @Column({
-    type: 'enum',
-    enum: [...Object.values(ProjectStatus)],
-    default: ProjectStatus.ACTIVE,
-    comment: '프로젝트 상태',
-  })
-  status: ProjectStatus;
 
   @Column({
     type: 'varchar',
@@ -110,7 +101,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   constructor(
     name?: string,
     projectCode?: string,
-    status?: ProjectStatus,
     managerId?: string,
     realPM?: string,
     importanceId?: string,
@@ -120,7 +110,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
     super();
     if (name) this.name = name;
     if (projectCode) this.projectCode = projectCode;
-    if (status) this.status = status;
     if (managerId) this.managerId = managerId;
     if (realPM) this.realPM = realPM;
     if (importanceId) this.importanceId = importanceId;
@@ -129,7 +118,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
       this.priority = getProjectGradePriority(grade);
     }
     if (parentProjectId) this.parentProjectId = parentProjectId;
-    this.status = status || ProjectStatus.ACTIVE;
   }
 
   /**
@@ -146,7 +134,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
       // Project 엔티티 필드들 (평가 시스템 전용)
       name: this.name,
       projectCode: this.projectCode,
-      status: this.status,
       managerId: this.managerId,
       realPM: this.realPM,
       importanceId: this.importanceId,
@@ -157,15 +144,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
       // 계산된 필드들
       get isDeleted() {
         return this.deletedAt !== null && this.deletedAt !== undefined;
-      },
-      get isActive() {
-        return this.status === ProjectStatus.ACTIVE;
-      },
-      get isCompleted() {
-        return this.status === ProjectStatus.COMPLETED;
-      },
-      get isCancelled() {
-        return this.status === ProjectStatus.CANCELLED;
       },
     };
   }

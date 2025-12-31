@@ -95,16 +95,6 @@ export class CreateProjectDto {
   @IsString()
   projectCode?: string;
 
-  @ApiProperty({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsNotEmpty()
-  @IsEnum(ProjectStatus)
-  status: ProjectStatus;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -259,16 +249,6 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   projectCode?: string;
-
-  @ApiPropertyOptional({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsOptional()
-  @IsEnum(ProjectStatus)
-  status?: ProjectStatus;
 
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
@@ -526,13 +506,6 @@ export class SimpleProjectResponseDto {
   })
   projectCode?: string;
 
-  @ApiProperty({
-    description: '프로젝트 상태',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-  })
-  status: ProjectStatus;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID',
   })
@@ -579,8 +552,6 @@ export class ProjectResponseDto {
     enumName: 'ProjectStatus',
     example: ProjectStatus.ACTIVE,
   })
-  status: ProjectStatus;
-
   @ApiPropertyOptional({
     description: '시작일',
     example: '2024-01-01T00:00:00.000Z',
@@ -667,23 +638,6 @@ export class ProjectResponseDto {
   })
   deletedAt?: Date;
 
-  @ApiProperty({
-    description: '활성 상태 여부',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: '완료 상태 여부',
-    example: false,
-  })
-  isCompleted: boolean;
-
-  @ApiProperty({
-    description: '취소 상태 여부',
-    example: false,
-  })
-  isCancelled: boolean;
 }
 
 /**

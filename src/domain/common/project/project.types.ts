@@ -77,8 +77,6 @@ export interface ProjectDto {
   name: string;
   /** 프로젝트 코드 */
   projectCode?: string;
-  /** 프로젝트 상태 */
-  status: ProjectStatus;
 
   // 조인된 정보 필드들
   /** 프로젝트 매니저 ID (하위 프로젝트는 기본적으로 최상단 프로젝트의 PM으로 설정) */
@@ -109,12 +107,6 @@ export interface ProjectDto {
   // 계산된 필드들 (읽기 전용)
   /** 삭제된 상태 여부 */
   readonly isDeleted: boolean;
-  /** 활성 상태 여부 */
-  readonly isActive: boolean;
-  /** 완료된 상태 여부 */
-  readonly isCompleted: boolean;
-  /** 취소된 상태 여부 */
-  readonly isCancelled: boolean;
 }
 
 /**
@@ -137,7 +129,6 @@ export interface ChildProjectInput {
 export interface CreateProjectDto {
   name: string;
   projectCode?: string;
-  status: ProjectStatus;
   managerId?: string;
   realPM?: string;
   realPMId?: string;
@@ -154,7 +145,6 @@ export interface CreateProjectDto {
 export interface UpdateProjectDto {
   name?: string;
   projectCode?: string;
-  status?: ProjectStatus;
   managerId?: string;
   realPM?: string;
   realPMId?: string;
@@ -169,7 +159,6 @@ export interface UpdateProjectDto {
 
 // 프로젝트 조회 필터 (평가 시스템용 간소화 버전)
 export interface ProjectFilter {
-  status?: ProjectStatus;
   managerId?: string;
   /** 상위 프로젝트 ID로 필터링 (하위 프로젝트 조회 시) */
   parentProjectId?: string;

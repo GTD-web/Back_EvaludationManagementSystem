@@ -369,7 +369,6 @@ export interface IEvaluationCriteriaManagementService {
   할당_가능한_프로젝트_목록을_조회한다(
     periodId: string,
     options?: {
-      status?: string;
       search?: string;
       page?: number;
       limit?: number;
@@ -382,9 +381,6 @@ export interface IEvaluationCriteriaManagementService {
       id: string;
       name: string;
       projectCode?: string;
-      status: string;
-      startDate?: Date;
-      endDate?: Date;
       manager?: {
         managerId: string;
         employeeId?: string;

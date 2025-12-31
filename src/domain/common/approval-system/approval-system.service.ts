@@ -12,6 +12,7 @@ import {
  * 결재 시스템 연동 서비스
  *
  * LIAS 결재관리시스템과 통신하여 결재 문서의 상태를 조회합니다.
+ * 공개 API를 사용하므로 인증이 필요하지 않습니다.
  */
 @Injectable()
 export class ApprovalSystemService {
@@ -26,11 +27,13 @@ export class ApprovalSystemService {
       'LIAS_URL',
       'http://localhost:3001',
     );
+
     this.logger.log(`LIAS 서버 URL: ${this.liasBaseUrl}`);
   }
 
   /**
    * LIAS 서버에서 결재 문서의 상태를 조회합니다.
+   * 공개 API를 사용하므로 인증이 필요하지 않습니다.
    *
    * @param documentId 결재 문서 ID
    * @returns 결재 문서 상태 정보
@@ -40,7 +43,7 @@ export class ApprovalSystemService {
     documentId: string,
   ): Promise<LiasApprovalDocumentResponse> {
     try {
-      const url = `${this.liasBaseUrl}/api/approval-process/document/${documentId}/steps`;
+      const url = `${this.liasBaseUrl}/api/public/documents/${documentId}`;
       this.logger.debug(`LIAS 서버 요청: GET ${url}`);
 
       const response: AxiosResponse<LiasApprovalDocumentResponse> =
@@ -51,7 +54,7 @@ export class ApprovalSystemService {
         );
 
       this.logger.debug(
-        `결재 문서 ${documentId} 상태 조회 성공: ${response.data.documentStatus}`,
+        `결재 문서 ${documentId} 상태 조회 성공: ${response.data.status}`,
       );
 
       return response.data;
@@ -89,7 +92,7 @@ export class ApprovalSystemService {
     for (const documentId of documentIds) {
       try {
         const response = await this.결재문서_상태를_조회한다(documentId);
-        resultMap.set(documentId, response.documentStatus);
+        resultMap.set(documentId, response.status);
       } catch (error) {
         this.logger.error(
           `결재 문서 ${documentId} 조회 실패: ${error.message}`,
@@ -110,6 +113,7 @@ export class ApprovalSystemService {
   async LIAS서버_상태를_확인한다(): Promise<boolean> {
     try {
       const url = `${this.liasBaseUrl}/api/health`;
+
       await firstValueFrom(
         this.httpService.get(url, {
           timeout: 3000,

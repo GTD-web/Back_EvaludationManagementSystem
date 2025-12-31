@@ -89,7 +89,7 @@ export class EvaluationPeriodApprovalSyncService {
           period.approvalDocumentId,
         );
 
-      const documentStatus = documentData.documentStatus;
+      const documentStatus = documentData.status;
 
       this.logger.log(
         `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - LIAS 결재 상태: ${documentStatus}`,

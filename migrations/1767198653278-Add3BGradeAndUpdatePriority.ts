@@ -112,7 +112,7 @@ export class Add3BGradeAndUpdatePriority1767198653278
     `);
 
     // grade가 있지만 priority가 없는 경우 (새로운 체계로 설정)
-    // 주의: '3B'는 같은 트랜잭션에서 사용할 수 없으므로 제외
+    // 주의: '3B'는 같은 트랜잭션에서 사용할 수 없으므로 명시적으로 허용된 값만 나열
     // '3B'의 priority 설정은 다음 마이그레이션이나 애플리케이션 로직에서 처리
     await queryRunner.query(`
       UPDATE "project" 
@@ -124,8 +124,7 @@ export class Add3BGradeAndUpdatePriority1767198653278
         WHEN "grade" = '3A' THEN 2
         ELSE NULL
       END
-      WHERE "grade" IS NOT NULL 
-        AND "grade" != '3B'
+      WHERE "grade" IN ('1A', '1B', '2A', '2B', '3A')
         AND ("priority" IS NULL OR "priority" NOT IN (1, 2, 3, 4, 5, 6))
         AND "deletedAt" IS NULL
     `);

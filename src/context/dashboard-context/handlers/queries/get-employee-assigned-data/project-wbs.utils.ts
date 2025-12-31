@@ -719,6 +719,8 @@ export async function getProjectsWithWbs(
       projectId,
       projectName: row.project_name || '',
       projectCode: row.project_project_code || '',
+      grade: row.project_grade || undefined,
+      priority: row.project_priority || undefined,
       assignedAt: row.assignment_assigned_date,
       projectManager,
       realPM,

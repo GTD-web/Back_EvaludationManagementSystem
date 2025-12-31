@@ -381,6 +381,8 @@ export interface IEvaluationCriteriaManagementService {
       id: string;
       name: string;
       projectCode?: string;
+      grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+      priority?: number;
       manager?: {
         managerId: string;
         employeeId?: string;
@@ -389,6 +391,7 @@ export interface IEvaluationCriteriaManagementService {
         phoneNumber?: string;
         departmentName?: string;
       } | null;
+      realPM?: string | null;
     }>;
     total: number;
     page: number;

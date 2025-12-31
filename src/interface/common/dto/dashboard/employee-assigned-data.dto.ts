@@ -745,6 +745,19 @@ export class AssignedProjectWithWbsDto implements AssignedProjectWithWbs {
   })
   projectCode: string;
 
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A'],
+  })
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
+  })
+  priority?: number;
+
   @ApiProperty({
     description: '배정일',
     type: 'string',

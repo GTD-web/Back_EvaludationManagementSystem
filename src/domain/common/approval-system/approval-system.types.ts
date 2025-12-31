@@ -6,15 +6,33 @@
  * LIAS 서버 결재 상태 응답 DTO
  */
 export interface LiasApprovalDocumentResponse {
-  documentId: string;
-  documentStatus:
+  id: string;
+  documentNumber: string;
+  title: string;
+  content: string;
+  status:
     | 'DRAFT'
     | 'PENDING'
     | 'APPROVED'
     | 'REJECTED'
     | 'CANCELLED'
     | 'IMPLEMENTED';
-  steps: {
+  comment?: string;
+  metadata?: any;
+  drafterId: string;
+  documentTemplateId: string;
+  retentionPeriod?: number;
+  retentionPeriodUnit?: string;
+  retentionStartDate?: string;
+  retentionEndDate?: string;
+  submittedAt?: string;
+  cancelReason?: string;
+  cancelledAt?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  approvalSteps: {
     id: string;
     documentId: string;
     stepOrder: number;
@@ -36,6 +54,10 @@ export interface LiasApprovalDocumentResponse {
     createdAt: string;
     updatedAt: string;
   }[];
+  drafter?: any;
+  documentTemplate?: any;
+  canCancelApproval?: boolean;
+  canCancelSubmit?: boolean;
 }
 
 /**

@@ -106,6 +106,22 @@ export class EvaluationPeriodApprovalSyncService {
         );
 
         period.결재상태_변경한다(newApprovalStatus, 'system'); // system이 변경 주체
+
+        // 결재가 승인되면 평가기간도 완료 처리
+        if (newApprovalStatus === ApprovalStatus.APPROVED) {
+          try {
+            period.평가기간_완료한다('system');
+            this.logger.log(
+              `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - 결재 승인으로 인해 평가기간 완료 처리됨`,
+            );
+          } catch (error) {
+            // 이미 완료된 경우 등의 에러는 무시
+            this.logger.debug(
+              `평가기간 ${period.id.substring(0, 8)}... (${period.name}) - 평가기간 완료 처리 실패 (이미 완료됨): ${error.message}`,
+            );
+          }
+        }
+
         await this.evaluationPeriodRepository.save(period);
 
         this.logger.log(

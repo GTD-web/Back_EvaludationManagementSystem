@@ -6,7 +6,7 @@
  */
 
 import { ProjectTestService } from './project-test.service';
-import { ProjectStatus } from './project.types';
+import { ProjectGrade } from './project.types';
 
 /**
  * 테스트 서비스 사용 예시 클래스
@@ -132,17 +132,17 @@ export class ProjectTestHelpers {
     switch (testCase) {
       case 'active':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.ACTIVE,
+          ProjectGrade.GRADE_1A,
           10,
         );
       case 'completed':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.COMPLETED,
+          ProjectGrade.GRADE_2A,
           5,
         );
       case 'cancelled':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.CANCELLED,
+          ProjectGrade.GRADE_3A,
           3,
         );
       case 'manager':

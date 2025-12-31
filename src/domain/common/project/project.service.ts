@@ -1113,8 +1113,6 @@ export class ProjectService {
           id: result.id,
           name: result.name,
           projectCode: result.projectCode,
-          startDate: result.startDate,
-          endDate: result.endDate,
           createdAt: result.createdAt,
           updatedAt: result.updatedAt,
           deletedAt: result.deletedAt,

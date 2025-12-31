@@ -41,6 +41,8 @@ export interface AvailableProjectsResult {
       departmentName?: string;
     } | null;
     realPM?: string | null;
+    grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+    priority?: number;
   }>;
   total: number;
   page: number;
@@ -94,6 +96,8 @@ export class GetAvailableProjectsHandler
       projectCode: project.projectCode,
       manager: project.manager || null,
       realPM: project.realPM || null,
+      grade: project.grade || undefined,
+      priority: project.priority || undefined,
     }));
 
     // 검색 필터링

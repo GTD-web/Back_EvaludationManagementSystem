@@ -1,21 +1,20 @@
+import { ProjectGrade } from '@domain/common/project/project.types';
+import { OptionalDateToUTC } from '@interface/common/decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
+  IsArray,
   IsEnum,
   IsInt,
-  Min,
-  Max,
-  Matches,
-  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
   IsUUID,
+  Matches,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { DateToUTC, OptionalDateToUTC } from '@interface/common/decorators';
-import { ProjectStatus, ProjectGrade } from '@domain/common/project/project.types';
-import { ProjectManagerListResponseDto } from './project-manager.dto';
 
 /**
  * 하위 프로젝트 생성 DTO
@@ -360,16 +359,6 @@ export class GetProjectListQueryDto {
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 
   @ApiPropertyOptional({
-    description: '프로젝트 상태 필터 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsOptional()
-  @IsEnum(ProjectStatus)
-  status?: ProjectStatus;
-
-  @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID)',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
@@ -545,24 +534,6 @@ export class ProjectResponseDto {
     example: 'EMS-2024',
   })
   projectCode?: string;
-
-  @ApiProperty({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @ApiPropertyOptional({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: '종료일',
-    example: '2024-12-31T00:00:00.000Z',
-  })
-  endDate?: Date;
 
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (상위: PM, 하위: DPM)',

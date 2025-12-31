@@ -351,29 +351,18 @@ export class ProjectManagementController {
       limit: 1000,
     });
     const activeManagerIds = registeredPMs.managers.map((pm) => pm.managerId);
-    this.logger.debug(
-      `[PM 목록 조회] 활성 PM 수: ${activeManagerIds.length}, IDs: ${JSON.stringify(activeManagerIds)}`,
-    );
 
     // 2. SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
     const employees = await this.ssoService.여러직원정보를조회한다({
       withDetail: true,
       includeTerminated: false, // 재직중인 직원만
     });
-    this.logger.debug(`[PM 목록 조회] SSO 직원 수: ${employees.length}`);
 
     // 3. ProjectManager에 등록된 활성 PM만 필터링
     let managers = employees.filter((emp) => {
       const isRegisteredActivePM = activeManagerIds.includes(emp.id);
-
-      this.logger.debug(
-        `[PM 필터링] ${emp.name}(${emp.id}): active=${isRegisteredActivePM}`,
-      );
-
       return isRegisteredActivePM;
     });
-
-    this.logger.debug(`[PM 목록 조회] 필터링 후 PM 수: ${managers.length}`);
 
     // 중복 제거 (managerId 기준)
     const uniqueManagers = managers.filter(

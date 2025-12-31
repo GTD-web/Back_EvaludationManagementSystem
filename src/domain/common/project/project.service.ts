@@ -41,12 +41,6 @@ export class ProjectService {
     data: CreateProjectDto,
     createdBy: string,
   ): Promise<ProjectDto> {
-    console.log('\n🚀 [생성한다] 프로젝트 생성 시작');
-    console.log('📋 data.name:', data.name);
-    console.log('📋 data.managerId (입력값):', data.managerId);
-    console.log('📋 data.parentProjectId:', data.parentProjectId);
-    console.log('📋 data.childProjects:', data.childProjects ? `${data.childProjects.length}개` : '없음');
-    
     let finalManagerId = data.managerId;
     
     // 하위 프로젝트 생성 시 상위 프로젝트 존재 확인

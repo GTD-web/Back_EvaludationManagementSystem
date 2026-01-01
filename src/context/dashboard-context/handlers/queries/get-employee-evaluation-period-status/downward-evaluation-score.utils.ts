@@ -7,9 +7,7 @@ import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downwar
 import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.entity';
 import { Project } from '@domain/common/project/project.entity';
 
-// 임시로 로거 비활성화 (디버깅용)
-// const logger = new Logger('DownwardEvaluationScoreUtils');
-const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
+const logger = new Logger('DownwardEvaluationScoreUtils');
 
 /**
  * 가중치 기반 1차 하향평가 점수를 계산한다
@@ -27,6 +25,10 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
   wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
+  logger.log(
+    `[1차 하향평가 점수 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 평가자 수: ${evaluatorIds.length}`,
+  );
+
   try {
     // 점수가 입력된 1차 평가 조회 (평가자 ID 조건 없이 모든 1차 평가 조회)
     // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
@@ -39,6 +41,10 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       },
     });
 
+    logger.log(
+      `[1차 하향평가 조회] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 전체 평가 수: ${downwardEvaluations.length}`,
+    );
+
     // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
@@ -46,7 +52,14 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
         evaluation.downwardEvaluationScore !== undefined,
     );
 
+    logger.log(
+      `[1차 하향평가 필터링] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수 입력된 평가 수: ${completedEvaluations.length}`,
+    );
+
     if (completedEvaluations.length === 0) {
+      logger.log(
+        `[1차 하향평가 점수 없음] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 평가가 없습니다.`,
+      );
       return null;
     }
 
@@ -54,7 +67,7 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
     const wbsIds = completedEvaluations.map((de) => de.wbsId);
 
     logger.log(
-      `[DEBUG] 1차 하향평가 - 완료된 평가 WBS IDs: ${wbsIds.join(', ')} (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
+      `[1차 하향평가 WBS 조회] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 평가된 WBS IDs: ${wbsIds.join(', ')}`,
     );
 
     const wbsAssignments = await wbsAssignmentRepository
@@ -80,8 +93,18 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       .getMany();
 
     logger.log(
-      `[DEBUG] 1차 하향평가 - 조회된 WBS 할당 수: ${wbsAssignments.length}, WBS IDs: ${wbsAssignments.map((a) => `${a.wbsItemId}(가중치:${a.weight}%)`).join(', ')}`,
+      `[1차 하향평가 WBS 할당 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 조회된 WBS 할당 수: ${wbsAssignments.length}, WBS별 가중치: ${wbsAssignments.map((a) => `${a.wbsItemId}(가중치:${a.weight}%)`).join(', ')}`,
     );
+
+    // ⚠️ 문제 진단: 평가된 WBS 중 할당 정보가 없는 WBS 확인
+    const evaluatedWbsSet = new Set(wbsIds);
+    const assignedWbsSet = new Set(wbsAssignments.map((a) => a.wbsItemId));
+    const missingWbsIds = wbsIds.filter((id) => !assignedWbsSet.has(id));
+    if (missingWbsIds.length > 0) {
+      logger.warn(
+        `[1차 하향평가 경고] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 할당 정보가 없는 WBS IDs: ${missingWbsIds.join(', ')} (이 WBS의 평가는 제외됩니다)`,
+      );
+    }
 
     // 평가기간의 최대 달성률 조회
     const evaluationPeriod = await evaluationPeriodRepository.findOne({
@@ -101,12 +124,12 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
     );
 
     logger.log(
-      `[DEBUG] 1차 하향평가 - 필터링 결과: 전체 평가 ${completedEvaluations.length}개 중 유효한 평가 ${validEvaluations.length}개`,
+      `[1차 하향평가 유효성 필터링] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 전체 평가: ${completedEvaluations.length}개, 유효한 평가: ${validEvaluations.length}개`,
     );
 
     if (validEvaluations.length === 0) {
       logger.warn(
-        `모든 평가가 취소된 프로젝트 할당에 속해 있습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
+        `[1차 하향평가 계산 실패] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 모든 평가가 취소된 프로젝트 할당에 속해 있거나 할당 정보가 없습니다.`,
       );
       return null;
     }
@@ -115,19 +138,32 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
     let totalWeightedScore = 0;
     let totalWeight = 0;
 
+    logger.log(
+      `[1차 하향평가 점수 계산 상세] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최대 달성률: ${maxRate}`,
+    );
+
     validEvaluations.forEach((evaluation) => {
       const weight = weightMap.get(evaluation.wbsId)!; // 이미 필터링했으므로 !로 단언
       const score = evaluation.downwardEvaluationScore || 0;
 
       // 가중치 적용: (weight / maxRate) × score
-      totalWeightedScore += (weight / maxRate) * score;
+      const weightedScore = (weight / maxRate) * score;
+      totalWeightedScore += weightedScore;
       totalWeight += weight;
+
+      logger.log(
+        `[1차 하향평가 계산 상세] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, WBS: ${evaluation.wbsId}, 점수: ${score}, 가중치: ${weight}%, 가중치 적용 점수: ${weightedScore.toFixed(2)}`,
+      );
     });
+
+    logger.log(
+      `[1차 하향평가 가중치 합계] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 총 가중치 합: ${totalWeight}%, 최대값: ${maxRate}%, 원본 가중치 점수 합: ${totalWeightedScore.toFixed(2)}`,
+    );
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
       logger.warn(
-        `가중치 합이 0입니다. 점수 계산 불가 (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
+        `[1차 하향평가 계산 실패] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 가중치 합이 0입니다. 점수 계산 불가`,
       );
       return null;
     }
@@ -139,13 +175,13 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
         : totalWeightedScore;
 
     logger.log(
-      `가중치 기반 1차 하향평가 점수 계산 완료: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight.toFixed(2)}, 최대값: ${maxRate}) (피평가자: ${employeeId}, 평가자: ${evaluatorIds.join(', ')}, 평가기간: ${evaluationPeriodId})`,
+      `[1차 하향평가 점수 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight.toFixed(2)}%, 최대값: ${maxRate}%, 정규화 적용: ${totalWeight !== maxRate})`,
     );
 
     return Math.round(finalScore * 100) / 100; // 소수점 2자리로 반올림
   } catch (error) {
     logger.error(
-      `가중치 기반 1차 하향평가 점수 계산 실패: ${error.message}`,
+      `[1차 하향평가 계산 오류] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 오류: ${error.message}`,
       error.stack,
     );
     return null;

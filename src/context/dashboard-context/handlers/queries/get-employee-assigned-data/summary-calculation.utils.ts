@@ -104,6 +104,10 @@ export async function calculatePrimaryDownwardEvaluationScore(
   let primaryDownwardScore: number | null = null;
   let primaryDownwardGrade: string | null = null;
 
+  logger.log(
+    `[1차 하향평가 등급 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
+  );
+
   // 1차 평가자 조회
   // 먼저 직원별 고정 담당자 (wbsItemId IS NULL)를 찾고, 없으면 WBS별 매핑에서 찾음
   // 평가자 교체를 고려하여 현재 매핑된 모든 평가자 조회
@@ -224,6 +228,10 @@ export async function calculatePrimaryDownwardEvaluationScore(
         .getCount();
     }
 
+    logger.log(
+      `[1차 하향평가 평가자 확인] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 평가자 수: ${primaryEvaluatorIds.length}, 할당된 WBS 수: ${primaryAssignedCount}, 완료된 평가 수: ${primaryCompletedCount}`,
+    );
+
     // 점수가 입력된 평가가 있으면 점수/등급 계산 (제출 여부와 무관)
     // 가중치_기반_1차_하향평가_점수를_계산한다 함수 내부에서 점수 입력 여부를 확인하므로,
     // 조건 없이 항상 호출하여 점수가 입력된 경우에만 등급 계산
@@ -236,11 +244,23 @@ export async function calculatePrimaryDownwardEvaluationScore(
       evaluationPeriodRepository,
     );
 
+    logger.log(
+      `[1차 하향평가 점수 계산 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수: ${primaryDownwardScore}`,
+    );
+
     if (primaryDownwardScore !== null) {
       primaryDownwardGrade = await 하향평가_등급을_조회한다(
         evaluationPeriodId,
         primaryDownwardScore,
         evaluationPeriodRepository,
+      );
+
+      logger.log(
+        `[1차 하향평가 등급 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수: ${primaryDownwardScore}, 등급: ${primaryDownwardGrade}`,
+      );
+    } else {
+      logger.warn(
+        `[1차 하향평가 등급 계산 스킵] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 계산되지 않아 등급 계산하지 않음`,
       );
     }
 
@@ -250,6 +270,10 @@ export async function calculatePrimaryDownwardEvaluationScore(
       primarySubmittedCount === primaryAssignedCount &&
       primarySubmittedCount > 0;
 
+    logger.log(
+      `[1차 하향평가 등급 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${primaryDownwardScore}, 최종 등급: ${primaryDownwardGrade}, 제출 여부: ${primaryIsSubmitted}`,
+    );
+
     return {
       totalScore: primaryDownwardScore,
       grade: primaryDownwardGrade,
@@ -258,6 +282,10 @@ export async function calculatePrimaryDownwardEvaluationScore(
   }
 
   // 1차 평가자가 없는 경우
+  logger.log(
+    `[1차 하향평가 평가자 없음] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 1차 평가자가 없습니다.`,
+  );
+
   return {
     totalScore: null,
     grade: null,

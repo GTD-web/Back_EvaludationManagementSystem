@@ -35,9 +35,21 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci --production=false
             
-            # PM2로 서버 재시작 (없으면 시작, 있으면 재시작)
+            # 빌드 실행
+            echo "🔨 Building application..."
+            npm run build
+            
+            # PM2로 서버 재시작 (포트 충돌 방지)
             echo "🚀 Restarting application with PM2..."
-            pm2 restart lumir-evaluation-system || pm2 start dist/src/main.js --name lumir-evaluation-system
+            cd /home/ubuntu/services
+            
+            # 기존 프로세스 중지 및 정리 (포트 충돌 방지)
+            pm2 stop lumir-evaluation-system-1 2>/dev/null || true
+            pm2 delete lumir-evaluation-system 2>/dev/null || true
+            pm2 delete lumir-evaluation-system-1 2>/dev/null || true
+            
+            # ecosystem.config.js를 사용하여 프로세스 시작
+            pm2 start ecosystem.config.js --only lumir-evaluation-system-1
             
             # PM2 설정 저장
             pm2 save
@@ -46,4 +58,4 @@ jobs:
             echo "✅ Deployment completed!"
             echo "📊 PM2 Status:"
             pm2 list
-            pm2 logs lumir-evaluation-system --lines 5 --nostream || true
+            pm2 logs lumir-evaluation-system-1 --lines 5 --nostream || true

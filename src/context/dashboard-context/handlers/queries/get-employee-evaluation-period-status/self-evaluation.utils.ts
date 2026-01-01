@@ -8,14 +8,7 @@ import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
 import { Project } from '@domain/common/project/project.entity';
 import { SelfEvaluationStatus } from '../../../interfaces/dashboard-context.interface';
 
-// 임시로 로거 비활성화 (디버깅용)
-// const logger = new Logger('SelfEvaluationUtils');
-const logger = {
-  log: () => {},
-  warn: () => {},
-  error: () => {},
-  debug: () => {},
-} as any;
+const logger = new Logger('SelfEvaluationUtils');
 
 /**
  * 자기평가 진행 상태를 조회한다
@@ -280,6 +273,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
   wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
   periodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
+  logger.log(
+    `[가중치 기반 자기평가 점수 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
+  );
+
   try {
     // 평가기간 정보 조회 (maxSelfEvaluationRate 필요)
     const period = await periodRepository.findOne({
@@ -295,6 +292,9 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
     }
 
     const maxSelfEvaluationRate = period.maxSelfEvaluationRate;
+    logger.log(
+      `[평가기간 정보 조회] 평가기간: ${evaluationPeriodId}, 최대 자기평가 비율: ${maxSelfEvaluationRate}`,
+    );
 
     // 성과달성률(점수)이 입력된 WBS 자기평가 목록 조회 (제출 여부와 무관, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const selfEvaluations = await wbsSelfEvaluationRepository
@@ -325,8 +325,15 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       .getMany();
 
     if (selfEvaluations.length === 0) {
+      logger.log(
+        `[자기평가 점수 없음] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 자기평가가 없습니다.`,
+      );
       return null;
     }
+
+    logger.log(
+      `[자기평가 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 자기평가 수: ${selfEvaluations.length}`,
+    );
 
     // WBS 할당 정보 조회 (가중치 포함, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const wbsItemIds = selfEvaluations.map((se) => se.wbsItemId);
@@ -414,13 +421,13 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
     const integerScore = Math.floor(normalizedScore);
 
     logger.log(
-      `가중치 기반 자기평가 점수 계산 완료: ${integerScore} (원본: ${totalWeightedScore.toFixed(2)}, 정규화: ${normalizedScore.toFixed(2)}, 가중치 합: ${totalWeight}%, 최대값: ${maxSelfEvaluationRate}) (직원: ${employeeId}, 평가기간: ${evaluationPeriodId})`,
+      `[가중치 기반 자기평가 점수 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${integerScore} (원본: ${totalWeightedScore.toFixed(2)}, 정규화: ${normalizedScore.toFixed(2)}, 가중치 합: ${totalWeight}%, 최대값: ${maxSelfEvaluationRate})`,
     );
 
     return integerScore;
   } catch (error) {
     logger.error(
-      `가중치 기반 자기평가 점수 계산 실패: ${error.message}`,
+      `[가중치 기반 자기평가 점수 계산 실패] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 오류: ${error.message}`,
       error.stack,
     );
     return null;

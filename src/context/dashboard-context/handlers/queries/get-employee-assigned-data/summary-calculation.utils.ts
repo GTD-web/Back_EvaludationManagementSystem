@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Repository, IsNull } from 'typeorm';
 import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-evaluation.entity';
@@ -21,6 +22,8 @@ import {
   하향평가_등급을_조회한다,
 } from '../get-employee-evaluation-period-status/downward-evaluation-score.utils';
 
+const logger = new Logger('SummaryCalculationUtils');
+
 /**
  * 자기평가 점수/등급 계산
  */
@@ -38,6 +41,10 @@ export async function calculateSelfEvaluationScore(
   let selfEvaluationScore: number | null = null;
   let selfEvaluationGrade: string | null = null;
 
+  logger.log(
+    `[자기평가 등급 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 완료된 자기평가 수: ${completedSelfEvaluations}`,
+  );
+
   // 점수가 입력된 자기평가가 있으면 점수/등급 계산 (제출 여부와 무관)
   // 가중치_기반_자기평가_점수를_계산한다 함수 내부에서 점수 입력 여부를 확인하므로,
   // 조건 없이 항상 호출하여 점수가 입력된 경우에만 등급 계산
@@ -49,13 +56,29 @@ export async function calculateSelfEvaluationScore(
     evaluationPeriodRepository,
   );
 
+  logger.log(
+    `[자기평가 점수 계산 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수: ${selfEvaluationScore}`,
+  );
+
   if (selfEvaluationScore !== null) {
     selfEvaluationGrade = await 자기평가_등급을_조회한다(
       evaluationPeriodId,
       selfEvaluationScore,
       evaluationPeriodRepository,
     );
+
+    logger.log(
+      `[자기평가 등급 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수: ${selfEvaluationScore}, 등급: ${selfEvaluationGrade}`,
+    );
+  } else {
+    logger.log(
+      `[자기평가 등급 계산 스킵] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력되지 않아 등급 계산하지 않음`,
+    );
   }
+
+  logger.log(
+    `[자기평가 등급 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${selfEvaluationScore}, 최종 등급: ${selfEvaluationGrade}`,
+  );
 
   return {
     totalScore: selfEvaluationScore,

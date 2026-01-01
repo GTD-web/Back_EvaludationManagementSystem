@@ -72,6 +72,7 @@ import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evalu
       WbsEvaluationCriteria,
       EvaluationLine,
       EvaluationLineMapping,
+      EvaluationProjectAssignment,
     ]),
     EvaluationProjectAssignmentModule,
     EvaluationWbsAssignmentModule,

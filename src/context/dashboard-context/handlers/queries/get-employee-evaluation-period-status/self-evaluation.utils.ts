@@ -393,19 +393,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       const weight = weightMap.get(evaluation.wbsItemId)!; // 이미 필터링했으므로 !로 단언
       const score = evaluation.selfEvaluationScore || 0;
 
-      logger.log(
-        `[DEBUG] 자기평가 - WBS ${evaluation.wbsItemId}: 점수=${score}, 가중치=${weight}%, 가중 점수=${((weight / 100) * score).toFixed(2)}`,
-      );
-
-      // 가중치 적용: (weight / 100) × score
-      // 점수는 0 ~ maxSelfEvaluationRate 범위를 유지
-      totalWeightedScore += (weight / 100) * score;
-      totalWeight += weight;
+      // 가중치 적용: (weight / maxSelfEvaluationRate) × score
+      totalWeightedScore += (weight / maxSelfEvaluationRate) * score;
+      totalWeight += weight; // totalWeight는 여전히 원본 가중치 합계
     });
-
-    logger.log(
-      `[DEBUG] 자기평가 - 총 가중 점수: ${totalWeightedScore.toFixed(2)}, 총 가중치: ${totalWeight}%`,
-    );
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
@@ -415,10 +406,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       return null;
     }
 
-    // 가중치 합이 100이 아닌 경우 정규화 (프로젝트 할당 취소 등으로 가중치가 변경된 경우)
+    // 가중치 합이 maxSelfEvaluationRate가 아닌 경우 정규화
     const normalizedScore =
-      totalWeight !== 100
-        ? totalWeightedScore * (100 / totalWeight)
+      totalWeight !== maxSelfEvaluationRate
+        ? totalWeightedScore * (maxSelfEvaluationRate / totalWeight)
         : totalWeightedScore;
 
     // 소수점일 때는 내림을 통해 정수로 변환

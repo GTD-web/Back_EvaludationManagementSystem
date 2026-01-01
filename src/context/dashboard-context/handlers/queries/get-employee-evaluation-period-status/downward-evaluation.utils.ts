@@ -448,53 +448,33 @@ export async function 하향평가_상태를_조회한다(
   let secondaryTotalScore: number | null = null;
   let secondaryGrade: string | null = null;
 
-  // 모든 2차 평가자의 평가가 완료되었는지 확인
-  // 할당된 것보다 완료한 것이 많아도 완료 처리
-  const allSecondaryEvaluationsCompleted = filteredSecondaryStatuses.every(
-    (status) =>
-      status.assignedWbsCount > 0 &&
-      status.completedEvaluationCount >= status.assignedWbsCount,
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  // 가중치_기반_2차_하향평가_점수를_계산한다 함수가 점수가 없으면 null을 반환하므로
+  // 항상 호출하여 점수가 있는지 확인
+  secondaryTotalScore = await 가중치_기반_2차_하향평가_점수를_계산한다(
+    evaluationPeriodId,
+    employeeId,
+    secondaryEvaluators,
+    downwardEvaluationRepository,
+    wbsAssignmentRepository,
+    periodRepository,
   );
 
-  // 모든 2차 평가자가 제출했는지 확인
-  const allSecondaryEvaluationsSubmitted = filteredSecondaryStatuses.every(
-    (status) => status.isSubmitted,
-  );
-
-  // 모든 평가자가 완료되고 제출했을 때만 스코어 계산
-  if (
-    filteredSecondaryStatuses.length > 0 &&
-    allSecondaryEvaluationsCompleted &&
-    allSecondaryEvaluationsSubmitted
-  ) {
-    secondaryTotalScore = await 가중치_기반_2차_하향평가_점수를_계산한다(
+  // 총점이 계산되었으면 등급 조회
+  if (secondaryTotalScore !== null) {
+    secondaryGrade = await 하향평가_등급을_조회한다(
       evaluationPeriodId,
-      employeeId,
-      secondaryEvaluators,
-      downwardEvaluationRepository,
-      wbsAssignmentRepository,
+      secondaryTotalScore,
       periodRepository,
     );
-
-    // 총점이 계산되었으면 등급 조회
-    if (secondaryTotalScore !== null) {
-      secondaryGrade = await 하향평가_등급을_조회한다(
-        evaluationPeriodId,
-        secondaryTotalScore,
-        periodRepository,
-      );
-    }
   }
 
   // 8. 1차 하향평가 가중치 기반 총점 및 등급 계산
   let primaryTotalScore: number | null = null;
   let primaryGrade: string | null = null;
 
-  // 모든 1차 하향평가가 완료된 경우에만 점수와 등급 계산
-  if (
-    primaryStatus.assignedWbsCount > 0 &&
-    primaryStatus.completedEvaluationCount === primaryStatus.assignedWbsCount
-  ) {
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  if (primaryStatus.assignedWbsCount > 0) {
     primaryTotalScore = await 가중치_기반_1차_하향평가_점수를_계산한다(
       evaluationPeriodId,
       employeeId,

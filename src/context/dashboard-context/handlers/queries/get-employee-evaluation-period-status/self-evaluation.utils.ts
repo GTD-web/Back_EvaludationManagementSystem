@@ -158,8 +158,8 @@ export async function 자기평가_진행_상태를_조회한다(
   let totalScore: number | null = null;
   let grade: string | null = null;
 
-  // 모든 WBS가 완료된 경우에만 점수와 등급을 계산
-  if (totalMappingCount > 0 && completedMappingCount === totalMappingCount) {
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  if (totalMappingCount > 0) {
     totalScore = await 가중치_기반_자기평가_점수를_계산한다(
       evaluationPeriodId,
       employeeId,

@@ -18,6 +18,9 @@ import { EvaluationProjectAssignment } from '@domain/core/evaluation-project-ass
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { Project } from '@domain/common/project/project.entity';
 import { WbsItem } from '@domain/common/wbs-item/wbs-item.entity';
+import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
+import { WbsSelfEvaluationModule } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.module';
+import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import {
   EvaluationPeriodStatus,
   EvaluationPeriodPhase,
@@ -51,6 +54,7 @@ describe('RecalculateAllEmployeesWeightForPeriodHandler - 평가기간 전체 �
   let wbsAssignmentRepository: Repository<EvaluationWbsAssignment>;
   let projectRepository: Repository<Project>;
   let wbsItemRepository: Repository<WbsItem>;
+  let wbsSelfEvaluationRepository: Repository<WbsSelfEvaluation>;
 
   // 테스트 데이터 ID
   let evaluationPeriodId: string;
@@ -80,11 +84,14 @@ describe('RecalculateAllEmployeesWeightForPeriodHandler - 평가기간 전체 �
           EvaluationWbsAssignment,
           Project,
           WbsItem,
+          WbsSelfEvaluation,
         ]),
+        WbsSelfEvaluationModule,
       ],
       providers: [
         RecalculateAllEmployeesWeightForPeriodHandler,
         WbsAssignmentWeightCalculationService,
+        TransactionManagerService,
       ],
     }).compile();
 
@@ -102,6 +109,7 @@ describe('RecalculateAllEmployeesWeightForPeriodHandler - 평가기간 전체 �
     wbsAssignmentRepository = dataSource.getRepository(EvaluationWbsAssignment);
     projectRepository = dataSource.getRepository(Project);
     wbsItemRepository = dataSource.getRepository(WbsItem);
+    wbsSelfEvaluationRepository = dataSource.getRepository(WbsSelfEvaluation);
 
     await dataSource.synchronize(true);
   });
@@ -127,6 +135,7 @@ describe('RecalculateAllEmployeesWeightForPeriodHandler - 평가기간 전체 �
 
   beforeEach(async () => {
     // 테이블 초기화
+    await dataSource.query('TRUNCATE TABLE "wbs_self_evaluation" CASCADE');
     await dataSource.query('TRUNCATE TABLE "evaluation_wbs_assignment" CASCADE');
     await dataSource.query('TRUNCATE TABLE "evaluation_project_assignment" CASCADE');
     await dataSource.query('TRUNCATE TABLE "evaluation_period_employee_mapping" CASCADE');
@@ -1605,6 +1614,672 @@ describe('RecalculateAllEmployeesWeightForPeriodHandler - 평가기간 전체 �
             totalWeight: sampleTotalWeight,
             wbsCount: sampleAssignments.length,
           },
+        };
+      } catch (error: any) {
+        testResult.status = 'failed';
+        testResult.endTime = new Date().toISOString();
+        testResult.errors.push({ message: error.message, stack: error.stack });
+        throw error;
+      } finally {
+        testResults.push(testResult);
+      }
+    });
+  });
+
+  describe('maxSelfEvaluationRate 감소 시 자기평가 점수 조정', () => {
+    it('maxSelfEvaluationRate가 줄어들 때 초과하는 자기평가 점수가 제한되어야 한다', async () => {
+      const testResult = createTestResult(
+        'maxSelfEvaluationRate가 줄어들 때 초과하는 자기평가 점수가 제한되어야 한다',
+      );
+      try {
+        // 프로젝트 및 WBS 생성
+        const project1 = Project.생성한다(
+          {
+            name: '프로젝트 1A',
+            projectCode: 'P1A',
+            grade: ProjectGrade.GRADE_1A,
+          },
+          systemAdminId,
+        );
+        const savedProject1 = await projectRepository.save(project1);
+        project1Id = savedProject1.id;
+
+        const wbsItem1 = WbsItem.생성한다(
+          {
+            wbsCode: 'W1-1',
+            title: 'WBS 1-1',
+            projectId: project1Id,
+            level: 1,
+            status: WbsItemStatus.PENDING,
+          },
+          systemAdminId,
+        );
+        const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+        // 프로젝트 및 WBS 할당
+        await projectAssignmentRepository.save(
+          projectAssignmentRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employee1Id,
+            projectId: project1Id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            displayOrder: 0,
+            createdBy: systemAdminId,
+          }),
+        );
+
+        const wbsAssignment1 = wbsAssignmentRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          projectId: project1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          displayOrder: 0,
+          weight: 0,
+          createdBy: systemAdminId,
+        });
+        await wbsAssignmentRepository.save(wbsAssignment1);
+
+        // 기존 maxSelfEvaluationRate(120)보다 높은 점수로 자기평가 생성
+        const originalMaxRate = 120;
+        const newMaxRate = 80;
+        const highScore = 100; // 새로운 최대값(80)을 초과하는 점수
+
+        const selfEvaluation1 = wbsSelfEvaluationRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          evaluationDate: new Date(),
+          selfEvaluationScore: highScore,
+          selfEvaluationContent: '테스트 내용',
+          createdBy: systemAdminId,
+        });
+        await wbsSelfEvaluationRepository.save(selfEvaluation1);
+
+        // 평가기간의 maxSelfEvaluationRate를 줄임
+        await evaluationPeriodRepository.update(
+          { id: evaluationPeriodId },
+          { maxSelfEvaluationRate: newMaxRate },
+        );
+
+        // 커맨드 실행
+        const command = new RecalculateAllEmployeesWeightForPeriodCommand(
+          evaluationPeriodId,
+        );
+        const result = await handler.execute(command);
+
+        // 결과 검증
+        testResult.assertions.push({
+          description: '가중치 재계산이 성공해야 함',
+          expected: 1,
+          actual: result.successCount,
+          passed: result.successCount === 1,
+        });
+
+        expect(result.successCount).toBe(1);
+
+        // 자기평가 점수가 제한되었는지 확인
+        const updatedSelfEvaluation = await wbsSelfEvaluationRepository.findOne({
+          where: { id: selfEvaluation1.id },
+        });
+
+        testResult.assertions.push({
+          description: '자기평가 점수가 새로운 최대값으로 제한되어야 함',
+          expected: newMaxRate,
+          actual: updatedSelfEvaluation?.selfEvaluationScore,
+          passed: updatedSelfEvaluation?.selfEvaluationScore === newMaxRate,
+        });
+
+        expect(updatedSelfEvaluation?.selfEvaluationScore).toBe(newMaxRate);
+
+        testResult.status = 'passed';
+        testResult.endTime = new Date().toISOString();
+        testResult.data = {
+          result,
+          originalScore: highScore,
+          adjustedScore: updatedSelfEvaluation?.selfEvaluationScore,
+          originalMaxRate,
+          newMaxRate,
+        };
+      } catch (error: any) {
+        testResult.status = 'failed';
+        testResult.endTime = new Date().toISOString();
+        testResult.errors.push({ message: error.message, stack: error.stack });
+        throw error;
+      } finally {
+        testResults.push(testResult);
+      }
+    });
+
+    it('maxSelfEvaluationRate가 늘어날 때는 자기평가 점수가 조정되지 않아야 한다', async () => {
+      const testResult = createTestResult(
+        'maxSelfEvaluationRate가 늘어날 때는 자기평가 점수가 조정되지 않아야 한다',
+      );
+      try {
+        // 프로젝트 및 WBS 생성
+        const project1 = Project.생성한다(
+          {
+            name: '프로젝트 1A',
+            projectCode: 'P1A',
+            grade: ProjectGrade.GRADE_1A,
+          },
+          systemAdminId,
+        );
+        const savedProject1 = await projectRepository.save(project1);
+        project1Id = savedProject1.id;
+
+        const wbsItem1 = WbsItem.생성한다(
+          {
+            wbsCode: 'W1-1',
+            title: 'WBS 1-1',
+            projectId: project1Id,
+            level: 1,
+            status: WbsItemStatus.PENDING,
+          },
+          systemAdminId,
+        );
+        const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+        // 프로젝트 및 WBS 할당
+        await projectAssignmentRepository.save(
+          projectAssignmentRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employee1Id,
+            projectId: project1Id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            displayOrder: 0,
+            createdBy: systemAdminId,
+          }),
+        );
+
+        const wbsAssignment1 = wbsAssignmentRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          projectId: project1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          displayOrder: 0,
+          weight: 0,
+          createdBy: systemAdminId,
+        });
+        await wbsAssignmentRepository.save(wbsAssignment1);
+
+        // 기존 maxSelfEvaluationRate(120) 이하의 점수로 자기평가 생성
+        const originalMaxRate = 120;
+        const newMaxRate = 150;
+        const originalScore = 100; // 원래 최대값(120) 이하이지만 새로운 최대값(150)보다 낮음
+
+        const selfEvaluation1 = wbsSelfEvaluationRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          evaluationDate: new Date(),
+          selfEvaluationScore: originalScore,
+          selfEvaluationContent: '테스트 내용',
+          createdBy: systemAdminId,
+        });
+        await wbsSelfEvaluationRepository.save(selfEvaluation1);
+
+        // 평가기간의 maxSelfEvaluationRate를 늘림
+        await evaluationPeriodRepository.update(
+          { id: evaluationPeriodId },
+          { maxSelfEvaluationRate: newMaxRate },
+        );
+
+        // 커맨드 실행
+        const command = new RecalculateAllEmployeesWeightForPeriodCommand(
+          evaluationPeriodId,
+        );
+        const result = await handler.execute(command);
+
+        // 결과 검증
+        expect(result.successCount).toBe(1);
+
+        // 자기평가 점수가 변경되지 않았는지 확인
+        const updatedSelfEvaluation = await wbsSelfEvaluationRepository.findOne({
+          where: { id: selfEvaluation1.id },
+        });
+
+        testResult.assertions.push({
+          description: '자기평가 점수가 변경되지 않아야 함',
+          expected: originalScore,
+          actual: updatedSelfEvaluation?.selfEvaluationScore,
+          passed: updatedSelfEvaluation?.selfEvaluationScore === originalScore,
+        });
+
+        expect(updatedSelfEvaluation?.selfEvaluationScore).toBe(originalScore);
+
+        testResult.status = 'passed';
+        testResult.endTime = new Date().toISOString();
+        testResult.data = {
+          result,
+          originalScore,
+          unchangedScore: updatedSelfEvaluation?.selfEvaluationScore,
+          originalMaxRate,
+          newMaxRate,
+        };
+      } catch (error: any) {
+        testResult.status = 'failed';
+        testResult.endTime = new Date().toISOString();
+        testResult.errors.push({ message: error.message, stack: error.stack });
+        throw error;
+      } finally {
+        testResults.push(testResult);
+      }
+    });
+
+    it('여러 직원의 자기평가 점수가 동시에 조정되어야 한다', async () => {
+      const testResult = createTestResult(
+        '여러 직원의 자기평가 점수가 동시에 조정되어야 한다',
+      );
+      try {
+        // 프로젝트 및 WBS 생성
+        const project1 = Project.생성한다(
+          {
+            name: '프로젝트 1A',
+            projectCode: 'P1A',
+            grade: ProjectGrade.GRADE_1A,
+          },
+          systemAdminId,
+        );
+        const savedProject1 = await projectRepository.save(project1);
+        project1Id = savedProject1.id;
+
+        const wbsItem1 = WbsItem.생성한다(
+          {
+            wbsCode: 'W1-1',
+            title: 'WBS 1-1',
+            projectId: project1Id,
+            level: 1,
+            status: WbsItemStatus.PENDING,
+          },
+          systemAdminId,
+        );
+        const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+        // 각 직원에게 프로젝트 및 WBS 할당
+        for (const employeeId of [employee1Id, employee2Id, employee3Id]) {
+          await projectAssignmentRepository.save(
+            projectAssignmentRepository.create({
+              id: randomUUID(),
+              periodId: evaluationPeriodId,
+              employeeId: employeeId,
+              projectId: project1Id,
+              assignedBy: systemAdminId,
+              assignedDate: new Date(),
+              displayOrder: 0,
+              createdBy: systemAdminId,
+            }),
+          );
+
+          const wbsAssignment = wbsAssignmentRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employeeId,
+            projectId: project1Id,
+            wbsItemId: savedWbsItem1.id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            displayOrder: 0,
+            weight: 0,
+            createdBy: systemAdminId,
+          });
+          await wbsAssignmentRepository.save(wbsAssignment);
+        }
+
+        // 각 직원의 자기평가 생성 (모두 새로운 최대값을 초과)
+        const originalMaxRate = 120;
+        const newMaxRate = 80;
+        const highScores = [100, 95, 90]; // 모두 새로운 최대값(80)을 초과
+
+        const selfEvaluations: WbsSelfEvaluation[] = [];
+        for (let i = 0; i < 3; i++) {
+          const employeeId = [employee1Id, employee2Id, employee3Id][i];
+          const selfEvaluation = wbsSelfEvaluationRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employeeId,
+            wbsItemId: savedWbsItem1.id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            evaluationDate: new Date(),
+            selfEvaluationScore: highScores[i],
+            selfEvaluationContent: `테스트 내용 ${i + 1}`,
+            createdBy: systemAdminId,
+          });
+          const saved = await wbsSelfEvaluationRepository.save(selfEvaluation);
+          selfEvaluations.push(saved);
+        }
+
+        // 평가기간의 maxSelfEvaluationRate를 줄임
+        await evaluationPeriodRepository.update(
+          { id: evaluationPeriodId },
+          { maxSelfEvaluationRate: newMaxRate },
+        );
+
+        // 커맨드 실행
+        const command = new RecalculateAllEmployeesWeightForPeriodCommand(
+          evaluationPeriodId,
+        );
+        const result = await handler.execute(command);
+
+        // 결과 검증
+        testResult.assertions.push({
+          description: '모든 직원의 가중치 재계산이 성공해야 함',
+          expected: 3,
+          actual: result.successCount,
+          passed: result.successCount === 3,
+        });
+
+        expect(result.successCount).toBe(3);
+
+        // 모든 자기평가 점수가 제한되었는지 확인
+        const evaluationIds = selfEvaluations.map((e) => e.id);
+        const updatedSelfEvaluations = await wbsSelfEvaluationRepository
+          .createQueryBuilder('evaluation')
+          .where('evaluation.periodId = :periodId', { periodId: evaluationPeriodId })
+          .andWhere('evaluation.id IN (:...ids)', { ids: evaluationIds })
+          .getMany();
+
+        const allAdjusted = updatedSelfEvaluations.every(
+          (e) => e.selfEvaluationScore === newMaxRate,
+        );
+
+        testResult.assertions.push({
+          description: '모든 자기평가 점수가 새로운 최대값으로 제한되어야 함',
+          expected: true,
+          actual: allAdjusted,
+          passed: allAdjusted,
+        });
+
+        expect(allAdjusted).toBe(true);
+        expect(updatedSelfEvaluations.length).toBe(3);
+
+        testResult.status = 'passed';
+        testResult.endTime = new Date().toISOString();
+        testResult.data = {
+          result,
+          originalScores: highScores,
+          adjustedScores: updatedSelfEvaluations.map((e) => e.selfEvaluationScore),
+          originalMaxRate,
+          newMaxRate,
+        };
+      } catch (error: any) {
+        testResult.status = 'failed';
+        testResult.endTime = new Date().toISOString();
+        testResult.errors.push({ message: error.message, stack: error.stack });
+        throw error;
+      } finally {
+        testResults.push(testResult);
+      }
+    });
+
+    it('이미 제출된 자기평가도 점수가 조정되어야 한다', async () => {
+      const testResult = createTestResult(
+        '이미 제출된 자기평가도 점수가 조정되어야 한다',
+      );
+      try {
+        // 프로젝트 및 WBS 생성
+        const project1 = Project.생성한다(
+          {
+            name: '프로젝트 1A',
+            projectCode: 'P1A',
+            grade: ProjectGrade.GRADE_1A,
+          },
+          systemAdminId,
+        );
+        const savedProject1 = await projectRepository.save(project1);
+        project1Id = savedProject1.id;
+
+        const wbsItem1 = WbsItem.생성한다(
+          {
+            wbsCode: 'W1-1',
+            title: 'WBS 1-1',
+            projectId: project1Id,
+            level: 1,
+            status: WbsItemStatus.PENDING,
+          },
+          systemAdminId,
+        );
+        const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+        // 프로젝트 및 WBS 할당
+        await projectAssignmentRepository.save(
+          projectAssignmentRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employee1Id,
+            projectId: project1Id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            displayOrder: 0,
+            createdBy: systemAdminId,
+          }),
+        );
+
+        const wbsAssignment1 = wbsAssignmentRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          projectId: project1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          displayOrder: 0,
+          weight: 0,
+          createdBy: systemAdminId,
+        });
+        await wbsAssignmentRepository.save(wbsAssignment1);
+
+        // 제출된 자기평가 생성
+        const originalMaxRate = 120;
+        const newMaxRate = 80;
+        const highScore = 100;
+
+        const selfEvaluation1 = wbsSelfEvaluationRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          evaluationDate: new Date(),
+          selfEvaluationScore: highScore,
+          selfEvaluationContent: '테스트 내용',
+          submittedToEvaluator: true,
+          submittedToEvaluatorAt: new Date(),
+          submittedToManager: true,
+          submittedToManagerAt: new Date(),
+          createdBy: systemAdminId,
+        });
+        await wbsSelfEvaluationRepository.save(selfEvaluation1);
+
+        // 평가기간의 maxSelfEvaluationRate를 줄임
+        await evaluationPeriodRepository.update(
+          { id: evaluationPeriodId },
+          { maxSelfEvaluationRate: newMaxRate },
+        );
+
+        // 커맨드 실행
+        const command = new RecalculateAllEmployeesWeightForPeriodCommand(
+          evaluationPeriodId,
+        );
+        const result = await handler.execute(command);
+
+        // 결과 검증
+        expect(result.successCount).toBe(1);
+
+        // 제출된 자기평가 점수도 조정되었는지 확인
+        const updatedSelfEvaluation = await wbsSelfEvaluationRepository.findOne({
+          where: { id: selfEvaluation1.id },
+        });
+
+        testResult.assertions.push({
+          description: '제출된 자기평가 점수도 새로운 최대값으로 제한되어야 함',
+          expected: newMaxRate,
+          actual: updatedSelfEvaluation?.selfEvaluationScore,
+          passed: updatedSelfEvaluation?.selfEvaluationScore === newMaxRate,
+        });
+
+        testResult.assertions.push({
+          description: '제출 상태는 유지되어야 함',
+          expected: true,
+          actual: updatedSelfEvaluation?.submittedToEvaluator,
+          passed: updatedSelfEvaluation?.submittedToEvaluator === true,
+        });
+
+        expect(updatedSelfEvaluation?.selfEvaluationScore).toBe(newMaxRate);
+        expect(updatedSelfEvaluation?.submittedToEvaluator).toBe(true);
+        expect(updatedSelfEvaluation?.submittedToManager).toBe(true);
+
+        testResult.status = 'passed';
+        testResult.endTime = new Date().toISOString();
+        testResult.data = {
+          result,
+          originalScore: highScore,
+          adjustedScore: updatedSelfEvaluation?.selfEvaluationScore,
+          originalMaxRate,
+          newMaxRate,
+          submittedToEvaluator: updatedSelfEvaluation?.submittedToEvaluator,
+          submittedToManager: updatedSelfEvaluation?.submittedToManager,
+        };
+      } catch (error: any) {
+        testResult.status = 'failed';
+        testResult.endTime = new Date().toISOString();
+        testResult.errors.push({ message: error.message, stack: error.stack });
+        throw error;
+      } finally {
+        testResults.push(testResult);
+      }
+    });
+
+    it('새로운 최대값 이하의 점수는 조정되지 않아야 한다', async () => {
+      const testResult = createTestResult(
+        '새로운 최대값 이하의 점수는 조정되지 않아야 한다',
+      );
+      try {
+        // 프로젝트 및 WBS 생성
+        const project1 = Project.생성한다(
+          {
+            name: '프로젝트 1A',
+            projectCode: 'P1A',
+            grade: ProjectGrade.GRADE_1A,
+          },
+          systemAdminId,
+        );
+        const savedProject1 = await projectRepository.save(project1);
+        project1Id = savedProject1.id;
+
+        const wbsItem1 = WbsItem.생성한다(
+          {
+            wbsCode: 'W1-1',
+            title: 'WBS 1-1',
+            projectId: project1Id,
+            level: 1,
+            status: WbsItemStatus.PENDING,
+          },
+          systemAdminId,
+        );
+        const savedWbsItem1 = await wbsItemRepository.save(wbsItem1);
+
+        // 프로젝트 및 WBS 할당
+        await projectAssignmentRepository.save(
+          projectAssignmentRepository.create({
+            id: randomUUID(),
+            periodId: evaluationPeriodId,
+            employeeId: employee1Id,
+            projectId: project1Id,
+            assignedBy: systemAdminId,
+            assignedDate: new Date(),
+            displayOrder: 0,
+            createdBy: systemAdminId,
+          }),
+        );
+
+        const wbsAssignment1 = wbsAssignmentRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          projectId: project1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          displayOrder: 0,
+          weight: 0,
+          createdBy: systemAdminId,
+        });
+        await wbsAssignmentRepository.save(wbsAssignment1);
+
+        // 새로운 최대값 이하의 점수로 자기평가 생성
+        const originalMaxRate = 120;
+        const newMaxRate = 80;
+        const lowScore = 70; // 새로운 최대값(80) 이하
+
+        const selfEvaluation1 = wbsSelfEvaluationRepository.create({
+          id: randomUUID(),
+          periodId: evaluationPeriodId,
+          employeeId: employee1Id,
+          wbsItemId: savedWbsItem1.id,
+          assignedBy: systemAdminId,
+          assignedDate: new Date(),
+          evaluationDate: new Date(),
+          selfEvaluationScore: lowScore,
+          selfEvaluationContent: '테스트 내용',
+          createdBy: systemAdminId,
+        });
+        await wbsSelfEvaluationRepository.save(selfEvaluation1);
+
+        // 평가기간의 maxSelfEvaluationRate를 줄임
+        await evaluationPeriodRepository.update(
+          { id: evaluationPeriodId },
+          { maxSelfEvaluationRate: newMaxRate },
+        );
+
+        // 커맨드 실행
+        const command = new RecalculateAllEmployeesWeightForPeriodCommand(
+          evaluationPeriodId,
+        );
+        const result = await handler.execute(command);
+
+        // 결과 검증
+        expect(result.successCount).toBe(1);
+
+        // 자기평가 점수가 변경되지 않았는지 확인
+        const updatedSelfEvaluation = await wbsSelfEvaluationRepository.findOne({
+          where: { id: selfEvaluation1.id },
+        });
+
+        testResult.assertions.push({
+          description: '새로운 최대값 이하의 점수는 변경되지 않아야 함',
+          expected: lowScore,
+          actual: updatedSelfEvaluation?.selfEvaluationScore,
+          passed: updatedSelfEvaluation?.selfEvaluationScore === lowScore,
+        });
+
+        expect(updatedSelfEvaluation?.selfEvaluationScore).toBe(lowScore);
+
+        testResult.status = 'passed';
+        testResult.endTime = new Date().toISOString();
+        testResult.data = {
+          result,
+          originalScore: lowScore,
+          unchangedScore: updatedSelfEvaluation?.selfEvaluationScore,
+          originalMaxRate,
+          newMaxRate,
         };
       } catch (error: any) {
         testResult.status = 'failed';

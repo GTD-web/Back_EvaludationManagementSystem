@@ -38,45 +38,23 @@ export async function calculateSelfEvaluationScore(
   let selfEvaluationScore: number | null = null;
   let selfEvaluationGrade: string | null = null;
 
-  // 소프트 딜리트된 프로젝트 할당에 속한 WBS 자기평가 제외
-  const totalSelfEvaluations = await selfEvaluationRepository
-    .createQueryBuilder('self_eval')
-    .leftJoin(
-      'evaluation_wbs_assignment',
-      'wbs_assignment',
-      'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
-    )
-    .leftJoin(
-      'evaluation_project_assignment',
-      'project_assignment',
-      'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
-    )
-    .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
-    .andWhere('self_eval.employeeId = :employeeId', { employeeId })
-    .andWhere('self_eval.deletedAt IS NULL')
-    .andWhere('project_assignment.id IS NOT NULL')
-    .getCount();
+  // 점수가 입력된 자기평가가 있으면 점수/등급 계산 (제출 여부와 무관)
+  // 가중치_기반_자기평가_점수를_계산한다 함수 내부에서 점수 입력 여부를 확인하므로,
+  // 조건 없이 항상 호출하여 점수가 입력된 경우에만 등급 계산
+  selfEvaluationScore = await 가중치_기반_자기평가_점수를_계산한다(
+    evaluationPeriodId,
+    employeeId,
+    selfEvaluationRepository,
+    wbsAssignmentRepository,
+    evaluationPeriodRepository,
+  );
 
-  // 성과달성률(점수)이 입력된 자기평가가 모두 완료된 경우 점수/등급 계산 (제출 여부와 무관)
-  if (
-    totalSelfEvaluations > 0 &&
-    completedSelfEvaluations === totalSelfEvaluations
-  ) {
-    selfEvaluationScore = await 가중치_기반_자기평가_점수를_계산한다(
+  if (selfEvaluationScore !== null) {
+    selfEvaluationGrade = await 자기평가_등급을_조회한다(
       evaluationPeriodId,
-      employeeId,
-      selfEvaluationRepository,
-      wbsAssignmentRepository,
+      selfEvaluationScore,
       evaluationPeriodRepository,
     );
-
-    if (selfEvaluationScore !== null) {
-      selfEvaluationGrade = await 자기평가_등급을_조회한다(
-        evaluationPeriodId,
-        selfEvaluationScore,
-        evaluationPeriodRepository,
-      );
-    }
   }
 
   return {

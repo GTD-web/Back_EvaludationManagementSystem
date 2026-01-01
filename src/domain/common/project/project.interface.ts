@@ -1,4 +1,4 @@
-import { ProjectStatus, ProjectDto } from './project.types';
+import { ProjectDto } from './project.types';
 
 /**
  * 프로젝트 도메인 인터페이스 (평가 시스템 전용)
@@ -14,12 +14,6 @@ export interface IProject {
   readonly name: string;
   /** 프로젝트 코드 */
   readonly projectCode?: string;
-  /** 프로젝트 상태 */
-  readonly status: ProjectStatus;
-  /** 시작일 */
-  readonly startDate?: Date;
-  /** 종료일 */
-  readonly endDate?: Date;
   /** 프로젝트 매니저 ID */
   readonly managerId?: string;
 }

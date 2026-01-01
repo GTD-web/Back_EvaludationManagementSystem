@@ -1,21 +1,20 @@
+import { ProjectGrade } from '@domain/common/project/project.types';
+import { OptionalDateToUTC } from '@interface/common/decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
+  IsArray,
   IsEnum,
   IsInt,
-  Min,
-  Max,
-  Matches,
-  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
   IsUUID,
+  Matches,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { DateToUTC, OptionalDateToUTC } from '@interface/common/decorators';
-import { ProjectStatus } from '@domain/common/project/project.types';
-import { ProjectManagerListResponseDto } from './project-manager.dto';
 
 /**
  * 하위 프로젝트 생성 DTO
@@ -95,34 +94,6 @@ export class CreateProjectDto {
   @IsString()
   projectCode?: string;
 
-  @ApiProperty({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsNotEmpty()
-  @IsEnum(ProjectStatus)
-  status: ProjectStatus;
-
-  @ApiPropertyOptional({
-    description: '시작일 (YYYY-MM-DD)',
-    example: '2024-01-01',
-    type: String,
-  })
-  @IsOptional()
-  @OptionalDateToUTC()
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: '종료일 (YYYY-MM-DD)',
-    example: '2024-12-31',
-    type: String,
-  })
-  @IsOptional()
-  @OptionalDateToUTC()
-  endDate?: Date;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -148,6 +119,16 @@ export class CreateProjectDto {
   @IsOptional()
   @IsUUID()
   importanceId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A) - 등급에 따라 우선순위가 자동 설정됩니다 (1A=5, 1B=4, 2A=3, 2B=2, 3A=1)',
+    enum: ProjectGrade,
+    enumName: 'ProjectGrade',
+    example: ProjectGrade.GRADE_1A,
+  })
+  @IsOptional()
+  @IsEnum(ProjectGrade)
+  grade?: ProjectGrade;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트 생성 시 지정',
@@ -269,34 +250,6 @@ export class UpdateProjectDto {
   projectCode?: string;
 
   @ApiPropertyOptional({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsOptional()
-  @IsEnum(ProjectStatus)
-  status?: ProjectStatus;
-
-  @ApiPropertyOptional({
-    description: '시작일 (YYYY-MM-DD)',
-    example: '2024-01-01',
-    type: String,
-  })
-  @IsOptional()
-  @OptionalDateToUTC()
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: '종료일 (YYYY-MM-DD)',
-    example: '2024-12-31',
-    type: String,
-  })
-  @IsOptional()
-  @OptionalDateToUTC()
-  endDate?: Date;
-
-  @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID) - 상위 프로젝트: PM, 하위 프로젝트: DPM',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
@@ -321,6 +274,16 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsUUID()
   importanceId?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A) - 등급에 따라 우선순위가 자동 설정됩니다 (1A=5, 1B=4, 2A=3, 2B=2, 3A=1)',
+    enum: ProjectGrade,
+    enumName: 'ProjectGrade',
+    example: ProjectGrade.GRADE_1A,
+  })
+  @IsOptional()
+  @IsEnum(ProjectGrade)
+  grade?: ProjectGrade;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (UUID) - 하위 프로젝트로 변경 또는 상위 프로젝트 변경 시',
@@ -382,7 +345,7 @@ export class GetProjectListQueryDto {
   })
   @IsOptional()
   @IsString()
-  sortBy?: 'name' | 'projectCode' | 'startDate' | 'endDate' | 'createdAt' =
+  sortBy?: 'name' | 'projectCode' | 'createdAt' =
     'createdAt';
 
   @ApiPropertyOptional({
@@ -394,16 +357,6 @@ export class GetProjectListQueryDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
-
-  @ApiPropertyOptional({
-    description: '프로젝트 상태 필터 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  @IsOptional()
-  @IsEnum(ProjectStatus)
-  status?: ProjectStatus;
 
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (UUID)',
@@ -439,7 +392,6 @@ export class GetProjectListQueryDto {
   })
   @IsOptional()
   @OptionalDateToUTC()
-  startDateFrom?: Date;
 
   @ApiPropertyOptional({
     description: '시작일 범위 끝 (YYYY-MM-DD)',
@@ -448,7 +400,6 @@ export class GetProjectListQueryDto {
   })
   @IsOptional()
   @OptionalDateToUTC()
-  startDateTo?: Date;
 
   @ApiPropertyOptional({
     description: '종료일 범위 시작 (YYYY-MM-DD)',
@@ -457,7 +408,6 @@ export class GetProjectListQueryDto {
   })
   @IsOptional()
   @OptionalDateToUTC()
-  endDateFrom?: Date;
 
   @ApiPropertyOptional({
     description: '종료일 범위 끝 (YYYY-MM-DD)',
@@ -466,7 +416,6 @@ export class GetProjectListQueryDto {
   })
   @IsOptional()
   @OptionalDateToUTC()
-  endDateTo?: Date;
 
   @ApiPropertyOptional({
     description: '프로젝트명 검색 (부분 일치)',
@@ -546,13 +495,6 @@ export class SimpleProjectResponseDto {
   })
   projectCode?: string;
 
-  @ApiProperty({
-    description: '프로젝트 상태',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-  })
-  status: ProjectStatus;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID',
   })
@@ -593,26 +535,6 @@ export class ProjectResponseDto {
   })
   projectCode?: string;
 
-  @ApiProperty({
-    description: '프로젝트 상태 (ACTIVE: 진행중, COMPLETED: 완료, CANCELLED: 취소)',
-    enum: ProjectStatus,
-    enumName: 'ProjectStatus',
-    example: ProjectStatus.ACTIVE,
-  })
-  status: ProjectStatus;
-
-  @ApiPropertyOptional({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  startDate?: Date;
-
-  @ApiPropertyOptional({
-    description: '종료일',
-    example: '2024-12-31T00:00:00.000Z',
-  })
-  endDate?: Date;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 ID (상위: PM, 하위: DPM)',
     example: '11111111-1111-1111-1111-111111111111',
@@ -630,6 +552,20 @@ export class ProjectResponseDto {
     example: '김실무',
   })
   realPM?: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A)',
+    enum: ProjectGrade,
+    enumName: 'ProjectGrade',
+    example: ProjectGrade.GRADE_1A,
+  })
+  grade?: ProjectGrade;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위 (등급에 따라 자동 설정: 1A=5, 1B=4, 2A=3, 2B=2, 3A=1)',
+    example: 5,
+  })
+  priority?: number;
 
   @ApiPropertyOptional({
     description: '상위 프로젝트 ID (하위 프로젝트인 경우)',
@@ -673,23 +609,6 @@ export class ProjectResponseDto {
   })
   deletedAt?: Date;
 
-  @ApiProperty({
-    description: '활성 상태 여부',
-    example: true,
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: '완료 상태 여부',
-    example: false,
-  })
-  isCompleted: boolean;
-
-  @ApiProperty({
-    description: '취소 상태 여부',
-    example: false,
-  })
-  isCancelled: boolean;
 }
 
 /**

@@ -3,7 +3,6 @@ import { IQuery, IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { EvaluationPeriodService } from '@domain/core/evaluation-period/evaluation-period.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EmployeeService } from '@domain/common/employee/employee.service';
-import { ProjectStatus } from '@domain/common/project/project.types';
 import { EmployeeDto } from '@domain/common/employee/employee.types';
 
 /**
@@ -32,9 +31,6 @@ export interface AvailableProjectsResult {
     id: string;
     name: string;
     projectCode?: string;
-    status: string;
-    startDate?: Date;
-    endDate?: Date;
     manager?: {
       managerId: string;
       employeeId?: string;
@@ -44,6 +40,8 @@ export interface AvailableProjectsResult {
       departmentName?: string;
     } | null;
     realPM?: string | null;
+    grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
+    priority?: number;
   }>;
   total: number;
   page: number;
@@ -70,7 +68,6 @@ export class GetAvailableProjectsHandler
   async execute(query: GetAvailableProjectsQuery): Promise<AvailableProjectsResult> {
     const { periodId, options } = query;
     const {
-      status = ProjectStatus.ACTIVE,
       search,
       page = 1,
       limit = 20,
@@ -88,21 +85,18 @@ export class GetAvailableProjectsHandler
       );
     }
 
-    // 프로젝트 목록 조회 (상태 필터 적용)
-    const allProjects = await this.projectService.필터_조회한다({
-      status: status as any,
-    });
+    // 프로젝트 목록 조회
+    const allProjects = await this.projectService.필터_조회한다({});
 
     // 프로젝트 목록에 매니저 정보 포함 (이미 service에서 join되어 있음)
     let projectsWithManager = allProjects.map((project) => ({
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       manager: project.manager || null,
       realPM: project.realPM || null,
+      grade: project.grade || undefined,
+      priority: project.priority || undefined,
     }));
 
     // 검색 필터링
@@ -118,7 +112,7 @@ export class GetAvailableProjectsHandler
     }
 
     // 정렬 기준 검증 및 정규화
-    const validSortBy = ['name', 'projectCode', 'startDate', 'endDate', 'managerName'];
+    const validSortBy = ['name', 'projectCode', 'managerName'];
     const normalizedSortBy = validSortBy.includes(sortBy) ? sortBy : 'name';
 
     // 정렬
@@ -134,14 +128,6 @@ export class GetAvailableProjectsHandler
         case 'projectCode':
           aValue = a.projectCode || '';
           bValue = b.projectCode || '';
-          break;
-        case 'startDate':
-          aValue = a.startDate || new Date(0);
-          bValue = b.startDate || new Date(0);
-          break;
-        case 'endDate':
-          aValue = a.endDate || new Date(0);
-          bValue = b.endDate || new Date(0);
           break;
         case 'managerName':
           aValue = a.manager?.name || '';

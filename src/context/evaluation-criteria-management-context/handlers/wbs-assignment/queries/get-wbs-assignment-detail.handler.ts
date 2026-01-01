@@ -61,9 +61,8 @@ export interface WbsAssignmentDetailResult {
     id: string;
     name: string;
     code: string;
-    status: string;
-    startDate: Date;
-    endDate: Date;
+    grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+    priority?: number;
   } | null;
 
   // WBS 항목 정보
@@ -173,9 +172,8 @@ export class GetWbsAssignmentDetailHandler
         'project.id AS project_id',
         'project.name AS project_name',
         'project.projectCode AS project_code',
-        'project.status AS project_status',
-        'project.startDate AS project_startdate',
-        'project.endDate AS project_enddate',
+        'project.grade AS project_grade',
+        'project.priority AS project_priority',
         // WBS 항목 정보
         'wbsItem.id AS wbsitem_id',
         'wbsItem.wbsCode AS wbsitem_wbscode',
@@ -244,9 +242,8 @@ export class GetWbsAssignmentDetailHandler
             id: result.project_id,
             name: result.project_name,
             code: result.project_code,
-            status: result.project_status,
-            startDate: result.project_startdate,
-            endDate: result.project_enddate,
+            grade: result.project_grade || undefined,
+            priority: result.project_priority || undefined,
           }
         : null,
 

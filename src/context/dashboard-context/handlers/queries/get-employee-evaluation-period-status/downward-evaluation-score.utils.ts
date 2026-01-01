@@ -28,30 +28,20 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
   try {
-    // 평가자가 없으면 계산 불가
-    if (!evaluatorIds || evaluatorIds.length === 0) {
-      logger.warn(
-        `1차 평가자가 지정되지 않았습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
-      return null;
-    }
-
-    // 완료된 1차 하향평가 목록 조회
-    // 현재 평가라인에 있는 평가자의 평가만 조회 (평가자 교체 시 이전 평가자 제외)
+    // 점수가 입력된 1차 평가 조회 (평가자 ID 조건 없이 모든 1차 평가 조회)
+    // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
     const downwardEvaluations = await downwardEvaluationRepository.find({
       where: {
         periodId: evaluationPeriodId,
         employeeId: employeeId,
-        evaluatorId: In(evaluatorIds),
         evaluationType: DownwardEvaluationType.PRIMARY,
         deletedAt: IsNull(),
       },
     });
 
-    // 완료된 평가만 필터링
+    // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
-        evaluation.완료되었는가() &&
         evaluation.downwardEvaluationScore !== null &&
         evaluation.downwardEvaluationScore !== undefined,
     );
@@ -177,29 +167,20 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
   try {
-    // 평가자가 없으면 계산 불가
-    if (evaluatorIds.length === 0) {
-      logger.warn(
-        `2차 평가자가 지정되지 않았습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
-      return null;
-    }
-
-    // 현재 평가라인에 있는 2차 평가자의 완료된 하향평가 목록만 조회
+    // 점수가 입력된 2차 평가 조회 (평가자 ID 조건 없이 모든 2차 평가 조회)
+    // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
     const downwardEvaluations = await downwardEvaluationRepository.find({
       where: {
         periodId: evaluationPeriodId,
         employeeId: employeeId,
-        evaluatorId: In(evaluatorIds),
         evaluationType: DownwardEvaluationType.SECONDARY,
         deletedAt: IsNull(),
       },
     });
 
-    // 완료된 평가만 필터링
+    // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
-        evaluation.완료되었는가() &&
         evaluation.downwardEvaluationScore !== null &&
         evaluation.downwardEvaluationScore !== undefined,
     );

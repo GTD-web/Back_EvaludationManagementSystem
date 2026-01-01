@@ -296,7 +296,7 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
 
     const maxSelfEvaluationRate = period.maxSelfEvaluationRate;
 
-    // 관리자에게 제출된 WBS 자기평가 목록 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
+    // 성과달성률(점수)이 입력된 WBS 자기평가 목록 조회 (제출 여부와 무관, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const selfEvaluations = await wbsSelfEvaluationRepository
       .createQueryBuilder('evaluation')
       .leftJoin(
@@ -318,9 +318,7 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
         periodId: evaluationPeriodId,
       })
       .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-      .andWhere('evaluation.submittedToManager = :submittedToManager', {
-        submittedToManager: true,
-      })
+      .andWhere('evaluation.selfEvaluationScore IS NOT NULL')
       .andWhere('evaluation.deletedAt IS NULL')
       .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 조회
       .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회

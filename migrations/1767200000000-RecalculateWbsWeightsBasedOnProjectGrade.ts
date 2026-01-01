@@ -119,12 +119,12 @@ export class RecalculateWbsWeightsBasedOnProjectGrade1767200000000
           }
           projectGroups.get(projectId)!.push(assignment);
 
-          // 프로젝트 우선순위 설정
+          // 프로젝트 우선순위 설정 (서비스 로직과 일치)
           if (!projectPriorityMap.has(projectId)) {
             const grade = assignment.project_grade;
-            const priority = grade
-              ? gradePriorityMap[grade] || 0
-              : assignment.project_priority || 0;
+            // grade가 있으면 gradePriorityMap 사용, 없으면 0
+            // project_priority는 grade가 설정되면 자동 계산되므로, grade가 없으면 priority도 신뢰할 수 없음
+            const priority = grade ? gradePriorityMap[grade] || 0 : 0;
             projectPriorityMap.set(projectId, priority);
           }
         });
@@ -189,17 +189,28 @@ export class RecalculateWbsWeightsBasedOnProjectGrade1767200000000
           }
 
           // 5-6. 가중치 업데이트
-          for (let i = 0; i < rawWeights.length; i++) {
-            const { assignmentId } = rawWeights[i];
-            const normalizedWeight = normalizedWeights[i];
+          // 성능을 위해 배치 업데이트 사용 (VALUES를 사용한 JOIN 업데이트)
+          if (rawWeights.length > 0) {
+            const values: string[] = [];
+            const params: any[] = [];
+            let paramIndex = 1;
+            
+            for (let i = 0; i < rawWeights.length; i++) {
+              const { assignmentId } = rawWeights[i];
+              const normalizedWeight = normalizedWeights[i];
+              values.push(`($${paramIndex}, $${paramIndex + 1})`);
+              params.push(assignmentId, normalizedWeight);
+              paramIndex += 2;
+            }
 
             await queryRunner.query(
               `
-              UPDATE evaluation_wbs_assignment
-              SET weight = $1
-              WHERE id = $2
+              UPDATE evaluation_wbs_assignment ewa
+              SET weight = v.weight::numeric
+              FROM (VALUES ${values.join(', ')}) AS v(id, weight)
+              WHERE ewa.id = v.id::uuid
             `,
-              [normalizedWeight, assignmentId],
+              params,
             );
           }
         }

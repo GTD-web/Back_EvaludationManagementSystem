@@ -33,10 +33,6 @@ export class DownwardEvaluationService {
   async 생성한다(
     createData: CreateDownwardEvaluationData,
   ): Promise<DownwardEvaluation> {
-    this.logger.log(
-      `하향평가 생성 시작 - 피평가자: ${createData.employeeId}, 평가자: ${createData.evaluatorId}, 유형: ${createData.evaluationType}`,
-    );
-
     // 중복 검사 (wbsId 포함)
     await this.중복_검사를_수행한다(
       createData.employeeId,
@@ -54,7 +50,6 @@ export class DownwardEvaluationService {
       const saved =
         await this.downwardEvaluationRepository.save(downwardEvaluation);
 
-      this.logger.log(`하향평가 생성 완료 - ID: ${saved.id}`);
       return saved;
     } catch (error) {
       this.logger.error(
@@ -73,8 +68,6 @@ export class DownwardEvaluationService {
     updateData: UpdateDownwardEvaluationData,
     updatedBy: string,
   ): Promise<DownwardEvaluation> {
-    this.logger.log(`하향평가 수정 시작 - ID: ${id}`);
-
     const downwardEvaluation = await this.조회한다(id);
     if (!downwardEvaluation) {
       throw new DownwardEvaluationNotFoundException(id);
@@ -119,7 +112,6 @@ export class DownwardEvaluationService {
       const saved =
         await this.downwardEvaluationRepository.save(downwardEvaluation);
 
-      this.logger.log(`하향평가 수정 완료 - ID: ${id}`);
       return saved;
     } catch (error) {
       this.logger.error(`하향평가 수정 실패 - ID: ${id}`, error.stack);

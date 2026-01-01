@@ -8,7 +8,8 @@ import {
 } from 'typeorm';
 import { BaseEntity } from '@libs/database/base/base.entity';
 import {
-  ProjectStatus,
+  ProjectGrade,
+  getProjectGradePriority,
   ProjectDto,
   CreateProjectDto,
   UpdateProjectDto,
@@ -44,28 +45,6 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   projectCode?: string;
 
   @Column({
-    type: 'enum',
-    enum: [...Object.values(ProjectStatus)],
-    default: ProjectStatus.ACTIVE,
-    comment: '프로젝트 상태',
-  })
-  status: ProjectStatus;
-
-  @Column({
-    type: 'date',
-    nullable: true,
-    comment: '시작일',
-  })
-  startDate?: Date;
-
-  @Column({
-    type: 'date',
-    nullable: true,
-    comment: '종료일',
-  })
-  endDate?: Date;
-
-  @Column({
     type: 'varchar',
     length: 255,
     nullable: true,
@@ -91,6 +70,25 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   @Index()
   importanceId?: string;
 
+  // 프로젝트 등급
+  @Column({
+    type: 'enum',
+    enum: [...Object.values(ProjectGrade)],
+    nullable: true,
+    comment: '프로젝트 등급 (1A, 1B, 2A, 2B, 3A, 3B)',
+  })
+  @Index()
+  grade?: ProjectGrade;
+
+  // 프로젝트 우선순위 (등급에 따라 자동 설정)
+  @Column({
+    type: 'int',
+    nullable: true,
+    comment: '프로젝트 우선순위 (등급에 따라 자동 설정: 1A=6, 1B=5, 2A=4, 2B=3, 3A=2, 3B=1)',
+  })
+  @Index()
+  priority?: number;
+
   // 상위 프로젝트 ID (FK로 관리, 관계는 서비스 레벨에서 처리)
   @Column({
     type: 'uuid',
@@ -103,25 +101,23 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   constructor(
     name?: string,
     projectCode?: string,
-    status?: ProjectStatus,
-    startDate?: Date,
-    endDate?: Date,
     managerId?: string,
     realPM?: string,
     importanceId?: string,
+    grade?: ProjectGrade,
     parentProjectId?: string,
   ) {
     super();
     if (name) this.name = name;
     if (projectCode) this.projectCode = projectCode;
-    if (status) this.status = status;
-    if (startDate) this.startDate = startDate;
-    if (endDate) this.endDate = endDate;
     if (managerId) this.managerId = managerId;
     if (realPM) this.realPM = realPM;
     if (importanceId) this.importanceId = importanceId;
+    if (grade) {
+      this.grade = grade;
+      this.priority = getProjectGradePriority(grade);
+    }
     if (parentProjectId) this.parentProjectId = parentProjectId;
-    this.status = status || ProjectStatus.ACTIVE;
   }
 
   /**
@@ -138,25 +134,16 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
       // Project 엔티티 필드들 (평가 시스템 전용)
       name: this.name,
       projectCode: this.projectCode,
-      status: this.status,
-      startDate: this.startDate,
-      endDate: this.endDate,
       managerId: this.managerId,
       realPM: this.realPM,
+      importanceId: this.importanceId,
+      grade: this.grade,
+      priority: this.priority,
       parentProjectId: this.parentProjectId,
 
       // 계산된 필드들
       get isDeleted() {
         return this.deletedAt !== null && this.deletedAt !== undefined;
-      },
-      get isActive() {
-        return this.status === ProjectStatus.ACTIVE;
-      },
-      get isCompleted() {
-        return this.status === ProjectStatus.COMPLETED;
-      },
-      get isCancelled() {
-        return this.status === ProjectStatus.CANCELLED;
       },
     };
   }
@@ -170,6 +157,10 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
   static 생성한다(data: CreateProjectDto, createdBy: string): Project {
     const project = new Project();
     Object.assign(project, data);
+    // 등급이 설정되면 우선순위 자동 계산
+    if (data.grade) {
+      project.priority = getProjectGradePriority(data.grade);
+    }
     project.생성자를_설정한다(createdBy);
     return project;
   }
@@ -185,6 +176,14 @@ export class Project extends BaseEntity<ProjectDto> implements IProject {
       Object.entries(data).filter(([_, value]) => value !== undefined),
     );
     Object.assign(this, filteredData);
+    // 등급이 변경되면 우선순위 자동 업데이트
+    if (data.grade !== undefined) {
+      if (data.grade) {
+        this.priority = getProjectGradePriority(data.grade);
+      } else {
+        this.priority = undefined;
+      }
+    }
     this.수정자를_설정한다(updatedBy);
   }
 

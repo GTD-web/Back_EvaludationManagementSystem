@@ -138,6 +138,7 @@ export class ProjectImportanceService {
       { code: '2A', name: '2A', displayOrder: 3 },
       { code: '2B', name: '2B', displayOrder: 4 },
       { code: '3A', name: '3A', displayOrder: 5 },
+      { code: '3B', name: '3B', displayOrder: 6 },
     ];
 
     for (const data of defaultImportances) {

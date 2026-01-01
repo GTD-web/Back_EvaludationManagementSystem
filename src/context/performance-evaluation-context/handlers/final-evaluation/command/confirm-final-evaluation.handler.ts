@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { FinalEvaluationService } from '@domain/core/final-evaluation/final-evaluation.service';
 import { FinalEvaluation } from '@domain/core/final-evaluation/final-evaluation.entity';
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
@@ -23,8 +23,6 @@ export class ConfirmFinalEvaluationCommand {
 export class ConfirmFinalEvaluationHandler
   implements ICommandHandler<ConfirmFinalEvaluationCommand>
 {
-  private readonly logger = new Logger(ConfirmFinalEvaluationHandler.name);
-
   constructor(
     private readonly finalEvaluationService: FinalEvaluationService,
     private readonly transactionManager: TransactionManagerService,
@@ -33,8 +31,6 @@ export class ConfirmFinalEvaluationHandler
 
   async execute(command: ConfirmFinalEvaluationCommand): Promise<void> {
     const { id, confirmedBy } = command;
-
-    this.logger.log('최종평가 확정 핸들러 실행', { id, confirmedBy });
 
     await this.transactionManager.executeTransaction(async (manager) => {
       // 확정 전 최종평가 정보 조회
@@ -64,8 +60,6 @@ export class ConfirmFinalEvaluationHandler
           },
         });
       }
-
-      this.logger.log('최종평가 확정 완료', { id });
     });
   }
 }

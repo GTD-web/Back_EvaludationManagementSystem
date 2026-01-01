@@ -21,6 +21,8 @@ export interface AssignedProjectWithWbs {
   projectId: string;
   projectName: string;
   projectCode: string;
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+  priority?: number;
   assignedAt: Date;
   projectManager?: {
     id: string;

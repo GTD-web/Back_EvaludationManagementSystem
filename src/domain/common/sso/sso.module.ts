@@ -23,7 +23,7 @@ export const SSOService = Symbol('SSOService');
         const config: SSOClientConfig = {
           baseUrl:
             configService.get<string>('SSO_BASE_URL') ||
-            'https://lsso.vercel.app',
+            'http://ec2-43-202-216-71.ap-northeast-2.compute.amazonaws.com:3000',
           clientId: configService.get<string>('SSO_CLIENT_ID') || '',
           clientSecret: configService.get<string>('SSO_CLIENT_SECRET') || '',
           timeoutMs: configService.get<number>('SSO_TIMEOUT_MS') || 30000,

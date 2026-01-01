@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinalEvaluationService } from '@domain/core/final-evaluation/final-evaluation.service';
@@ -34,8 +34,6 @@ export class UpsertFinalEvaluationCommand {
 export class UpsertFinalEvaluationHandler
   implements ICommandHandler<UpsertFinalEvaluationCommand>
 {
-  private readonly logger = new Logger(UpsertFinalEvaluationHandler.name);
-
   constructor(
     private readonly finalEvaluationService: FinalEvaluationService,
     @InjectRepository(FinalEvaluation)
@@ -54,14 +52,6 @@ export class UpsertFinalEvaluationHandler
       actionBy,
     } = command;
 
-    this.logger.log('최종평가 Upsert 핸들러 실행', {
-      employeeId,
-      periodId,
-      evaluationGrade,
-      jobGrade,
-      jobDetailedGrade,
-    });
-
     return await this.transactionManager.executeTransaction(async (manager) => {
       // 기존 최종평가 확인 (employeeId + periodId 조합으로 유니크)
       // 트랜잭션 내에서 조회하기 위해 manager를 사용한 repository를 사용
@@ -79,10 +69,6 @@ export class UpsertFinalEvaluationHandler
 
       if (existingEvaluation) {
         // 기존 평가가 있으면 수정
-        this.logger.log('기존 최종평가 발견 - 수정 진행', {
-          evaluationId: existingEvaluation.id,
-        });
-
         await this.finalEvaluationService.수정한다(
           existingEvaluation.id,
           {
@@ -95,15 +81,9 @@ export class UpsertFinalEvaluationHandler
           manager,
         );
 
-        this.logger.log('최종평가 수정 완료', {
-          evaluationId: existingEvaluation.id,
-        });
-
         return existingEvaluation.id;
       } else {
         // 기존 평가가 없으면 생성
-        this.logger.log('기존 최종평가 없음 - 생성 진행');
-
         const newEvaluation = await this.finalEvaluationService.생성한다(
           {
             employeeId,
@@ -116,10 +96,6 @@ export class UpsertFinalEvaluationHandler
           },
           manager,
         );
-
-        this.logger.log('최종평가 생성 완료', {
-          evaluationId: newEvaluation.id,
-        });
 
         return newEvaluation.id;
       }

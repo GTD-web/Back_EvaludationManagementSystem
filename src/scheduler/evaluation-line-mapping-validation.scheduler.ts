@@ -114,14 +114,6 @@ export class EvaluationLineMappingValidationScheduler {
   }
 
   onModuleInit() {
-    if (this.isEnabled) {
-      this.logger.log(
-        '✅ 평가라인 매핑 검증 스케줄러가 활성화되었습니다. (매 1시간마다 실행)',
-      );
-    } else {
-      this.logger.warn(
-        '⚠️  평가라인 매핑 검증 스케줄러가 비활성화되어 있습니다.',
-      );
-    }
+    // 스케줄러 초기화 완료
   }
 }

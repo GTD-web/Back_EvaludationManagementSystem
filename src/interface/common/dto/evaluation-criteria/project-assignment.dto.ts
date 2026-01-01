@@ -407,25 +407,18 @@ export class ProjectInfoDto {
   })
   projectCode: string;
 
-  @ApiProperty({
-    description: '상태',
-    example: 'ACTIVE',
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
   })
-  status: string;
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
 
-  @ApiProperty({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-    required: false,
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
   })
-  startDate?: Date;
-
-  @ApiProperty({
-    description: '종료일',
-    example: '2024-12-31T23:59:59.999Z',
-    required: false,
-  })
-  endDate?: Date;
+  priority?: number;
 
   @ApiProperty({
     description: '프로젝트 매니저 ID',
@@ -762,26 +755,6 @@ export class AvailableProjectInfoDto {
   })
   projectCode?: string;
 
-  @ApiProperty({
-    description: '상태',
-    example: 'ACTIVE',
-  })
-  status: string;
-
-  @ApiProperty({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-    required: false,
-  })
-  startDate?: Date;
-
-  @ApiProperty({
-    description: '종료일',
-    example: '2024-12-31T23:59:59.999Z',
-    required: false,
-  })
-  endDate?: Date;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 정보',
     type: ProjectManagerInfoDto,
@@ -794,6 +767,21 @@ export class AvailableProjectInfoDto {
     required: false,
   })
   realPM?: string | null;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
+    required: false,
+  })
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
+
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
+    required: false,
+  })
+  priority?: number;
 }
 
 /**

@@ -768,9 +768,44 @@ export class EvaluationPeriod
       return null;
     }
 
-    const gradeRange = this.gradeRanges.find(
-      (range) => score >= range.minRange && score <= range.maxRange,
+    // 등급 범위를 minRange 기준으로 내림차순 정렬 (높은 점수부터 확인)
+    const sortedRanges = [...this.gradeRanges].sort(
+      (a, b) => b.minRange - a.minRange,
     );
+
+    // 점수가 포함되는 등급 범위 찾기
+    // 경계값 처리: minRange는 포함, maxRange는 제외 (다음 등급의 minRange와 겹치지 않도록)
+    // 단, 가장 낮은 등급의 maxRange는 포함
+    let gradeRange: GradeRange | undefined = undefined;
+
+    for (let i = 0; i < sortedRanges.length; i++) {
+      const range = sortedRanges[i];
+      const isLastRange = i === sortedRanges.length - 1;
+
+      // 마지막 등급(가장 낮은 등급)은 maxRange 포함, 그 외는 maxRange 제외
+      if (
+        score >= range.minRange &&
+        (isLastRange ? score <= range.maxRange : score < range.maxRange)
+      ) {
+        gradeRange = range;
+        break;
+      }
+    }
+
+    // 위에서 찾지 못한 경우, 가장 가까운 등급 찾기 (경계값 처리)
+    if (!gradeRange) {
+      // 점수가 모든 등급 범위를 벗어난 경우, 가장 가까운 등급 선택
+      for (const range of sortedRanges) {
+        if (score >= range.minRange) {
+          gradeRange = range;
+          break;
+        }
+      }
+      // 여전히 찾지 못한 경우 (점수가 가장 낮은 등급보다도 낮은 경우)
+      if (!gradeRange && sortedRanges.length > 0) {
+        gradeRange = sortedRanges[sortedRanges.length - 1]; // 가장 낮은 등급
+      }
+    }
 
     if (!gradeRange) {
       return null;

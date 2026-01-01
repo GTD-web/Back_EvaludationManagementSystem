@@ -22,8 +22,33 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class RecalculateWbsWeightsBasedOnProjectGrade1767200000000
   implements MigrationInterface
 {
+  // 롤백을 위한 임시 백업 테이블 이름
+  private readonly BACKUP_TABLE_NAME = 'migration_wbs_weight_backup_1767200000000';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     console.log('🔄 WBS 가중치를 프로젝트 등급 기반으로 재계산 시작...');
+
+    // 0. 기존 가중치 백업 (롤백을 위해)
+    console.log('💾 기존 가중치 백업 중...');
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS ${this.BACKUP_TABLE_NAME} (
+        id UUID PRIMARY KEY,
+        weight NUMERIC(5, 2) NOT NULL
+      )
+    `);
+
+    await queryRunner.query(`
+      INSERT INTO ${this.BACKUP_TABLE_NAME} (id, weight)
+      SELECT id, weight
+      FROM evaluation_wbs_assignment
+      WHERE "deletedAt" IS NULL
+    `);
+
+    const backupCount = await queryRunner.query(`
+      SELECT COUNT(*) as count
+      FROM ${this.BACKUP_TABLE_NAME}
+    `);
+    console.log(`  ✅ ${backupCount[0]?.count || 0}개 가중치 백업 완료`);
 
     // 프로젝트 등급별 우선순위 맵
     const gradePriorityMap: Record<string, number> = {
@@ -223,12 +248,56 @@ export class RecalculateWbsWeightsBasedOnProjectGrade1767200000000
     console.log(
       `\n✅ 가중치 재계산 완료: ${totalRecalculated}개 직원-평가기간 조합, ${totalAssignments}개 WBS 할당`,
     );
+    console.log(`💾 백업 테이블: ${this.BACKUP_TABLE_NAME} (롤백 시 사용됨)`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // 롤백 시 기존 가중치를 복원할 수 없으므로 경고만 출력
-    console.warn(
-      '⚠️  가중치 재계산 마이그레이션은 롤백할 수 없습니다. 백업에서 복원하거나 수동으로 재계산해야 합니다.',
-    );
+    console.log('🔄 WBS 가중치 롤백 시작...');
+
+    // 백업 테이블 존재 여부 확인
+    const backupTableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = '${this.BACKUP_TABLE_NAME}'
+      )
+    `);
+
+    if (!backupTableExists[0]?.exists) {
+      console.warn(
+        `⚠️  백업 테이블(${this.BACKUP_TABLE_NAME})이 존재하지 않습니다. 롤백할 수 없습니다.`,
+      );
+      return;
+    }
+
+    // 백업된 가중치 개수 확인
+    const backupCount = await queryRunner.query(`
+      SELECT COUNT(*) as count
+      FROM ${this.BACKUP_TABLE_NAME}
+    `);
+    console.log(`📊 백업된 가중치: ${backupCount[0]?.count || 0}개`);
+
+    // 백업된 가중치 복원
+    await queryRunner.query(`
+      UPDATE evaluation_wbs_assignment ewa
+      SET weight = b.weight::numeric
+      FROM ${this.BACKUP_TABLE_NAME} b
+      WHERE ewa.id = b.id::uuid
+        AND ewa."deletedAt" IS NULL
+    `);
+
+    const restoredCount = await queryRunner.query(`
+      SELECT COUNT(*) as count
+      FROM evaluation_wbs_assignment ewa
+      INNER JOIN ${this.BACKUP_TABLE_NAME} b ON ewa.id = b.id::uuid
+      WHERE ewa."deletedAt" IS NULL
+    `);
+    console.log(`✅ ${restoredCount[0]?.count || 0}개 가중치 복원 완료`);
+
+    // 백업 테이블 삭제
+    await queryRunner.query(`DROP TABLE IF EXISTS ${this.BACKUP_TABLE_NAME}`);
+    console.log(`🗑️  백업 테이블 삭제 완료`);
+
+    console.log('✅ 롤백 완료');
   }
 }

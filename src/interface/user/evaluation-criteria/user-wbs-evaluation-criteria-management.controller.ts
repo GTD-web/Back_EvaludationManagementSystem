@@ -26,6 +26,7 @@ export class UserWbsEvaluationCriteriaManagementController {
 
   /**
    * WBS 평가기준 저장 (Upsert: wbsItemId 기준으로 자동 생성/수정)
+   * isAdditional 필드를 통해 추가 과제 여부를 설정할 수 있습니다.
    */
   @UpsertWbsEvaluationCriteria()
   async upsertWbsEvaluationCriteria(
@@ -39,6 +40,7 @@ export class UserWbsEvaluationCriteriaManagementController {
       dto.criteria,
       dto.importance,
       dto.subProject,
+      dto.isAdditional,
       actionBy,
     );
   }

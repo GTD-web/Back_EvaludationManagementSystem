@@ -93,23 +93,13 @@ export class EvaluationQuestionManagementService implements OnModuleInit {
    */
   async onModuleInit(): Promise<void> {
     try {
-      this.logger.log('모듈 초기화: 파트장 평가 질문 그룹 확인 중...');
-
       // "파트장 평가 질문" 그룹 존재 여부 확인
       const existingGroup = await this.questionGroupRepository.findOne({
         where: { name: '파트장 평가 질문' },
       });
 
       if (!existingGroup) {
-        this.logger.log(
-          '파트장 평가 질문 그룹이 없습니다. 자동 생성을 시작합니다...',
-        );
         await this.생성_파트장평가질문그룹();
-        this.logger.log('파트장 평가 질문 그룹이 성공적으로 생성되었습니다.');
-      } else {
-        this.logger.log(
-          `파트장 평가 질문 그룹이 이미 존재합니다. (ID: ${existingGroup.id})`,
-        );
       }
     } catch (error) {
       this.logger.error(

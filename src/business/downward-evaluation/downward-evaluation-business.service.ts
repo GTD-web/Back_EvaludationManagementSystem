@@ -148,8 +148,6 @@ export class DownwardEvaluationBusinessService {
     //   },
     // });
 
-    this.logger.log('1차 하향평가 저장 완료', { evaluationId });
-
     return evaluationId;
   }
 

@@ -70,17 +70,10 @@ export class NotificationServiceImpl
     }
 
     try {
-      this.logger.log(
-        `알림 서비스 초기화 시작... baseUrl: ${this.config.baseUrl}`,
-      );
-      const startTime = Date.now();
-
       // 헬스체크 엔드포인트가 있다면 호출 (선택사항)
       // await this.httpClient.get('/health');
 
-      const elapsedTime = Date.now() - startTime;
       this.initialized = true;
-      this.logger.log(`알림 서비스 초기화 완료 (소요 시간: ${elapsedTime}ms)`);
     } catch (error) {
       this.logger.error(
         `알림 서비스 초기화 실패: ${error.message}`,

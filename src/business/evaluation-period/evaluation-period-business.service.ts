@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { EvaluationPeriodManagementContextService } from '../../context/evaluation-period-management-context/evaluation-period-management.service';
 import { EvaluationCriteriaManagementService } from '../../context/evaluation-criteria-management-context/evaluation-criteria-management.service';
-import { CreateEvaluationPeriodMinimalDto } from '../../context/evaluation-period-management-context/interfaces/evaluation-period-creation.interface';
+import { CreateEvaluationPeriodMinimalDto, UpdateEvaluationPeriodBasicDto } from '../../context/evaluation-period-management-context/interfaces/evaluation-period-creation.interface';
 import { CreateEvaluationPeriodWithTargetsResult } from '../../context/evaluation-period-management-context/handlers/evaluation-period/commands/create-evaluation-period-with-auto-targets.handler';
 import { RegisterWithAutoEvaluatorResult } from '../../context/evaluation-period-management-context/handlers/evaluation-target/commands/register-evaluation-target-with-auto-evaluator.handler';
 import { EvaluationPeriodPhase } from '../../domain/core/evaluation-period/evaluation-period.types';
 import type { EvaluationPeriodDto } from '../../domain/core/evaluation-period/evaluation-period.types';
+import { EvaluationPeriodService } from '../../domain/core/evaluation-period/evaluation-period.service';
+import { RecalculateAllEmployeesWeightForPeriodCommand } from '../../context/evaluation-criteria-management-context/handlers/wbs-assignment/commands/recalculate-all-employees-weight-for-period.handler';
 
 /**
  * 평가기간 비즈니스 서비스
@@ -20,6 +23,8 @@ export class EvaluationPeriodBusinessService {
   constructor(
     private readonly evaluationPeriodManagementService: EvaluationPeriodManagementContextService,
     private readonly evaluationCriteriaManagementService: EvaluationCriteriaManagementService,
+    private readonly evaluationPeriodService: EvaluationPeriodService,
+    private readonly commandBus: CommandBus,
   ) {}
 
   /**
@@ -141,5 +146,74 @@ export class EvaluationPeriodBusinessService {
     this.logger.log(`자동 단계 전이 완료 - 전이된 평가기간 수: ${result}`);
 
     return result;
+  }
+
+  /**
+   * 평가기간 기본정보를 수정하고 maxSelfEvaluationRate 변경 시 가중치 재계산을 트리거한다
+   */
+  async 평가기간기본정보_수정한다(
+    periodId: string,
+    updateData: UpdateEvaluationPeriodBasicDto,
+    updatedBy: string,
+  ): Promise<EvaluationPeriodDto> {
+    this.logger.log(
+      `평가기간 기본정보 수정 비즈니스 로직 시작 - 평가기간: ${periodId}`,
+    );
+
+    // 기존 maxSelfEvaluationRate 조회
+    const existingPeriod = await this.evaluationPeriodService.ID로_조회한다(
+      periodId,
+    );
+    if (!existingPeriod) {
+      throw new Error(`평가기간을 찾을 수 없습니다: ${periodId}`);
+    }
+
+    const oldMaxSelfEvaluationRate = existingPeriod.maxSelfEvaluationRate;
+    const newMaxSelfEvaluationRate = updateData.maxSelfEvaluationRate;
+
+    // 평가기간 기본정보 수정
+    const updatedPeriod =
+      await this.evaluationPeriodManagementService.평가기간기본정보_수정한다(
+        periodId,
+        updateData,
+        updatedBy,
+      );
+
+    // maxSelfEvaluationRate 변경 감지 및 비동기 재계산 트리거
+    if (
+      newMaxSelfEvaluationRate !== undefined &&
+      newMaxSelfEvaluationRate !== oldMaxSelfEvaluationRate
+    ) {
+      this.logger.log(
+        `maxSelfEvaluationRate 변경 감지 - 평가기간: ${periodId}, ` +
+          `기존: ${oldMaxSelfEvaluationRate}, 신규: ${newMaxSelfEvaluationRate}`,
+      );
+
+      // 비동기로 재계산 (Promise를 기다리지 않음)
+      setImmediate(async () => {
+        try {
+          this.logger.log(
+            `평가기간 전체 직원 가중치 재계산 시작 (비동기) - 평가기간: ${periodId}`,
+          );
+          await this.commandBus.execute(
+            new RecalculateAllEmployeesWeightForPeriodCommand(periodId),
+          );
+          this.logger.log(
+            `평가기간 전체 직원 가중치 재계산 완료 (비동기) - 평가기간: ${periodId}`,
+          );
+        } catch (error: any) {
+          this.logger.error(
+            `가중치 재계산 실패 (비동기) - 평가기간: ${periodId}, 오류: ${error?.message || String(error)}`,
+            error?.stack,
+          );
+        }
+      });
+    }
+
+    this.logger.log(
+      `평가기간 기본정보 수정 완료 - 평가기간: ${periodId}`,
+    );
+
+    return updatedPeriod;
   }
 }

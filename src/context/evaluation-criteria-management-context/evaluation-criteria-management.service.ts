@@ -872,6 +872,7 @@ export class EvaluationCriteriaManagementService
     criteria: string,
     importance: number,
     subProject: string | undefined,
+    isAdditional: boolean | undefined,
     actionBy: string,
   ): Promise<WbsEvaluationCriteriaDto> {
     // wbsItemId로 기존 평가기준 조회
@@ -883,13 +884,13 @@ export class EvaluationCriteriaManagementService
       const criteriaToUpdate = existingCriteria[0];
       return await this.WBS_평가기준을_수정한다(
         criteriaToUpdate.id,
-        { criteria, importance, subProject },
+        { criteria, importance, subProject, isAdditional },
         actionBy,
       );
     } else {
       // 기존 평가기준이 없으면 생성
       return await this.WBS_평가기준을_생성한다(
-        { wbsItemId, criteria, importance, subProject },
+        { wbsItemId, criteria, importance, subProject, isAdditional },
         actionBy,
       );
     }

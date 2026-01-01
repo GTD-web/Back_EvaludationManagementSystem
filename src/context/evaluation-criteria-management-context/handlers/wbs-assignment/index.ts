@@ -34,6 +34,11 @@ export {
   ResetEmployeeWbsAssignmentsHandler,
 } from './commands/reset-employee-wbs-assignments.handler';
 
+export {
+  RecalculateAllEmployeesWeightForPeriodCommand,
+  RecalculateAllEmployeesWeightForPeriodHandler,
+} from './commands/recalculate-all-employees-weight-for-period.handler';
+
 // Queries
 export {
   GetWbsAssignmentListQuery,
@@ -75,6 +80,7 @@ import { ChangeWbsAssignmentOrderHandler } from './commands/change-wbs-assignmen
 import { ResetPeriodWbsAssignmentsHandler } from './commands/reset-period-wbs-assignments.handler';
 import { ResetProjectWbsAssignmentsHandler } from './commands/reset-project-wbs-assignments.handler';
 import { ResetEmployeeWbsAssignmentsHandler } from './commands/reset-employee-wbs-assignments.handler';
+import { RecalculateAllEmployeesWeightForPeriodHandler } from './commands/recalculate-all-employees-weight-for-period.handler';
 import { GetWbsAssignmentListHandler } from './queries/get-wbs-assignment-list.handler';
 import { GetEmployeeWbsAssignmentsHandler } from './queries/get-employee-wbs-assignments.handler';
 import { GetProjectWbsAssignmentsHandler } from './queries/get-project-wbs-assignments.handler';
@@ -90,6 +96,7 @@ export const WBS_ASSIGNMENT_COMMAND_HANDLERS = [
   ResetPeriodWbsAssignmentsHandler,
   ResetProjectWbsAssignmentsHandler,
   ResetEmployeeWbsAssignmentsHandler,
+  RecalculateAllEmployeesWeightForPeriodHandler,
 ];
 
 export const WBS_ASSIGNMENT_QUERY_HANDLERS = [

@@ -123,11 +123,6 @@ export class WbsAssignmentBusinessService {
         params.assignedBy,
       );
 
-    this.logger.log('WBS별 평가라인 구성 완료', {
-      createdLines: wbsEvaluationLineResult.createdLines,
-      createdMappings: wbsEvaluationLineResult.createdMappings,
-    });
-
     // 5. 활동 내역 기록
     try {
       await this.activityLogContextService.활동내역을_기록한다({
@@ -1456,11 +1451,6 @@ export class WbsAssignmentBusinessService {
         params.createdBy,
       );
 
-    this.logger.log('WBS별 평가라인 구성 완료', {
-      createdLines: wbsEvaluationLineResult.createdLines,
-      createdMappings: wbsEvaluationLineResult.createdMappings,
-    });
-
     // 7. 활동 내역 기록
     try {
       await this.activityLogContextService.활동내역을_기록한다({
@@ -1499,12 +1489,6 @@ export class WbsAssignmentBusinessService {
       targetIndex, // 삽입 위치 인덱스
     );
 
-    this.logger.log('WBS 사이에 생성, 할당, 평가기준 생성, 평가라인 구성 완료', {
-      wbsItemId: wbsItem.id,
-      assignmentId: assignment.id,
-      displayOrder: assignment.displayOrder,
-    });
-
     return {
       wbsItem,
       assignment,
@@ -1530,14 +1514,6 @@ export class WbsAssignmentBusinessService {
     newWbsItemId?: string,
     targetIndex?: number,
   ): Promise<void> {
-    this.logger.log('WBS 할당 순서 재정렬 시작', {
-      employeeId,
-      projectId,
-      periodId,
-      newWbsItemId,
-      targetIndex,
-    });
-
     // 1. 전체 할당 조회
     const allAssignments =
       await this.evaluationCriteriaManagementService.WBS_할당_목록을_조회한다(
@@ -1579,35 +1555,13 @@ export class WbsAssignmentBusinessService {
     let finalSortedAssignments = [...sortedExistingAssignments];
     if (newAssignment && targetIndex !== undefined) {
       finalSortedAssignments.splice(targetIndex, 0, newAssignment);
-      this.logger.log('새 WBS 삽입', {
-        newWbsItemId,
-        targetIndex,
-        wbsItemId: newAssignment.wbsItemId,
-      });
     }
-
-    this.logger.log('정렬된 WBS 할당 목록', {
-      count: finalSortedAssignments.length,
-      assignments: finalSortedAssignments.map((a, index) => ({
-        index,
-        wbsItemId: a.wbsItemId,
-        currentDisplayOrder: a.displayOrder,
-        willBeDisplayOrder: index,
-      })),
-    });
 
     // 4. displayOrder를 0부터 순차적으로 재설정 (Repository 직접 사용)
     const updatePromises: Promise<UpdateResult>[] = [];
     for (let i = 0; i < finalSortedAssignments.length; i++) {
       const assignment = finalSortedAssignments[i];
       if (assignment.displayOrder !== i) {
-        this.logger.log('displayOrder 업데이트 예정', {
-          assignmentId: assignment.id,
-          wbsItemId: assignment.wbsItemId,
-          oldOrder: assignment.displayOrder,
-          newOrder: i,
-        });
-
         // Repository를 직접 사용하여 displayOrder와 updatedAt, updatedBy 업데이트
         const updatePromise = this.wbsAssignmentRepository.update(
           { id: assignment.id },
@@ -1624,11 +1578,6 @@ export class WbsAssignmentBusinessService {
 
     // 모든 업데이트 완료 대기
     await Promise.all(updatePromises);
-
-    this.logger.log('WBS 할당 순서 재정렬 완료', {
-      count: finalSortedAssignments.length,
-      updatedCount: updatePromises.length,
-    });
   }
 
   /**

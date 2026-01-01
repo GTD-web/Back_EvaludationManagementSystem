@@ -158,8 +158,8 @@ export async function 자기평가_진행_상태를_조회한다(
   let totalScore: number | null = null;
   let grade: string | null = null;
 
-  // 모든 WBS가 완료된 경우에만 점수와 등급을 계산
-  if (totalMappingCount > 0 && completedMappingCount === totalMappingCount) {
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  if (totalMappingCount > 0) {
     totalScore = await 가중치_기반_자기평가_점수를_계산한다(
       evaluationPeriodId,
       employeeId,
@@ -296,7 +296,7 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
 
     const maxSelfEvaluationRate = period.maxSelfEvaluationRate;
 
-    // 관리자에게 제출된 WBS 자기평가 목록 조회 (소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
+    // 성과달성률(점수)이 입력된 WBS 자기평가 목록 조회 (제출 여부와 무관, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const selfEvaluations = await wbsSelfEvaluationRepository
       .createQueryBuilder('evaluation')
       .leftJoin(
@@ -318,9 +318,7 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
         periodId: evaluationPeriodId,
       })
       .andWhere('evaluation.employeeId = :employeeId', { employeeId })
-      .andWhere('evaluation.submittedToManager = :submittedToManager', {
-        submittedToManager: true,
-      })
+      .andWhere('evaluation.selfEvaluationScore IS NOT NULL')
       .andWhere('evaluation.deletedAt IS NULL')
       .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 조회
       .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회
@@ -393,19 +391,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       const weight = weightMap.get(evaluation.wbsItemId)!; // 이미 필터링했으므로 !로 단언
       const score = evaluation.selfEvaluationScore || 0;
 
-      logger.log(
-        `[DEBUG] 자기평가 - WBS ${evaluation.wbsItemId}: 점수=${score}, 가중치=${weight}%, 가중 점수=${((weight / 100) * score).toFixed(2)}`,
-      );
-
-      // 가중치 적용: (weight / 100) × score
-      // 점수는 0 ~ maxSelfEvaluationRate 범위를 유지
-      totalWeightedScore += (weight / 100) * score;
-      totalWeight += weight;
+      // 가중치 적용: (weight / maxSelfEvaluationRate) × score
+      totalWeightedScore += (weight / maxSelfEvaluationRate) * score;
+      totalWeight += weight; // totalWeight는 여전히 원본 가중치 합계
     });
-
-    logger.log(
-      `[DEBUG] 자기평가 - 총 가중 점수: ${totalWeightedScore.toFixed(2)}, 총 가중치: ${totalWeight}%`,
-    );
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
@@ -415,10 +404,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       return null;
     }
 
-    // 가중치 합이 100이 아닌 경우 정규화 (프로젝트 할당 취소 등으로 가중치가 변경된 경우)
+    // 가중치 합이 maxSelfEvaluationRate가 아닌 경우 정규화
     const normalizedScore =
-      totalWeight !== 100
-        ? totalWeightedScore * (100 / totalWeight)
+      totalWeight !== maxSelfEvaluationRate
+        ? totalWeightedScore * (maxSelfEvaluationRate / totalWeight)
         : totalWeightedScore;
 
     // 소수점일 때는 내림을 통해 정수로 변환

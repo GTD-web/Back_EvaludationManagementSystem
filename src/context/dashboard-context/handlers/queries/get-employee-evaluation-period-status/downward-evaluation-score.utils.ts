@@ -28,30 +28,20 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
   try {
-    // 평가자가 없으면 계산 불가
-    if (!evaluatorIds || evaluatorIds.length === 0) {
-      logger.warn(
-        `1차 평가자가 지정되지 않았습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
-      return null;
-    }
-
-    // 완료된 1차 하향평가 목록 조회
-    // 현재 평가라인에 있는 평가자의 평가만 조회 (평가자 교체 시 이전 평가자 제외)
+    // 점수가 입력된 1차 평가 조회 (평가자 ID 조건 없이 모든 1차 평가 조회)
+    // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
     const downwardEvaluations = await downwardEvaluationRepository.find({
       where: {
         periodId: evaluationPeriodId,
         employeeId: employeeId,
-        evaluatorId: In(evaluatorIds),
         evaluationType: DownwardEvaluationType.PRIMARY,
         deletedAt: IsNull(),
       },
     });
 
-    // 완료된 평가만 필터링
+    // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
-        evaluation.완료되었는가() &&
         evaluation.downwardEvaluationScore !== null &&
         evaluation.downwardEvaluationScore !== undefined,
     );
@@ -129,19 +119,10 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       const weight = weightMap.get(evaluation.wbsId)!; // 이미 필터링했으므로 !로 단언
       const score = evaluation.downwardEvaluationScore || 0;
 
-      logger.log(
-        `[DEBUG] 1차 하향평가 - WBS ${evaluation.wbsId}: 점수=${score}, 가중치=${weight}%, 가중 점수=${((weight / 100) * score).toFixed(2)}`,
-      );
-
-      // 가중치 적용: (weight / 100) × score
-      // 점수는 0 ~ maxRate 범위를 유지
-      totalWeightedScore += (weight / 100) * score;
+      // 가중치 적용: (weight / maxRate) × score
+      totalWeightedScore += (weight / maxRate) * score;
       totalWeight += weight;
     });
-
-    logger.log(
-      `[DEBUG] 1차 하향평가 - 총 가중 점수: ${totalWeightedScore.toFixed(2)}, 총 가중치: ${totalWeight}%`,
-    );
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
@@ -151,14 +132,14 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       return null;
     }
 
-    // 가중치 합이 100이 아닌 경우 정규화 (프로젝트 할당 취소 등으로 가중치가 변경된 경우)
+    // 가중치 합이 maxRate가 아닌 경우 정규화
     const finalScore =
-      totalWeight !== 100
-        ? totalWeightedScore * (100 / totalWeight)
+      totalWeight !== maxRate
+        ? totalWeightedScore * (maxRate / totalWeight)
         : totalWeightedScore;
 
     logger.log(
-      `가중치 기반 1차 하향평가 점수 계산 완료: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight}%, 최대값: ${maxRate}) (피평가자: ${employeeId}, 평가자: ${evaluatorIds.join(', ')}, 평가기간: ${evaluationPeriodId})`,
+      `가중치 기반 1차 하향평가 점수 계산 완료: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight.toFixed(2)}, 최대값: ${maxRate}) (피평가자: ${employeeId}, 평가자: ${evaluatorIds.join(', ')}, 평가기간: ${evaluationPeriodId})`,
     );
 
     return Math.round(finalScore * 100) / 100; // 소수점 2자리로 반올림
@@ -186,29 +167,20 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
   try {
-    // 평가자가 없으면 계산 불가
-    if (evaluatorIds.length === 0) {
-      logger.warn(
-        `2차 평가자가 지정되지 않았습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
-      return null;
-    }
-
-    // 현재 평가라인에 있는 2차 평가자의 완료된 하향평가 목록만 조회
+    // 점수가 입력된 2차 평가 조회 (평가자 ID 조건 없이 모든 2차 평가 조회)
+    // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
     const downwardEvaluations = await downwardEvaluationRepository.find({
       where: {
         periodId: evaluationPeriodId,
         employeeId: employeeId,
-        evaluatorId: In(evaluatorIds),
         evaluationType: DownwardEvaluationType.SECONDARY,
         deletedAt: IsNull(),
       },
     });
 
-    // 완료된 평가만 필터링
+    // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
-        evaluation.완료되었는가() &&
         evaluation.downwardEvaluationScore !== null &&
         evaluation.downwardEvaluationScore !== undefined,
     );
@@ -287,9 +259,8 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
       const averageScore =
         scores.reduce((sum, score) => sum + score, 0) / scores.length;
 
-      // 가중치 적용: (weight / 100) × averageScore
-      // 점수는 0 ~ maxRate 범위를 유지
-      totalWeightedScore += (weight / 100) * averageScore;
+      // 가중치 적용: (weight / maxRate) × averageScore
+      totalWeightedScore += (weight / maxRate) * averageScore;
       totalWeight += weight;
     });
 
@@ -301,10 +272,10 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
       return null;
     }
 
-    // 가중치 합이 100이 아닌 경우 정규화 (프로젝트 할당 취소 등으로 가중치가 변경된 경우)
+    // 가중치 합이 maxRate가 아닌 경우 정규화
     const finalScore =
-      totalWeight !== 100
-        ? totalWeightedScore * (100 / totalWeight)
+      totalWeight !== maxRate
+        ? totalWeightedScore * (maxRate / totalWeight)
         : totalWeightedScore;
 
     logger.log(

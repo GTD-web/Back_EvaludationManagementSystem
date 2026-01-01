@@ -39,6 +39,7 @@ import { EvaluationPeriodEmployeeMappingModule } from '@domain/core/evaluation-p
 import { EvaluationPeriodEmployeeMapping } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.entity';
 import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { WbsEvaluationCriteria } from '@domain/core/wbs-evaluation-criteria/wbs-evaluation-criteria.entity';
+import { WbsSelfEvaluation } from '@domain/core/wbs-self-evaluation/wbs-self-evaluation.entity';
 
 import { WbsItemModule } from '@domain/common/wbs-item/wbs-item.module';
 import { WbsAssignmentWeightCalculationService } from './services/wbs-assignment-weight-calculation.service';
@@ -70,8 +71,10 @@ import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evalu
       EvaluationPeriodEmployeeMapping,
       EvaluationWbsAssignment,
       WbsEvaluationCriteria,
+      WbsSelfEvaluation,
       EvaluationLine,
       EvaluationLineMapping,
+      EvaluationProjectAssignment,
     ]),
     EvaluationProjectAssignmentModule,
     EvaluationWbsAssignmentModule,

@@ -43,7 +43,8 @@
     "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d typeorm.config.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d typeorm.config.ts",
-    "migration:show": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d typeorm.config.ts"
+    "migration:show": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d typeorm.config.ts",
+    "migrate:wbs-weights": "ts-node -r tsconfig-paths/register scripts/migrate-wbs-weights-to-project-grade.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

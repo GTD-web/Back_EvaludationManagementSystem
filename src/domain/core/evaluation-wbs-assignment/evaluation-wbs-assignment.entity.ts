@@ -131,10 +131,16 @@ export class EvaluationWbsAssignment
 
   /**
    * 가중치를 설정한다
+   * 
+   * 가중치는 평가기간의 maxSelfEvaluationRate를 기준으로 정규화되므로,
+   * 0 이상의 값이면 유효합니다. 상한선은 평가기간별로 다를 수 있습니다.
    */
   가중치를_설정한다(weight: number): void {
-    if (weight < 0 || weight > 100) {
-      throw new Error('가중치는 0~100 사이여야 합니다.');
+    if (weight < 0 || !Number.isFinite(weight)) {
+      throw new Error('가중치는 0 이상의 유한한 값이어야 합니다.');
+    }
+    if (Number.isNaN(weight)) {
+      throw new Error('가중치는 NaN이 될 수 없습니다.');
     }
     this.weight = weight;
   }

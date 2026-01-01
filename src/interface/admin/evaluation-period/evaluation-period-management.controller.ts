@@ -502,7 +502,7 @@ export class EvaluationPeriodManagementController {
       description: updateData.description,
       maxSelfEvaluationRate: updateData.maxSelfEvaluationRate,
     };
-    return await this.evaluationPeriodManagementService.평가기간기본정보_수정한다(
+    return await this.evaluationPeriodBusinessService.평가기간기본정보_수정한다(
       periodId,
       contextDto,
       updatedBy,

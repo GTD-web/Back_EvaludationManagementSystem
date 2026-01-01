@@ -1,0 +1,422 @@
+{
+  "timestamp": "2026-01-01T12:51:58.105Z",
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0
+  },
+  "testResults": [
+    {
+      "testName": "여러 직원의 가중치가 올바르게 재계산되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:44.115Z",
+      "endTime": "2026-01-01T12:51:44.164Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "총 직원 수가 올바르게 반환되어야 함",
+          "expected": 3,
+          "actual": 3,
+          "passed": true
+        },
+        {
+          "description": "성공한 직원 수가 올바르게 반환되어야 함",
+          "expected": 3,
+          "actual": 3,
+          "passed": true
+        },
+        {
+          "description": "실패한 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "description": "직원1의 가중치가 올바르게 계산되어야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        },
+        {
+          "description": "직원2의 가중치가 올바르게 계산되어야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        },
+        {
+          "description": "직원3의 가중치가 올바르게 계산되어야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 3,
+          "successCount": 3,
+          "errorCount": 0
+        },
+        "weights": {
+          "employee1": 120,
+          "employee2": 120,
+          "employee3": 120
+        }
+      }
+    },
+    {
+      "testName": "할당된 직원이 없을 때 올바르게 처리되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:44.263Z",
+      "endTime": "2026-01-01T12:51:44.266Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "총 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "description": "성공한 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "description": "실패한 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 0,
+          "successCount": 0,
+          "errorCount": 0
+        }
+      }
+    },
+    {
+      "testName": "복잡한 프로젝트 조합에서 가중치가 올바르게 재계산되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:44.366Z",
+      "endTime": "2026-01-01T12:51:44.389Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "직원1의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 1,
+          "successCount": 1,
+          "errorCount": 0
+        },
+        "totalWeight": 120,
+        "weights": [
+          {
+            "wbsItemId": "72abe2bb-8ee3-4ca3-a0ac-4b9f25796204",
+            "weight": 60
+          },
+          {
+            "wbsItemId": "8ae32ef8-b4ac-44a3-a990-a87ea5b89466",
+            "weight": 60
+          }
+        ]
+      }
+    },
+    {
+      "testName": "대량 직원(10명 이상)의 가중치가 올바르게 재계산되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:44.488Z",
+      "endTime": "2026-01-01T12:51:44.796Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "총 직원 수가 15명이어야 함",
+          "expected": 15,
+          "actual": 15,
+          "passed": true
+        },
+        {
+          "description": "성공한 직원 수가 15명이어야 함",
+          "expected": 15,
+          "actual": 15,
+          "passed": true
+        },
+        {
+          "description": "실패한 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "description": "모든 직원의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 15,
+          "actual": 15,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 15,
+          "successCount": 15,
+          "errorCount": 0
+        },
+        "employeeCount": 15,
+        "executionTimeMs": 70,
+        "correctWeightCount": 15,
+        "sampleWeights": [
+          {
+            "employeeId": "043a69ce-6d65-493c-9145-04bf8c46dd6f",
+            "totalWeight": 120
+          },
+          {
+            "employeeId": "1afec7cc-4019-4b6f-a024-dea58b4105a6",
+            "totalWeight": 120
+          },
+          {
+            "employeeId": "311427f3-bcdb-4191-8413-7021ce6add01",
+            "totalWeight": 120
+          },
+          {
+            "employeeId": "3165d8ed-4909-4f17-8660-1996029c3baf",
+            "totalWeight": 120
+          },
+          {
+            "employeeId": "4cdc7565-4e31-4fbd-861f-e518b92b640b",
+            "totalWeight": 120
+          }
+        ]
+      }
+    },
+    {
+      "testName": "직원당 여러 프로젝트 할당 시 가중치가 올바르게 재계산되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:44.894Z",
+      "endTime": "2026-01-01T12:51:44.973Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "직원1의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        },
+        {
+          "description": "직원2의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 2,
+          "successCount": 2,
+          "errorCount": 0
+        },
+        "employee1": {
+          "totalWeight": 120,
+          "wbsCount": 5,
+          "weights": [
+            {
+              "projectId": "cdb7e28b-aa38-4f4a-b96e-ce1262fd3632",
+              "wbsItemId": "84ef4fda-e266-412e-8aa8-957e92f18908",
+              "weight": 21.82
+            },
+            {
+              "projectId": "cdb7e28b-aa38-4f4a-b96e-ce1262fd3632",
+              "wbsItemId": "ed8b2cca-2a78-4470-b098-e1e68bce6f45",
+              "weight": 21.82
+            },
+            {
+              "projectId": "cdb7e28b-aa38-4f4a-b96e-ce1262fd3632",
+              "wbsItemId": "9d1e61c5-415a-440e-b132-329df5661ffe",
+              "weight": 21.82
+            },
+            {
+              "projectId": "546531f6-4bf1-416f-80a0-52aad1a0b796",
+              "wbsItemId": "7a871abc-d225-43fc-b2ef-875492d809a5",
+              "weight": 27.27
+            },
+            {
+              "projectId": "546531f6-4bf1-416f-80a0-52aad1a0b796",
+              "wbsItemId": "f0754c49-5a2c-4ad7-ba0c-e1a6273144ee",
+              "weight": 27.27
+            }
+          ]
+        },
+        "employee2": {
+          "totalWeight": 120,
+          "wbsCount": 4,
+          "weights": [
+            {
+              "projectId": "d87d98a6-f4c5-4ddf-8b1b-6b9443becbcc",
+              "wbsItemId": "db6a21f0-3d3a-4ae5-821c-eb3f3ea1c44e",
+              "weight": 34.29
+            },
+            {
+              "projectId": "d87d98a6-f4c5-4ddf-8b1b-6b9443becbcc",
+              "wbsItemId": "867a8dfe-38f5-4d8c-9770-d5892593d245",
+              "weight": 34.29
+            },
+            {
+              "projectId": "e8d41d29-f6e2-4a8b-a125-030cdfa0c018",
+              "wbsItemId": "fcd75d82-dd56-4815-b2e8-39bdf8c38703",
+              "weight": 25.71
+            },
+            {
+              "projectId": "e8d41d29-f6e2-4a8b-a125-030cdfa0c018",
+              "wbsItemId": "4cddaef5-7c9f-4643-ae47-f6d53b38ac43",
+              "weight": 25.71
+            }
+          ]
+        }
+      }
+    },
+    {
+      "testName": "모든 프로젝트 등급 조합(1A, 1B, 2A, 2B, 3A, 3B)에서 가중치가 올바르게 재계산되어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:45.070Z",
+      "endTime": "2026-01-01T12:51:45.170Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "모든 직원의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 3,
+          "actual": 3,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 3,
+          "successCount": 3,
+          "errorCount": 0
+        },
+        "weightDetails": [
+          {
+            "employeeId": "39475f16-7e19-445b-858e-ae2186116a52",
+            "totalWeight": 120,
+            "projects": [
+              "1B"
+            ]
+          },
+          {
+            "employeeId": "50774fc7-3418-43ac-9a10-30b7be90f6c5",
+            "totalWeight": 120,
+            "projects": [
+              "2A",
+              "2B",
+              "3A",
+              "3B"
+            ]
+          },
+          {
+            "employeeId": "92e21677-5e08-494c-9144-906a544ce589",
+            "totalWeight": 120,
+            "projects": [
+              "1A"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "testName": "프로젝트 등급이 없는 직원의 가중치는 0이어야 한다",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:45.268Z",
+      "endTime": "2026-01-01T12:51:45.281Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "등급이 없는 프로젝트의 가중치는 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 1,
+          "successCount": 1,
+          "errorCount": 0
+        },
+        "totalWeight": 0,
+        "assignments": [
+          {
+            "wbsItemId": "854c8a98-d2d0-4682-8a66-34caf612e504",
+            "weight": 0
+          }
+        ]
+      }
+    },
+    {
+      "testName": "성능 테스트: 직원 100명, 각 직원당 프로젝트 5개, 총 WBS 20개",
+      "status": "passed",
+      "startTime": "2026-01-01T12:51:45.379Z",
+      "endTime": "2026-01-01T12:51:58.105Z",
+      "errors": [],
+      "assertions": [
+        {
+          "description": "총 직원 수가 100명이어야 함",
+          "expected": 100,
+          "actual": 100,
+          "passed": true
+        },
+        {
+          "description": "성공한 직원 수가 100명이어야 함",
+          "expected": 100,
+          "actual": 100,
+          "passed": true
+        },
+        {
+          "description": "실패한 직원 수가 0이어야 함",
+          "expected": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "description": "샘플 직원의 총 가중치가 maxSelfEvaluationRate와 일치해야 함",
+          "expected": 120,
+          "actual": 120,
+          "passed": true
+        }
+      ],
+      "data": {
+        "result": {
+          "totalEmployees": 100,
+          "successCount": 100,
+          "errorCount": 0
+        },
+        "performance": {
+          "totalExecutionTimeMs": 2180,
+          "avgTimePerEmployeeMs": 21.8,
+          "avgTimePerWbsMs": 1.09,
+          "employeeCount": 100,
+          "totalProjects": 500,
+          "totalWbsAssignments": 2000,
+          "wbsPerEmployee": 20,
+          "projectsPerEmployee": 5
+        },
+        "setupTime": {
+          "employeeCreationMs": 524,
+          "projectCreationMs": 4412,
+          "assignmentCreationMs": 5591,
+          "totalSetupMs": 10529
+        },
+        "sampleWeight": {
+          "employeeId": "ac47fdf1-856c-49b0-a12b-1873c139f0a0",
+          "totalWeight": 120,
+          "wbsCount": 20
+        }
+      }
+    }
+  ]
+}

@@ -358,18 +358,24 @@ export async function 하향평가_등급을_조회한다(
       return null;
     }
 
+    // 소수점 점수를 내림처리하여 정수로 변환 (등급 범위는 정수 기준)
+    const flooredScore = Math.floor(totalScore);
+    logger.log(
+      `[하향평가 등급 조회] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}`,
+    );
+
     // 점수로 등급 조회
     const gradeMapping = period.점수로_등급_조회한다(totalScore);
 
     if (!gradeMapping) {
       logger.warn(
-        `⚠️ 점수에 해당하는 등급을 찾을 수 없습니다. 등급 범위를 확인해주세요. (점수: ${totalScore}, 평가기간: ${period.name} [${evaluationPeriodId}], gradeRanges: ${JSON.stringify(period.gradeRanges)})`,
+        `[하향평가 등급 조회 실패] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급 범위를 확인해주세요. (평가기간: ${period.name}, gradeRanges: ${JSON.stringify(period.gradeRanges)})`,
       );
       return null;
     }
 
     logger.log(
-      `✅ 하향평가 등급 조회 완료: ${gradeMapping.finalGrade} (점수: ${totalScore}, 평가기간: ${period.name})`,
+      `[하향평가 등급 조회 완료] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급: ${gradeMapping.finalGrade}, 평가기간: ${period.name}`,
     );
 
     return gradeMapping.finalGrade;

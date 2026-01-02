@@ -25,10 +25,6 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
   wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
   evaluationPeriodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
-  logger.log(
-    `[1차 하향평가 점수 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 평가자 수: ${evaluatorIds.length}`,
-  );
-
   try {
     // 점수가 입력된 1차 평가 조회 (평가자 ID 조건 없이 모든 1차 평가 조회)
     // 평가자 매핑이 변경되었거나 삭제되어도 점수가 입력된 평가는 조회
@@ -41,10 +37,6 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       },
     });
 
-    logger.log(
-      `[1차 하향평가 조회] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 전체 평가 수: ${downwardEvaluations.length}`,
-    );
-
     // 점수가 입력된 평가만 필터링 (제출 여부와 무관)
     const completedEvaluations = downwardEvaluations.filter(
       (evaluation) =>
@@ -52,23 +44,12 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
         evaluation.downwardEvaluationScore !== undefined,
     );
 
-    logger.log(
-      `[1차 하향평가 필터링] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수 입력된 평가 수: ${completedEvaluations.length}`,
-    );
-
     if (completedEvaluations.length === 0) {
-      logger.log(
-        `[1차 하향평가 점수 없음] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 평가가 없습니다.`,
-      );
       return null;
     }
 
     // WBS 할당 정보 조회 (가중치 포함, 취소된 프로젝트 할당 제외)
     const wbsIds = completedEvaluations.map((de) => de.wbsId);
-
-    logger.log(
-      `[1차 하향평가 WBS 조회] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 평가된 WBS IDs: ${wbsIds.join(', ')}`,
-    );
 
     const wbsAssignments = await wbsAssignmentRepository
       .createQueryBuilder('assignment')
@@ -92,19 +73,10 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회
       .getMany();
 
-    logger.log(
-      `[1차 하향평가 WBS 할당 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 조회된 WBS 할당 수: ${wbsAssignments.length}, WBS별 가중치: ${wbsAssignments.map((a) => `${a.wbsItemId}(가중치:${a.weight}%)`).join(', ')}`,
-    );
-
     // ⚠️ 문제 진단: 평가된 WBS 중 할당 정보가 없는 WBS 확인
     const evaluatedWbsSet = new Set(wbsIds);
     const assignedWbsSet = new Set(wbsAssignments.map((a) => a.wbsItemId));
     const missingWbsIds = wbsIds.filter((id) => !assignedWbsSet.has(id));
-    if (missingWbsIds.length > 0) {
-      logger.warn(
-        `[1차 하향평가 경고] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 할당 정보가 없는 WBS IDs: ${missingWbsIds.join(', ')} (이 WBS의 평가는 제외됩니다)`,
-      );
-    }
 
     // 평가기간의 최대 달성률 조회
     const evaluationPeriod = await evaluationPeriodRepository.findOne({
@@ -123,24 +95,13 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       weightMap.has(evaluation.wbsId),
     );
 
-    logger.log(
-      `[1차 하향평가 유효성 필터링] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 전체 평가: ${completedEvaluations.length}개, 유효한 평가: ${validEvaluations.length}개`,
-    );
-
     if (validEvaluations.length === 0) {
-      logger.warn(
-        `[1차 하향평가 계산 실패] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 모든 평가가 취소된 프로젝트 할당에 속해 있거나 할당 정보가 없습니다.`,
-      );
       return null;
     }
 
     // 가중치 기반 점수 계산
     let totalWeightedScore = 0;
     let totalWeight = 0;
-
-    logger.log(
-      `[1차 하향평가 점수 계산 상세] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최대 달성률: ${maxRate}`,
-    );
 
     validEvaluations.forEach((evaluation) => {
       const weight = weightMap.get(evaluation.wbsId)!; // 이미 필터링했으므로 !로 단언
@@ -150,21 +111,10 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       const weightedScore = (weight / maxRate) * score;
       totalWeightedScore += weightedScore;
       totalWeight += weight;
-
-      logger.log(
-        `[1차 하향평가 계산 상세] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, WBS: ${evaluation.wbsId}, 점수: ${score}, 가중치: ${weight}%, 가중치 적용 점수: ${weightedScore.toFixed(2)}`,
-      );
     });
-
-    logger.log(
-      `[1차 하향평가 가중치 합계] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 총 가중치 합: ${totalWeight}%, 최대값: ${maxRate}%, 원본 가중치 점수 합: ${totalWeightedScore.toFixed(2)}`,
-    );
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
-      logger.warn(
-        `[1차 하향평가 계산 실패] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 가중치 합이 0입니다. 점수 계산 불가`,
-      );
       return null;
     }
 
@@ -173,10 +123,6 @@ export async function 가중치_기반_1차_하향평가_점수를_계산한다(
       totalWeight !== maxRate
         ? totalWeightedScore * (maxRate / totalWeight)
         : totalWeightedScore;
-
-    logger.log(
-      `[1차 하향평가 점수 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight.toFixed(2)}%, 최대값: ${maxRate}%, 정규화 적용: ${totalWeight !== maxRate})`,
-    );
 
     return Math.round(finalScore * 100) / 100; // 소수점 2자리로 반올림
   } catch (error) {
@@ -267,9 +213,6 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
     );
 
     if (validEvaluations.length === 0) {
-      logger.warn(
-        `모든 평가가 취소된 프로젝트 할당에 속해 있습니다. (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
       return null;
     }
 
@@ -302,9 +245,6 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
-      logger.warn(
-        `가중치 합이 0입니다. 점수 계산 불가 (평가기간: ${evaluationPeriodId}, 피평가자: ${employeeId})`,
-      );
       return null;
     }
 
@@ -313,10 +253,6 @@ export async function 가중치_기반_2차_하향평가_점수를_계산한다(
       totalWeight !== maxRate
         ? totalWeightedScore * (maxRate / totalWeight)
         : totalWeightedScore;
-
-    logger.log(
-      `가중치 기반 2차 하향평가 점수 계산 완료: ${finalScore.toFixed(2)} (원본: ${totalWeightedScore.toFixed(2)}, 가중치 합: ${totalWeight}%, 최대값: ${maxRate}) (피평가자: ${employeeId}, 평가자 수: ${evaluatorIds.length}, 평가기간: ${evaluationPeriodId})`,
-    );
 
     return Math.round(finalScore * 100) / 100; // 소수점 2자리로 반올림
   } catch (error) {
@@ -346,37 +282,20 @@ export async function 하향평가_등급을_조회한다(
     });
 
     if (!period) {
-      logger.warn(`평가기간을 찾을 수 없습니다: ${evaluationPeriodId}`);
       return null;
     }
 
     // 등급 구간이 설정되어 있지 않은 경우
     if (!period.등급구간_설정됨()) {
-      logger.warn(
-        `⚠️ 평가기간에 등급 구간이 설정되지 않았습니다. 등급 범위를 설정해주세요. (평가기간: ${period.name} [${evaluationPeriodId}], gradeRanges: ${JSON.stringify(period.gradeRanges || [])})`,
-      );
       return null;
     }
-
-    // 소수점 점수를 내림처리하여 정수로 변환 (등급 범위는 정수 기준)
-    const flooredScore = Math.floor(totalScore);
-    logger.log(
-      `[하향평가 등급 조회] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}`,
-    );
 
     // 점수로 등급 조회
     const gradeMapping = period.점수로_등급_조회한다(totalScore);
 
     if (!gradeMapping) {
-      logger.warn(
-        `[하향평가 등급 조회 실패] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급 범위를 확인해주세요. (평가기간: ${period.name}, gradeRanges: ${JSON.stringify(period.gradeRanges)})`,
-      );
       return null;
     }
-
-    logger.log(
-      `[하향평가 등급 조회 완료] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급: ${gradeMapping.finalGrade}, 평가기간: ${period.name}`,
-    );
 
     return gradeMapping.finalGrade;
   } catch (error) {

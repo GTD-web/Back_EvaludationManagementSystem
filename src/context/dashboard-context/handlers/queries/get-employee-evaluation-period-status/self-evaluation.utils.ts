@@ -273,10 +273,6 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
   wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
   periodRepository: Repository<EvaluationPeriod>,
 ): Promise<number | null> {
-  logger.log(
-    `[가중치 기반 자기평가 점수 계산 시작] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}`,
-  );
-
   try {
     // 평가기간 정보 조회 (maxSelfEvaluationRate 필요)
     const period = await periodRepository.findOne({
@@ -287,14 +283,10 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
     });
 
     if (!period) {
-      logger.warn(`평가기간을 찾을 수 없습니다: ${evaluationPeriodId}`);
       return null;
     }
 
     const maxSelfEvaluationRate = period.maxSelfEvaluationRate;
-    logger.log(
-      `[평가기간 정보 조회] 평가기간: ${evaluationPeriodId}, 최대 자기평가 비율: ${maxSelfEvaluationRate}`,
-    );
 
     // 성과달성률(점수)이 입력된 WBS 자기평가 목록 조회 (제출 여부와 무관, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const selfEvaluations = await wbsSelfEvaluationRepository
@@ -325,22 +317,11 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       .getMany();
 
     if (selfEvaluations.length === 0) {
-      logger.log(
-        `[자기평가 점수 없음] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 자기평가가 없습니다.`,
-      );
       return null;
     }
 
-    logger.log(
-      `[자기평가 조회 결과] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 점수가 입력된 자기평가 수: ${selfEvaluations.length}`,
-    );
-
     // WBS 할당 정보 조회 (가중치 포함, 소프트 딜리트된 프로젝트 및 취소된 프로젝트 할당 제외)
     const wbsItemIds = selfEvaluations.map((se) => se.wbsItemId);
-
-    logger.log(
-      `[DEBUG] 자기평가 - 완료된 자기평가 WBS IDs: ${wbsItemIds.join(', ')} (평가기간: ${evaluationPeriodId}, 직원: ${employeeId})`,
-    );
 
     const wbsAssignments = await wbsAssignmentRepository
       .createQueryBuilder('assignment')
@@ -364,10 +345,6 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회
       .getMany();
 
-    logger.log(
-      `[DEBUG] 자기평가 - 조회된 WBS 할당 수: ${wbsAssignments.length}, WBS IDs: ${wbsAssignments.map((a) => `${a.wbsItemId}(가중치:${a.weight}%)`).join(', ')}`,
-    );
-
     // WBS별 가중치 맵 생성
     const weightMap = new Map<string, number>();
     wbsAssignments.forEach((assignment) => {
@@ -379,14 +356,7 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
       weightMap.has(evaluation.wbsItemId),
     );
 
-    logger.log(
-      `[DEBUG] 자기평가 - 필터링 결과: 전체 자기평가 ${selfEvaluations.length}개 중 유효한 자기평가 ${validEvaluations.length}개`,
-    );
-
     if (validEvaluations.length === 0) {
-      logger.warn(
-        `모든 자기평가가 취소된 프로젝트 할당에 속해 있습니다. (평가기간: ${evaluationPeriodId}, 직원: ${employeeId})`,
-      );
       return null;
     }
 
@@ -405,9 +375,6 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
 
     // 가중치 합이 0인 경우
     if (totalWeight === 0) {
-      logger.warn(
-        `가중치 합이 0입니다. 점수 계산 불가 (평가기간: ${evaluationPeriodId}, 직원: ${employeeId})`,
-      );
       return null;
     }
 
@@ -419,10 +386,6 @@ export async function 가중치_기반_자기평가_점수를_계산한다(
 
     // 소수점일 때는 내림을 통해 정수로 변환
     const integerScore = Math.floor(normalizedScore);
-
-    logger.log(
-      `[가중치 기반 자기평가 점수 계산 완료] 평가기간: ${evaluationPeriodId}, 직원: ${employeeId}, 최종 점수: ${integerScore} (원본: ${totalWeightedScore.toFixed(2)}, 정규화: ${normalizedScore.toFixed(2)}, 가중치 합: ${totalWeight}%, 최대값: ${maxSelfEvaluationRate})`,
-    );
 
     return integerScore;
   } catch (error) {
@@ -452,37 +415,20 @@ export async function 자기평가_등급을_조회한다(
     });
 
     if (!period) {
-      logger.warn(`평가기간을 찾을 수 없습니다: ${evaluationPeriodId}`);
       return null;
     }
 
     // 등급 구간이 설정되어 있지 않은 경우
     if (!period.등급구간_설정됨()) {
-      logger.warn(
-        `⚠️ 평가기간에 등급 구간이 설정되지 않았습니다. 등급 범위를 설정해주세요. (평가기간: ${period.name} [${evaluationPeriodId}], gradeRanges: ${JSON.stringify(period.gradeRanges || [])})`,
-      );
       return null;
     }
-
-    // 소수점 점수를 내림처리하여 정수로 변환 (등급 범위는 정수 기준)
-    const flooredScore = Math.floor(totalScore);
-    logger.log(
-      `[자기평가 등급 조회] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}`,
-    );
 
     // 점수로 등급 조회
     const gradeMapping = period.점수로_등급_조회한다(totalScore);
 
     if (!gradeMapping) {
-      logger.warn(
-        `[자기평가 등급 조회 실패] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급 범위를 확인해주세요. (평가기간: ${period.name}, gradeRanges: ${JSON.stringify(period.gradeRanges)})`,
-      );
       return null;
     }
-
-    logger.log(
-      `[자기평가 등급 조회 완료] 평가기간: ${evaluationPeriodId}, 원본 점수: ${totalScore}, 내림 처리된 점수: ${flooredScore}, 등급: ${gradeMapping.finalGrade}, 평가기간: ${period.name}`,
-    );
 
     return gradeMapping.finalGrade;
   } catch (error) {

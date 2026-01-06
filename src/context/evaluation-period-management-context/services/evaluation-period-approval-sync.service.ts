@@ -30,6 +30,16 @@ export class EvaluationPeriodApprovalSyncService {
   @Cron(CronExpression.EVERY_MINUTE)
   async 결재상태_동기화한다(): Promise<void> {
     try {
+      // LIAS 서버가 설정되지 않았으면 동기화를 건너뜀
+      const isLiasAvailable =
+        await this.approvalSystemService.LIAS서버_상태를_확인한다();
+      if (!isLiasAvailable) {
+        this.logger.debug(
+          'LIAS_URL이 설정되지 않아 결재 상태 동기화를 건너뜁니다.',
+        );
+        return;
+      }
+
       // 결재 대기 중(pending)인 평가기간만 조회
       const pendingPeriods = await this.evaluationPeriodRepository.find({
         where: {

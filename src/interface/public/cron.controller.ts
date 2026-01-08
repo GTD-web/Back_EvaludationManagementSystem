@@ -20,8 +20,11 @@ import { DepartmentSyncService } from '@context/organization-management-context/
 /**
  * 크론 작업 컨트롤러
  *
- * Vercel 환경에서 크론 작업을 실행하기 위한 HTTP 엔드포인트를 제공합니다.
- * 모든 엔드포인트는 Public으로 설정되어 있지만, Vercel Cron Secret을 통해 보안을 유지합니다.
+ * 크론 작업을 수동으로 실행하기 위한 HTTP 엔드포인트를 제공합니다.
+ * 모든 엔드포인트는 Public으로 설정되어 있습니다.
+ * 
+ * 주의: 일반적으로는 @Cron 데코레이터로 자동 실행되지만,
+ * 수동 실행이나 테스트 목적으로 이 엔드포인트를 사용할 수 있습니다.
  */
 @ApiTags('Public - 크론 작업')
 @Controller('cron')
@@ -57,7 +60,8 @@ export class CronController {
 
   /**
    * 평가기간 자동 단계 변경 크론 작업
-   * Vercel Cron: 매 시간 실행
+   * 일반적으로는 @Cron 데코레이터로 매 시간 자동 실행됩니다.
+   * 이 엔드포인트는 수동 실행이나 테스트 목적으로 사용됩니다.
    */
   @Get('evaluation-period-auto-phase')
   @HttpCode(HttpStatus.OK)
@@ -70,8 +74,8 @@ export class CronController {
     description: '평가기간 자동 단계 변경 완료',
   })
   @ApiResponse({
-    status: 401,
-    description: '인증 실패 (잘못된 크론 시크릿)',
+    status: 200,
+    description: '크론 작업 실행 성공',
   })
   async triggerEvaluationPeriodAutoPhase() {
     try {
@@ -163,7 +167,8 @@ export class CronController {
 
   /**
    * 직원 동기화 크론 작업
-   * Vercel Cron: 10분마다 실행
+   * 일반적으로는 @Cron 데코레이터로 10분마다 자동 실행됩니다.
+   * 이 엔드포인트는 수동 실행이나 테스트 목적으로 사용됩니다.
    */
   @Get('employee-sync')
   @HttpCode(HttpStatus.OK)
@@ -176,8 +181,8 @@ export class CronController {
     description: '직원 동기화 완료',
   })
   @ApiResponse({
-    status: 401,
-    description: '인증 실패 (잘못된 크론 시크릿)',
+    status: 200,
+    description: '크론 작업 실행 성공',
   })
   async triggerEmployeeSync() {
     try {
@@ -194,7 +199,8 @@ export class CronController {
 
   /**
    * 부서 동기화 크론 작업
-   * Vercel Cron: 10분마다 실행
+   * 일반적으로는 @Cron 데코레이터로 10분마다 자동 실행됩니다.
+   * 이 엔드포인트는 수동 실행이나 테스트 목적으로 사용됩니다.
    */
   @Get('department-sync')
   @HttpCode(HttpStatus.OK)
@@ -207,8 +213,8 @@ export class CronController {
     description: '부서 동기화 완료',
   })
   @ApiResponse({
-    status: 401,
-    description: '인증 실패 (잘못된 크론 시크릿)',
+    status: 200,
+    description: '크론 작업 실행 성공',
   })
   async triggerDepartmentSync() {
     try {

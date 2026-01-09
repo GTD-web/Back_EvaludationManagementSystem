@@ -10,7 +10,6 @@ import { DomainContextModule } from './context/domain-context.module';
 import { BackupContextModule } from './context/backup-context/backup-context.module';
 import { BusinessModule } from './business/business.module';
 import { InterfaceModule } from './interface/interface.module';
-import { EvaluationLineMappingValidationScheduler } from './scheduler/evaluation-line-mapping-validation.scheduler';
 import { EvaluationLineMappingModule } from './domain/core/evaluation-line-mapping/evaluation-line-mapping.module';
 import { EvaluationPeriodModule } from './domain/core/evaluation-period/evaluation-period.module';
 import { EvaluationPeriod } from './domain/core/evaluation-period/evaluation-period.entity';
@@ -39,7 +38,6 @@ import { EvaluationPeriodApprovalSyncService } from './context/evaluation-period
   ],
   controllers: [],
   providers: [
-    EvaluationLineMappingValidationScheduler, // 평가라인 매핑 검증 스케줄러
     EvaluationPeriodApprovalSyncService, // 평가기간 결재 상태 동기화 스케줄러
   ],
 })

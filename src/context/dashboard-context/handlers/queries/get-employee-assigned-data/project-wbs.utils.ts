@@ -413,24 +413,9 @@ export async function getProjectsWithWbs(
       .getRawMany();
 
     // 2차 평가 데이터 조회 (SECONDARY 평가자가 작성한 것만)
+    // 평가라인 매핑과의 조인을 제거하여 실제로 제출된 모든 secondary 평가를 가져옴
     const secondaryEvaluationRows = await downwardEvaluationRepository
       .createQueryBuilder('downward')
-      .innerJoin(
-        EvaluationLineMapping,
-        'mapping',
-        'mapping.evaluationPeriodId = downward.periodId ' +
-          'AND mapping.employeeId = downward.employeeId ' +
-          'AND mapping.wbsItemId = downward.wbsId ' +
-          'AND mapping.evaluatorId = downward.evaluatorId ' +
-          'AND mapping.deletedAt IS NULL',
-      )
-      .innerJoin(
-        'evaluation_lines',
-        'line',
-        'line.id = mapping.evaluationLineId ' +
-          "AND line.evaluatorType = 'secondary' " +
-          'AND line.deletedAt IS NULL',
-      )
       .select([
         'downward.id AS downward_id',
         'downward.wbsId AS downward_wbs_id',

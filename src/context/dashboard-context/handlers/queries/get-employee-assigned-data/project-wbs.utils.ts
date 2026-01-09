@@ -372,8 +372,25 @@ export async function getProjectsWithWbs(
     }
   >();
   if (wbsItemIds.length > 0) {
-    const downwardEvaluationRows = await downwardEvaluationRepository
+    // 먼저 1차 평가 데이터 조회 (PRIMARY 평가자가 작성한 것만)
+    const primaryEvaluationRows = await downwardEvaluationRepository
       .createQueryBuilder('downward')
+      .innerJoin(
+        EvaluationLineMapping,
+        'mapping',
+        'mapping.evaluationPeriodId = downward.periodId ' +
+          'AND mapping.employeeId = downward.employeeId ' +
+          'AND (mapping.wbsItemId = downward.wbsId OR mapping.wbsItemId IS NULL) ' +
+          'AND mapping.evaluatorId = downward.evaluatorId ' +
+          'AND mapping.deletedAt IS NULL',
+      )
+      .innerJoin(
+        'evaluation_lines',
+        'line',
+        'line.id = mapping.evaluationLineId ' +
+          "AND line.evaluatorType = 'primary' " +
+          'AND line.deletedAt IS NULL',
+      )
       .select([
         'downward.id AS downward_id',
         'downward.wbsId AS downward_wbs_id',
@@ -389,8 +406,57 @@ export async function getProjectsWithWbs(
       })
       .andWhere('downward.employeeId = :employeeId', { employeeId })
       .andWhere('downward.wbsId IN (:...wbsItemIds)', { wbsItemIds })
+      .andWhere('downward.evaluationType = :evaluationType', {
+        evaluationType: 'primary',
+      })
       .andWhere('downward.deletedAt IS NULL')
       .getRawMany();
+
+    // 2차 평가 데이터 조회 (SECONDARY 평가자가 작성한 것만)
+    const secondaryEvaluationRows = await downwardEvaluationRepository
+      .createQueryBuilder('downward')
+      .innerJoin(
+        EvaluationLineMapping,
+        'mapping',
+        'mapping.evaluationPeriodId = downward.periodId ' +
+          'AND mapping.employeeId = downward.employeeId ' +
+          'AND mapping.wbsItemId = downward.wbsId ' +
+          'AND mapping.evaluatorId = downward.evaluatorId ' +
+          'AND mapping.deletedAt IS NULL',
+      )
+      .innerJoin(
+        'evaluation_lines',
+        'line',
+        'line.id = mapping.evaluationLineId ' +
+          "AND line.evaluatorType = 'secondary' " +
+          'AND line.deletedAt IS NULL',
+      )
+      .select([
+        'downward.id AS downward_id',
+        'downward.wbsId AS downward_wbs_id',
+        'downward.evaluatorId AS downward_evaluator_id',
+        'downward.evaluationType AS downward_evaluation_type',
+        'downward.downwardEvaluationContent AS downward_evaluation_content',
+        'downward.downwardEvaluationScore AS downward_score',
+        'downward.isCompleted AS downward_is_completed',
+        'downward.completedAt AS downward_completed_at',
+      ])
+      .where('downward.periodId = :periodId', {
+        periodId: evaluationPeriodId,
+      })
+      .andWhere('downward.employeeId = :employeeId', { employeeId })
+      .andWhere('downward.wbsId IN (:...wbsItemIds)', { wbsItemIds })
+      .andWhere('downward.evaluationType = :evaluationType', {
+        evaluationType: 'secondary',
+      })
+      .andWhere('downward.deletedAt IS NULL')
+      .getRawMany();
+
+    // 1차 평가와 2차 평가를 합침
+    const downwardEvaluationRows = [
+      ...primaryEvaluationRows,
+      ...secondaryEvaluationRows,
+    ];
 
     // 8-1. 하향평가에 나타난 모든 평가자 ID 수집
     const allEvaluatorIds = new Set<string>();

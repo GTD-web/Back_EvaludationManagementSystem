@@ -20,11 +20,11 @@ import { AuditLogResponseDto } from '@interface/common/dto/audit-log/audit-log-r
 import { GetAuditLogStatsQueryDto } from '@interface/common/dto/audit-log/get-audit-log-stats-query.dto';
 import { AuditLogStatsResponseDto } from '@interface/common/dto/audit-log/audit-log-stats-response.dto';
 
-@ApiTags('U-0-5. 사용자 - 감사 로그')
+@ApiTags('E-0-5. 평가자 - 감사 로그')
 @ApiBearerAuth('Bearer')
 @Roles('web', 'admin')
-@Controller('user/audit-logs')
-export class UserAuditLogController {
+@Controller('evaluator/audit-logs')
+export class EvaluatorAuditLogController {
   constructor(
     private readonly auditLogContextService: AuditLogContextService,
   ) {}
@@ -194,4 +194,3 @@ export class UserAuditLogController {
     return auditLog;
   }
 }
-

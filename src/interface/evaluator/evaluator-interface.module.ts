@@ -33,6 +33,7 @@ import { EvaluatorPeerEvaluationManagementController } from './performance-evalu
 import { EvaluatorWbsSelfEvaluationManagementController } from './performance-evaluation/evaluator-wbs-self-evaluation-management.controller';
 import { EvaluatorRevisionRequestController } from './revision-request/evaluator-revision-request.controller';
 import { NotificationController } from '../common/controllers/notification.controller';
+import { EvaluatorAuditLogController } from './audit-log/evaluator-audit-log.controller';
 
 /**
  * 평가자 인터페이스 모듈
@@ -77,6 +78,7 @@ import { NotificationController } from '../common/controllers/notification.contr
     EvaluatorPeerEvaluationManagementController,
     EvaluatorWbsSelfEvaluationManagementController,
     EvaluatorRevisionRequestController,
+    EvaluatorAuditLogController,
     NotificationController,
   ],
   providers: [],

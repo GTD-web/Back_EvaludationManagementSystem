@@ -22,7 +22,7 @@ import { AuditLogStatsResponseDto } from '@interface/common/dto/audit-log/audit-
 
 @ApiTags('A-0-5. 관리자 - 감사 로그')
 @ApiBearerAuth('Bearer')
-@Roles('admin')
+@Roles('web', 'admin')
 @Controller('admin/audit-logs')
 export class AuditLogController {
   constructor(

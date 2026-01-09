@@ -137,7 +137,7 @@ export class DownwardEvaluationManagementController {
   ): Promise<void> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
-    const approveAllBelow = queryDto.approveAllBelow ?? true;
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
 
     await this.downwardEvaluationBusinessService.일차_하향평가를_제출하고_재작성요청을_완료한다(
       evaluateeId,

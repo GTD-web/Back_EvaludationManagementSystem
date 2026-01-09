@@ -17,18 +17,23 @@ import {
 @Injectable()
 export class ApprovalSystemService {
   private readonly logger = new Logger(ApprovalSystemService.name);
-  private readonly liasBaseUrl: string;
+  private readonly liasBaseUrl: string | null;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.liasBaseUrl = this.configService.get<string>(
-      'LIAS_URL',
-      'http://localhost:3001',
-    );
+    const liasUrl = this.configService.get<string>('LIAS_URL');
 
-    this.logger.log(`LIAS 서버 URL: ${this.liasBaseUrl}`);
+    if (!liasUrl) {
+      this.liasBaseUrl = null;
+      this.logger.warn(
+        'LIAS_URL 환경 변수가 설정되지 않아 결재 시스템 연동이 비활성화됩니다.',
+      );
+    } else {
+      this.liasBaseUrl = liasUrl;
+      this.logger.log(`LIAS 서버 URL: ${this.liasBaseUrl}`);
+    }
   }
 
   /**
@@ -42,6 +47,13 @@ export class ApprovalSystemService {
   async 결재문서_상태를_조회한다(
     documentId: string,
   ): Promise<LiasApprovalDocumentResponse> {
+    if (!this.liasBaseUrl) {
+      this.logger.warn(
+        `LIAS_URL이 설정되지 않아 결재 문서 조회를 건너뜁니다 (documentId: ${documentId})`,
+      );
+      throw new Error('LIAS 서버 URL이 설정되지 않았습니다.');
+    }
+
     try {
       const url = `${this.liasBaseUrl}/api/public/documents/${documentId}`;
       this.logger.debug(`LIAS 서버 요청: GET ${url}`);
@@ -66,7 +78,9 @@ export class ApprovalSystemService {
         );
         throw new Error('LIAS 서버에 연결할 수 없습니다.');
       } else if (error.response?.status === 404) {
-        this.logger.warn(`결재 문서를 찾을 수 없음 (documentId: ${documentId})`);
+        this.logger.warn(
+          `결재 문서를 찾을 수 없음 (documentId: ${documentId})`,
+        );
         throw new Error('결재 문서를 찾을 수 없습니다.');
       } else {
         this.logger.error(
@@ -111,6 +125,11 @@ export class ApprovalSystemService {
    * @returns LIAS 서버 정상 여부
    */
   async LIAS서버_상태를_확인한다(): Promise<boolean> {
+    if (!this.liasBaseUrl) {
+      this.logger.debug('LIAS_URL이 설정되지 않아 상태 확인을 건너뜁니다.');
+      return false;
+    }
+
     try {
       const url = `${this.liasBaseUrl}/api/health`;
 
@@ -126,4 +145,3 @@ export class ApprovalSystemService {
     }
   }
 }
-

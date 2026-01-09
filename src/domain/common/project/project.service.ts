@@ -41,7 +41,7 @@ export class ProjectService {
     createdBy: string,
   ): Promise<ProjectDto> {
     let finalManagerId = data.managerId;
-    
+
     // 하위 프로젝트 생성 시 상위 프로젝트 존재 확인
     if (data.parentProjectId) {
       const parentProject = await this.projectRepository.findOne({
@@ -56,11 +56,12 @@ export class ProjectService {
 
       // managerId가 없으면 최상단 프로젝트의 PM 사용
       if (!finalManagerId) {
-        const topLevelProject = await this.최상단_프로젝트_조회한다(data.parentProjectId);
+        const topLevelProject = await this.최상단_프로젝트_조회한다(
+          data.parentProjectId,
+        );
         finalManagerId = topLevelProject.managerId;
       }
     }
-
 
     // 프로젝트 생성 (managerId 자동 설정)
     const project = Project.생성한다(
@@ -94,12 +95,12 @@ export class ProjectService {
   /**
    * 하위 프로젝트들을 트리 구조로 생성한다
    * orderLevel별로 그룹화하여 같은 레벨은 같은 부모를 가집니다.
-   * 
+   *
    * 예시:
    * - orderLevel=1 (3개): 모두 상위 프로젝트를 부모로
    * - orderLevel=2 (2개): orderLevel=1의 마지막 프로젝트를 부모로
    * - orderLevel=3 (1개): orderLevel=2의 마지막 프로젝트를 부모로
-   * 
+   *
    * @param defaultManagerId 최상단 프로젝트의 PM ID (모든 하위 프로젝트는 이 ID로 설정됨, child.managerId는 무시됨)
    */
   private async 하위_프로젝트들_생성한다(
@@ -123,7 +124,9 @@ export class ProjectService {
     }
 
     // orderLevel 순서대로 정렬
-    const sortedLevels = Array.from(groupedByLevel.keys()).sort((a, b) => a - b);
+    const sortedLevels = Array.from(groupedByLevel.keys()).sort(
+      (a, b) => a - b,
+    );
 
     // 각 레벨의 마지막 생성 프로젝트를 추적 (다음 레벨의 부모용)
     let lastCreatedIdOfPreviousLevel = topLevelProjectId;
@@ -136,7 +139,7 @@ export class ProjectService {
       // 같은 레벨의 프로젝트들 생성 (모두 같은 부모)
       for (let index = 0; index < childrenInLevel.length; index++) {
         const child = childrenInLevel[index];
-        
+
         // 프로젝트 코드 자동 생성 (미입력 시)
         const childProjectCode =
           child.projectCode ||
@@ -191,19 +194,26 @@ export class ProjectService {
 
         // 하위 프로젝트이고 managerId가 없으면 최상단 프로젝트의 PM 사용
         if (dataList[i].parentProjectId && !finalManagerId) {
-          const topLevelProject = await this.최상단_프로젝트_조회한다(dataList[i].parentProjectId!);
+          const topLevelProject = await this.최상단_프로젝트_조회한다(
+            dataList[i].parentProjectId!,
+          );
           finalManagerId = topLevelProject.managerId;
         }
 
-
-        const project = Project.생성한다({
-          ...dataList[i],
-          managerId: finalManagerId,
-        }, createdBy);
+        const project = Project.생성한다(
+          {
+            ...dataList[i],
+            managerId: finalManagerId,
+          },
+          createdBy,
+        );
         const savedProject = await this.projectRepository.save(project);
 
         // 하위 프로젝트 생성 (childProjects가 있는 경우)
-        if (dataList[i].childProjects && dataList[i].childProjects!.length > 0) {
+        if (
+          dataList[i].childProjects &&
+          dataList[i].childProjects!.length > 0
+        ) {
           await this.하위_프로젝트들_생성한다(
             savedProject.id,
             savedProject.projectCode || savedProject.id, // projectCode가 없으면 ID 사용
@@ -362,7 +372,9 @@ export class ProjectService {
     });
 
     if (!currentProject) {
-      throw new NotFoundException(`프로젝트 ID ${projectId}를 찾을 수 없습니다.`);
+      throw new NotFoundException(
+        `프로젝트 ID ${projectId}를 찾을 수 없습니다.`,
+      );
     }
 
     // parentProjectId가 없을 때까지 계속 올라감
@@ -428,6 +440,7 @@ export class ProjectService {
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.realPM AS "realPM"',
         'project.grade AS grade',
         'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
@@ -461,6 +474,7 @@ export class ProjectService {
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
       managerId: result.managerId,
+      realPM: result.realPM,
       grade: result.grade,
       priority: result.priority,
       parentProjectId: result.parentProjectId,
@@ -504,6 +518,7 @@ export class ProjectService {
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
+        'project.realPM AS "realPM"',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
         'manager.name AS manager_name',
@@ -527,6 +542,7 @@ export class ProjectService {
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
+      realPM: result.realPM,
       manager: result.manager_external_id
         ? {
             managerId: result.manager_external_id,
@@ -564,6 +580,7 @@ export class ProjectService {
         'project.createdAt AS "createdAt"',
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
+        'project.realPM AS "realPM"',
         'manager.id AS manager_employee_id',
         'manager.externalId AS manager_external_id',
         'manager.name AS manager_name',
@@ -587,6 +604,7 @@ export class ProjectService {
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
+      realPM: result.realPM,
       manager: result.manager_external_id
         ? {
             managerId: result.manager_external_id,
@@ -761,6 +779,7 @@ export class ProjectService {
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.realPM AS "realPM"',
         'project.grade AS grade',
         'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
@@ -820,6 +839,7 @@ export class ProjectService {
       updatedAt: result.updatedAt,
       deletedAt: result.deletedAt,
       managerId: result.managerId,
+      realPM: result.realPM,
       grade: result.grade,
       priority: result.priority,
       parentProjectId: result.parentProjectId,
@@ -1054,7 +1074,6 @@ export class ProjectService {
     return count > 0;
   }
 
-
   /**
    * 특정 프로젝트의 하위 프로젝트 목록을 재귀적으로 조회한다
    * @param parentProjectId 상위 프로젝트 ID
@@ -1087,6 +1106,7 @@ export class ProjectService {
         'project.updatedAt AS "updatedAt"',
         'project.deletedAt AS "deletedAt"',
         'project.managerId AS "managerId"',
+        'project.realPM AS "realPM"',
         'project.grade AS grade',
         'project.priority AS priority',
         'project.parentProjectId AS "parentProjectId"',
@@ -1121,6 +1141,7 @@ export class ProjectService {
           updatedAt: result.updatedAt,
           deletedAt: result.deletedAt,
           managerId: result.managerId,
+          realPM: result.realPM,
           grade: result.grade,
           priority: result.priority,
           parentProjectId: result.parentProjectId,
@@ -1162,15 +1183,19 @@ export class ProjectService {
    * @param options 조회 옵션
    * @returns 계층 구조의 프로젝트 목록
    */
-  async 계층구조_목록_조회한다(
-    options: ProjectListOptions = {},
-  ): Promise<{
+  async 계층구조_목록_조회한다(options: ProjectListOptions = {}): Promise<{
     projects: ProjectDto[];
     total: number;
     page: number;
     limit: number;
   }> {
-    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'DESC', filter = {} } = options;
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+      filter = {},
+    } = options;
 
     // 상위 프로젝트만 조회
     const parentFilter = {
@@ -1208,12 +1233,12 @@ export class ProjectService {
 
   /**
    * 자동 생성된 모든 하위 프로젝트를 일괄 삭제한다
-   * 
+   *
    * 삭제 대상:
    * - parentProjectId가 NULL이 아닌 프로젝트
    * - projectCode에 '-SUB' 패턴이 포함된 프로젝트
    * - 이름에 "하위 프로젝트" 또는 "N차" 패턴이 포함된 프로젝트
-   * 
+   *
    * @param forceDelete 할당 체크를 건너뛸지 여부 (기본값: false)
    * @param hardDelete 영구 삭제 여부 (기본값: false, soft delete)
    * @param deletedBy 삭제자 ID

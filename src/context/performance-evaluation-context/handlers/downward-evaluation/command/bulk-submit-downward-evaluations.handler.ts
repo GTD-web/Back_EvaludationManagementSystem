@@ -30,7 +30,7 @@ export class BulkSubmitDownwardEvaluationsCommand {
     public readonly evaluationType: DownwardEvaluationType,
     public readonly submittedBy: string = '시스템',
     public readonly forceSubmit: boolean = false, // 강제 제출 옵션 (승인 시 필수 항목 검증 건너뛰기)
-    public readonly approveAllBelow: boolean = true, // 하위 단계 자동 승인 여부
+    public readonly approveAllBelow: boolean = false, // 하위 단계 자동 승인 여부
   ) {}
 }
 
@@ -99,14 +99,21 @@ export class BulkSubmitDownwardEvaluationsHandler
       );
 
       // 해당 평가자가 담당하는 피평가자의 모든 하향평가 조회
+      // 1차 하향평가는 evaluatorId와 관계없이 조회 (피평가자당 하나만 존재)
+      // 2차 하향평가는 evaluatorId를 포함해서 조회 (2차 평가자가 여러 명일 수 있음)
+      const whereCondition: any = {
+        employeeId: evaluateeId,
+        periodId,
+        evaluationType,
+        deletedAt: null as any,
+      };
+
+      if (evaluationType === DownwardEvaluationType.SECONDARY) {
+        whereCondition.evaluatorId = evaluatorId;
+      }
+
       const evaluations = await this.downwardEvaluationRepository.find({
-        where: {
-          evaluatorId,
-          employeeId: evaluateeId,
-          periodId,
-          evaluationType,
-          deletedAt: null as any,
-        },
+        where: whereCondition,
       });
 
       // 하향평가가 없는 경우 빈 결과 반환 (스킵)
@@ -147,12 +154,21 @@ export class BulkSubmitDownwardEvaluationsHandler
             continue;
           }
 
+          // 디버깅: 현재 평가 상태 로깅
+          this.logger.debug(
+            `[일괄제출] 평가 처리 중 - ID: ${evaluation.id}, evaluatorId: ${evaluation.evaluatorId}, content: "${evaluation.downwardEvaluationContent || '(비어있음)'}", isCompleted: ${evaluation.isCompleted}`,
+          );
+
           // content가 비어있으면 기본 메시지 생성
           const updateData: any = { isCompleted: true };
           if (!evaluation.downwardEvaluationContent?.trim()) {
             updateData.downwardEvaluationContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
             this.logger.debug(
-              `빈 content로 인한 기본 메시지 생성: ${evaluation.id}`,
+              `[일괄제출] 빈 content로 인한 기본 메시지 생성: ${evaluation.id}, 제출자: ${submitterName}`,
+            );
+          } else {
+            this.logger.debug(
+              `[일괄제출] 기존 content 유지: ${evaluation.id}, content 길이: ${evaluation.downwardEvaluationContent.length}자`,
             );
           }
 
@@ -356,15 +372,22 @@ export class BulkSubmitDownwardEvaluationsHandler
 
     // 각 WBS에 대한 하향평가가 있는지 확인하고 없으면 생성
     for (const wbsId of assignedWbsIds) {
+      // 1차 하향평가는 evaluatorId와 관계없이 조회 (피평가자당 하나만 존재)
+      // 2차 하향평가는 evaluatorId를 포함해서 조회 (2차 평가자가 여러 명일 수 있음)
+      const whereCondition: any = {
+        employeeId: evaluateeId,
+        periodId,
+        wbsId,
+        evaluationType,
+        deletedAt: null as any,
+      };
+
+      if (evaluationType === DownwardEvaluationType.SECONDARY) {
+        whereCondition.evaluatorId = evaluatorId;
+      }
+
       const existingEvaluation = await this.downwardEvaluationRepository.findOne({
-        where: {
-          evaluatorId,
-          employeeId: evaluateeId,
-          periodId,
-          wbsId,
-          evaluationType,
-          deletedAt: null as any,
-        },
+        where: whereCondition,
       });
 
       if (!existingEvaluation) {

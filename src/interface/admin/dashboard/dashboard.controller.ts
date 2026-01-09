@@ -117,7 +117,7 @@ export class DashboardController {
 
     // 파일명 생성 (날짜 포함)
     const date = new Date().toISOString().split('T')[0];
-    const filename = `평가현황_${period.name}_${date}.xlsx`;
+    const filename = `평가결과_${period.name}_${date}.xlsx`;
 
     // 응답 헤더 설정
     res.setHeader(

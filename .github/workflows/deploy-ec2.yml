@@ -31,19 +31,25 @@ jobs:
             # 최신 커밋 정보 출력
             echo "📌 Current commit: $(git log -1 --oneline)"
             
-            # Node.js 의존성 확인 및 설치 (필요시)
-            echo "📦 Checking dependencies..."
-            if [ ! -d node_modules ]; then
-              echo "node_modules 없음 → dependencies 설치"
-              npm ci --production=false
-            else
-              echo "node_modules 존재 → package.json 변경 확인 후 필요시 업데이트"
-              npm install --production=false
-            fi
+            # Node.js 의존성 설치 (항상 깨끗하게 재설치)
+            echo "📦 Installing dependencies..."
+            npm ci --production=false
             
-            # PM2로 서버 재시작 (없으면 시작, 있으면 재시작)
+            # 빌드 실행
+            echo "🔨 Building application..."
+            npm run build
+            
+            # PM2로 서버 재시작 (포트 충돌 방지)
             echo "🚀 Restarting application with PM2..."
-            pm2 restart lumir-evaluation-system || pm2 start dist/src/main.js --name lumir-evaluation-system
+            cd /home/ubuntu/services
+            
+            # 기존 프로세스 중지 및 정리 (포트 충돌 방지)
+            pm2 stop lumir-evaluation-system-1 2>/dev/null || true
+            pm2 delete lumir-evaluation-system 2>/dev/null || true
+            pm2 delete lumir-evaluation-system-1 2>/dev/null || true
+            
+            # ecosystem.config.js를 사용하여 프로세스 시작
+            pm2 start ecosystem.config.js --only lumir-evaluation-system-1
             
             # PM2 설정 저장
             pm2 save
@@ -52,4 +58,4 @@ jobs:
             echo "✅ Deployment completed!"
             echo "📊 PM2 Status:"
             pm2 list
-            pm2 logs lumir-evaluation-system --lines 5 --nostream || true
+            pm2 logs lumir-evaluation-system-1 --lines 5 --nostream || true

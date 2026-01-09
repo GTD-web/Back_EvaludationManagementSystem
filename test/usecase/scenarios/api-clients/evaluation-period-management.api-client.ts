@@ -510,6 +510,26 @@ export class EvaluationPeriodManagementApiClient {
     return response.body;
   }
 
+  /**
+   * 결재 문서 ID 설정 API 호출
+   *
+   * @param periodId - 평가기간 ID
+   * @param approvalDocumentId - 결재 문서 ID
+   * @returns 업데이트된 평가기간 정보
+   */
+  async setApprovalDocumentId(
+    periodId: string,
+    approvalDocumentId: string,
+  ): Promise<any> {
+    const response = await this.testSuite
+      .request()
+      .patch(`/admin/evaluation-periods/${periodId}/approval-document`)
+      .send({ approvalDocumentId })
+      .expect(200);
+
+    return response.body;
+  }
+
   // ==================== DELETE: 삭제 ====================
 
   /**

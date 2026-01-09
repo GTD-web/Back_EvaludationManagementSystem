@@ -92,9 +92,8 @@ export interface EvaluationProjectAssignmentDetailDto {
     id: string;
     name: string;
     projectCode: string;
-    status: string;
-    startDate?: Date;
-    endDate?: Date;
+    grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+    priority?: number;
     managerId?: string;
   } | null;
 

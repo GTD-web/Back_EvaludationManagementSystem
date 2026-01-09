@@ -52,8 +52,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
     manager?: EntityManager,
   ): Promise<IFinalEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.debug('최종평가 생성 시작');
-
       // 유효성 검증
       await this.validationService.생성데이터검증한다(createData, manager);
 
@@ -77,10 +75,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
 
       const savedFinalEvaluation = await repository.save(finalEvaluation);
 
-      this.logger.log(
-        `최종평가 생성 완료 - ID: ${savedFinalEvaluation.id}, 직원: ${createData.employeeId}, 평가기간: ${createData.periodId}`,
-      );
-
       return savedFinalEvaluation;
     }, '생성한다');
   }
@@ -95,8 +89,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
     manager?: EntityManager,
   ): Promise<IFinalEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.debug(`최종평가 수정 시작 - ID: ${id}`);
-
       // 유효성 검증
       await this.validationService.업데이트데이터검증한다(
         id,
@@ -142,8 +134,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
       }
 
       const updatedFinalEvaluation = await repository.save(finalEvaluation);
-
-      this.logger.log(`최종평가 수정 완료 - ID: ${id}, 수정자: ${updatedBy}`);
 
       return updatedFinalEvaluation;
     }, '수정한다');
@@ -193,8 +183,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
     manager?: EntityManager,
   ): Promise<IFinalEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.debug(`최종평가 확정 시작 - ID: ${id}`);
-
       const repository = this.transactionManager.getRepository(
         FinalEvaluation,
         this.finalEvaluationRepository,
@@ -210,8 +198,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
 
       const confirmedFinalEvaluation = await repository.save(finalEvaluation);
 
-      this.logger.log(`최종평가 확정 완료 - ID: ${id}, 확정자: ${confirmedBy}`);
-
       return confirmedFinalEvaluation;
     }, '확정한다');
   }
@@ -225,8 +211,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
     manager?: EntityManager,
   ): Promise<IFinalEvaluation> {
     return this.executeSafeDomainOperation(async () => {
-      this.logger.debug(`최종평가 확정 취소 시작 - ID: ${id}`);
-
       const repository = this.transactionManager.getRepository(
         FinalEvaluation,
         this.finalEvaluationRepository,
@@ -241,10 +225,6 @@ export class FinalEvaluationService implements IFinalEvaluationService {
       finalEvaluation.평가_확정을_취소한다(updatedBy);
 
       const updatedFinalEvaluation = await repository.save(finalEvaluation);
-
-      this.logger.log(
-        `최종평가 확정 취소 완료 - ID: ${id}, 수정자: ${updatedBy}`,
-      );
 
       return updatedFinalEvaluation;
     }, '확정_취소한다');

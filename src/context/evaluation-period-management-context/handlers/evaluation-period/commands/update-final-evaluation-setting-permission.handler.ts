@@ -43,7 +43,6 @@ export class UpdateFinalEvaluationSettingPermissionCommandHandler
         command.changedBy,
       );
 
-    return updatedPeriod as EvaluationPeriodDto;
+    return updatedPeriod.DTO로_변환한다();
   }
 }
-

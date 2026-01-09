@@ -17,15 +17,61 @@ import { AuditLogContextService } from '@context/audit-log-context/audit-log-con
 import { AuditLogListResponseDto } from '@interface/common/dto/audit-log/audit-log-response.dto';
 import { GetAuditLogListQueryDto } from '@interface/common/dto/audit-log/get-audit-log-list-query.dto';
 import { AuditLogResponseDto } from '@interface/common/dto/audit-log/audit-log-response.dto';
+import { GetAuditLogStatsQueryDto } from '@interface/common/dto/audit-log/get-audit-log-stats-query.dto';
+import { AuditLogStatsResponseDto } from '@interface/common/dto/audit-log/audit-log-stats-response.dto';
 
 @ApiTags('A-0-5. 관리자 - 감사 로그')
 @ApiBearerAuth('Bearer')
-@Roles('admin')
+@Roles('web', 'admin')
 @Controller('admin/audit-logs')
 export class AuditLogController {
   constructor(
     private readonly auditLogContextService: AuditLogContextService,
   ) {}
+
+  /**
+   * Audit 로그 시간대별 통계를 조회한다
+   */
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Audit 로그 통계 조회',
+    description: '시간 범위에 따라 시간대별 요청 통계를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Audit 로그 통계 조회 성공',
+    type: AuditLogStatsResponseDto,
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: '시작 날짜 (ISO 8601)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: '종료 날짜 (ISO 8601)',
+  })
+  @ApiQuery({
+    name: 'interval',
+    required: false,
+    description: '시간 간격 (분 단위, 기본값: 60)',
+  })
+  async getAuditLogStats(
+    @Query() query: GetAuditLogStatsQueryDto,
+  ): Promise<AuditLogStatsResponseDto> {
+    const { startDate, endDate, interval = 60 } = query;
+
+    const result = await this.auditLogContextService.audit로그통계를_조회한다(
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+      interval,
+    );
+
+    return {
+      stats: result.stats,
+    };
+  }
 
   /**
    * Audit 로그 목록을 조회한다

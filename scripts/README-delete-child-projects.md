@@ -465,5 +465,3 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
   - 할당 체크 기능
   - Force Delete 옵션
   - 테스트 스크립트 제공
-
-

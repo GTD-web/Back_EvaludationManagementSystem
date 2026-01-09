@@ -261,19 +261,19 @@ export function SubmitPrimaryDownwardEvaluation() {
 - 평가 상태를 완료(isCompleted: true)로 변경
 - 제출 일시(completedAt) 기록
 - 제출 후 평가 내용은 변경 불가
-- approveAllBelow=true(기본값)일 경우 평가기준, 자기평가, 1차평가를 모두 승인(approved)
+- approveAllBelow=true일 경우 평가기준, 자기평가, 1차평가를 모두 승인(approved), 기본값은 false
 - content와 score가 없어도 제출 가능 (기본 메시지로 인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 1차 하향평가를 제출할 수 있어야 함
 - 평가가 없어도 자동 생성 후 제출 가능
 - 제출 시 isCompleted가 true로 변경
-- 제출 시 단계 승인 상태(primaryEvaluationStatus)가 approved로 변경 (기본값)
-- approveAllBelow=false로 명시 시 pending으로 변경됨
+- 제출 시 단계 승인 상태(primaryEvaluationStatus)가 pending으로 변경 (기본값)
+- approveAllBelow=true로 명시 시 approved로 변경됨
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 approved로 변경됨
 - submittedBy 없이도 제출 가능
-- approveAllBelow=true(기본값)일 경우 평가기준, 자기평가도 함께 승인됨
-- approveAllBelow=false일 경우 평가기준, 자기평가는 승인되지 않음
+- approveAllBelow=true일 경우 평가기준, 자기평가도 함께 승인됨
+- approveAllBelow=false(기본값)일 경우 평가기준, 자기평가는 승인되지 않음
 - content와 score가 없어도 제출 가능
 - content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 이미 저장된 평가를 content 없이 제출하면 기본 메시지로 업데이트
@@ -308,9 +308,9 @@ export function SubmitPrimaryDownwardEvaluation() {
       name: 'approveAllBelow',
       required: false,
       description:
-        '하위 단계 자동 승인 여부 (기본값: true). true일 경우 평가기준, 자기평가, 1차평가를 모두 승인합니다.',
+        '하위 단계 자동 승인 여부 (기본값: false). true일 경우 평가기준, 자기평가, 1차평가를 모두 승인합니다.',
       type: String,
-      example: 'true',
+      example: 'false',
     }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,
@@ -363,18 +363,18 @@ export function SubmitSecondaryDownwardEvaluation() {
 - 제출 일시(completedAt) 기록
 - 1차 하향평가와 독립적으로 제출
 - 제출 후 평가 내용은 변경 불가
-- approveAllBelow=true(기본값)일 경우 평가기준, 자기평가, 1차평가, 2차평가를 모두 승인(approved)
+- approveAllBelow=true일 경우 평가기준, 자기평가, 1차평가, 2차평가를 모두 승인(approved), 기본값은 false
 - content와 score가 없어도 제출 가능 (기본 메시지로 인사담당자에게 제출됨)
 
 **테스트 케이스:**
 - 저장된 2차 하향평가를 제출할 수 있어야 함
 - 평가가 없어도 자동 생성 후 제출 가능
-- 제출 시 단계 승인 상태(secondaryEvaluationStatus)가 approved로 변경 (기본값)
+- 제출 시 단계 승인 상태(secondaryEvaluationStatus)가 pending으로 변경 (기본값)
 - 1차와 2차 하향평가를 독립적으로 제출 가능
-- approveAllBelow=false로 명시 시 pending으로 변경됨
+- approveAllBelow=true로 명시 시 approved로 변경됨
 - 관리자가 approved로 변경한 후 reset하고 재제출하면 approved로 변경됨
-- approveAllBelow=true(기본값)일 경우 평가기준, 자기평가, 1차평가도 함께 승인됨
-- approveAllBelow=false일 경우 평가기준, 자기평가, 1차평가는 승인되지 않음
+- approveAllBelow=true일 경우 평가기준, 자기평가, 1차평가도 함께 승인됨
+- approveAllBelow=false(기본값)일 경우 평가기준, 자기평가, 1차평가는 승인되지 않음
 - content와 score가 없어도 제출 가능
 - content 없이 제출하면 "[제출자명]님이 미입력 상태에서 제출하였습니다" 기본 메시지 생성
 - 통합 조회 API에서 2차 평가 미입력 메시지가 정상적으로 조회됨
@@ -405,9 +405,9 @@ export function SubmitSecondaryDownwardEvaluation() {
       name: 'approveAllBelow',
       required: false,
       description:
-        '하위 단계 자동 승인 여부 (기본값: true). true일 경우 평가기준, 자기평가, 1차평가, 2차평가를 모두 승인합니다.',
+        '하위 단계 자동 승인 여부 (기본값: false). true일 경우 평가기준, 자기평가, 1차평가, 2차평가를 모두 승인합니다.',
       type: String,
-      example: 'true',
+      example: 'false',
     }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,
@@ -575,6 +575,14 @@ export function BulkSubmitDownwardEvaluations() {
       enum: DownwardEvaluationType,
       required: true,
       example: DownwardEvaluationType.PRIMARY,
+    }),
+    ApiQuery({
+      name: 'approveAllBelow',
+      required: false,
+      description:
+        '하위 단계 자동 승인 여부 (기본값: false). true일 경우 평가기준, 자기평가, 하향평가를 모두 승인합니다.',
+      type: String,
+      example: 'false',
     }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,

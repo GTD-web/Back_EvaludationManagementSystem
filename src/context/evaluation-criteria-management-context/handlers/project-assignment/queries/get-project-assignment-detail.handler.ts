@@ -95,9 +95,8 @@ export class GetProjectAssignmentDetailHandler
         'project.id AS project_id',
         'project.name AS project_name',
         'project.projectCode AS project_projectcode',
-        'project.status AS project_status',
-        'project.startDate AS project_startdate',
-        'project.endDate AS project_enddate',
+        'project.grade AS project_grade',
+        'project.priority AS project_priority',
         'project.managerId AS project_managerid',
         // 할당자 정보
         'assignedByEmployee.id AS assignedbyemployee_id',
@@ -150,9 +149,8 @@ export class GetProjectAssignmentDetailHandler
             id: result.project_id,
             name: result.project_name,
             projectCode: result.project_projectcode,
-            status: result.project_status,
-            startDate: result.project_startdate,
-            endDate: result.project_enddate,
+            grade: result.project_grade || undefined,
+            priority: result.project_priority || undefined,
             managerId: result.project_managerid,
           }
         : null,

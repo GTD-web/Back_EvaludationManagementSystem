@@ -1,4 +1,5 @@
 import type {
+  ApprovalStatus,
   EvaluationPeriodStatus,
   EvaluationPeriodPhase,
   EvaluationPeriodDto,
@@ -45,6 +46,10 @@ export interface IEvaluationPeriod extends IBaseEntity {
   maxSelfEvaluationRate: number;
   /** 등급 구간 설정 */
   gradeRanges: GradeRange[];
+  /** 결재 문서 ID */
+  approvalDocumentId?: string;
+  /** 결재 상태 */
+  approvalStatus: ApprovalStatus;
 
   /**
    * 평가 기간을 시작한다
@@ -302,6 +307,20 @@ export interface IEvaluationPeriod extends IBaseEntity {
    * 특정 등급의 구간 정보를 조회한다
    */
   등급구간_조회한다(grade: string): GradeRange | null;
+
+  /**
+   * 결재 문서 ID를 설정한다
+   * @param approvalDocumentId 결재 문서 ID
+   * @param setBy 설정한 사용자 ID
+   */
+  결재문서ID_설정한다(approvalDocumentId: string, setBy: string): void;
+
+  /**
+   * 결재 상태를 변경한다
+   * @param approvalStatus 결재 상태
+   * @param changedBy 변경한 사용자 ID
+   */
+  결재상태_변경한다(approvalStatus: ApprovalStatus, changedBy: string): void;
 
   /**
    * 평가 기간을 DTO로 변환한다

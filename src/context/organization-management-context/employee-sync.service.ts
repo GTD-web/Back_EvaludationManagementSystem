@@ -64,26 +64,11 @@ export class EmployeeSyncService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('모듈 초기화: 직원 데이터 확인 중...');
-
       // 직원 데이터 개수 확인
       const stats = await this.employeeService.getEmployeeStats();
 
       if (stats.totalEmployees === 0) {
-        this.logger.log('직원 데이터가 없습니다. 초기 동기화를 시작합니다...');
-        const result = await this.syncEmployees(true);
-
-        if (result.success) {
-          this.logger.log(
-            `초기 동기화 완료: ${result.created}개 생성, ${result.updated}개 업데이트`,
-          );
-        } else {
-          this.logger.error(`초기 동기화 실패: ${result.errors.join(', ')}`);
-        }
-      } else {
-        this.logger.log(
-          `기존 직원 데이터 ${stats.totalEmployees}개 확인됨. 초기 동기화를 건너뜁니다.`,
-        );
+        await this.syncEmployees(true);
       }
     } catch (error) {
       this.logger.error(`모듈 초기화 중 오류 발생: ${error.message}`);
@@ -447,7 +432,6 @@ export class EmployeeSyncService implements OnModuleInit {
         : true;
 
     if (!scheduledSyncEnabled) {
-      this.logger.debug('스케줄된 직원 동기화가 비활성화되어 있습니다.');
       return;
     }
 
@@ -697,9 +681,6 @@ export class EmployeeSyncService implements OnModuleInit {
         : true;
 
     if (!syncDeleteMissingEnabled) {
-      this.logger.debug(
-        'SSO에 없는 직원 퇴사 처리가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_EMPLOYEES=false)',
-      );
       return 0;
     }
 
@@ -743,10 +724,6 @@ export class EmployeeSyncService implements OnModuleInit {
         employee.updatedBy = this.systemUserId;
         employeesToSave.push(employee);
         terminatedCount++;
-
-        this.logger.debug(
-          `직원 ${employee.name} (${employee.employeeNumber}, externalId: ${employee.externalId})를 퇴사 상태로 변경합니다.`,
-        );
       } catch (error) {
         this.logger.error(
           `직원 ${employee.name} (${employee.employeeNumber}) 퇴사 처리 실패: ${error.message}`,
@@ -916,9 +893,6 @@ export class EmployeeSyncService implements OnModuleInit {
         existingEmployee.externalUpdatedAt,
       );
       if (externalUpdatedAt > existingExternalUpdatedAt) {
-        this.logger.debug(
-          `직원 ${existingEmployee.name} (${existingEmployee.employeeNumber}): 외부 서버에서 업데이트됨 (외부: ${externalUpdatedAt.toISOString()}, 로컬: ${existingExternalUpdatedAt.toISOString()})`,
-        );
         return true;
       }
     }

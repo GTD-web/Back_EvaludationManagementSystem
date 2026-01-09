@@ -131,6 +131,7 @@ export class DownwardEvaluationApiClient {
     periodId: string;
     evaluatorId: string;
     evaluationType: 'primary' | 'secondary';
+    approveAllBelow?: boolean;
   }): Promise<{
     submittedCount: number;
     skippedCount: number;
@@ -139,14 +140,20 @@ export class DownwardEvaluationApiClient {
     skippedIds: string[];
     failedItems: Array<{ evaluationId: string; error: string }>;
   }> {
+    const queryParams: any = {
+      evaluationType: config.evaluationType,
+    };
+
+    if (config.approveAllBelow !== undefined) {
+      queryParams.approveAllBelow = config.approveAllBelow.toString();
+    }
+
     const response = await this.testSuite
       .request()
       .post(
         `/admin/performance-evaluation/downward-evaluations/evaluatee/${config.evaluateeId}/period/${config.periodId}/bulk-submit`,
       )
-      .query({
-        evaluationType: config.evaluationType,
-      })
+      .query(queryParams)
       .send({
         evaluatorId: config.evaluatorId,
       })

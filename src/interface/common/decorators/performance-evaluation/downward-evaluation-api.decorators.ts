@@ -576,6 +576,14 @@ export function BulkSubmitDownwardEvaluations() {
       required: true,
       example: DownwardEvaluationType.PRIMARY,
     }),
+    ApiQuery({
+      name: 'approveAllBelow',
+      required: false,
+      description:
+        '하위 단계 자동 승인 여부 (기본값: false). true일 경우 평가기준, 자기평가, 하향평가를 모두 승인합니다.',
+      type: String,
+      example: 'false',
+    }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,
       description: '하향평가 일괄 제출 정보 (evaluatorId 포함)',

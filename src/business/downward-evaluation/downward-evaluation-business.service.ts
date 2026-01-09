@@ -278,7 +278,7 @@ export class DownwardEvaluationBusinessService {
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow = true,
+    approveAllBelow = false,
   ): Promise<void> {
     this.logger.log(
       `1차 하향평가 제출 및 재작성 요청 완료 처리 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
@@ -420,7 +420,7 @@ export class DownwardEvaluationBusinessService {
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow = true,
+    approveAllBelow = false,
   ): Promise<void> {
     this.logger.log(
       `2차 하향평가 제출 및 재작성 요청 완료 처리 시작 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,

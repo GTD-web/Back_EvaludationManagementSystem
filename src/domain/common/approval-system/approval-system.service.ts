@@ -126,7 +126,6 @@ export class ApprovalSystemService {
    */
   async LIAS서버_상태를_확인한다(): Promise<boolean> {
     if (!this.liasBaseUrl) {
-      this.logger.debug('LIAS_URL이 설정되지 않아 상태 확인을 건너뜁니다.');
       return false;
     }
 

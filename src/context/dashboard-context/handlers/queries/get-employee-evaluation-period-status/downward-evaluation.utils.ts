@@ -344,6 +344,7 @@ export async function 하향평가_상태를_조회한다(
   // 중복 제거하여 고유한 평가자 ID 목록을 반환
   const secondaryEvaluators: string[] = [];
   if (secondaryLine) {
+    // 1. 평가라인 매핑에서 평가자 목록 조회
     const secondaryMappings = await evaluationLineMappingRepository
       .createQueryBuilder('mapping')
       .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
@@ -357,14 +358,39 @@ export async function 하향평가_상태를_조회한다(
       .orderBy('mapping.createdAt', 'ASC')
       .getMany();
 
-    // 중복된 evaluatorId 제거
-    const uniqueEvaluatorIds = [
+    const mappingEvaluatorIds = [
       ...new Set(
         secondaryMappings.map((m) => m.evaluatorId).filter((id) => !!id),
       ),
     ];
-    secondaryEvaluators.push(...uniqueEvaluatorIds);
+    secondaryEvaluators.push(...mappingEvaluatorIds);
   }
+
+  // 2. 실제로 평가를 작성한 평가자 목록도 조회
+  const actualSecondaryEvaluators = await downwardEvaluationRepository
+    .createQueryBuilder('downward')
+    .select('DISTINCT downward.evaluatorId', 'evaluatorId')
+    .where('downward.periodId = :evaluationPeriodId', {
+      evaluationPeriodId,
+    })
+    .andWhere('downward.employeeId = :employeeId', { employeeId })
+    .andWhere('downward.evaluationType = :evaluationType', {
+      evaluationType: DownwardEvaluationType.SECONDARY,
+    })
+    .andWhere('downward.deletedAt IS NULL')
+    .andWhere('downward.evaluatorId IS NOT NULL')
+    .getRawMany();
+
+  const actualEvaluatorIds = actualSecondaryEvaluators
+    .map((row) => row.evaluatorId)
+    .filter((id) => !!id);
+
+  // 3. 두 목록을 합쳐서 중복 제거
+  const allSecondaryEvaluatorIds = [
+    ...new Set([...secondaryEvaluators, ...actualEvaluatorIds]),
+  ];
+  secondaryEvaluators.length = 0;
+  secondaryEvaluators.push(...allSecondaryEvaluatorIds);
 
   // 6. 각 SECONDARY 평가자별 하향평가 상태 조회
   const secondaryStatuses = await Promise.all(
@@ -440,8 +466,11 @@ export async function 하향평가_상태를_조회한다(
   );
 
   // 6-1. assignedWbsCount가 0인 평가자는 제외 (취소된 프로젝트 할당으로 인해 WBS가 없는 경우)
+  // 단, 실제로 평가를 작성한 평가자는 포함 (평가라인 매핑에 없어도 평가 데이터가 있으면 포함)
   const filteredSecondaryStatuses = secondaryStatuses.filter(
-    (status) => status.assignedWbsCount > 0,
+    (status) =>
+      status.assignedWbsCount > 0 ||
+      status.completedEvaluationCount > 0,
   );
 
   // 7. 2차 하향평가 가중치 기반 총점 및 등급 계산
@@ -784,6 +813,21 @@ export async function 특정_평가자의_하향평가_상태를_조회한다(
     .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 조회
     .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회
     .getMany();
+
+  // 2-1. 2차 평가자의 경우, 평가라인 매핑에 없는 평가자는 실제 평가 데이터를 기반으로 assignedWbsCount 계산
+  if (
+    evaluationType === DownwardEvaluationType.SECONDARY &&
+    assignedWbsCount === 0 &&
+    downwardEvaluations.length > 0
+  ) {
+    // 실제 평가 데이터에서 평가한 고유한 WBS 수를 assignedWbsCount로 사용
+    const uniqueWbsIds = new Set(
+      downwardEvaluations
+        .map((evaluation) => evaluation.wbsId)
+        .filter((id) => !!id),
+    );
+    assignedWbsCount = uniqueWbsIds.size;
+  }
 
   // 3. 완료된 하향평가 개수 확인
   const completedEvaluationCount = downwardEvaluations.filter((evaluation) =>

@@ -12,6 +12,7 @@ import { EvaluationCriteriaBusinessModule } from './evaluation-criteria/evaluati
 import { ProjectAssignmentBusinessModule } from './project-assignment/project-assignment-business.module';
 import { EvaluationLineBusinessModule } from './evaluation-line/evaluation-line-business.module';
 import { FinalEvaluationBusinessModule } from './final-evaluation/final-evaluation-business.module';
+import { EvaluationSubmissionBusinessModule } from './evaluation-submission/evaluation-submission-business.module';
 
 /**
  * 비즈니스 레이어 통합 모듈
@@ -33,6 +34,7 @@ import { FinalEvaluationBusinessModule } from './final-evaluation/final-evaluati
     ProjectAssignmentBusinessModule,
     EvaluationLineBusinessModule,
     FinalEvaluationBusinessModule,
+    EvaluationSubmissionBusinessModule,
   ],
   exports: [
     PeerEvaluationBusinessModule,
@@ -48,6 +50,7 @@ import { FinalEvaluationBusinessModule } from './final-evaluation/final-evaluati
     ProjectAssignmentBusinessModule,
     EvaluationLineBusinessModule,
     FinalEvaluationBusinessModule,
+    EvaluationSubmissionBusinessModule,
   ],
 })
 export class BusinessModule {}

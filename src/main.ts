@@ -74,7 +74,7 @@ async function bootstrap() {
     includeModules: [EvaluatorInterfaceModule],
   });
 
-    const port = configService.get<number>('PORT', 4000);
+    const port = configService.get<number>('PORT', 4100);
     await app.listen(port);
 
     console.log(`🚀 Application is running on: http://localhost:${port}`);

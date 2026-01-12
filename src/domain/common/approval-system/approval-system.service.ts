@@ -126,20 +126,23 @@ export class ApprovalSystemService {
    */
   async LIAS서버_상태를_확인한다(): Promise<boolean> {
     if (!this.liasBaseUrl) {
+      this.logger.warn('LIAS_URL이 설정되지 않아 LIAS 서버 상태 확인을 건너뜁니다.');
       return false;
     }
 
     try {
       const url = `${this.liasBaseUrl}/api/health`;
-
+      this.logger.debug(`LIAS 서버 상태 확인 요청: GET ${url}`);
       await firstValueFrom(
         this.httpService.get(url, {
           timeout: 3000,
         }),
       );
+      this.logger.debug('LIAS 서버 상태 확인 성공');
       return true;
     } catch (error) {
       this.logger.warn('LIAS 서버 상태 확인 실패');
+      this.logger.error(error.message);
       return false;
     }
   }

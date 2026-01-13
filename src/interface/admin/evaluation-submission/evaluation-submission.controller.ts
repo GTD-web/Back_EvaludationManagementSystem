@@ -2,22 +2,38 @@ import {
   Controller,
   Body,
   Param,
+  Query,
   BadRequestException,
   Logger,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { Roles } from '@interface/common/decorators';
-import { UpdateEvaluationSubmission } from '@interface/common/decorators/evaluation-submission/evaluation-submission-api.decorators';
+import {
+  UpdateEvaluationSubmission,
+  SubmitCriteriaEvaluation,
+  SubmitSelfEvaluation,
+  SubmitPrimaryDownwardEvaluation,
+  SubmitSecondaryDownwardEvaluation,
+} from '@interface/common/decorators/evaluation-submission/evaluation-submission-api.decorators';
 import { UpdateEvaluationSubmissionDto } from '@interface/common/dto/evaluation-submission/update-evaluation-submission.dto';
 import { UpdateEvaluationSubmissionResponseDto } from '@interface/common/dto/evaluation-submission/evaluation-submission-response.dto';
 import { EvaluationSubmissionBusinessService } from '@business/evaluation-submission/evaluation-submission-business.service';
+import { EvaluationCriteriaBusinessService } from '@business/evaluation-criteria/evaluation-criteria-business.service';
+import { WbsSelfEvaluationBusinessService } from '@business/wbs-self-evaluation/wbs-self-evaluation-business.service';
+import { DownwardEvaluationBusinessService } from '@business/downward-evaluation/downward-evaluation-business.service';
+import { SubmitEvaluationCriteriaDto } from '@interface/common/dto/evaluation-criteria/wbs-evaluation-criteria.dto';
+import { EvaluationCriteriaSubmissionResponseDto } from '@interface/common/dto/evaluation-criteria/wbs-evaluation-criteria.dto';
+import { SubmitDownwardEvaluationDto, SubmitDownwardEvaluationQueryDto } from '@interface/common/dto/performance-evaluation/downward-evaluation.dto';
+import { SubmitAllWbsSelfEvaluationsResponseDto } from '@interface/common/dto/performance-evaluation/wbs-self-evaluation.dto';
 
 /**
  * 평가 제출 관리 컨트롤러
  *
- * 평가기준, 자기평가, 1차평가, 2차평가의 제출 여부를 변경하는 API를 제공합니다.
+ * 평가기준, 자기평가, 1차평가, 2차평가의 제출 여부를 변경하는 API와 제출 API를 제공합니다.
+ * 제출 시 재작성 요청 응답 처리 및 승인 상태 변경이 자동으로 처리됩니다.
  */
 @ApiTags('A-0-4. 관리자 - 평가 제출 관리')
 @ApiBearerAuth('Bearer')
@@ -28,10 +44,18 @@ export class EvaluationSubmissionController {
 
   constructor(
     private readonly evaluationSubmissionBusinessService: EvaluationSubmissionBusinessService,
+    private readonly evaluationCriteriaBusinessService: EvaluationCriteriaBusinessService,
+    private readonly wbsSelfEvaluationBusinessService: WbsSelfEvaluationBusinessService,
+    private readonly downwardEvaluationBusinessService: DownwardEvaluationBusinessService,
   ) {}
 
   /**
    * 평가 제출 여부를 변경한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다. 대신 각 평가 타입별 제출 엔드포인트를 사용하세요.
+   * - 평가기준: POST /admin/evaluation-submission/criteria
+   * - 자기평가: POST /admin/evaluation-submission/self-evaluation/:employeeId/:periodId
+   * - 1차 하향평가: POST /admin/evaluation-submission/primary-downward/:evaluateeId/:periodId/:wbsId
+   * - 2차 하향평가: POST /admin/evaluation-submission/secondary-downward/:evaluateeId/:periodId/:wbsId
    */
   @UpdateEvaluationSubmission()
   async updateEvaluationSubmission(
@@ -122,5 +146,120 @@ export class EvaluationSubmissionController {
       );
       throw error;
     }
+  }
+
+  /**
+   * 평가기준 제출
+   * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+   */
+  @SubmitCriteriaEvaluation()
+  async submitCriteriaEvaluation(
+    @Body() dto: SubmitEvaluationCriteriaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EvaluationCriteriaSubmissionResponseDto> {
+    const submittedBy = user.id;
+    this.logger.log(
+      `평가기준 제출 요청 - 직원: ${dto.employeeId}, 평가기간: ${dto.evaluationPeriodId}`,
+    );
+
+    const result =
+      await this.evaluationCriteriaBusinessService.평가기준을_제출하고_재작성요청을_완료한다(
+        dto.evaluationPeriodId,
+        dto.employeeId,
+        submittedBy,
+      );
+
+    return {
+      id: result.id,
+      evaluationPeriodId: result.evaluationPeriodId,
+      employeeId: result.employeeId,
+      isCriteriaSubmitted: result.isCriteriaSubmitted,
+      criteriaSubmittedAt: result.criteriaSubmittedAt,
+      criteriaSubmittedBy: result.criteriaSubmittedBy,
+    };
+  }
+
+  /**
+   * 자기평가 제출
+   * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+   */
+  @SubmitSelfEvaluation()
+  async submitSelfEvaluation(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Param('periodId', ParseUUIDPipe) periodId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<SubmitAllWbsSelfEvaluationsResponseDto> {
+    const submittedBy = user.id;
+    this.logger.log(
+      `자기평가 제출 요청 - 직원: ${employeeId}, 평가기간: ${periodId}`,
+    );
+
+    return await this.wbsSelfEvaluationBusinessService.직원의_전체_WBS자기평가를_제출하고_재작성요청을_완료한다(
+      employeeId,
+      periodId,
+      submittedBy,
+    );
+  }
+
+  /**
+   * 1차 하향평가 제출
+   * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+   */
+  @SubmitPrimaryDownwardEvaluation()
+  async submitPrimaryDownwardEvaluation(
+    @Param('evaluateeId', ParseUUIDPipe) evaluateeId: string,
+    @Param('periodId', ParseUUIDPipe) periodId: string,
+    @Param('wbsId', ParseUUIDPipe) wbsId: string,
+    @Query() queryDto: SubmitDownwardEvaluationQueryDto,
+    @Body() submitDto: SubmitDownwardEvaluationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const evaluatorId = submitDto.evaluatorId;
+    const submittedBy = user.id;
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
+
+    this.logger.log(
+      `1차 하향평가 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
+    );
+
+    await this.downwardEvaluationBusinessService.일차_하향평가를_제출하고_재작성요청을_완료한다(
+      evaluateeId,
+      periodId,
+      wbsId,
+      evaluatorId,
+      submittedBy,
+      approveAllBelow,
+    );
+  }
+
+  /**
+   * 2차 하향평가 제출
+   * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+   */
+  @SubmitSecondaryDownwardEvaluation()
+  async submitSecondaryDownwardEvaluation(
+    @Param('evaluateeId', ParseUUIDPipe) evaluateeId: string,
+    @Param('periodId', ParseUUIDPipe) periodId: string,
+    @Param('wbsId', ParseUUIDPipe) wbsId: string,
+    @Query() queryDto: SubmitDownwardEvaluationQueryDto,
+    @Body() submitDto: SubmitDownwardEvaluationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const evaluatorId = submitDto.evaluatorId;
+    const submittedBy = user.id;
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
+
+    this.logger.log(
+      `2차 하향평가 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
+    );
+
+    await this.downwardEvaluationBusinessService.이차_하향평가를_제출하고_재작성요청을_완료한다(
+      evaluateeId,
+      periodId,
+      wbsId,
+      evaluatorId,
+      submittedBy,
+      approveAllBelow,
+    );
   }
 }

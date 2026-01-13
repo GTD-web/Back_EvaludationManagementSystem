@@ -34,6 +34,9 @@ import { EvaluatorWbsSelfEvaluationManagementController } from './performance-ev
 import { EvaluatorRevisionRequestController } from './revision-request/evaluator-revision-request.controller';
 import { NotificationController } from '../common/controllers/notification.controller';
 import { EvaluatorAuditLogController } from './audit-log/evaluator-audit-log.controller';
+import { EvaluatorEvaluationSubmissionController } from './evaluation-submission/evaluator-evaluation-submission.controller';
+import { EvaluationSubmissionBusinessModule } from '../../business/evaluation-submission/evaluation-submission-business.module';
+import { EvaluatorStepRevisionRequestController } from './step-approval/evaluator-step-revision-request.controller';
 
 /**
  * 평가자 인터페이스 모듈
@@ -56,6 +59,7 @@ import { EvaluatorAuditLogController } from './audit-log/evaluator-audit-log.con
     RevisionRequestContextModule, // 재작성 요청 컨텍스트 모듈 주입
     AuditLogContextModule, // Audit 로그 컨텍스트 모듈 주입
     BusinessModule, // 비즈니스 레이어 모듈 주입
+    EvaluationSubmissionBusinessModule, // 평가 제출 관리 비즈니스 모듈 주입
     EvaluationPeriodModule, // 평가 기간 모듈 주입
     EmployeeModule, // 직원 모듈 주입
     NotificationModule, // 알림 모듈 주입
@@ -79,6 +83,8 @@ import { EvaluatorAuditLogController } from './audit-log/evaluator-audit-log.con
     EvaluatorWbsSelfEvaluationManagementController,
     EvaluatorRevisionRequestController,
     EvaluatorAuditLogController,
+    EvaluatorEvaluationSubmissionController,
+    EvaluatorStepRevisionRequestController,
     NotificationController,
   ],
   providers: [],

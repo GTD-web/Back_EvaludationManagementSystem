@@ -132,13 +132,11 @@ export class ApprovalSystemService {
 
     try {
       const url = `${this.liasBaseUrl}/api/health`;
-      this.logger.debug(`LIAS 서버 상태 확인 요청: GET ${url}`);
       await firstValueFrom(
         this.httpService.get(url, {
           timeout: 3000,
         }),
       );
-      this.logger.debug('LIAS 서버 상태 확인 성공');
       return true;
     } catch (error) {
       this.logger.warn('LIAS 서버 상태 확인 실패');

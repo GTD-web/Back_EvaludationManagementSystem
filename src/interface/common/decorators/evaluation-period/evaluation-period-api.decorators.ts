@@ -23,6 +23,7 @@ import {
   UpdateDefaultGradeRangesApiDto,
   CopyPreviousPeriodDataApiDto,
   CopyPreviousPeriodDataResponseDto,
+  SetApprovalDocumentIdApiDto,
 } from '../../dto/evaluation-period/evaluation-management.dto';
 
 // ==================== GET 엔드포인트 데코레이터 ====================
@@ -690,6 +691,10 @@ export function UpdateEvaluationPeriodGradeRanges() {
       summary: '평가 기간 등급 구간 수정',
       description: `**중요**: 평가 기간의 등급 구간 설정을 전체 교체합니다. 기존 등급 구간은 모두 삭제되고 새로운 등급 구간으로 대체됩니다.
 
+**동작:**
+- 등급 구간 설정 시 등급 구간의 최대값(maxRange)을 maxSelfEvaluationRate로 자동 설정합니다.
+- 이는 자기평가 점수의 상한선을 등급 구간과 일치시키기 위함입니다.
+
 **테스트 케이스:**
 - 기본 수정: 유효한 등급 구간 배열로 전체 교체
 - 완전 교체: 기존과 완전히 다른 등급 구간으로 변경
@@ -941,6 +946,59 @@ export function UpdateManualSettingPermissions() {
 }
 
 /**
+ * 결재 문서 ID 설정 엔드포인트 데코레이터
+ */
+export function SetApprovalDocumentId() {
+  return applyDecorators(
+    Patch(':id/approval-document'),
+    ApiOperation({
+      summary: '결재 문서 ID 설정',
+      description: `평가기간에 결재 문서 ID를 설정하고 결재 상태를 'pending'으로 변경합니다.
+
+**동작:**
+- 프론트엔드에서 LIAS 결재관리시스템으로 결재 요청을 보낸 후 받은 documentId를 저장합니다.
+- 결재 상태가 'none'에서 'pending'으로 변경됩니다.
+- 백엔드 스케줄러가 주기적으로 LIAS 서버에 결재 상태를 확인하여 동기화합니다.
+
+**테스트 케이스:**
+- 기본 설정: 유효한 documentId로 결재 문서 ID 설정
+- 상태 변경 확인: 설정 후 approvalStatus가 'pending'으로 변경됨
+- 중복 설정: 이미 설정된 경우 덮어쓰기 가능
+- 필수 필드 누락: approvalDocumentId 누락 시 400 에러
+- 잘못된 UUID: 평가기간 ID 형식 오류 시 400 에러
+- 존재하지 않는 평가기간: 404 에러`,
+    }),
+    ApiParam({
+      name: 'id',
+      description: '평가 기간 ID (UUID 형식)',
+      example: '123e4567-e89b-12d3-a456-426614174000',
+      schema: { type: 'string', format: 'uuid' },
+    }),
+    ApiBody({
+      type: SetApprovalDocumentIdApiDto,
+      description: '결재 문서 ID',
+    }),
+    ApiResponse({
+      status: 200,
+      description: '결재 문서 ID가 성공적으로 설정되었습니다.',
+      type: EvaluationPeriodResponseDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 데이터입니다.',
+    }),
+    ApiResponse({
+      status: 404,
+      description: '평가 기간을 찾을 수 없습니다.',
+    }),
+    ApiResponse({
+      status: 500,
+      description: '서버 내부 오류',
+    }),
+  );
+}
+
+/**
  * 평가 기간 복제 엔드포인트 데코레이터
  */
 export function CopyEvaluationPeriod() {
@@ -1034,11 +1092,14 @@ export function CopyPreviousPeriodData() {
 **동작:**
 - 지정한 직원(:employeeId)의 이전 평가기간 데이터를 복사합니다.
 - 이전 평가기간(:sourcePeriodId)의 데이터를 현재 평가기간(:targetPeriodId)으로 복사합니다.
+- **중요**: WBS Item은 평가기간별로 독립적으로 관리됩니다. 복사 시 새로운 WBS ID가 생성되어 평가기간 간 완전히 독립적으로 운영됩니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
-  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
-  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
-  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
+  * WBS Item (WbsItem) - **새로운 ID로 생성됨** (평가기간별 독립성 보장)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록 (새 WBS ID 사용)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정 (새 WBS ID 사용)
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance), **목표(subProject)**, **추가성과 여부(isAdditional)** (새 WBS ID 사용)
+  * 목표 (subProject) - WBS별 목표 정보 (새 WBS ID 사용)
 - 선택적 필터링:
   * projects: 특정 프로젝트와 해당 프로젝트의 WBS만 복사 (미지정 시 모든 프로젝트와 WBS)
   * 각 프로젝트별로 wbsIds를 지정하여 프로젝트 내 특정 WBS만 선택 가능
@@ -1048,9 +1109,14 @@ export function CopyPreviousPeriodData() {
   * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
-- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
-- 성과 입력 데이터
-- 평가 제출 상태
+- 성과 입력 (performanceResult)
+- 자가평가 내용 (selfEvaluationContent)
+- 성과 달성률/점수 (selfEvaluationScore)
+- 하향평가 결과 (DownwardEvaluation)
+- 동료평가 결과 (PeerEvaluation)
+- 최종평가 결과 (FinalEvaluation)
+- 산출물 목록 (Deliverable)
+- 평가 제출 상태 (submittedToEvaluator, submittedToManager 플래그는 초기화됨)
 
 **사용 시나리오:**
 - 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때
@@ -1157,11 +1223,14 @@ export function CopyMyPreviousPeriodData() {
 **동작:**
 - JWT 토큰에서 현재 로그인한 사용자 ID 추출
 - 이전 평가기간(:sourcePeriodId)의 내 데이터를 현재 평가기간(:targetPeriodId)으로 복사
+- **중요**: WBS Item은 평가기간별로 독립적으로 관리됩니다. 복사 시 새로운 WBS ID가 생성되어 평가기간 간 완전히 독립적으로 운영됩니다.
 - 복사되는 항목:
   * 프로젝트 할당 (EvaluationProjectAssignment)
-  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록
-  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정
-  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance)
+  * WBS Item (WbsItem) - **새로운 ID로 생성됨** (평가기간별 독립성 보장)
+  * WBS 할당 (EvaluationWbsAssignment) - 직원에게 할당된 WBS 목록 (새 WBS ID 사용)
+  * 평가라인 매핑 (EvaluationLineMapping) - WBS별 평가자 지정 (새 WBS ID 사용)
+  * WBS 평가 기준 (WbsEvaluationCriteria) - 평가 항목(criteria), 중요도(importance), **목표(subProject)**, **추가성과 여부(isAdditional)** (새 WBS ID 사용)
+  * 목표 (subProject) - WBS별 목표 정보 (새 WBS ID 사용)
 - 선택적 필터링:
   * projectIds: 특정 프로젝트만 복사 (미지정 시 모든 프로젝트)
   * wbsIds: 특정 WBS만 복사 (미지정 시 모든 WBS)
@@ -1171,9 +1240,14 @@ export function CopyMyPreviousPeriodData() {
   * 이미 존재하는 평가 기준은 건너뜀
 
 **복사되지 않는 항목:**
-- 평가 결과 (자기평가, 하향평가, 동료평가, 최종평가)
-- 성과 입력 데이터
-- 평가 제출 상태
+- 성과 입력 (performanceResult)
+- 자가평가 내용 (selfEvaluationContent)
+- 성과 달성률/점수 (selfEvaluationScore)
+- 하향평가 결과 (DownwardEvaluation)
+- 동료평가 결과 (PeerEvaluation)
+- 최종평가 결과 (FinalEvaluation)
+- 산출물 목록 (Deliverable)
+- 평가 제출 상태 (submittedToEvaluator, submittedToManager 플래그는 초기화됨)
 
 **사용 시나리오:**
 - 평가기간 시작 시 이전 평가기간의 내 설정을 그대로 가져오고 싶을 때
@@ -1427,7 +1501,7 @@ export function GetEmployeePeriodAssignments() {
 - 해당 평가기간에 직원에게 할당된 모든 WBS를 조회합니다.
 - WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 해당 프로젝트도 함께 조회됩니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
-- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다 (평가기준에 subProject 포함).
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
 - **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
@@ -1443,7 +1517,7 @@ export function GetEmployeePeriodAssignments() {
 - projects: 프로젝트 및 WBS 할당 목록
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
-    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, **subProject**, createdAt)
     - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
     - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
@@ -1452,6 +1526,7 @@ export function GetEmployeePeriodAssignments() {
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- subProject 포함: 각 평가기준에 subProject가 포함되어 반환됨
 - 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
 - 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환
@@ -1580,7 +1655,7 @@ export function GetMyPeriodAssignments() {
 - 해당 평가기간에 사용자에게 할당된 모든 WBS를 조회합니다.
 - WBS 할당이 있으면 프로젝트 할당 여부와 상관없이 해당 프로젝트도 함께 조회됩니다.
 - 각 프로젝트별로 할당된 WBS 목록을 함께 조회합니다.
-- 각 WBS의 평가기준 목록을 함께 반환합니다.
+- 각 WBS의 평가기준 목록을 함께 반환합니다 (평가기준에 subProject 포함).
 - 각 WBS에 할당된 1차/2차 평가자 정보를 함께 반환합니다 (평가라인 매핑이 있는 경우).
 - 프로젝트 매니저 정보도 함께 반환합니다.
 - **소프트 삭제된 프로젝트, WBS는 제외됩니다.**
@@ -1596,7 +1671,7 @@ export function GetMyPeriodAssignments() {
 - projects: 프로젝트 및 WBS 할당 목록
   * projectManager: 프로젝트 매니저 정보
   * wbsList: WBS 목록
-    - criteria: 평가기준 목록 (criterionId, criteria, importance, createdAt)
+    - criteria: 평가기준 목록 (criterionId, criteria, importance, **subProject**, createdAt)
     - primaryDownwardEvaluation: 1차 평가자 정보 (평가라인 매핑이 있는 경우)
     - secondaryDownwardEvaluation: 2차 평가자 정보 (평가라인 매핑이 있는 경우)
 - totalProjects: 총 프로젝트 수
@@ -1605,6 +1680,7 @@ export function GetMyPeriodAssignments() {
 **테스트 케이스:**
 - 기본 조회: 할당된 프로젝트와 WBS 목록을 성공적으로 조회
 - 평가기준 포함: 각 WBS의 평가기준 목록이 포함되어 반환됨
+- subProject 포함: 각 평가기준에 subProject가 포함되어 반환됨
 - 평가자 정보 포함: 1차/2차 평가자 정보가 포함되어 반환됨 (평가라인 매핑이 있는 경우)
 - 평가자 정보 없음: 평가라인 매핑이 없어도 WBS는 조회됨
 - 할당 없음: 할당된 프로젝트가 없는 경우 빈 배열 반환

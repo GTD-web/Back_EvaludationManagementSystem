@@ -7,6 +7,7 @@ import { SSOModule } from './sso/sso.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { SystemSettingModule } from './system-setting/system-setting.module';
 import { NotificationModule } from './notification';
+import { ApprovalSystemModule } from './approval-system/approval-system.module';
 
 /**
  * 외부 도메인 모듈
@@ -23,6 +24,7 @@ import { NotificationModule } from './notification';
     AuditLogModule,
     SystemSettingModule,
     NotificationModule,
+    ApprovalSystemModule,
   ],
   exports: [
     EmployeeModule,
@@ -33,6 +35,7 @@ import { NotificationModule } from './notification';
     AuditLogModule,
     SystemSettingModule,
     NotificationModule,
+    ApprovalSystemModule,
   ],
 })
 export class CommonDomainModule {}

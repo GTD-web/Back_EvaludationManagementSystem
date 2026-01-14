@@ -5,10 +5,14 @@ import { CurrentUser } from '@interface/common/decorators/current-user.decorator
 import { Roles } from '@interface/common/decorators';
 import {
   CompleteRevisionRequest,
+  CompleteRevisionRequestByEvaluator,
   GetMyRevisionRequests,
   GetMyUnreadCount,
+  GetRevisionRequests,
   MarkRevisionRequestAsRead,
 } from '@interface/common/decorators/revision-request/revision-request-api.decorators';
+import { CompleteRevisionRequestByEvaluatorQueryDto } from '@interface/common/dto/revision-request/complete-revision-request-by-evaluator-query.dto';
+import { CompleteRevisionRequestByEvaluatorDto } from '@interface/common/dto/revision-request/complete-revision-request-by-evaluator.dto';
 import { CompleteRevisionRequestDto } from '@interface/common/dto/revision-request/complete-revision-request.dto';
 import { GetRevisionRequestsQueryDto } from '@interface/common/dto/revision-request/get-revision-requests-query.dto';
 import {
@@ -39,7 +43,45 @@ export class EvaluatorRevisionRequestController {
   ) {}
 
   /**
-   * 평가자에게 할당된 피평가자 목록 조회
+   * 전체 재작성 요청 목록을 조회한다 (관리자용)
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
+   */
+  @GetRevisionRequests()
+  async getRevisionRequests(
+    @Query() query: GetRevisionRequestsQueryDto,
+  ): Promise<RevisionRequestResponseDto[]> {
+    const requests =
+      await this.revisionRequestContextService.전체_재작성요청목록을_조회한다({
+        evaluationPeriodId: query.evaluationPeriodId,
+        employeeId: query.employeeId,
+        requestedBy: query.requestedBy,
+        isRead: query.isRead,
+        isCompleted: query.isCompleted,
+        step: query.step as any,
+      });
+
+    return requests.map((req) => ({
+      requestId: req.request.id,
+      evaluationPeriod: req.evaluationPeriod,
+      employee: req.employee,
+      step: req.request.step,
+      comment: req.request.comment,
+      requestedBy: req.request.requestedBy,
+      requestedAt: req.request.requestedAt,
+      recipientId: req.recipientInfo.recipientId,
+      recipientType: req.recipientInfo.recipientType,
+      isRead: req.recipientInfo.isRead,
+      readAt: req.recipientInfo.readAt,
+      isCompleted: req.recipientInfo.isCompleted,
+      completedAt: req.recipientInfo.completedAt,
+      responseComment: req.recipientInfo.responseComment,
+      approvalStatus: req.approvalStatus as unknown as StepApprovalStatusEnum,
+    }));
+  }
+
+  /**
+   * 내 재작성 요청 목록을 조회한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
@@ -52,8 +94,8 @@ export class EvaluatorRevisionRequestController {
         {
           evaluationPeriodId: query.evaluationPeriodId,
           employeeId: query.employeeId,
-          isRead: query.isRead ?? false,
-          isCompleted: query.isCompleted ?? false,
+          isRead: query.isRead,
+          isCompleted: query.isCompleted,
           step: query.step as any,
         },
       );
@@ -108,6 +150,7 @@ export class EvaluatorRevisionRequestController {
 
   /**
    * 재작성 완료 응답을 제출한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @CompleteRevisionRequest()
   async completeRevisionRequest(
@@ -118,6 +161,27 @@ export class EvaluatorRevisionRequestController {
     await this.revisionRequestBusinessService.재작성완료_응답을_제출한다(
       requestId,
       recipientId,
+      dto.responseComment,
+    );
+  }
+
+  /**
+   * 평가기간, 직원, 평가자 기반으로 재작성 완료 응답을 제출한다 (관리자용)
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
+   */
+  @CompleteRevisionRequestByEvaluator()
+  async completeRevisionRequestByEvaluator(
+    @Param('evaluationPeriodId', ParseUUIDPipe) evaluationPeriodId: string,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Param('evaluatorId', ParseUUIDPipe) evaluatorId: string,
+    @Query() queryDto: CompleteRevisionRequestByEvaluatorQueryDto,
+    @Body() dto: CompleteRevisionRequestByEvaluatorDto,
+  ): Promise<void> {
+    await this.revisionRequestBusinessService.평가기간_직원_평가자로_재작성완료_응답을_제출한다(
+      evaluationPeriodId,
+      employeeId,
+      evaluatorId,
+      queryDto.step as any,
       dto.responseComment,
     );
   }

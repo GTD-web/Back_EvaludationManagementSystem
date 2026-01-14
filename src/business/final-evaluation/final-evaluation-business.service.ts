@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { GetFinalEvaluationByEmployeePeriodQuery } from '@context/performance-evaluation-context/handlers/final-evaluation';
@@ -12,8 +12,6 @@ import { GetFinalEvaluationByEmployeePeriodQuery } from '@context/performance-ev
  */
 @Injectable()
 export class FinalEvaluationBusinessService {
-  private readonly logger = new Logger(FinalEvaluationBusinessService.name);
-
   constructor(
     private readonly performanceEvaluationService: PerformanceEvaluationService,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
@@ -31,12 +29,6 @@ export class FinalEvaluationBusinessService {
     finalComments: string | undefined,
     actionBy: string,
   ): Promise<string> {
-    this.logger.log('최종평가 저장 시작', {
-      employeeId,
-      periodId,
-      evaluationGrade,
-    });
-
     // 기존 최종평가 확인 (생성/수정 여부 판단)
     const existingEvaluation =
       await this.performanceEvaluationService.직원_평가기간별_최종평가를_조회한다(
@@ -76,18 +68,7 @@ export class FinalEvaluationBusinessService {
       });
     } catch (error) {
       // 활동 내역 기록 실패 시에도 최종평가 저장은 정상 처리
-      this.logger.warn('최종평가 저장 활동 내역 기록 실패', {
-        evaluationId,
-        employeeId,
-        periodId,
-        error: error.message,
-      });
     }
-
-    this.logger.log('최종평가 저장 완료', {
-      evaluationId,
-      isNewEvaluation,
-    });
 
     return evaluationId;
   }

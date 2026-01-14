@@ -18,6 +18,7 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
   const MOCK_MANAGER_ID_1 = '11111111-1111-1111-1111-111111111111';
   const MOCK_MANAGER_ID_2 = '22222222-2222-2222-2222-222222222222';
   const MOCK_EMPLOYEE_ID_3 = '33333333-3333-3333-3333-333333333333';
+  const MOCK_REAL_PM_ID = '44444444-4444-4444-4444-444444444444'; // 실 PM용 직원 ID
   const MOCK_DEPT_ID_1 = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   const MOCK_DEPT_ID_2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
@@ -95,6 +96,31 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         jobTitleName: '사원',
         jobTitleLevel: 1,
         jobTitleCode: 'M1',
+      },
+    },
+    {
+      id: MOCK_REAL_PM_ID,
+      employeeNumber: 'EMP004',
+      name: '최실무',
+      email: 'choi@company.com',
+      isTerminated: false,
+      department: {
+        id: MOCK_DEPT_ID_1,
+        departmentCode: 'DEV',
+        departmentName: '개발팀',
+      },
+      position: {
+        id: '66666666-6666-6666-6666-666666666666',
+        positionName: '선임',
+        positionLevel: 2,
+        positionCode: 'SR',
+        hasManagementAuthority: false,
+      },
+      jobTitle: {
+        id: '77777777-7777-7777-7777-777777777777',
+        jobTitleName: '대리',
+        jobTitleLevel: 2,
+        jobTitleCode: 'M2',
       },
     },
   ];
@@ -234,6 +260,136 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         name: '테스트 프로젝트',
         status: ProjectStatus.ACTIVE,
         managerId: 'invalid-uuid',
+      };
+
+      // When & Then
+      await testSuite
+        .request()
+        .post('/admin/projects')
+        .send(invalidData)
+        .expect(400);
+    });
+
+    it('realPMId로 실 PM을 설정하여 프로젝트를 생성할 수 있다', async () => {
+      // Given - Employee 테이블에 실 PM 직원 추가
+      const employeeRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Employee');
+      
+      const realPMEmployee = await employeeRepository.save({
+        externalId: MOCK_REAL_PM_ID,
+        name: '최실무',
+        email: 'choi@company.com',
+        employeeNumber: 'EMP004',
+        departmentName: '개발팀',
+      });
+
+      const projectData = {
+        name: '실 PM 포함 프로젝트',
+        projectCode: 'REAL-PM-2024',
+        status: ProjectStatus.ACTIVE,
+        managerId: MOCK_MANAGER_ID_1, // 프로젝트 매니저
+        realPMId: realPMEmployee.id, // 실 PM (Employee ID)
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects')
+        .send(projectData)
+        .expect(201);
+
+      // Then
+      expect(response.body).toMatchObject({
+        name: projectData.name,
+        projectCode: projectData.projectCode,
+        status: projectData.status,
+      });
+      expect(response.body.id).toBeDefined();
+
+      // DB에서 직접 확인
+      const projectRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Project');
+      const savedProject = await projectRepository.findOne({
+        where: { id: response.body.id },
+      });
+
+      // realPM 필드에 직원 이름이 저장되었는지 확인
+      expect(savedProject.realPM).toBe('최실무');
+      expect(savedProject.managerId).toBe(MOCK_MANAGER_ID_1);
+
+      createdProjectIds.push(response.body.id);
+    });
+
+    it('managerId와 realPMId를 모두 설정하여 프로젝트를 생성할 수 있다', async () => {
+      // Given - Employee 테이블에 실 PM 직원 추가
+      const employeeRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Employee');
+
+      const realPMEmployee = await employeeRepository.save({
+        externalId: MOCK_REAL_PM_ID,
+        name: '최실무',
+        email: 'choi@company.com',
+        employeeNumber: 'EMP004',
+        departmentName: '개발팀',
+      });
+
+      const projectData = {
+        name: 'PM + 실 PM 프로젝트',
+        projectCode: 'BOTH-PM-2024',
+        status: ProjectStatus.ACTIVE,
+        managerId: MOCK_MANAGER_ID_1, // 프로젝트 매니저 (externalId)
+        realPMId: realPMEmployee.id, // 실 PM (Employee ID)
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects')
+        .send(projectData)
+        .expect(201);
+
+      // Then
+      expect(response.body.id).toBeDefined();
+      createdProjectIds.push(response.body.id);
+
+      // DB에서 직접 확인
+      const projectRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Project');
+      const savedProject = await projectRepository.findOne({
+        where: { id: response.body.id },
+      });
+
+      // managerId와 realPM 모두 저장되었는지 확인
+      expect(savedProject.managerId).toBe(MOCK_MANAGER_ID_1);
+      expect(savedProject.realPM).toBe('최실무');
+    });
+
+    it('존재하지 않는 realPMId로 404 에러를 반환한다', async () => {
+      // Given
+      const invalidData = {
+        name: '잘못된 실 PM 프로젝트',
+        status: ProjectStatus.ACTIVE,
+        realPMId: '99999999-9999-9999-9999-999999999999', // 존재하지 않는 Employee ID
+      };
+
+      // When & Then
+      await testSuite
+        .request()
+        .post('/admin/projects')
+        .send(invalidData)
+        .expect(404);
+    });
+
+    it('잘못된 realPMId 형식으로 400 에러를 반환한다', async () => {
+      // Given - UUID가 아닌 realPMId
+      const invalidData = {
+        name: '테스트 프로젝트',
+        status: ProjectStatus.ACTIVE,
+        realPMId: 'invalid-uuid',
       };
 
       // When & Then
@@ -507,6 +663,46 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         .put(`/admin/projects/${nonExistentId}`)
         .send(updateData)
         .expect(404);
+    });
+
+    it('realPMId로 실 PM을 변경할 수 있다', async () => {
+      // Given - Employee 테이블에 실 PM 직원 추가
+      const employeeRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Employee');
+      
+      const realPMEmployee = await employeeRepository.save({
+        externalId: MOCK_REAL_PM_ID,
+        name: '최실무',
+        email: 'choi@company.com',
+        employeeNumber: 'EMP004',
+        departmentName: '개발팀',
+      });
+
+      const updateData = {
+        realPMId: realPMEmployee.id, // 실 PM 변경
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .put(`/admin/projects/${projectId}`)
+        .send(updateData)
+        .expect(200);
+
+      // Then
+      expect(response.status).toBe(200);
+
+      // DB에서 직접 확인
+      const projectRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Project');
+      const savedProject = await projectRepository.findOne({
+        where: { id: projectId },
+      });
+
+      // realPM 필드에 직원 이름이 저장되었는지 확인
+      expect(savedProject.realPM).toBe('최실무');
     });
   });
 
@@ -1084,6 +1280,69 @@ describe('프로젝트 관리 API E2E 테스트 (POST /admin/projects, GET, PUT,
         !noChildDetail.body.childProjects ||
           noChildDetail.body.childProjects.length === 0,
       ).toBe(true);
+    });
+
+    it('realPMId를 포함하여 일괄 생성할 수 있다', async () => {
+      // Given - Employee 테이블에 실 PM 직원 추가
+      const employeeRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Employee');
+      
+      const realPMEmployee = await employeeRepository.save({
+        externalId: MOCK_REAL_PM_ID,
+        name: '최실무',
+        email: 'choi@company.com',
+        employeeNumber: 'EMP004',
+        departmentName: '개발팀',
+      });
+
+      const bulkData = {
+        projects: [
+          {
+            name: '일괄 - 실 PM 포함 1',
+            projectCode: 'BULK-RPM-001',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_1,
+            realPMId: realPMEmployee.id,
+          },
+          {
+            name: '일괄 - 실 PM 포함 2',
+            projectCode: 'BULK-RPM-002',
+            status: ProjectStatus.ACTIVE,
+            managerId: MOCK_MANAGER_ID_2,
+            realPMId: realPMEmployee.id,
+          },
+        ],
+      };
+
+      // When
+      const response = await testSuite
+        .request()
+        .post('/admin/projects/bulk')
+        .send(bulkData)
+        .expect(201);
+
+      // Then
+      expect(response.body.successCount).toBe(2);
+      expect(response.body.failedCount).toBe(0);
+
+      response.body.success.forEach((project: any) => {
+        createdProjectIds.push(project.id);
+      });
+
+      // DB에서 직접 확인
+      const projectRepository = testSuite.app
+        .get('DataSource')
+        .getRepository('Project');
+
+      for (const project of response.body.success) {
+        const savedProject = await projectRepository.findOne({
+          where: { id: project.id },
+        });
+
+        // realPM 필드에 직원 이름이 저장되었는지 확인
+        expect(savedProject.realPM).toBe('최실무');
+      }
     });
   });
 

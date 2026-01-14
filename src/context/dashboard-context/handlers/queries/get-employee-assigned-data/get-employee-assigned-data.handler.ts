@@ -241,7 +241,25 @@ export class GetEmployeeAssignedDataHandler
       .andWhere('project_assignment.id IS NOT NULL')
       .getCount();
 
-    const completedSelfEvaluations = submittedToManagerCount;
+    // 성과달성률(점수)이 입력된 자기평가 수 (제출 여부와 무관하게 완료로 간주)
+    const completedSelfEvaluations = await this.selfEvaluationRepository
+      .createQueryBuilder('self_eval')
+      .leftJoin(
+        'evaluation_wbs_assignment',
+        'wbs_assignment',
+        'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
+      )
+      .leftJoin(
+        'evaluation_project_assignment',
+        'project_assignment',
+        'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+      )
+      .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+      .andWhere('self_eval.selfEvaluationScore IS NOT NULL')
+      .andWhere('self_eval.deletedAt IS NULL')
+      .andWhere('project_assignment.id IS NOT NULL')
+      .getCount();
 
     // 7. 자기평가 점수/등급 계산
     const selfEvaluationScore = await calculateSelfEvaluationScore(

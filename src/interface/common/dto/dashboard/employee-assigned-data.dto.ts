@@ -207,6 +207,12 @@ export class WbsEvaluationCriterionDto implements WbsEvaluationCriterion {
   subProject?: string | null;
 
   @ApiProperty({
+    description: '추가 과제 여부 (true인 경우 추가로 할당된 과제)',
+    example: false,
+  })
+  isAdditional: boolean;
+
+  @ApiProperty({
     description: '생성일',
     type: 'string',
     format: 'date-time',
@@ -426,6 +432,13 @@ export class AssignedWbsInfoDto implements AssignedWbsInfo {
   })
   @Type(() => WbsPerformanceDto)
   performance?: WbsPerformanceDto | null;
+
+  @ApiPropertyOptional({
+    description: '세부 프로젝트/업무 (subProject)',
+    example: '결제 모듈 개발',
+    nullable: true,
+  })
+  subProject?: string | null;
 
   @ApiProperty({
     description: 'WBS 1차 하향평가 정보 (PRIMARY 평가자가 작성)',
@@ -732,6 +745,19 @@ export class AssignedProjectWithWbsDto implements AssignedProjectWithWbs {
   })
   projectCode: string;
 
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A'],
+  })
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A';
+
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
+  })
+  priority?: number;
+
   @ApiProperty({
     description: '배정일',
     type: 'string',
@@ -747,6 +773,13 @@ export class AssignedProjectWithWbsDto implements AssignedProjectWithWbs {
   })
   @Type(() => ProjectManagerDto)
   projectManager?: ProjectManagerDto | null;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+    nullable: true,
+  })
+  realPM?: string;
 
   @ApiProperty({
     description: '프로젝트에 할당된 WBS 목록',

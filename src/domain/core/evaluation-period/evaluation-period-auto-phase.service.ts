@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -51,8 +52,11 @@ export class EvaluationPeriodAutoPhaseService {
 
   /**
    * 매 시간마다 실행되는 자동 단계 변경 스케줄러
+   * 
+   * @Cron 데코레이터로 매 시간마다 자동 실행됩니다.
+   * 수동 실행이 필요한 경우 HTTP 엔드포인트(/cron/evaluation-period-auto-phase)를 사용할 수 있습니다.
    */
-  // @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_HOUR)
   async autoPhaseTransition(): Promise<number> {
     this.logger.log('평가기간 자동 단계 변경을 시작합니다...');
 
@@ -328,20 +332,32 @@ export class EvaluationPeriodAutoPhaseService {
       return true;
     }
 
-    // 한국 시간대 기준으로 비교 (한국 시간 00시가 넘으면 마감일이 지난 것으로 판단)
+    // 한국 시간대 기준으로 비교
+    // 마감일은 "해당 날짜까지"를 의미하므로, 해당 날짜의 23:59:59.999까지는 현재 단계 유지
+    // 다음 날 00:00:00 이후에 다음 단계로 전이
     const koreaNow = this.toKoreaDayjs(now);
     const koreaDeadline = this.toKoreaDayjs(currentPhaseDeadline);
+    
+    // 마감일의 날짜 끝(23:59:59.999)을 계산
+    const deadlineEndOfDay = koreaDeadline.endOf('day');
+    
     this.logger.log('koreaNow', koreaNow.format('YYYY-MM-DD HH:mm:ss KST'));
     this.logger.log(
-      'koreaDeadline',
+      'koreaDeadline (원본)',
       koreaDeadline.format('YYYY-MM-DD HH:mm:ss KST'),
     );
-    const shouldTransition =
-      koreaNow.isAfter(koreaDeadline) || koreaNow.isSame(koreaDeadline);
+    this.logger.log(
+      'deadlineEndOfDay (마감일 끝)',
+      deadlineEndOfDay.format('YYYY-MM-DD HH:mm:ss KST'),
+    );
+    
+    // 현재 시간이 마감일의 날짜 끝(23:59:59.999)을 넘었는지 확인
+    // 즉, 다음 날 00:00:00 이후에 전이
+    const shouldTransition = koreaNow.isAfter(deadlineEndOfDay);
 
     if (shouldTransition) {
       this.logger.debug(
-        `평가기간 ${period.id}: ${currentPhase} 단계 마감일 도달 (마감일: ${koreaDeadline.format('YYYY-MM-DD HH:mm:ss KST')}, 현재: ${koreaNow.format('YYYY-MM-DD HH:mm:ss KST')})`,
+        `평가기간 ${period.id}: ${currentPhase} 단계 마감일 도달 (마감일: ${koreaDeadline.format('YYYY-MM-DD')}까지, 마감일 끝: ${deadlineEndOfDay.format('YYYY-MM-DD HH:mm:ss KST')}, 현재: ${koreaNow.format('YYYY-MM-DD HH:mm:ss KST')})`,
       );
     }
 
@@ -484,16 +500,25 @@ export class EvaluationPeriodAutoPhaseService {
       let statusChanged = false;
 
       // 1. 상태 자동 조정: 시작일이 지났고 상태가 WAITING이면 IN_PROGRESS로 변경
+      // 시작일은 "해당 날짜의 00:00:00"부터 시작하므로, 해당 날짜의 00:00:00 이후에 시작
       if (
         period.status === EvaluationPeriodStatus.WAITING &&
-        period.startDate &&
-        now >= period.startDate
+        period.startDate
       ) {
-        this.logger.log(
-          `평가기간 ${periodId} 시작일 도달로 인한 상태 변경: WAITING → IN_PROGRESS`,
-        );
-        await this.evaluationPeriodService.시작한다(periodId, changedBy);
-        statusChanged = true;
+        const koreaNow = this.toKoreaDayjs(now);
+        const koreaStartDate = this.toKoreaDayjs(period.startDate);
+        
+        // 시작일의 날짜 시작(00:00:00)을 계산
+        const startDateBeginOfDay = koreaStartDate.startOf('day');
+        
+        // 현재 시간이 시작일의 날짜 시작(00:00:00) 이후인지 확인
+        if (koreaNow.isAfter(startDateBeginOfDay) || koreaNow.isSame(startDateBeginOfDay)) {
+          this.logger.log(
+            `평가기간 ${periodId} 시작일 도달로 인한 상태 변경: WAITING → IN_PROGRESS (시작일: ${startDateBeginOfDay.format('YYYY-MM-DD HH:mm:ss KST')}, 현재: ${koreaNow.format('YYYY-MM-DD HH:mm:ss KST')})`,
+          );
+          await this.evaluationPeriodService.시작한다(periodId, changedBy);
+          statusChanged = true;
+        }
       }
 
       // 2. 업데이트된 평가기간 정보 다시 조회

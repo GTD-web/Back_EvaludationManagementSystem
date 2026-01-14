@@ -33,6 +33,12 @@ import { WBS_EVALUATION_CRITERIA_HANDLERS } from './handlers/wbs-evaluation-crit
 // WBS Item Handlers
 import { WBS_ITEM_HANDLERS } from './handlers/wbs-item';
 
+// Evaluation Criteria Submission Handlers
+import {
+  SubmitEvaluationCriteriaHandler,
+  ResetEvaluationCriteriaHandler,
+} from './handlers/evaluation-criteria-submission';
+
 // Domain Modules
 import { EvaluationPeriodModule } from '@domain/core/evaluation-period/evaluation-period.module';
 import { EvaluationPeriodEmployeeMappingModule } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.module';
@@ -105,6 +111,9 @@ import { EmployeeEvaluationStepApprovalModule } from '@domain/sub/employee-evalu
     ...WBS_EVALUATION_CRITERIA_HANDLERS,
     // WBS Item Handlers
     ...WBS_ITEM_HANDLERS,
+    // Evaluation Criteria Submission Handlers
+    SubmitEvaluationCriteriaHandler,
+    ResetEvaluationCriteriaHandler,
   ],
   exports: [EvaluationCriteriaManagementService],
 })

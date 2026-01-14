@@ -138,11 +138,8 @@ export class PerformanceEvaluationService
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    @InjectRepository(EvaluationPeriodEmployeeMapping)
-    private readonly mappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-    private readonly secondaryStepApprovalService: SecondaryEvaluationStepApprovalService,
     private readonly stepApprovalContextService: StepApprovalContextService,
   ) {}
 

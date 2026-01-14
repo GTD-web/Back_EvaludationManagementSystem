@@ -28,6 +28,7 @@ import { SubmitEvaluationCriteriaDto } from '@interface/common/dto/evaluation-cr
 import { EvaluationCriteriaSubmissionResponseDto } from '@interface/common/dto/evaluation-criteria/wbs-evaluation-criteria.dto';
 import { SubmitDownwardEvaluationDto, SubmitDownwardEvaluationQueryDto } from '@interface/common/dto/performance-evaluation/downward-evaluation.dto';
 import { SubmitAllWbsSelfEvaluationsResponseDto } from '@interface/common/dto/performance-evaluation/wbs-self-evaluation.dto';
+import { DownwardEvaluationType } from '@domain/core/downward-evaluation/downward-evaluation.types';
 
 /**
  * 평가 제출 관리 컨트롤러
@@ -54,8 +55,8 @@ export class EvaluationSubmissionController {
    * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다. 대신 각 평가 타입별 제출 엔드포인트를 사용하세요.
    * - 평가기준: POST /admin/evaluation-submission/criteria
    * - 자기평가: POST /admin/evaluation-submission/self-evaluation/:employeeId/:periodId
-   * - 1차 하향평가: POST /admin/evaluation-submission/primary-downward/:evaluateeId/:periodId/:wbsId
-   * - 2차 하향평가: POST /admin/evaluation-submission/secondary-downward/:evaluateeId/:periodId/:wbsId
+   * - 1차 하향평가: POST /admin/evaluation-submission/primary-downward/:evaluateeId/:periodId
+   * - 2차 하향평가: POST /admin/evaluation-submission/secondary-downward/:evaluateeId/:periodId
    */
   @UpdateEvaluationSubmission()
   async updateEvaluationSubmission(
@@ -202,62 +203,74 @@ export class EvaluationSubmissionController {
   }
 
   /**
-   * 1차 하향평가 제출
+   * 1차 하향평가 제출 (평가자별 일괄)
    * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
    */
   @SubmitPrimaryDownwardEvaluation()
   async submitPrimaryDownwardEvaluation(
     @Param('evaluateeId', ParseUUIDPipe) evaluateeId: string,
     @Param('periodId', ParseUUIDPipe) periodId: string,
-    @Param('wbsId', ParseUUIDPipe) wbsId: string,
     @Query() queryDto: SubmitDownwardEvaluationQueryDto,
     @Body() submitDto: SubmitDownwardEvaluationDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<void> {
+  ): Promise<{
+    submittedCount: number;
+    skippedCount: number;
+    failedCount: number;
+    submittedIds: string[];
+    skippedIds: string[];
+    failedItems: Array<{ evaluationId: string; error: string }>;
+  }> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
     const approveAllBelow = queryDto.approveAllBelow ?? false;
 
     this.logger.log(
-      `1차 하향평가 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
+      `1차 하향평가 일괄 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
     );
 
-    await this.downwardEvaluationBusinessService.일차_하향평가를_제출하고_재작성요청을_완료한다(
+    return await this.downwardEvaluationBusinessService.피평가자의_모든_하향평가를_일괄_제출한다(
+      evaluatorId,
       evaluateeId,
       periodId,
-      wbsId,
-      evaluatorId,
+      DownwardEvaluationType.PRIMARY,
       submittedBy,
       approveAllBelow,
     );
   }
 
   /**
-   * 2차 하향평가 제출
+   * 2차 하향평가 제출 (평가자별 일괄)
    * 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
    */
   @SubmitSecondaryDownwardEvaluation()
   async submitSecondaryDownwardEvaluation(
     @Param('evaluateeId', ParseUUIDPipe) evaluateeId: string,
     @Param('periodId', ParseUUIDPipe) periodId: string,
-    @Param('wbsId', ParseUUIDPipe) wbsId: string,
     @Query() queryDto: SubmitDownwardEvaluationQueryDto,
     @Body() submitDto: SubmitDownwardEvaluationDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<void> {
+  ): Promise<{
+    submittedCount: number;
+    skippedCount: number;
+    failedCount: number;
+    submittedIds: string[];
+    skippedIds: string[];
+    failedItems: Array<{ evaluationId: string; error: string }>;
+  }> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
     const approveAllBelow = queryDto.approveAllBelow ?? false;
 
     this.logger.log(
-      `2차 하향평가 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
+      `2차 하향평가 일괄 제출 요청 - 피평가자: ${evaluateeId}, 평가기간: ${periodId}, 평가자: ${evaluatorId}, 하위승인: ${approveAllBelow}`,
     );
 
-    await this.downwardEvaluationBusinessService.이차_하향평가를_제출하고_재작성요청을_완료한다(
+    return await this.downwardEvaluationBusinessService.피평가자의_모든_하향평가를_일괄_제출한다(
+      evaluatorId,
       evaluateeId,
       periodId,
-      wbsId,
-      evaluatorId,
+      DownwardEvaluationType.SECONDARY,
       submittedBy,
       approveAllBelow,
     );

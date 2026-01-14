@@ -30,8 +30,8 @@ export function UpdateEvaluationSubmission() {
 **대체 엔드포인트:**
 - 평가기준: \`POST /admin/evaluation-submission/criteria\`
 - 자기평가: \`POST /admin/evaluation-submission/self-evaluation/:employeeId/:periodId\`
-- 1차 하향평가: \`POST /admin/evaluation-submission/primary-downward/:evaluateeId/:periodId/:wbsId\`
-- 2차 하향평가: \`POST /admin/evaluation-submission/secondary-downward/:evaluateeId/:periodId/:wbsId\`
+- 1차 하향평가: \`POST /admin/evaluation-submission/primary-downward/:evaluateeId/:periodId\`
+- 2차 하향평가: \`POST /admin/evaluation-submission/secondary-downward/:evaluateeId/:periodId\`
 
 ---
 
@@ -176,25 +176,26 @@ export function SubmitSelfEvaluation() {
  */
 export function SubmitPrimaryDownwardEvaluation() {
   return applyDecorators(
-    Post('primary-downward/:evaluateeId/:periodId/:wbsId'),
+    Post('primary-downward/:evaluateeId/:periodId'),
     HttpCode(HttpStatus.OK),
     ApiOperation({
-      summary: '1차 하향평가 제출',
-      description: `**관리자용**: 1차 하향평가를 제출합니다. 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+      summary: '1차 하향평가 제출 (평가자별 일괄)',
+      description: `**관리자용**: 특정 평가자의 특정 피평가자에 대한 모든 1차 하향평가를 일괄 제출합니다. 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
 
 **동작:**
-- 1차 하향평가 제출 상태를 완료로 변경
+- 해당 평가자가 담당하는 피평가자의 모든 WBS에 대한 1차 하향평가를 일괄 제출
 - 재작성 요청이 있으면 자동 완료 처리
 - 단계 승인 상태(primaryEvaluationStatus)를 approved로 자동 변경
 - approveAllBelow=true일 경우 하위 단계(평가기준, 자기평가)도 함께 승인
 - 제출 일시와 제출 처리자 정보 저장
+- 제출 결과 상세 정보 반환 (제출된 항목 수, 스킵된 항목 수 등)
 
 **테스트 케이스:**
-- 1차 하향평가 제출: 제출 성공 및 승인 상태 변경 확인
+- 1차 하향평가 일괄 제출: 모든 WBS에 대한 제출 성공 및 승인 상태 변경 확인
 - 재작성 요청 자동 완료: 재작성 요청이 있으면 자동 완료 처리 확인
 - 승인 상태 자동 변경: primaryEvaluationStatus가 approved로 변경 확인
 - 하위 단계 승인: approveAllBelow=true일 경우 평가기준, 자기평가도 승인 확인
-- 잘못된 UUID: 잘못된 UUID 형식의 evaluateeId, periodId, wbsId 입력 시 400 에러
+- 잘못된 UUID: 잘못된 UUID 형식의 evaluateeId, periodId 입력 시 400 에러
 - 존재하지 않는 리소스: 존재하지 않는 평가로 요청 시 404 에러`,
     }),
     ApiParam({
@@ -209,12 +210,6 @@ export function SubmitPrimaryDownwardEvaluation() {
       type: 'string',
       format: 'uuid',
     }),
-    ApiParam({
-      name: 'wbsId',
-      description: 'WBS ID',
-      type: 'string',
-      format: 'uuid',
-    }),
     ApiQuery({
       name: 'approveAllBelow',
       required: false,
@@ -223,10 +218,31 @@ export function SubmitPrimaryDownwardEvaluation() {
     }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,
-      description: '1차 하향평가 제출 정보',
+      description: '1차 하향평가 제출 정보 (evaluatorId 필수)',
     }),
     ApiOkResponse({
-      description: '1차 하향평가 제출 성공',
+      description: '1차 하향평가 일괄 제출 성공',
+      schema: {
+        type: 'object',
+        properties: {
+          submittedCount: { type: 'number', description: '제출된 평가 수' },
+          skippedCount: { type: 'number', description: '스킵된 평가 수' },
+          failedCount: { type: 'number', description: '실패한 평가 수' },
+          submittedIds: { type: 'array', items: { type: 'string' }, description: '제출된 평가 ID 목록' },
+          skippedIds: { type: 'array', items: { type: 'string' }, description: '스킵된 평가 ID 목록' },
+          failedItems: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                evaluationId: { type: 'string' },
+                error: { type: 'string' },
+              },
+            },
+            description: '실패한 평가 목록',
+          },
+        },
+      },
     }),
     ApiNotFoundResponse({
       description: '평가를 찾을 수 없음',
@@ -242,25 +258,26 @@ export function SubmitPrimaryDownwardEvaluation() {
  */
 export function SubmitSecondaryDownwardEvaluation() {
   return applyDecorators(
-    Post('secondary-downward/:evaluateeId/:periodId/:wbsId'),
+    Post('secondary-downward/:evaluateeId/:periodId'),
     HttpCode(HttpStatus.OK),
     ApiOperation({
-      summary: '2차 하향평가 제출',
-      description: `**관리자용**: 2차 하향평가를 제출합니다. 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
+      summary: '2차 하향평가 제출 (평가자별 일괄)',
+      description: `**관리자용**: 특정 평가자의 특정 피평가자에 대한 모든 2차 하향평가를 일괄 제출합니다. 제출 시 재작성 요청이 존재하고 미응답 상태면 자동으로 완료 처리되며, 승인 상태가 자동으로 approved로 변경됩니다.
 
 **동작:**
-- 2차 하향평가 제출 상태를 완료로 변경
+- 해당 평가자가 담당하는 피평가자의 모든 WBS에 대한 2차 하향평가를 일괄 제출
 - 재작성 요청이 있으면 자동 완료 처리
 - 해당 평가자의 단계 승인 상태(secondaryEvaluationStatus)를 approved로 자동 변경
 - approveAllBelow=true일 경우 하위 단계(평가기준, 자기평가, 1차평가)도 함께 승인
 - 제출 일시와 제출 처리자 정보 저장
+- 제출 결과 상세 정보 반환 (제출된 항목 수, 스킵된 항목 수 등)
 
 **테스트 케이스:**
-- 2차 하향평가 제출: 제출 성공 및 승인 상태 변경 확인
+- 2차 하향평가 일괄 제출: 모든 WBS에 대한 제출 성공 및 승인 상태 변경 확인
 - 재작성 요청 자동 완료: 재작성 요청이 있으면 자동 완료 처리 확인
 - 승인 상태 자동 변경: 해당 평가자의 secondaryEvaluationStatus가 approved로 변경 확인
 - 하위 단계 승인: approveAllBelow=true일 경우 평가기준, 자기평가, 1차평가도 승인 확인
-- 잘못된 UUID: 잘못된 UUID 형식의 evaluateeId, periodId, wbsId 입력 시 400 에러
+- 잘못된 UUID: 잘못된 UUID 형식의 evaluateeId, periodId 입력 시 400 에러
 - 존재하지 않는 리소스: 존재하지 않는 평가로 요청 시 404 에러`,
     }),
     ApiParam({
@@ -275,12 +292,6 @@ export function SubmitSecondaryDownwardEvaluation() {
       type: 'string',
       format: 'uuid',
     }),
-    ApiParam({
-      name: 'wbsId',
-      description: 'WBS ID',
-      type: 'string',
-      format: 'uuid',
-    }),
     ApiQuery({
       name: 'approveAllBelow',
       required: false,
@@ -289,10 +300,31 @@ export function SubmitSecondaryDownwardEvaluation() {
     }),
     ApiBody({
       type: SubmitDownwardEvaluationDto,
-      description: '2차 하향평가 제출 정보',
+      description: '2차 하향평가 제출 정보 (evaluatorId 필수)',
     }),
     ApiOkResponse({
-      description: '2차 하향평가 제출 성공',
+      description: '2차 하향평가 일괄 제출 성공',
+      schema: {
+        type: 'object',
+        properties: {
+          submittedCount: { type: 'number', description: '제출된 평가 수' },
+          skippedCount: { type: 'number', description: '스킵된 평가 수' },
+          failedCount: { type: 'number', description: '실패한 평가 수' },
+          submittedIds: { type: 'array', items: { type: 'string' }, description: '제출된 평가 ID 목록' },
+          skippedIds: { type: 'array', items: { type: 'string' }, description: '스킵된 평가 ID 목록' },
+          failedItems: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                evaluationId: { type: 'string' },
+                error: { type: 'string' },
+              },
+            },
+            description: '실패한 평가 목록',
+          },
+        },
+      },
     }),
     ApiNotFoundResponse({
       description: '평가를 찾을 수 없음',

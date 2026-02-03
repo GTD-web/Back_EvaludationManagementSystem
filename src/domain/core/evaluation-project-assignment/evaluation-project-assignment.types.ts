@@ -20,6 +20,10 @@ export interface EvaluationProjectAssignmentDto {
   assignedBy: string;
   /** 표시 순서 (같은 직원-평가기간 내에서의 순서) */
   displayOrder: number;
+  /** 프로젝트 시작일 */
+  projectStartDate?: Date;
+  /** 프로젝트 종료일 */
+  projectEndDate?: Date;
   /** 생성 일시 */
   createdAt: Date;
   /** 수정 일시 */
@@ -122,6 +126,10 @@ export interface CreateEvaluationProjectAssignmentData {
   assignedBy: string;
   /** 표시 순서 (선택적, 미지정시 자동 계산) */
   displayOrder?: number;
+  /** 프로젝트 시작일 (선택적) */
+  projectStartDate?: Date;
+  /** 프로젝트 종료일 (선택적) */
+  projectEndDate?: Date;
 }
 
 /**
@@ -134,6 +142,10 @@ export interface UpdateEvaluationProjectAssignmentData {
   assignedBy?: string;
   /** 표시 순서 (선택적) */
   displayOrder?: number;
+  /** 프로젝트 시작일 (선택적) */
+  projectStartDate?: Date;
+  /** 프로젝트 종료일 (선택적) */
+  projectEndDate?: Date;
 }
 
 /**

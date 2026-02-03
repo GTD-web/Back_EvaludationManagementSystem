@@ -766,6 +766,24 @@ export class AssignedProjectWithWbsDto implements AssignedProjectWithWbs {
   })
   assignedAt: Date;
 
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일',
+    type: 'string',
+    format: 'date-time',
+    example: '2024-01-01T00:00:00.000Z',
+    required: false,
+  })
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일',
+    type: 'string',
+    format: 'date-time',
+    example: '2024-12-31T23:59:59.999Z',
+    required: false,
+  })
+  projectEndDate?: Date;
+
   @ApiProperty({
     description: '프로젝트 매니저 정보',
     type: ProjectManagerDto,

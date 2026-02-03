@@ -1,5 +1,6 @@
 import { ProjectService } from '@domain/common/project/project.service';
 import { ProjectManagerService } from '@domain/common/project/project-manager.service';
+import { ProjectImportanceService } from '@domain/common/project/project-importance.service';
 import type { AuthenticatedUser } from '@interface/common/decorators/current-user.decorator';
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import {
@@ -15,11 +16,19 @@ import {
 import { DeleteChildProjects } from '@interface/common/decorators/project/delete-child-projects-api.decorator';
 import {
   CreateProjectManager,
-  GetProjectManagerList,
   GetProjectManagerDetail,
   UpdateProjectManager,
   DeleteProjectManager,
+  BulkRegisterProjectManagers,
 } from '@interface/common/decorators/project/project-manager-api.decorators';
+import {
+  CreateProjectImportance,
+  GetProjectImportances,
+  GetProjectImportanceDetail,
+  UpdateProjectImportance,
+  DeleteProjectImportance,
+  InitializeProjectImportances,
+} from '@interface/common/decorators/project/project-importance-api.decorators';
 import {
   CreateProjectDto,
   CreateProjectsBulkDto,
@@ -40,6 +49,12 @@ import {
   ProjectManagerListResponseDto as PMListResponseDto,
 } from '@interface/common/dto/project/project-manager.dto';
 import {
+  CreateProjectImportanceDto,
+  UpdateProjectImportanceDto,
+  ProjectImportanceResponseDto,
+  ProjectImportanceListResponseDto,
+} from '@interface/common/dto/project/project-importance.dto';
+import {
   GenerateChildProjectsDto,
   GenerateChildProjectsResultDto,
   GenerateChildProjectDetailDto,
@@ -57,6 +72,7 @@ import {
   NotFoundException,
   Inject,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '@interface/common/decorators';
@@ -75,9 +91,12 @@ import { EmployeeService } from '@domain/common/employee/employee.service';
 @Roles('admin')
 @Controller('admin/projects')
 export class ProjectManagementController {
+  private readonly logger = new Logger(ProjectManagementController.name);
+
   constructor(
     private readonly projectService: ProjectService,
     private readonly projectManagerService: ProjectManagerService,
+    private readonly projectImportanceService: ProjectImportanceService,
     @Inject(SSOService) private readonly ssoService: ISSOService,
     private readonly employeeService: EmployeeService,
   ) {}
@@ -93,14 +112,30 @@ export class ProjectManagementController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectResponseDto> {
     const createdBy = user.id;
+
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (createDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        createDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${createDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.생성한다(
       {
         name: createDto.name,
         projectCode: createDto.projectCode,
-        status: createDto.status,
-        startDate: createDto.startDate,
-        endDate: createDto.endDate,
         managerId: createDto.managerId, // PM/DPM 설정
+        realPM: realPMName, // 직원 이름 저장
+        importanceId: createDto.importanceId, // 중요도 설정
+        grade: createDto.grade, // 등급 설정
         parentProjectId: createDto.parentProjectId, // 하위 프로젝트인 경우
         childProjects: createDto.childProjects, // 하위 프로젝트 목록
       },
@@ -111,20 +146,17 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      realPM: project.realPM,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects, // 하위 프로젝트 포함
       childProjectCount: project.childProjects?.length,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -140,8 +172,29 @@ export class ProjectManagementController {
   ): Promise<ProjectsBulkCreateResponseDto> {
     const createdBy = user.id;
 
+    // 각 프로젝트의 realPMId를 이름으로 변환
+    const projectsWithRealPMNames = await Promise.all(
+      bulkDto.projects.map(async (projectDto) => {
+        let realPMName: string | undefined = undefined;
+        if (projectDto.realPMId) {
+          const realPMEmployee = await this.employeeService.findById(
+            projectDto.realPMId,
+          );
+          if (realPMEmployee) {
+            realPMName = realPMEmployee.name;
+          }
+          // 일괄 생성에서는 에러를 던지지 않고 null로 처리
+        }
+
+        return {
+          ...projectDto,
+          realPM: realPMName,
+        };
+      }),
+    );
+
     const result = await this.projectService.일괄_생성한다(
-      bulkDto.projects,
+      projectsWithRealPMNames,
       createdBy,
     );
 
@@ -150,11 +203,11 @@ export class ProjectManagementController {
         id: project.id,
         name: project.name,
         projectCode: project.projectCode,
-        status: project.status,
-        startDate: project.startDate,
-        endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
+        realPM: project.realPM,
+        grade: project.grade,
+        priority: project.priority,
         parentProjectId: project.parentProjectId,
         childProjects: project.childProjects?.map((child) =>
           this.mapProjectToResponseDto(child),
@@ -163,9 +216,6 @@ export class ProjectManagementController {
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,
-        isActive: project.isActive,
-        isCompleted: project.isCompleted,
-        isCancelled: project.isCancelled,
       })),
       failed: result.failed,
       successCount: result.success.length,
@@ -183,9 +233,11 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
       managerId: project.managerId,
       manager: project.manager,
+      realPM: project.realPM,
+      grade: project.grade,
+      priority: project.priority,
       childProjects: project.childProjects?.map((child) =>
         this.mapProjectToResponseDto(child),
       ), // ✅ 재귀 호출
@@ -213,15 +265,10 @@ export class ProjectManagementController {
       result = await this.projectService.계층구조_목록_조회한다({
         page: query.page,
         limit: query.limit,
-        sortBy: query.sortBy,
+        sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           search: query.search,
         },
       });
@@ -230,15 +277,10 @@ export class ProjectManagementController {
       result = await this.projectService.목록_조회한다({
         page: query.page,
         limit: query.limit,
-        sortBy: query.sortBy,
+        sortBy: query.sortBy as 'name' | 'projectCode' | 'createdAt' | undefined,
         sortOrder: query.sortOrder,
         filter: {
-          status: query.status,
           managerId: query.managerId,
-          startDateFrom: query.startDateFrom,
-          startDateTo: query.startDateTo,
-          endDateFrom: query.endDateFrom,
-          endDateTo: query.endDateTo,
           parentProjectId: query.parentProjectId,
           hierarchyLevel: query.hierarchyLevel,
           search: query.search,
@@ -253,11 +295,11 @@ export class ProjectManagementController {
         id: project.id,
         name: project.name,
         projectCode: project.projectCode,
-        status: project.status,
-        startDate: project.startDate,
-        endDate: project.endDate,
         managerId: project.managerId,
         manager: project.manager,
+        realPM: project.realPM,
+        grade: project.grade,
+        priority: project.priority,
         parentProjectId: project.parentProjectId,
         childProjects: project.childProjects?.map((child) =>
           this.mapProjectToResponseDto(child),
@@ -266,9 +308,6 @@ export class ProjectManagementController {
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         deletedAt: project.deletedAt,
-        isActive: project.isActive,
-        isCompleted: project.isCompleted,
-        isCancelled: project.isCancelled,
       })),
       total: result.total,
       page: result.page,
@@ -279,39 +318,38 @@ export class ProjectManagementController {
 
   /**
    * PM(프로젝트 매니저) 목록 조회
-   * SSO 서비스에서 관리 권한이 있는 직원 목록을 조회합니다.
+   * ProjectManager 테이블에 등록된 활성 PM들을 조회합니다.
+   * 삭제된 PM은 목록에서 제외됩니다.
    * 주의: 구체적인 경로를 :id 경로보다 먼저 정의해야 함
    */
   @GetProjectManagers()
   async getProjectManagers(
     @Query() query: GetProjectManagersQueryDto,
   ): Promise<AvailableProjectManagerListResponseDto> {
-    // PM으로 지정 가능한 직원 이름 목록
-    const ALLOWED_PM_NAMES = [
-      '남명용',
-      '김경민',
-      '홍연창',
-      '강남규',
-      '전구영',
-      '고영훈',
-      '박일수',
-      '모현민',
-      '하태식',
-      '정석화',
-      '이봉은',
-      '김종식',
-    ];
+    // 1. ProjectManager 테이블에 등록된 활성 PM들의 managerId 목록 조회
+    const registeredPMs = await this.projectManagerService.목록_조회한다({
+      page: 1,
+      limit: 1000,
+    });
+    const activeManagerIds = registeredPMs.managers.map((pm) => pm.managerId);
 
-    // SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
+    // 2. SSO에서 전체 직원 정보 조회 (부서, 직책, 직급 포함)
     const employees = await this.ssoService.여러직원정보를조회한다({
       withDetail: true,
       includeTerminated: false, // 재직중인 직원만
     });
 
-    // 허용된 PM 이름 목록으로 필터링 (관리 권한 무관)
-    let managers = employees.filter((emp) =>
-      ALLOWED_PM_NAMES.includes(emp.name),
+    // 3. ProjectManager에 등록된 활성 PM만 필터링
+    let managers = employees.filter((emp) => {
+      const isRegisteredActivePM = activeManagerIds.includes(emp.id);
+      return isRegisteredActivePM;
+    });
+
+    // 중복 제거 (managerId 기준)
+    const uniqueManagers = managers.filter(
+      (emp, index, self) => index === self.findIndex((e) => e.id === emp.id),
     );
+    managers = uniqueManagers;
 
     // 부서 필터링
     if (query.departmentId) {
@@ -359,6 +397,93 @@ export class ProjectManagementController {
     };
   }
 
+  // ==================== 프로젝트 중요도 관리 ====================
+
+  /**
+   * 기본 프로젝트 중요도 생성
+   * 기본 중요도 값들(1A, 1B, 2A, 2B, 3A)을 생성합니다.
+   */
+  @InitializeProjectImportances()
+  async initializeProjectImportances(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string }> {
+    const createdBy = user.id;
+    await this.projectImportanceService.기본값_생성한다(createdBy);
+    return { message: '기본 중요도 값들이 생성되었습니다.' };
+  }
+
+  /**
+   * 프로젝트 중요도 생성
+   */
+  @CreateProjectImportance()
+  async createProjectImportance(
+    @Body() createDto: CreateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const createdBy = user.id;
+    return await this.projectImportanceService.생성한다(createDto, createdBy);
+  }
+
+  /**
+   * 프로젝트 중요도 목록 조회
+   * 모든 활성 중요도를 반환합니다.
+   */
+  @GetProjectImportances()
+  async getProjectImportances(): Promise<ProjectImportanceListResponseDto> {
+    const importances = await this.projectImportanceService.목록_조회한다();
+
+    return {
+      importances,
+    };
+  }
+
+  /**
+   * 프로젝트 중요도 상세 조회
+   */
+  @GetProjectImportanceDetail()
+  async getProjectImportanceDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ProjectImportanceResponseDto> {
+    const importance = await this.projectImportanceService.ID로_조회한다(id);
+
+    if (!importance) {
+      throw new NotFoundException(
+        `ID ${id}에 해당하는 프로젝트 중요도를 찾을 수 없습니다.`,
+      );
+    }
+
+    return importance;
+  }
+
+  /**
+   * 프로젝트 중요도 수정
+   */
+  @UpdateProjectImportance()
+  async updateProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateProjectImportanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectImportanceResponseDto> {
+    const updatedBy = user.id;
+    return await this.projectImportanceService.수정한다(
+      id,
+      updateDto,
+      updatedBy,
+    );
+  }
+
+  /**
+   * 프로젝트 중요도 삭제
+   */
+  @DeleteProjectImportance()
+  async deleteProjectImportance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const deletedBy = user.id;
+    await this.projectImportanceService.삭제한다(id, deletedBy);
+  }
+
   /**
    * 프로젝트 상세 조회
    * 하위 프로젝트 목록을 포함하여 반환합니다.
@@ -383,27 +508,26 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      realPM: project.realPM,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects?.map((child) => ({
         id: child.id,
         name: child.name,
         projectCode: child.projectCode,
-        status: child.status,
         managerId: child.managerId,
         manager: child.manager,
+        realPM: child.realPM,
+        grade: child.grade,
+        priority: child.priority,
       })),
       childProjectCount,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -420,15 +544,30 @@ export class ProjectManagementController {
   ): Promise<ProjectResponseDto> {
     const updatedBy = user.id;
 
+    // realPMId가 있으면 Employee 조회하여 이름 가져오기
+    let realPMName: string | undefined = undefined;
+    if (updateDto.realPMId) {
+      const realPMEmployee = await this.employeeService.findById(
+        updateDto.realPMId,
+      );
+      if (realPMEmployee) {
+        realPMName = realPMEmployee.name;
+      } else {
+        throw new NotFoundException(
+          `실 PM ID ${updateDto.realPMId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+    }
+
     const project = await this.projectService.수정한다(
       id,
       {
         name: updateDto.name,
         projectCode: updateDto.projectCode,
-        status: updateDto.status,
-        startDate: updateDto.startDate,
-        endDate: updateDto.endDate,
         managerId: updateDto.managerId, // PM/DPM 변경
+        realPM: realPMName, // 직원 이름 저장
+        importanceId: updateDto.importanceId, // 중요도 변경
+        grade: updateDto.grade, // 등급 변경
         parentProjectId: updateDto.parentProjectId, // 상위 프로젝트 변경
         childProjects: updateDto.childProjects, // 하위 프로젝트 재생성
       },
@@ -439,20 +578,17 @@ export class ProjectManagementController {
       id: project.id,
       name: project.name,
       projectCode: project.projectCode,
-      status: project.status,
-      startDate: project.startDate,
-      endDate: project.endDate,
       managerId: project.managerId,
       manager: project.manager,
+      realPM: project.realPM,
+      grade: project.grade,
+      priority: project.priority,
       parentProjectId: project.parentProjectId,
       childProjects: project.childProjects, // 하위 프로젝트 포함
       childProjectCount: project.childProjects?.length,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       deletedAt: project.deletedAt,
-      isActive: project.isActive,
-      isCompleted: project.isCompleted,
-      isCancelled: project.isCancelled,
     };
   }
 
@@ -533,9 +669,6 @@ export class ProjectManagementController {
                 {
                   name: `${topLevelProjectName} - ${level}차 하위 프로젝트`, // ✅ 최상위 이름 사용
                   projectCode: `${topLevelProjectCode}-SUB${level}`, // ✅ 최상위 코드 사용
-                  status: parentProject.status,
-                  startDate: parentProject.startDate,
-                  endDate: parentProject.endDate,
                   managerId: parentProject.managerId,
                   parentProjectId: currentParentId,
                 },
@@ -616,6 +749,150 @@ export class ProjectManagementController {
   // ==================== PM 관리 ====================
 
   /**
+   * PM 일괄 등록
+   * 하드코딩된 기본 PM 목록을 ProjectManager 테이블에 일괄 등록합니다.
+   */
+  @BulkRegisterProjectManagers()
+  async bulkRegisterProjectManagers(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{
+    success: number;
+    skipped: number;
+    failed: number;
+    details: Array<{
+      name: string;
+      status: 'success' | 'skipped' | 'failed';
+      reason?: string;
+    }>;
+  }> {
+    const createdBy = user.id;
+
+    // 하드코딩된 PM 이름 목록
+    const HARDCODED_PM_NAMES = [
+      '남명용',
+      '김경민',
+      '홍연창',
+      '강남규',
+      '전구영',
+      '고영훈',
+      '박일수',
+      '모현민',
+      '하태식',
+      '정석화',
+      '이봉은',
+      '김종식',
+      '김형중',
+    ];
+
+    this.logger.log(`[PM 일괄 등록 시작] 대상: ${HARDCODED_PM_NAMES.length}명`);
+
+    let successCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+    const details: Array<{
+      name: string;
+      status: 'success' | 'skipped' | 'failed';
+      reason?: string;
+    }> = [];
+
+    // SSO에서 전체 직원 정보 조회
+    const employees = await this.ssoService.여러직원정보를조회한다({
+      withDetail: true,
+      includeTerminated: false,
+    });
+
+    for (const name of HARDCODED_PM_NAMES) {
+      try {
+        // 이름으로 SSO에서 직원 찾기
+        const employee = employees.find((emp) => emp.name === name);
+
+        if (!employee) {
+          this.logger.warn(`[PM 일괄 등록] SSO에서 찾을 수 없음: ${name}`);
+          failedCount++;
+          details.push({
+            name,
+            status: 'failed',
+            reason: 'SSO에서 찾을 수 없음',
+          });
+          continue;
+        }
+
+        // 이미 등록되어 있는지 확인
+        const existing = await this.projectManagerService.managerId로_조회한다(
+          employee.id,
+        );
+
+        if (existing) {
+          this.logger.debug(`[PM 일괄 등록] 이미 등록됨: ${name}`);
+          skippedCount++;
+          details.push({
+            name,
+            status: 'skipped',
+            reason: '이미 등록됨',
+          });
+          continue;
+        }
+
+        // Employee 조회 또는 생성
+        let localEmployee = await this.employeeService.findByExternalId(
+          employee.id,
+        );
+        if (!localEmployee) {
+          localEmployee = await this.employeeService.create({
+            externalId: employee.id,
+            name: employee.name,
+            email: employee.email,
+            employeeNumber: employee.employeeNumber,
+            departmentName: employee.department?.departmentName,
+          });
+        }
+
+        // ProjectManager 등록
+        await this.projectManagerService.생성한다(
+          {
+            managerId: employee.id,
+            name: employee.name,
+            email: employee.email,
+            employeeNumber: employee.employeeNumber,
+            departmentName: employee.department?.departmentName,
+            isActive: true,
+            note: '하드코딩 PM 일괄 등록',
+          },
+          createdBy,
+        );
+
+        this.logger.log(`[PM 일괄 등록] 등록 성공: ${name}`);
+        successCount++;
+        details.push({
+          name,
+          status: 'success',
+        });
+      } catch (error) {
+        this.logger.error(
+          `[PM 일괄 등록] 등록 실패: ${name}, error: ${error.message}`,
+        );
+        failedCount++;
+        details.push({
+          name,
+          status: 'failed',
+          reason: error.message,
+        });
+      }
+    }
+
+    this.logger.log(
+      `[PM 일괄 등록 완료] 성공: ${successCount}, 스킵: ${skippedCount}, 실패: ${failedCount}`,
+    );
+
+    return {
+      success: successCount,
+      skipped: skippedCount,
+      failed: failedCount,
+      details,
+    };
+  }
+
+  /**
    * PM 추가
    * PM으로 지정 가능한 직원을 추가합니다.
    */
@@ -625,50 +902,46 @@ export class ProjectManagementController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PMResponseDto> {
     const createdBy = user.id;
+
+    // employeeId로 직원 조회
+    const employee = await this.employeeService.findById(createDto.employeeId);
+    if (!employee) {
+      throw new NotFoundException(
+        `ID ${createDto.employeeId}에 해당하는 직원을 찾을 수 없습니다.`,
+      );
+    }
+
+    // Employee 정보로 PM 생성
     const manager = await this.projectManagerService.생성한다(
-      createDto,
+      {
+        managerId: employee.externalId, // SSO의 ID
+        name: employee.name,
+        email: employee.email,
+        employeeNumber: employee.employeeNumber,
+        departmentName: employee.departmentName,
+        isActive: createDto.isActive,
+        note: createDto.note,
+      },
       createdBy,
     );
     return manager;
   }
 
   /**
-   * PM 목록 조회 (관리자용)
-   * 등록된 PM 목록을 조회합니다.
-   */
-  @GetProjectManagerList()
-  async getProjectManagerListAdmin(
-    @Query() query: GetPMQueryDto,
-  ): Promise<PMListResponseDto> {
-    const result = await this.projectManagerService.목록_조회한다({
-      page: query.page,
-      limit: query.limit,
-      filter: {
-        isActive: query.isActive,
-        search: query.search,
-      },
-    });
-
-    const totalPages = Math.ceil(result.total / result.limit);
-
-    return {
-      ...result,
-      totalPages,
-    };
-  }
-
-  /**
    * PM 상세 조회
-   * 특정 PM의 상세 정보를 조회합니다.
+   * managerId(SSO ID)로 PM의 상세 정보를 조회합니다.
    */
   @GetProjectManagerDetail()
   async getProjectManagerDetail(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
   ): Promise<PMResponseDto> {
-    const manager = await this.projectManagerService.ID로_조회한다(id);
+    const manager =
+      await this.projectManagerService.managerId로_조회한다(managerId);
 
     if (!manager) {
-      throw new NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
+      throw new NotFoundException(
+        `매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`,
+      );
     }
 
     return manager;
@@ -676,17 +949,64 @@ export class ProjectManagementController {
 
   /**
    * PM 수정
-   * 기존 PM의 정보를 수정합니다.
+   * managerId(SSO ID)로 PM의 정보를 수정합니다.
+   * - ProjectManager에 등록되지 않은 PM은 자동으로 등록 후 수정합니다.
    */
   @UpdateProjectManager()
   async updateProjectManager(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
     @Body() updateDto: UpdatePMDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PMResponseDto> {
     const updatedBy = user.id;
-    const manager = await this.projectManagerService.수정한다(
-      id,
+
+    // 1. ProjectManager에 등록되어 있는지 확인
+    const existingManager =
+      await this.projectManagerService.managerId로_조회한다(managerId);
+
+    if (!existingManager) {
+      // 레코드가 없으면 SSO에서 조회하여 자동 등록
+      const ssoEmployee = await this.ssoService.직원정보를조회한다({
+        employeeId: managerId,
+        withDetail: true,
+      });
+
+      if (!ssoEmployee) {
+        throw new NotFoundException(
+          `매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+
+      // Employee 조회 또는 생성
+      let employee = await this.employeeService.findByExternalId(managerId);
+      if (!employee) {
+        employee = await this.employeeService.create({
+          externalId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+        });
+      }
+
+      // ProjectManager 자동 등록
+      await this.projectManagerService.생성한다(
+        {
+          managerId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+          isActive: true,
+          note: '자동 등록된 PM',
+        },
+        updatedBy,
+      );
+    }
+
+    // 2. 수정
+    const manager = await this.projectManagerService.managerId로_수정한다(
+      managerId,
       updateDto,
       updatedBy,
     );
@@ -694,15 +1014,96 @@ export class ProjectManagementController {
   }
 
   /**
-   * PM 삭제 (소프트 삭제)
-   * PM을 소프트 삭제합니다.
+   * PM 삭제 (하드 삭제 - 실제 레코드 제거)
+   * managerId(SSO ID)로 PM을 하드 삭제합니다.
+   * 하드코딩된 12명 중 ProjectManager에 등록되지 않은 PM은 자동 등록 후 즉시 삭제합니다.
    */
   @DeleteProjectManager()
   async deleteProjectManager(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('managerId') managerId: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     const deletedBy = user.id;
-    await this.projectManagerService.삭제한다(id, deletedBy);
+    this.logger.log(
+      `[PM 삭제 시작] managerId: ${managerId}, deletedBy: ${deletedBy}`,
+    );
+
+    try {
+      // 1. ProjectManager에 등록되어 있는지 확인 (삭제된 레코드 포함)
+      // 먼저 하드 삭제를 시도하여 소프트 삭제된 레코드도 완전히 제거
+      this.logger.log(`[PM 삭제] 하드 삭제 시도`);
+
+      try {
+        await this.projectManagerService.managerId로_하드_삭제한다(managerId);
+        this.logger.log(`[PM 삭제 완료] managerId: ${managerId}`);
+        return;
+      } catch (error) {
+        // NotFoundException인 경우 레코드가 없는 것이므로 계속 진행
+        if (error instanceof NotFoundException) {
+          this.logger.debug(
+            `[PM 삭제] ProjectManager에 레코드 없음. 자동 등록 후 삭제 진행`,
+          );
+        } else {
+          throw error;
+        }
+      }
+
+      // 2. 레코드가 없으면 SSO에서 조회하여 자동 등록 후 즉시 삭제
+      this.logger.log(
+        `[PM 삭제] ProjectManager에 없음. SSO에서 조회하여 자동 등록 후 삭제`,
+      );
+      const ssoEmployee = await this.ssoService.직원정보를조회한다({
+        employeeId: managerId,
+        withDetail: true,
+      });
+
+      if (!ssoEmployee) {
+        throw new NotFoundException(
+          `매니저 ID ${managerId}에 해당하는 직원을 찾을 수 없습니다.`,
+        );
+      }
+
+      this.logger.debug(`[PM 삭제] SSO 직원 조회 성공: ${ssoEmployee.name}`);
+
+      // Employee 조회 또는 생성
+      let employee = await this.employeeService.findByExternalId(managerId);
+      if (!employee) {
+        this.logger.debug(`[PM 삭제] Employee 생성`);
+        employee = await this.employeeService.create({
+          externalId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+        });
+      }
+
+      // ProjectManager 자동 등록
+      this.logger.log(`[PM 삭제] ProjectManager 자동 등록`);
+      await this.projectManagerService.생성한다(
+        {
+          managerId: managerId,
+          name: ssoEmployee.name,
+          email: ssoEmployee.email,
+          employeeNumber: ssoEmployee.employeeNumber,
+          departmentName: ssoEmployee.department?.departmentName,
+          isActive: true,
+          note: '하드코딩 PM 삭제를 위해 자동 등록',
+        },
+        deletedBy,
+      );
+
+      // 3. 즉시 하드 삭제
+      this.logger.log(`[PM 삭제] 자동 등록 후 즉시 하드 삭제 실행`);
+      await this.projectManagerService.managerId로_하드_삭제한다(managerId);
+      this.logger.log(`[PM 삭제 완료] managerId: ${managerId}`);
+    } catch (error) {
+      this.logger.error(
+        `[PM 삭제 에러] managerId: ${managerId}, error: ${error.message}`,
+      );
+
+      // 다른 에러는 그대로 throw
+      throw error;
+    }
   }
 }

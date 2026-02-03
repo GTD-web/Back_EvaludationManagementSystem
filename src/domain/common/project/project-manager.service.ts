@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProjectManager } from './project-manager.entity';
 import {
   CreateProjectManagerDto,
@@ -16,7 +16,7 @@ import {
 
 /**
  * 프로젝트 매니저 도메인 서비스
- * 
+ *
  * PM으로 지정 가능한 직원 목록을 관리합니다.
  */
 @Injectable()
@@ -52,9 +52,7 @@ export class ProjectManagerService {
   /**
    * PM 목록을 조회한다
    */
-  async 목록_조회한다(
-    options: ProjectManagerListOptions = {},
-  ): Promise<{
+  async 목록_조회한다(options: ProjectManagerListOptions = {}): Promise<{
     managers: ProjectManagerDto[];
     total: number;
     page: number;
@@ -64,22 +62,27 @@ export class ProjectManagerService {
     const limit = options.limit || 50;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.projectManagerRepository
-      .createQueryBuilder('pm')
-      .where('pm.deletedAt IS NULL');
+    const queryBuilder = this.projectManagerRepository.createQueryBuilder('pm');
 
     // 필터 적용
     if (options.filter?.isActive !== undefined) {
-      queryBuilder.andWhere('pm.isActive = :isActive', {
+      queryBuilder.where('pm.isActive = :isActive', {
         isActive: options.filter.isActive,
       });
     }
 
     if (options.filter?.search) {
-      queryBuilder.andWhere(
-        '(pm.name LIKE :search OR pm.email LIKE :search OR pm.employeeNumber LIKE :search)',
-        { search: `%${options.filter.search}%` },
-      );
+      const searchCondition =
+        '(pm.name LIKE :search OR pm.email LIKE :search OR pm.employeeNumber LIKE :search)';
+      if (options.filter?.isActive !== undefined) {
+        queryBuilder.andWhere(searchCondition, {
+          search: `%${options.filter.search}%`,
+        });
+      } else {
+        queryBuilder.where(searchCondition, {
+          search: `%${options.filter.search}%`,
+        });
+      }
     }
 
     // 정렬 및 페이징
@@ -100,7 +103,7 @@ export class ProjectManagerService {
    */
   async ID로_조회한다(id: string): Promise<ProjectManagerDto | null> {
     const manager = await this.projectManagerRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     return manager ? manager.DTO로_변환한다() : null;
@@ -113,7 +116,7 @@ export class ProjectManagerService {
     managerId: string,
   ): Promise<ProjectManagerDto | null> {
     const manager = await this.projectManagerRepository.findOne({
-      where: { managerId, deletedAt: IsNull() },
+      where: { managerId },
     });
 
     return manager ? manager.DTO로_변환한다() : null;
@@ -128,7 +131,7 @@ export class ProjectManagerService {
     updatedBy: string,
   ): Promise<ProjectManagerDto> {
     const manager = await this.projectManagerRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!manager) {
@@ -141,19 +144,14 @@ export class ProjectManagerService {
   }
 
   /**
-   * PM을 삭제한다 (소프트 삭제)
+   * PM을 삭제한다 (하드 삭제)
    */
-  async 삭제한다(id: string, deletedBy: string): Promise<void> {
-    const manager = await this.projectManagerRepository.findOne({
-      where: { id, deletedAt: IsNull() },
-    });
+  async 삭제한다(id: string): Promise<void> {
+    const result = await this.projectManagerRepository.delete({ id });
 
-    if (!manager) {
+    if (result.affected === 0) {
       throw new NotFoundException(`ID ${id}에 해당하는 PM을 찾을 수 없습니다.`);
     }
-
-    manager.삭제한다(deletedBy);
-    await this.projectManagerRepository.save(manager);
   }
 
   /**
@@ -161,11 +159,46 @@ export class ProjectManagerService {
    */
   async 활성화된_managerId_목록_조회한다(): Promise<string[]> {
     const managers = await this.projectManagerRepository.find({
-      where: { isActive: true, deletedAt: IsNull() },
+      where: { isActive: true },
       select: ['managerId'],
     });
 
     return managers.map((m) => m.managerId);
   }
-}
 
+  /**
+   * managerId로 PM 정보를 수정한다
+   */
+  async managerId로_수정한다(
+    managerId: string,
+    data: UpdateProjectManagerDto,
+    updatedBy: string,
+  ): Promise<ProjectManagerDto> {
+    const manager = await this.projectManagerRepository.findOne({
+      where: { managerId },
+    });
+
+    if (!manager) {
+      throw new NotFoundException(
+        `매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`,
+      );
+    }
+
+    manager.업데이트한다(data, updatedBy);
+    const saved = await this.projectManagerRepository.save(manager);
+    return saved.DTO로_변환한다();
+  }
+
+  /**
+   * managerId로 PM을 하드 삭제한다 (실제 레코드 제거)
+   */
+  async managerId로_하드_삭제한다(managerId: string): Promise<void> {
+    const result = await this.projectManagerRepository.delete({ managerId });
+
+    if (result.affected === 0) {
+      throw new NotFoundException(
+        `매니저 ID ${managerId}에 해당하는 PM을 찾을 수 없습니다.`,
+      );
+    }
+  }
+}

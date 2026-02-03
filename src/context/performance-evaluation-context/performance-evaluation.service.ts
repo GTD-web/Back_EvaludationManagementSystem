@@ -138,11 +138,8 @@ export class PerformanceEvaluationService
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    @InjectRepository(EvaluationPeriodEmployeeMapping)
-    private readonly mappingRepository: Repository<EvaluationPeriodEmployeeMapping>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-    private readonly secondaryStepApprovalService: SecondaryEvaluationStepApprovalService,
     private readonly stepApprovalContextService: StepApprovalContextService,
   ) {}
 
@@ -696,7 +693,7 @@ export class PerformanceEvaluationService
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow: boolean = true,
+    approveAllBelow: boolean = false,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 1차 평가자 ID 조회
     const actualPrimaryEvaluatorId =
@@ -778,18 +775,13 @@ export class PerformanceEvaluationService
 
     const evaluation = result.evaluations[0];
 
-    // 평가가 있지만 evaluatorId가 잘못되었거나 content가 비어있으면 수정
-    const needsUpdate =
-      !evaluation.downwardEvaluationContent?.trim() ||
-      evaluation.evaluatorId !== actualPrimaryEvaluatorId;
+    // 평가가 있지만 content가 비어있으면 기본 메시지로 수정
+    const needsUpdate = !evaluation.downwardEvaluationContent?.trim();
 
     if (needsUpdate) {
-      const defaultContent =
-        evaluation.downwardEvaluationContent?.trim() ||
-        `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
 
-      // Upsert를 호출하면 evaluatorId 없이 조회하므로 기존 평가를 찾아서 수정함
-      // evaluatorId도 올바른 값으로 업데이트됨
+      // Upsert를 호출하여 기본 메시지 추가
       await this.하향평가를_저장한다(
         actualPrimaryEvaluatorId, // 올바른 1차 평가자 ID
         evaluateeId,
@@ -825,7 +817,7 @@ export class PerformanceEvaluationService
     wbsId: string,
     evaluatorId: string,
     submittedBy: string,
-    approveAllBelow: boolean = true,
+    approveAllBelow: boolean = false,
   ): Promise<void> {
     // 평가라인 매핑에서 실제 할당된 2차 평가자 ID 조회 (WBS별)
     const actualSecondaryEvaluatorId =
@@ -908,18 +900,13 @@ export class PerformanceEvaluationService
 
     const evaluation = result.evaluations[0];
 
-    // 평가가 있지만 evaluatorId가 잘못되었거나 content가 비어있으면 수정
-    const needsUpdate =
-      !evaluation.downwardEvaluationContent?.trim() ||
-      evaluation.evaluatorId !== actualSecondaryEvaluatorId;
+    // 평가가 있지만 content가 비어있으면 기본 메시지로 수정
+    const needsUpdate = !evaluation.downwardEvaluationContent?.trim();
 
     if (needsUpdate) {
-      const defaultContent =
-        evaluation.downwardEvaluationContent?.trim() ||
-        `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
+      const defaultContent = `${submitterName}님이 미입력 상태에서 제출하였습니다.`;
 
-      // Upsert를 호출하면 evaluatorId 없이 조회하므로 기존 평가를 찾아서 수정함
-      // evaluatorId도 올바른 값으로 업데이트됨
+      // Upsert를 호출하여 기본 메시지 추가
       await this.하향평가를_저장한다(
         actualSecondaryEvaluatorId, // 올바른 2차 평가자 ID
         evaluateeId,
@@ -969,7 +956,7 @@ export class PerformanceEvaluationService
     evaluationType: DownwardEvaluationType,
     submittedBy: string,
     forceSubmit: boolean = false, // 강제 제출 옵션 (승인 시 필수 항목 검증 건너뛰기)
-    approveAllBelow: boolean = true, // 하위 단계 자동 승인 여부
+    approveAllBelow: boolean = false, // 하위 단계 자동 승인 여부
   ): Promise<{
     submittedCount: number;
     skippedCount: number;
@@ -1681,7 +1668,7 @@ export class PerformanceEvaluationService
 
   /**
    * 산출물을 ID로 조회한다 (nullable)
-   * 
+   *
    * @param id 산출물 ID
    * @returns 산출물 엔티티 또는 null
    */

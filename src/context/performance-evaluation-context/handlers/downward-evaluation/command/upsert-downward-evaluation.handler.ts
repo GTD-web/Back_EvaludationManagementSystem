@@ -50,14 +50,6 @@ export class UpsertDownwardEvaluationHandler
       actionBy,
     } = command;
 
-    this.logger.log('하향평가 Upsert 핸들러 실행', {
-      evaluatorId,
-      evaluateeId,
-      periodId,
-      wbsId,
-      evaluationType,
-    });
-
     return await this.transactionManager.executeTransaction(async () => {
       // 기존 하향평가 조회
       // evaluatorId 없이 조회하여 잘못된 evaluatorId로 저장된 평가도 찾을 수 있도록 함
@@ -74,12 +66,6 @@ export class UpsertDownwardEvaluationHandler
 
       if (existingEvaluation) {
         // 기존 하향평가 수정
-        this.logger.log('기존 하향평가 수정', {
-          evaluationId: existingEvaluation.id,
-          oldEvaluatorId: existingEvaluation.evaluatorId,
-          newEvaluatorId: evaluatorId,
-        });
-
         await this.downwardEvaluationService.수정한다(
           existingEvaluation.id,
           {
@@ -100,12 +86,6 @@ export class UpsertDownwardEvaluationHandler
         return existingEvaluation.id;
       } else {
         // 새로운 하향평가 생성
-        this.logger.log('새로운 하향평가 생성', {
-          evaluatorId,
-          evaluateeId,
-          evaluationType,
-        });
-
         const evaluation = await this.downwardEvaluationService.생성한다({
           employeeId: evaluateeId,
           evaluatorId,
@@ -120,7 +100,6 @@ export class UpsertDownwardEvaluationHandler
           createdBy: actionBy,
         });
 
-        this.logger.log('하향평가 생성 완료', { evaluationId: evaluation.id });
         return evaluation.id;
       }
     });

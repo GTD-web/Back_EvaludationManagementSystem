@@ -137,7 +137,7 @@ export class DownwardEvaluationManagementController {
   ): Promise<void> {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
-    const approveAllBelow = queryDto.approveAllBelow ?? true;
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
 
     await this.downwardEvaluationBusinessService.일차_하향평가를_제출하고_재작성요청을_완료한다(
       evaluateeId,
@@ -278,8 +278,8 @@ export class DownwardEvaluationManagementController {
   /**
    * 피평가자의 모든 하향평가 일괄 제출
    *
-   * 2차 하향평가 일괄 제출은 해당 평가만 제출하고, 평가기준/자기평가/1차 하향평가의 상태를 변경하지 않습니다.
-   * 1차 하향평가 일괄 제출은 하위 단계(평가기준, 자기평가)를 함께 승인합니다.
+   * approveAllBelow가 true인 경우에만 하위 단계를 함께 승인합니다.
+   * 기본값은 false이므로, 명시적으로 지정하지 않으면 하위 단계를 승인하지 않습니다.
    */
   @BulkSubmitDownwardEvaluations()
   async bulkSubmitDownwardEvaluations(
@@ -299,11 +299,8 @@ export class DownwardEvaluationManagementController {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
 
-    // 2차 하향평가는 하위 단계를 승인하지 않음 (기본값: false)
-    // 1차 하향평가는 하위 단계를 승인함 (기본값: true)
-    const defaultApproveAllBelow =
-      queryDto.evaluationType === 'secondary' ? false : true;
-    const approveAllBelow = queryDto.approveAllBelow ?? defaultApproveAllBelow;
+    // 하위 단계 자동 승인 여부 (기본값: false)
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
 
     return await this.downwardEvaluationBusinessService.피평가자의_모든_하향평가를_일괄_제출한다(
       evaluatorId,

@@ -57,7 +57,6 @@ export class UpdateEvaluationSetupDeadlineCommandHandler
         updatedBy,
       );
 
-    return (adjustedPeriod || updatedPeriod) as EvaluationPeriodDto;
+    return (adjustedPeriod || updatedPeriod).DTO로_변환한다();
   }
 }
-

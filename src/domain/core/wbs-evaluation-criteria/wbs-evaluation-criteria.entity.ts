@@ -54,6 +54,17 @@ export class WbsEvaluationCriteria
   subProject?: string | null;
 
   /**
+   * 추가 과제 여부
+   * true인 경우 추가로 할당된 과제임을 나타냄
+   */
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '추가 과제 여부 - true인 경우 추가로 할당된 과제',
+  })
+  isAdditional: boolean;
+
+  /**
    * DTO로 변환
    */
   DTO로_변환한다(): WbsEvaluationCriteriaDto {
@@ -63,6 +74,7 @@ export class WbsEvaluationCriteria
       criteria: this.criteria,
       importance: this.importance,
       subProject: this.subProject,
+      isAdditional: this.isAdditional,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -75,12 +87,16 @@ export class WbsEvaluationCriteria
     criteria: string,
     importance: number,
     subProject: string | null | undefined,
+    isAdditional: boolean | undefined,
     updatedBy: string,
   ): void {
     this.criteria = criteria;
     this.importance = importance;
     if (subProject !== undefined) {
       this.subProject = subProject;
+    }
+    if (isAdditional !== undefined) {
+      this.isAdditional = isAdditional;
     }
     this.수정자를_설정한다(updatedBy);
     this.메타데이터를_업데이트한다();
@@ -130,6 +146,3 @@ export class WbsEvaluationCriteria
     );
   }
 }
-
-
-

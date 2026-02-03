@@ -44,6 +44,7 @@ export class RevisionRequestController {
 
   /**
    * 전체 재작성 요청 목록을 조회한다 (관리자용)
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @GetRevisionRequests()
   async getRevisionRequests(
@@ -80,6 +81,7 @@ export class RevisionRequestController {
 
   /**
    * 내 재작성 요청 목록을 조회한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @GetMyRevisionRequests()
   async getMyRevisionRequests(
@@ -119,6 +121,7 @@ export class RevisionRequestController {
 
   /**
    * 읽지 않은 재작성 요청 수를 조회한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @GetMyUnreadCount()
   async getMyUnreadCount(
@@ -134,6 +137,7 @@ export class RevisionRequestController {
 
   /**
    * 재작성 요청을 읽음 처리한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @MarkRevisionRequestAsRead()
   async markAsRead(
@@ -148,6 +152,7 @@ export class RevisionRequestController {
 
   /**
    * 재작성 완료 응답을 제출한다
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @CompleteRevisionRequest()
   async completeRevisionRequest(
@@ -164,6 +169,7 @@ export class RevisionRequestController {
 
   /**
    * 평가기간, 직원, 평가자 기반으로 재작성 완료 응답을 제출한다 (관리자용)
+   * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
    */
   @CompleteRevisionRequestByEvaluator()
   async completeRevisionRequestByEvaluator(

@@ -50,7 +50,6 @@ export class UpdateEvaluationPeriodBasicInfoCommandHandler
       updatedBy,
     );
 
-    return updatedPeriod as EvaluationPeriodDto;
+    return updatedPeriod.DTO로_변환한다();
   }
 }
-

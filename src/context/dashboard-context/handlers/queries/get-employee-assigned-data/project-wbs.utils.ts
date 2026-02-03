@@ -22,7 +22,12 @@ import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/eval
 
 // 임시로 로거 비활성화 (디버깅용)
 // const logger = new Logger('ProjectWbsUtils');
-const logger = { log: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as any;
+const logger = {
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+} as any;
 
 /**
  * 프로젝트별 할당 정보 조회 (WBS 목록 포함)
@@ -44,7 +49,7 @@ export async function getProjectsWithWbs(
   deliverableRepository: Repository<Deliverable>,
   employeeRepository: Repository<Employee>,
 ): Promise<AssignedProjectWithWbs[]> {
-  // 1. 평가 프로젝트 할당 조회 (Project와 PM 직원 정보 join)
+  // 1. 평가 프로젝트 할당 조회 (Project와 PM 정보 join)
   const projectAssignments = await projectAssignmentRepository
     .createQueryBuilder('assignment')
     .leftJoin(
@@ -62,14 +67,16 @@ export async function getProjectsWithWbs(
       'assignment.projectId AS assignment_project_id',
       'assignment.assignedDate AS assignment_assigned_date',
       'assignment.displayOrder AS assignment_display_order',
+      'assignment.projectStartDate AS assignment_project_start_date',
+      'assignment.projectEndDate AS assignment_project_end_date',
       'project.id AS project_id',
       'project.name AS project_name',
       'project.projectCode AS project_project_code',
-      'project.status AS project_status',
-      'project.startDate AS project_start_date',
-      'project.endDate AS project_end_date',
+      'project.grade AS project_grade',
+      'project.priority AS project_priority',
       'project.managerId AS project_manager_id',
-      'manager.externalId AS manager_id',
+      'project.realPM AS project_real_pm',
+      'manager.id AS manager_id',
       'manager.name AS manager_name',
     ])
     .where('assignment.periodId = :periodId', {
@@ -109,6 +116,8 @@ export async function getProjectsWithWbs(
       'assignment.assignedDate AS assignment_assigned_date',
       'assignment.displayOrder AS assignment_display_order',
       'assignment.weight AS assignment_weight',
+      'assignment.startDate AS assignment_start_date',
+      'assignment.endDate AS assignment_end_date',
       'wbsItem.id AS wbs_item_id',
       'wbsItem.wbsCode AS wbs_item_wbs_code',
       'wbsItem.title AS wbs_item_title',
@@ -144,6 +153,7 @@ export async function getProjectsWithWbs(
         'criteria.criteria AS criteria_criteria',
         'criteria.importance AS criteria_importance',
         'criteria.subProject AS criteria_sub_project',
+        'criteria.isAdditional AS criteria_is_additional',
         'criteria.createdAt AS criteria_created_at',
       ])
       .where('criteria.wbsItemId IN (:...wbsItemIds)', { wbsItemIds })
@@ -164,6 +174,7 @@ export async function getProjectsWithWbs(
         criteria: row.criteria_criteria || '',
         importance: row.criteria_importance || 5,
         subProject: row.criteria_sub_project || null,
+        isAdditional: row.criteria_is_additional || false,
         createdAt: row.criteria_created_at,
       });
     }
@@ -365,7 +376,49 @@ export async function getProjectsWithWbs(
     }
   >();
   if (wbsItemIds.length > 0) {
-    const downwardEvaluationRows = await downwardEvaluationRepository
+    // 먼저 1차 평가 데이터 조회 (PRIMARY 평가자가 작성한 것만)
+    const primaryEvaluationRows = await downwardEvaluationRepository
+      .createQueryBuilder('downward')
+      .innerJoin(
+        EvaluationLineMapping,
+        'mapping',
+        'mapping.evaluationPeriodId = downward.periodId ' +
+          'AND mapping.employeeId = downward.employeeId ' +
+          'AND (mapping.wbsItemId = downward.wbsId OR mapping.wbsItemId IS NULL) ' +
+          'AND mapping.evaluatorId = downward.evaluatorId ' +
+          'AND mapping.deletedAt IS NULL',
+      )
+      .innerJoin(
+        'evaluation_lines',
+        'line',
+        'line.id = mapping.evaluationLineId ' +
+          "AND line.evaluatorType = 'primary' " +
+          'AND line.deletedAt IS NULL',
+      )
+      .select([
+        'downward.id AS downward_id',
+        'downward.wbsId AS downward_wbs_id',
+        'downward.evaluatorId AS downward_evaluator_id',
+        'downward.evaluationType AS downward_evaluation_type',
+        'downward.downwardEvaluationContent AS downward_evaluation_content',
+        'downward.downwardEvaluationScore AS downward_score',
+        'downward.isCompleted AS downward_is_completed',
+        'downward.completedAt AS downward_completed_at',
+      ])
+      .where('downward.periodId = :periodId', {
+        periodId: evaluationPeriodId,
+      })
+      .andWhere('downward.employeeId = :employeeId', { employeeId })
+      .andWhere('downward.wbsId IN (:...wbsItemIds)', { wbsItemIds })
+      .andWhere('downward.evaluationType = :evaluationType', {
+        evaluationType: 'primary',
+      })
+      .andWhere('downward.deletedAt IS NULL')
+      .getRawMany();
+
+    // 2차 평가 데이터 조회 (SECONDARY 평가자가 작성한 것만)
+    // 평가라인 매핑과의 조인을 제거하여 실제로 제출된 모든 secondary 평가를 가져옴
+    const secondaryEvaluationRows = await downwardEvaluationRepository
       .createQueryBuilder('downward')
       .select([
         'downward.id AS downward_id',
@@ -382,8 +435,17 @@ export async function getProjectsWithWbs(
       })
       .andWhere('downward.employeeId = :employeeId', { employeeId })
       .andWhere('downward.wbsId IN (:...wbsItemIds)', { wbsItemIds })
+      .andWhere('downward.evaluationType = :evaluationType', {
+        evaluationType: 'secondary',
+      })
       .andWhere('downward.deletedAt IS NULL')
       .getRawMany();
+
+    // 1차 평가와 2차 평가를 합침
+    const downwardEvaluationRows = [
+      ...primaryEvaluationRows,
+      ...secondaryEvaluationRows,
+    ];
 
     // 8-1. 하향평가에 나타난 모든 평가자 ID 수집
     const allEvaluatorIds = new Set<string>();
@@ -399,7 +461,10 @@ export async function getProjectsWithWbs(
     if (allEvaluatorIds.size > 0) {
       const evaluators = await employeeRepository
         .createQueryBuilder('employee')
-        .select(['employee.id AS employee_id', 'employee.name AS employee_name'])
+        .select([
+          'employee.id AS employee_id',
+          'employee.name AS employee_name',
+        ])
         .where('employee.id IN (:...ids)', {
           ids: Array.from(allEvaluatorIds),
         })
@@ -616,7 +681,7 @@ export async function getProjectsWithWbs(
       continue;
     }
 
-    // 프로젝트 매니저 정보
+    // 프로젝트 매니저 정보 (PM 기본 정보만)
     const projectManager =
       row.manager_id && row.manager_name
         ? {
@@ -624,6 +689,9 @@ export async function getProjectsWithWbs(
             name: row.manager_name,
           }
         : null;
+
+    // 실 PM은 프로젝트 테이블에서 가져온 realPM 값 사용
+    const realPM = row.project_real_pm || '';
 
     // 해당 프로젝트의 WBS 목록 필터링
     const projectWbsAssignments = wbsAssignments.filter(
@@ -644,6 +712,7 @@ export async function getProjectsWithWbs(
 
       const criteria = criteriaMap.get(wbsItemId) || [];
       const performance = performanceMap.get(wbsItemId) || null;
+      const subProject = subProjectMap.get(wbsItemId) || null;
       const downwardEvalData = downwardEvaluationMap.get(wbsItemId) || {
         primary: null,
         secondary: null,
@@ -652,10 +721,15 @@ export async function getProjectsWithWbs(
 
       // 2차 평가자 설정: 매핑이 있으면 사용, 없으면 프로젝트 PM을 기본값으로 설정
       let secondaryEval = downwardEvalData.secondary;
-      
+
       if (secondaryEval) {
         // 매핑이 있지만 evaluatorName이 비어있는 경우, PM 이름으로 채움
-        if (!secondaryEval.evaluatorName && projectManager && secondaryEval.evaluatorId === projectManager.id) {
+        if (
+          !secondaryEval.evaluatorName &&
+          projectManager &&
+          projectManager.id &&
+          secondaryEval.evaluatorId === projectManager.id
+        ) {
           logger.log('2차 평가자 이름을 프로젝트 PM으로 설정', {
             wbsId: wbsItemId,
             evaluatorId: secondaryEval.evaluatorId,
@@ -667,7 +741,7 @@ export async function getProjectsWithWbs(
             evaluatorName: projectManager.name,
           };
         }
-      } else if (projectManager) {
+      } else if (projectManager && projectManager.id) {
         // 2차 평가자 매핑이 없으면 프로젝트 PM을 기본값으로 설정
         logger.log('2차 평가자 매핑이 없어 프로젝트 PM을 기본값으로 설정', {
           wbsId: wbsItemId,
@@ -687,8 +761,11 @@ export async function getProjectsWithWbs(
         wbsCode: wbsRow.wbs_item_wbs_code || '',
         weight: parseFloat(wbsRow.assignment_weight) || 0,
         assignedAt: wbsRow.assignment_assigned_date,
+        startDate: wbsRow.assignment_start_date || undefined,
+        endDate: wbsRow.assignment_end_date || undefined,
         criteria,
         performance,
+        subProject,
         primaryDownwardEvaluation: downwardEvalData.primary || null,
         secondaryDownwardEvaluation: secondaryEval || null,
         deliverables,
@@ -699,8 +776,13 @@ export async function getProjectsWithWbs(
       projectId,
       projectName: row.project_name || '',
       projectCode: row.project_project_code || '',
+      grade: row.project_grade || undefined,
+      priority: row.project_priority || undefined,
       assignedAt: row.assignment_assigned_date,
+      projectStartDate: row.assignment_project_start_date || undefined,
+      projectEndDate: row.assignment_project_end_date || undefined,
       projectManager,
+      realPM,
       wbsList,
     });
   }

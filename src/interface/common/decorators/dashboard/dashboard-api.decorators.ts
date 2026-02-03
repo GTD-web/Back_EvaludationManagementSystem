@@ -109,14 +109,14 @@ export function GetAllEmployeesEvaluationPeriodStatus() {
 - 평가기간에 등록된 모든 직원의 현황을 배열로 반환
 - 각 직원의 평가 대상 여부, 평가항목 설정 상태, WBS 평가기준 설정 상태, 평가라인 지정 상태 포함
   * **프로젝트/WBS 할당 개수는 취소된 프로젝트 할당(소프트 딜리트) 제외**
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 등록된 직원이 없으면 빈 배열 반환
 - 상태 값: complete(완료), in_progress(설정중), none(미존재)
 
 **테스트 케이스:**
 - 등록된 모든 직원의 현황을 조회할 수 있어야 한다
 - 실제처럼 다양한 설정 상태를 가진 직원들을 조회할 수 있어야 한다 (none, in_progress, complete)
-- 제외된 직원은 결과에 포함되지 않아야 한다
+- **조회하지 않기로 한 직원은 결과에 포함되지 않아야 한다**
 - 응답에 모든 필수 필드가 포함되어야 한다 (평가기간, 직원, 제외정보, 평가항목, WBS기준, 평가라인)
 - 등록된 직원이 없으면 빈 배열을 반환해야 한다
 - 여러 프로젝트와 WBS가 배정된 직원의 현황이 정확해야 한다 (카운트 정확성)
@@ -169,10 +169,14 @@ export function ExportAllEmployeesEvaluationPeriodStatusToExcel() {
 
 **동작:**
 - 평가기간에 등록된 모든 직원의 현황을 엑셀 파일로 생성하여 다운로드
-- 직원 정보(이름, 사번, 부서, 직급), 평가자 정보, 자기평가/1차/2차/동료/최종평가 현황 포함
-- 각 평가 단계별 상태, 점수, 등급 정보 제공
+- 엑셀 파일 최상단에 "{평가기간명} 평가 결과" 제목 포함
+- 직원 정보(이름, 사번, 부서, 직급), 평가자 정보 포함
+- 자기평가/1차/2차평가: 점수와 등급만 표시 (상태는 표시하지 않음)
+- 동료평가: 완료수/전체수만 표시 (상태는 표시하지 않음)
+- 최종평가: 평가등급과 직무등급 표시
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 엑셀 파일에 자동 제외됨**
 - Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-- Content-Disposition: attachment; filename="평가현황_{평가기간명}_{날짜}.xlsx"
+- Content-Disposition: attachment; filename="평가결과_{평가기간명}_{날짜}.xlsx"
 
 **엑셀 컬럼:**
 - 부서 (부서별로 세로 병합되어 표시)
@@ -182,11 +186,11 @@ export function ExportAllEmployeesEvaluationPeriodStatusToExcel() {
 - 2차 평가자
 - 재임여부
 - 평가선정
-- 자기평가 (상태, 점수, 등급)
-- 1차평가 (상태, 점수, 등급)
-- 2차평가 (상태, 점수, 등급)
-- 동료평가 (상태, 완료수/전체수)
-- 최종평가 (평가등급, 직무등급)
+- 자기평가 (점수 / 등급)
+- 1차평가 (점수 / 등급)
+- 2차평가 (점수 / 등급)
+- 동료평가 (완료수/전체수)
+- 최종평가 (평가등급(직무등급))
 
 **정렬 순서:**
 - SSO 부서 하이라키 API에서 조회한 부서 순서(order)대로 자동 정렬
@@ -232,6 +236,9 @@ export function GetMyEvaluationTargetsStatus() {
 **동작:**
 - 지정한 평가자 ID로 담당하는 피평가자 목록 조회
 - 내가 PRIMARY 또는 SECONDARY 평가자로 지정된 피평가자 목록 반환
+- **평가자에게 할당된 피평가자는 WBS 할당 여부와 관계없이 모두 조회됨**
+  * WBS가 할당되지 않은 경우 status는 'none'으로 표시
+  * 피평가자가 내용을 작성하지 않아도 목록에 표시됨
 - 각 피평가자에 대한 내 평가자 유형 제공 (PRIMARY/SECONDARY)
 - 피평가자가 1차 평가자에게 자기평가를 제출했는지 여부 제공 (전체 자기평가 수, 제출된 수, 제출 완료 여부)
 - **자기평가 조회 관련 필드 (평가자 유형에 따라 제공):**
@@ -261,6 +268,8 @@ export function GetMyEvaluationTargetsStatus() {
 
 **테스트 케이스:**
 - 기능 테스트: 평가자가 담당하는 평가 대상자 현황을 조회할 수 있어야 한다
+- 기능 테스트: **WBS 할당이 없는 피평가자도 목록에 포함되어야 한다** (status: 'none')
+- 기능 테스트: **피평가자가 내용을 작성하지 않아도 목록에 표시되어야 한다**
 - 기능 테스트: PRIMARY와 SECONDARY 평가자 구분이 정확해야 한다
 - 기능 테스트: 제외된 피평가자도 조회되어야 한다 (제외 여부 정보 포함)
 - 기능 테스트: 응답에 모든 필수 필드가 포함되어야 한다 (제외정보, 평가항목, WBS기준, 평가라인, 성과입력, 자기평가제출상태, 하향평가)
@@ -331,6 +340,7 @@ export function GetEmployeeAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가, 하향평가 포함)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수, 평가 점수 및 등급)
   * **summary의 평가자별 assignedWbsCount는 취소된 프로젝트 할당의 WBS 제외**
 - 할당이 없는 경우에도 빈 배열로 정상 응답
@@ -417,6 +427,7 @@ export function GetMyAssignedData() {
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
 - 각 프로젝트에 속한 WBS 목록 반환 (WBS 정보, 평가기준, 성과, 자기평가)
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
   * **2차 하향평가 정보는 평가자 정보만 제공 (evaluatorId, evaluatorName, isCompleted)**
   * **2차 하향평가 내용은 제거됨 (evaluationContent, score, submittedAt)**
 - 데이터 요약 정보 제공 (총 프로젝트 수, 총 WBS 수, 완료된 성과 수, 완료된 자기평가 수)
@@ -579,7 +590,7 @@ export function GetFinalEvaluationsByPeriod() {
 - 평가기간 정보를 최상단에 한 번만 제공
 - 각 직원별 최종평가 정보를 배열로 제공
 - 직원 사번 오름차순으로 정렬
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 삭제된 최종평가는 조회되지 않음
 
 
@@ -705,7 +716,7 @@ export function GetAllEmployeesFinalEvaluations() {
 - 날짜 범위로 필터링된 평가기간 목록을 최상단에 제공 (시작일 내림차순)
 - 각 직원별로 평가기간 순서에 맞는 최종평가 배열 제공 (사번 오름차순)
 - 평가기간 배열과 최종평가 배열의 인덱스가 일치 (특정 평가기간에 평가 없으면 null)
-- 제외된 직원(isExcluded=true)은 결과에서 자동 제외
+- **조회하지 않기로 한 직원(isExcludedFromList=true)은 결과에서 자동 제외됨**
 - 삭제된 최종평가는 조회되지 않음
 
 **참고:** finalEvaluations 배열의 인덱스는 evaluationPeriods 배열의 인덱스와 일치합니다. 특정 평가기간에 평가가 없으면 해당 위치에 null이 들어갑니다.
@@ -778,6 +789,7 @@ export function GetEmployeeCompleteStatus() {
 - 프로젝트별 WBS 목록 (평가기준, 성과, 자기평가, 하향평가 상세 내용 포함)
   * **취소된 프로젝트 할당(소프트 딜리트)은 자동으로 제외됨**
   * **취소된 프로젝트 할당에 속한 WBS는 자동으로 제외됨**
+  * **WBS 평가기준의 isAdditional 필드 포함 (추가 과제 여부)**
 - 중복 필드 제거로 최적화된 구조 제공
 
 **기존 엔드포인트와의 차이:**

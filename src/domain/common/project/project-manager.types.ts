@@ -26,8 +26,6 @@ export interface ProjectManagerDto {
   createdAt: Date;
   /** 수정 일시 */
   updatedAt: Date;
-  /** 삭제 일시 */
-  deletedAt?: Date;
 }
 
 /**
@@ -89,4 +87,3 @@ export interface ProjectManagerListOptions {
   /** 필터 조건 */
   filter?: ProjectManagerFilter;
 }
-

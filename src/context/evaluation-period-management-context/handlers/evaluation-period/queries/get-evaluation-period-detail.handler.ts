@@ -29,7 +29,6 @@ export class GetEvaluationPeriodDetailQueryHandler
     const period = await this.evaluationPeriodService.ID로_조회한다(
       query.periodId,
     );
-    return period as EvaluationPeriodDto | null;
+    return period ? period.DTO로_변환한다() : null;
   }
 }
-

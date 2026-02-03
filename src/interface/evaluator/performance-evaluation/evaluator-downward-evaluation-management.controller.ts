@@ -266,6 +266,9 @@ export class EvaluatorDownwardEvaluationManagementController {
 
   /**
    * 피평가자의 모든 하향평가 일괄 제출
+   *
+   * approveAllBelow가 true인 경우에만 하위 단계를 함께 승인합니다.
+   * 기본값은 false이므로, 명시적으로 지정하지 않으면 하위 단계를 승인하지 않습니다.
    */
   @BulkSubmitDownwardEvaluations()
   async bulkSubmitDownwardEvaluations(
@@ -285,12 +288,16 @@ export class EvaluatorDownwardEvaluationManagementController {
     const evaluatorId = submitDto.evaluatorId;
     const submittedBy = user.id;
 
+    // 하위 단계 자동 승인 여부 (기본값: false)
+    const approveAllBelow = queryDto.approveAllBelow ?? false;
+
     return await this.downwardEvaluationBusinessService.피평가자의_모든_하향평가를_일괄_제출한다(
       evaluatorId,
       evaluateeId,
       periodId,
       queryDto.evaluationType,
       submittedBy,
+      approveAllBelow,
     );
   }
 

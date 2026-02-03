@@ -10,6 +10,7 @@ import {
   SelfEvaluationRateSettingNotAllowedException,
 } from './evaluation-period.exceptions';
 import {
+  ApprovalStatus,
   EvaluationPeriodDto,
   EvaluationPeriodPhase,
   EvaluationPeriodStatus,
@@ -163,6 +164,22 @@ export class EvaluationPeriod
     comment: '등급 구간 설정 (JSON)',
   })
   gradeRanges: GradeRange[];
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '결재 문서 ID',
+  })
+  approvalDocumentId?: string;
+
+  @Column({
+    type: 'enum',
+    enum: [...Object.values(ApprovalStatus)],
+    default: 'none',
+    comment: '결재 상태',
+  })
+  approvalStatus: ApprovalStatus;
 
   /**
    * 평가 기간을 시작한다
@@ -617,10 +634,7 @@ export class EvaluationPeriod
    * @param startDate 새로운 시작일
    * @param updatedBy 수정자 ID
    */
-  일정_업데이트한다(
-    startDate?: Date,
-    updatedBy?: string,
-  ): void {
+  일정_업데이트한다(startDate?: Date, updatedBy?: string): void {
     if (startDate) this.startDate = startDate;
 
     if (updatedBy) {
@@ -737,6 +751,11 @@ export class EvaluationPeriod
   등급구간_설정한다(gradeRanges: GradeRange[], setBy: string): void {
     this.등급구간_유효성_검증한다(gradeRanges);
     this.gradeRanges = [...gradeRanges].sort((a, b) => b.minRange - a.minRange);
+    
+    // 등급 구간의 최대값을 maxSelfEvaluationRate로 설정
+    const maxRange = Math.max(...gradeRanges.map((range) => range.maxRange));
+    this.maxSelfEvaluationRate = maxRange;
+    
     this.updatedBy = setBy;
     this.updatedAt = new Date();
   }
@@ -749,8 +768,11 @@ export class EvaluationPeriod
       return null;
     }
 
+    // 소수점 점수를 내림처리하여 정수로 변환 (등급 범위는 정수 기준)
+    const flooredScore = Math.floor(score);
+
     const gradeRange = this.gradeRanges.find(
-      (range) => score >= range.minRange && score <= range.maxRange,
+      (range) => flooredScore >= range.minRange && flooredScore <= range.maxRange,
     );
 
     if (!gradeRange) {
@@ -763,7 +785,7 @@ export class EvaluationPeriod
 
     if (gradeRange.subGrades && gradeRange.subGrades.length > 0) {
       const subGradeInfo = gradeRange.subGrades.find(
-        (sub) => score >= sub.minRange && score <= sub.maxRange,
+        (sub) => flooredScore >= sub.minRange && flooredScore <= sub.maxRange,
       );
       if (subGradeInfo) {
         subGrade = subGradeInfo.type;
@@ -868,9 +890,30 @@ export class EvaluationPeriod
       finalEvaluationSettingEnabled: this.finalEvaluationSettingEnabled,
       maxSelfEvaluationRate: this.maxSelfEvaluationRate,
       gradeRanges: this.gradeRanges || [],
+      approvalDocumentId: this.approvalDocumentId,
+      approvalStatus: this.approvalStatus,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
+  }
+
+  /**
+   * 결재 문서 ID를 설정한다
+   */
+  결재문서ID_설정한다(approvalDocumentId: string, setBy: string): void {
+    this.approvalDocumentId = approvalDocumentId;
+    this.approvalStatus = ApprovalStatus.PENDING;
+    this.updatedBy = setBy;
+    this.updatedAt = new Date();
+  }
+
+  /**
+   * 결재 상태를 변경한다
+   */
+  결재상태_변경한다(approvalStatus: ApprovalStatus, changedBy: string): void {
+    this.approvalStatus = approvalStatus;
+    this.updatedBy = changedBy;
+    this.updatedAt = new Date();
   }
 
   /**

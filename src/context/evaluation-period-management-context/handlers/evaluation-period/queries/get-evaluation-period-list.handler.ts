@@ -48,11 +48,10 @@ export class GetEvaluationPeriodListQueryHandler
     const items = allPeriods.slice(startIndex, endIndex);
 
     return {
-      items: items as EvaluationPeriodDto[],
+      items: items.map((p) => p.DTO로_변환한다()),
       total: allPeriods.length,
       page: query.page,
       limit: query.limit,
     };
   }
 }
-

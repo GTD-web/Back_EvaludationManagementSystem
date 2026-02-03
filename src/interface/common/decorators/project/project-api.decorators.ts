@@ -33,6 +33,7 @@ export function CreateProject() {
 **동작:**
 - 프로젝트 기본 정보를 등록합니다
 - 상위 프로젝트: PM(Project Manager)을 설정할 수 있습니다
+- realPMId를 제공하면 해당 직원의 이름을 realPM 필드에 저장합니다
 - childProjects 배열로 하위 프로젝트를 함께 생성할 수 있습니다
 - ⭐ **모든 하위 프로젝트는 최상위 프로젝트의 PM으로 자동 설정됩니다**
 - orderLevel 순서대로 재귀 체인 구조를 만듭니다
@@ -107,6 +108,7 @@ export function CreateProjectsBulk() {
 **동작:**
 - 여러 프로젝트를 배열로 받아 일괄 생성합니다
 - 각 최상위 프로젝트별로 PM을 개별 설정할 수 있습니다
+- realPMId를 제공하면 해당 직원의 이름을 realPM 필드에 저장합니다
 - 각 프로젝트마다 childProjects 배열로 하위 프로젝트를 함께 생성할 수 있습니다
 - ⭐ **모든 하위 프로젝트는 해당 최상위 프로젝트의 PM으로 자동 설정됩니다**
 - orderLevel 순서대로 재귀 체인 구조를 만듭니다
@@ -329,6 +331,7 @@ export function UpdateProject() {
 **동작:**
 - 프로젝트 기본 정보를 수정합니다
 - 프로젝트 매니저를 변경할 수 있습니다
+- realPMId를 제공하면 해당 직원의 이름을 realPM 필드에 저장합니다
 - ⭐ **PM 변경 시 모든 하위 프로젝트의 PM도 함께 변경됩니다**
 - childProjects를 제공하면 기존 하위를 삭제하고 새로 생성합니다
 - childProjects를 생략하면 기존 하위 프로젝트는 유지됩니다

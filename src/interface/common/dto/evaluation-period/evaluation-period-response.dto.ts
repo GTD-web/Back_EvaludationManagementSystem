@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ApprovalStatus,
   EvaluationPeriodStatus,
   EvaluationPeriodPhase,
   EvaluationPeriodDto,
@@ -135,6 +136,19 @@ export class EvaluationPeriodResponseDto implements EvaluationPeriodDto {
     type: [GradeRangeResponseDto],
   })
   gradeRanges: GradeRangeResponseDto[];
+
+  @ApiPropertyOptional({
+    description: '결재 문서 ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  approvalDocumentId?: string;
+
+  @ApiProperty({
+    description: '결재 상태',
+    enum: ApprovalStatus,
+    example: ApprovalStatus.NONE,
+  })
+  approvalStatus: ApprovalStatus;
 
   @ApiProperty({
     description: '생성일시',

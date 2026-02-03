@@ -57,26 +57,11 @@ export class DepartmentSyncService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('모듈 초기화: 부서 데이터 확인 중...');
-
       // 부서 데이터 개수 확인
       const stats = await this.departmentService.getDepartmentStats();
 
       if (stats.totalDepartments === 0) {
-        this.logger.log('부서 데이터가 없습니다. 초기 동기화를 시작합니다...');
-        const result = await this.syncDepartments(true);
-
-        if (result.success) {
-          this.logger.log(
-            `초기 동기화 완료: ${result.created}개 생성, ${result.updated}개 업데이트`,
-          );
-        } else {
-          this.logger.error(`초기 동기화 실패: ${result.errors.join(', ')}`);
-        }
-      } else {
-        this.logger.log(
-          `기존 부서 데이터 ${stats.totalDepartments}개 확인됨. 초기 동기화를 건너뜁니다.`,
-        );
+        await this.syncDepartments(true);
       }
     } catch (error) {
       this.logger.error(`모듈 초기화 중 오류 발생: ${error.message}`);

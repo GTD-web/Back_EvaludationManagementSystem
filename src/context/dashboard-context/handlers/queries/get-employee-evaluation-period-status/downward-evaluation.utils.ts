@@ -344,6 +344,7 @@ export async function 하향평가_상태를_조회한다(
   // 중복 제거하여 고유한 평가자 ID 목록을 반환
   const secondaryEvaluators: string[] = [];
   if (secondaryLine) {
+    // 1. 평가라인 매핑에서 평가자 목록 조회
     const secondaryMappings = await evaluationLineMappingRepository
       .createQueryBuilder('mapping')
       .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
@@ -357,14 +358,39 @@ export async function 하향평가_상태를_조회한다(
       .orderBy('mapping.createdAt', 'ASC')
       .getMany();
 
-    // 중복된 evaluatorId 제거
-    const uniqueEvaluatorIds = [
+    const mappingEvaluatorIds = [
       ...new Set(
         secondaryMappings.map((m) => m.evaluatorId).filter((id) => !!id),
       ),
     ];
-    secondaryEvaluators.push(...uniqueEvaluatorIds);
+    secondaryEvaluators.push(...mappingEvaluatorIds);
   }
+
+  // 2. 실제로 평가를 작성한 평가자 목록도 조회
+  const actualSecondaryEvaluators = await downwardEvaluationRepository
+    .createQueryBuilder('downward')
+    .select('DISTINCT downward.evaluatorId', 'evaluatorId')
+    .where('downward.periodId = :evaluationPeriodId', {
+      evaluationPeriodId,
+    })
+    .andWhere('downward.employeeId = :employeeId', { employeeId })
+    .andWhere('downward.evaluationType = :evaluationType', {
+      evaluationType: DownwardEvaluationType.SECONDARY,
+    })
+    .andWhere('downward.deletedAt IS NULL')
+    .andWhere('downward.evaluatorId IS NOT NULL')
+    .getRawMany();
+
+  const actualEvaluatorIds = actualSecondaryEvaluators
+    .map((row) => row.evaluatorId)
+    .filter((id) => !!id);
+
+  // 3. 두 목록을 합쳐서 중복 제거
+  const allSecondaryEvaluatorIds = [
+    ...new Set([...secondaryEvaluators, ...actualEvaluatorIds]),
+  ];
+  secondaryEvaluators.length = 0;
+  secondaryEvaluators.push(...allSecondaryEvaluatorIds);
 
   // 6. 각 SECONDARY 평가자별 하향평가 상태 조회
   const secondaryStatuses = await Promise.all(
@@ -440,61 +466,44 @@ export async function 하향평가_상태를_조회한다(
   );
 
   // 6-1. assignedWbsCount가 0인 평가자는 제외 (취소된 프로젝트 할당으로 인해 WBS가 없는 경우)
+  // 단, 실제로 평가를 작성한 평가자는 포함 (평가라인 매핑에 없어도 평가 데이터가 있으면 포함)
   const filteredSecondaryStatuses = secondaryStatuses.filter(
-    (status) => status.assignedWbsCount > 0,
+    (status) =>
+      status.assignedWbsCount > 0 ||
+      status.completedEvaluationCount > 0,
   );
 
   // 7. 2차 하향평가 가중치 기반 총점 및 등급 계산
   let secondaryTotalScore: number | null = null;
   let secondaryGrade: string | null = null;
 
-  // 모든 2차 평가자의 평가가 완료되었는지 확인
-  // 할당된 것보다 완료한 것이 많아도 완료 처리
-  const allSecondaryEvaluationsCompleted = filteredSecondaryStatuses.every(
-    (status) =>
-      status.assignedWbsCount > 0 &&
-      status.completedEvaluationCount >= status.assignedWbsCount,
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  // 가중치_기반_2차_하향평가_점수를_계산한다 함수가 점수가 없으면 null을 반환하므로
+  // 항상 호출하여 점수가 있는지 확인
+  secondaryTotalScore = await 가중치_기반_2차_하향평가_점수를_계산한다(
+    evaluationPeriodId,
+    employeeId,
+    secondaryEvaluators,
+    downwardEvaluationRepository,
+    wbsAssignmentRepository,
+    periodRepository,
   );
 
-  // 모든 2차 평가자가 제출했는지 확인
-  const allSecondaryEvaluationsSubmitted = filteredSecondaryStatuses.every(
-    (status) => status.isSubmitted,
-  );
-
-  // 모든 평가자가 완료되고 제출했을 때만 스코어 계산
-  if (
-    filteredSecondaryStatuses.length > 0 &&
-    allSecondaryEvaluationsCompleted &&
-    allSecondaryEvaluationsSubmitted
-  ) {
-    secondaryTotalScore = await 가중치_기반_2차_하향평가_점수를_계산한다(
+  // 총점이 계산되었으면 등급 조회
+  if (secondaryTotalScore !== null) {
+    secondaryGrade = await 하향평가_등급을_조회한다(
       evaluationPeriodId,
-      employeeId,
-      secondaryEvaluators,
-      downwardEvaluationRepository,
-      wbsAssignmentRepository,
+      secondaryTotalScore,
       periodRepository,
     );
-
-    // 총점이 계산되었으면 등급 조회
-    if (secondaryTotalScore !== null) {
-      secondaryGrade = await 하향평가_등급을_조회한다(
-        evaluationPeriodId,
-        secondaryTotalScore,
-        periodRepository,
-      );
-    }
   }
 
   // 8. 1차 하향평가 가중치 기반 총점 및 등급 계산
   let primaryTotalScore: number | null = null;
   let primaryGrade: string | null = null;
 
-  // 모든 1차 하향평가가 완료된 경우에만 점수와 등급 계산
-  if (
-    primaryStatus.assignedWbsCount > 0 &&
-    primaryStatus.completedEvaluationCount === primaryStatus.assignedWbsCount
-  ) {
+  // 제출하지 않아도 점수가 입력되면 등급 계산 (조건 완화)
+  if (primaryStatus.assignedWbsCount > 0) {
     primaryTotalScore = await 가중치_기반_1차_하향평가_점수를_계산한다(
       evaluationPeriodId,
       employeeId,
@@ -804,6 +813,21 @@ export async function 특정_평가자의_하향평가_상태를_조회한다(
     .andWhere('project.id IS NOT NULL') // 프로젝트가 존재하는 경우만 조회
     .andWhere('projectAssignment.id IS NOT NULL') // 프로젝트 할당이 존재하는 경우만 조회
     .getMany();
+
+  // 2-1. 2차 평가자의 경우, 평가라인 매핑에 없는 평가자는 실제 평가 데이터를 기반으로 assignedWbsCount 계산
+  if (
+    evaluationType === DownwardEvaluationType.SECONDARY &&
+    assignedWbsCount === 0 &&
+    downwardEvaluations.length > 0
+  ) {
+    // 실제 평가 데이터에서 평가한 고유한 WBS 수를 assignedWbsCount로 사용
+    const uniqueWbsIds = new Set(
+      downwardEvaluations
+        .map((evaluation) => evaluation.wbsId)
+        .filter((id) => !!id),
+    );
+    assignedWbsCount = uniqueWbsIds.size;
+  }
 
   // 3. 완료된 하향평가 개수 확인
   const completedEvaluationCount = downwardEvaluations.filter((evaluation) =>

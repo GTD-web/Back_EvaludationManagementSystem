@@ -1,6 +1,3 @@
-"clientId": "cef8c785-d013-4f47-8780-84b3dac494f9",
-"clientSecret": "72970ccc55d3fd612ed78c667d1c94882281f64a4ae4be7cc0ac85149f90208b",
-
 # 루미르 평가 관리 시스템 (Lumir Evaluation Management System)
 
 > NestJS 기반의 엔터프라이즈급 인사평가 관리 시스템

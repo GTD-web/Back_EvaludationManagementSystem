@@ -24,6 +24,8 @@ import {
   CancelProjectAssignmentCommand,
   ChangeProjectAssignmentOrderCommand,
   CreateProjectAssignmentCommand,
+  UpdateProjectAssignmentCommand,
+  UpdateProjectAssignmentByEmployeeAndProjectCommand,
   GetAvailableProjectsQuery,
   GetEmployeeProjectAssignmentsQuery,
   GetProjectAssignedEmployeesQuery,
@@ -91,6 +93,7 @@ import type {
   EvaluationProjectAssignmentDto,
   EvaluationProjectAssignmentFilter,
   OrderDirection,
+  UpdateEvaluationProjectAssignmentData,
 } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.types';
 import type {
   CreateEvaluationWbsAssignmentData,
@@ -150,6 +153,32 @@ export class EvaluationCriteriaManagementService
     assignedBy: string,
   ): Promise<EvaluationProjectAssignmentDto> {
     const command = new CreateProjectAssignmentCommand(data, assignedBy);
+    return await this.commandBus.execute(command);
+  }
+
+  async 프로젝트_할당을_수정한다(
+    id: string,
+    data: UpdateEvaluationProjectAssignmentData,
+    updatedBy: string,
+  ): Promise<EvaluationProjectAssignmentDto> {
+    const command = new UpdateProjectAssignmentCommand(id, data, updatedBy);
+    return await this.commandBus.execute(command);
+  }
+
+  async 프로젝트_할당을_직원과_프로젝트로_수정한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    data: UpdateEvaluationProjectAssignmentData,
+    updatedBy: string,
+  ): Promise<EvaluationProjectAssignmentDto> {
+    const command = new UpdateProjectAssignmentByEmployeeAndProjectCommand(
+      employeeId,
+      projectId,
+      periodId,
+      data,
+      updatedBy,
+    );
     return await this.commandBus.execute(command);
   }
 
@@ -872,6 +901,7 @@ export class EvaluationCriteriaManagementService
     criteria: string,
     importance: number,
     subProject: string | undefined,
+    isAdditional: boolean | undefined,
     actionBy: string,
   ): Promise<WbsEvaluationCriteriaDto> {
     // wbsItemId로 기존 평가기준 조회
@@ -883,13 +913,13 @@ export class EvaluationCriteriaManagementService
       const criteriaToUpdate = existingCriteria[0];
       return await this.WBS_평가기준을_수정한다(
         criteriaToUpdate.id,
-        { criteria, importance, subProject },
+        { criteria, importance, subProject, isAdditional },
         actionBy,
       );
     } else {
       // 기존 평가기준이 없으면 생성
       return await this.WBS_평가기준을_생성한다(
-        { wbsItemId, criteria, importance, subProject },
+        { wbsItemId, criteria, importance, subProject, isAdditional },
         actionBy,
       );
     }

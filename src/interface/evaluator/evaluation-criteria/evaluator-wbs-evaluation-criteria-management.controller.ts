@@ -4,6 +4,7 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
 import { CurrentUser } from '@interface/common/decorators/current-user.decorator';
 import { Roles } from '@interface/common/decorators';
 import {
+  ResetEvaluationCriteriaSubmission,
   SubmitEvaluationCriteria,
   UpsertWbsEvaluationCriteria,
 } from '@interface/common/decorators/evaluation-criteria/wbs-evaluation-criteria-api.decorators';
@@ -46,6 +47,7 @@ export class EvaluatorWbsEvaluationCriteriaManagementController {
       dto.criteria,
       dto.importance,
       dto.subProject,
+      dto.isAdditional,
       actionBy,
     );
   }
@@ -65,6 +67,31 @@ export class EvaluatorWbsEvaluationCriteriaManagementController {
         dto.evaluationPeriodId,
         dto.employeeId,
         submittedBy,
+      );
+    return {
+      id: result.id,
+      evaluationPeriodId: result.evaluationPeriodId,
+      employeeId: result.employeeId,
+      isCriteriaSubmitted: result.isCriteriaSubmitted,
+      criteriaSubmittedAt: result.criteriaSubmittedAt,
+      criteriaSubmittedBy: result.criteriaSubmittedBy,
+    };
+  }
+
+  /**
+   * 평가기준 제출 초기화
+   */
+  @ResetEvaluationCriteriaSubmission()
+  async resetEvaluationCriteriaSubmission(
+    @Body() dto: SubmitEvaluationCriteriaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<EvaluationCriteriaSubmissionResponseDto> {
+    const updatedBy = user.id;
+    const result =
+      await this.evaluationCriteriaManagementService.평가기준_제출을_초기화한다(
+        dto.evaluationPeriodId,
+        dto.employeeId,
+        updatedBy,
       );
     return {
       id: result.id,

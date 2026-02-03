@@ -1,18 +1,23 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { EvaluationCriteriaManagementService } from '@context/evaluation-criteria-management-context/evaluation-criteria-management.service';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { PerformanceEvaluationService } from '@context/performance-evaluation-context/performance-evaluation.service';
 import { DeleteWbsSelfEvaluationsByAssignmentResponse } from '@context/performance-evaluation-context/handlers/self-evaluation';
+import { WbsAssignmentListItem } from '@context/evaluation-criteria-management-context/handlers/wbs-assignment/queries/get-wbs-assignment-list.handler';
 import { EmployeeService } from '@domain/common/employee/employee.service';
 import { ProjectService } from '@domain/common/project/project.service';
 import { EvaluationLineService } from '@domain/core/evaluation-line/evaluation-line.service';
 import { EvaluationLineMappingService } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.service';
 import { EvaluationWbsAssignmentService } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.service';
+import { EvaluationWbsAssignment } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.entity';
 import { EvaluatorType } from '@domain/core/evaluation-line/evaluation-line.types';
 import { WbsItemStatus } from '@domain/common/wbs-item/wbs-item.types';
 import type {
   CreateEvaluationWbsAssignmentData,
   OrderDirection,
+  UpdateEvaluationWbsAssignmentData,
 } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types';
 import type { WbsItemDto } from '@domain/common/wbs-item/wbs-item.types';
 
@@ -37,6 +42,8 @@ export class WbsAssignmentBusinessService {
     private readonly evaluationLineService: EvaluationLineService,
     private readonly evaluationLineMappingService: EvaluationLineMappingService,
     private readonly evaluationWbsAssignmentService: EvaluationWbsAssignmentService,
+    @InjectRepository(EvaluationWbsAssignment)
+    private readonly wbsAssignmentRepository: Repository<EvaluationWbsAssignment>,
     // private readonly notificationService: NotificationService, // TODO: 알림 서비스 추가 시 주입
     // private readonly organizationManagementService: OrganizationManagementService, // TODO: 조직 관리 서비스 추가 시 주입
   ) {}
@@ -116,11 +123,6 @@ export class WbsAssignmentBusinessService {
         params.periodId,
         params.assignedBy,
       );
-
-    this.logger.log('WBS별 평가라인 구성 완료', {
-      createdLines: wbsEvaluationLineResult.createdLines,
-      createdMappings: wbsEvaluationLineResult.createdMappings,
-    });
 
     // 5. 활동 내역 기록
     try {
@@ -620,6 +622,72 @@ export class WbsAssignmentBusinessService {
     });
 
     return assignment;
+  }
+
+  /**
+   * WBS ID를 사용하여 WBS 할당 일자를 업데이트한다
+   */
+  async WBS_할당_일자를_업데이트한다(params: {
+    employeeId: string;
+    wbsItemId: string;
+    projectId: string;
+    periodId: string;
+    startDate?: Date;
+    endDate?: Date;
+    updatedBy: string;
+  }): Promise<any> {
+    this.logger.log('WBS ID 기반 할당 일자 업데이트 비즈니스 로직 시작', {
+      employeeId: params.employeeId,
+      wbsItemId: params.wbsItemId,
+      projectId: params.projectId,
+      periodId: params.periodId,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    });
+
+    // 1. WBS 할당 상세 조회하여 할당 ID 찾기
+    const assignmentDetail =
+      await this.evaluationCriteriaManagementService.WBS_할당_상세를_조회한다(
+        params.employeeId,
+        params.wbsItemId,
+        params.projectId,
+        params.periodId,
+      );
+
+    if (!assignmentDetail) {
+      throw new NotFoundException(
+        `WBS 할당을 찾을 수 없습니다. (employeeId: ${params.employeeId}, wbsItemId: ${params.wbsItemId}, projectId: ${params.projectId}, periodId: ${params.periodId})`,
+      );
+    }
+
+    // 2. 날짜 유효성 검증 (시작일이 종료일보다 이후인 경우)
+    if (params.startDate && params.endDate) {
+      if (params.startDate > params.endDate) {
+        throw new Error('시작일은 종료일보다 이전이어야 합니다.');
+      }
+    }
+
+    // 3. 업데이트 데이터 준비
+    const updateData: UpdateEvaluationWbsAssignmentData = {};
+    if (params.startDate !== undefined) {
+      updateData.startDate = params.startDate;
+    }
+    if (params.endDate !== undefined) {
+      updateData.endDate = params.endDate;
+    }
+
+    // 4. 할당 업데이트
+    const assignment = await this.evaluationWbsAssignmentService.업데이트한다(
+      assignmentDetail.id,
+      updateData,
+      params.updatedBy,
+    );
+
+    this.logger.log('WBS ID 기반 할당 일자 업데이트 완료', {
+      assignmentId: assignmentDetail.id,
+    });
+
+    return assignment.DTO로_변환한다();
   }
 
   /**
@@ -1263,6 +1331,320 @@ export class WbsAssignmentBusinessService {
       wbsItem,
       assignment,
     };
+  }
+
+  /**
+   * WBS를 두 WBS 사이에 생성하고 직원에게 할당한다
+   */
+  async WBS를_사이에_생성하고_할당한다(params: {
+    title: string;
+    projectId: string;
+    employeeId: string;
+    periodId: string;
+    previousWbsItemId?: string;
+    nextWbsItemId?: string;
+    createdBy: string;
+  }): Promise<{
+    wbsItem: WbsItemDto;
+    assignment: any;
+  }> {
+    this.logger.log('WBS 사이에 생성 및 할당 비즈니스 로직 시작', {
+      title: params.title,
+      projectId: params.projectId,
+      employeeId: params.employeeId,
+      previousWbsItemId: params.previousWbsItemId,
+      nextWbsItemId: params.nextWbsItemId,
+    });
+
+    // 1. WBS 항목 생성 (코드 자동 생성 포함)
+    const wbsItem =
+      await this.evaluationCriteriaManagementService.WBS_항목을_생성하고_코드를_자동_생성한다(
+        {
+          title: params.title,
+          status: WbsItemStatus.PENDING,
+          level: 1, // 최상위 항목
+          assignedToId: params.employeeId,
+          projectId: params.projectId,
+          parentWbsId: undefined,
+          startDate: undefined,
+          endDate: undefined,
+          progressPercentage: 0,
+        },
+        params.createdBy,
+      );
+
+    this.logger.log('WBS 항목 생성 완료', {
+      wbsItemId: wbsItem.id,
+      wbsCode: wbsItem.wbsCode,
+    });
+
+    // 2. 삽입 위치(targetIndex) 계산
+    let targetIndex: number | undefined = undefined;
+    
+    if (params.previousWbsItemId || params.nextWbsItemId) {
+      // 동일 직원-프로젝트-평가기간의 모든 WBS 할당 조회
+      const allAssignments =
+        await this.evaluationCriteriaManagementService.WBS_할당_목록을_조회한다(
+          {
+            employeeId: params.employeeId,
+            projectId: params.projectId,
+            periodId: params.periodId,
+          },
+          1,
+          1000,
+          'displayOrder',
+          'ASC',
+        );
+
+      // displayOrder와 assignedDate로 정렬하여 현재 순서 파악
+      const sortedAssignments = allAssignments.assignments.sort((a, b) => {
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+        return (
+          new Date(a.assignedDate).getTime() - new Date(b.assignedDate).getTime()
+        );
+      });
+
+      this.logger.log('기존 WBS 할당 목록 조회', {
+        count: sortedAssignments.length,
+        assignments: sortedAssignments.map((a) => ({
+          wbsItemId: a.wbsItemId,
+          displayOrder: a.displayOrder,
+          assignedDate: a.assignedDate,
+        })),
+      });
+
+      // 이전/다음 WBS의 인덱스 찾기
+      if (params.previousWbsItemId && params.nextWbsItemId) {
+        // 두 WBS 사이에 삽입
+        const prevIndex = sortedAssignments.findIndex(
+          (a) => a.wbsItemId === params.previousWbsItemId,
+        );
+        const nextIdx = sortedAssignments.findIndex(
+          (a) => a.wbsItemId === params.nextWbsItemId,
+        );
+
+        if (prevIndex !== -1 && nextIdx !== -1) {
+          // previousWbs 다음 위치에 삽입
+          targetIndex = prevIndex + 1;
+        } else {
+          // 둘 다 찾지 못한 경우 마지막에 추가
+          targetIndex = sortedAssignments.length;
+        }
+      } else if (params.previousWbsItemId) {
+        // previousWbs 다음에 추가
+        const prevIndex = sortedAssignments.findIndex(
+          (a) => a.wbsItemId === params.previousWbsItemId,
+        );
+        if (prevIndex !== -1) {
+          targetIndex = prevIndex + 1;
+        } else {
+          targetIndex = sortedAssignments.length;
+        }
+      } else if (params.nextWbsItemId) {
+        // nextWbs 이전에 추가
+        const nextIdx = sortedAssignments.findIndex(
+          (a) => a.wbsItemId === params.nextWbsItemId,
+        );
+        if (nextIdx !== -1) {
+          targetIndex = nextIdx;
+        } else {
+          targetIndex = 0;
+        }
+      }
+
+      this.logger.log('삽입 위치 계산', { targetIndex });
+    }
+
+    // 3. WBS 할당 생성 (임시 displayOrder로 생성 - 재정렬에서 올바른 값으로 설정됨)
+    const data: CreateEvaluationWbsAssignmentData = {
+      employeeId: params.employeeId,
+      wbsItemId: wbsItem.id,
+      projectId: params.projectId,
+      periodId: params.periodId,
+      assignedBy: params.createdBy,
+      displayOrder: 999999, // 임시 값, 재정렬에서 올바른 값으로 설정됨
+    };
+
+    const assignment =
+      await this.evaluationCriteriaManagementService.WBS를_할당한다(
+        data,
+        params.createdBy,
+      );
+
+    // 4. WBS 평가기준 자동 생성 (없는 경우)
+    const existingCriteria =
+      await this.evaluationCriteriaManagementService.특정_WBS항목의_평가기준을_조회한다(
+        wbsItem.id,
+      );
+
+    if (!existingCriteria || existingCriteria.length === 0) {
+      this.logger.log('WBS 평가기준이 없어 빈 기준을 생성합니다', {
+        wbsItemId: wbsItem.id,
+      });
+
+      await this.evaluationCriteriaManagementService.WBS_평가기준을_생성한다(
+        {
+          wbsItemId: wbsItem.id,
+          criteria: '', // 빈 평가기준으로 생성
+          importance: 5, // 기본 중요도
+        },
+        params.createdBy,
+      );
+    }
+
+    // 5. 평가라인 자동 구성
+    await this.평가라인을_자동으로_구성한다(
+      params.employeeId,
+      wbsItem.id,
+      params.projectId,
+      params.periodId,
+      params.createdBy,
+    );
+
+    // 6. WBS별 평가라인 구성 (동료평가를 위한 평가라인)
+    this.logger.log('WBS별 평가라인 구성 시작', {
+      employeeId: params.employeeId,
+      wbsItemId: wbsItem.id,
+      periodId: params.periodId,
+    });
+
+    const wbsEvaluationLineResult =
+      await this.evaluationCriteriaManagementService.직원_WBS별_평가라인을_구성한다(
+        params.employeeId,
+        wbsItem.id,
+        params.periodId,
+        params.createdBy,
+      );
+
+    // 7. 활동 내역 기록
+    try {
+      await this.activityLogContextService.활동내역을_기록한다({
+        periodId: params.periodId,
+        employeeId: params.employeeId,
+        activityType: 'wbs_assignment',
+        activityAction: 'created',
+        activityTitle: 'WBS 사이에 생성 및 할당',
+        relatedEntityType: 'wbs_assignment',
+        relatedEntityId: assignment.id,
+        performedBy: params.createdBy,
+        activityMetadata: {
+          wbsItemId: wbsItem.id,
+          projectId: params.projectId,
+          previousWbsItemId: params.previousWbsItemId,
+          nextWbsItemId: params.nextWbsItemId,
+          displayOrder: assignment.displayOrder,
+        },
+      });
+    } catch (error) {
+      // 활동 내역 기록 실패 시에도 WBS 할당은 정상 처리
+      this.logger.warn('WBS 사이에 생성 활동 내역 기록 실패', {
+        assignmentId: assignment.id,
+        error: error.message,
+      });
+    }
+
+    // 8. 전체 WBS 할당 재정렬 (displayOrder 정규화)
+    // 새로 생성한 WBS의 ID와 targetIndex를 전달하여 올바른 위치에 삽입
+    await this.전체_WBS_할당_순서를_재정렬한다(
+      params.employeeId,
+      params.projectId,
+      params.periodId,
+      params.createdBy,
+      wbsItem.id, // 새로 생성한 WBS ID
+      targetIndex, // 삽입 위치 인덱스
+    );
+
+    return {
+      wbsItem,
+      assignment,
+    };
+  }
+
+  /**
+   * 전체 WBS 할당 순서를 재정렬한다
+   * displayOrder를 0, 1, 2, 3, ... 순서로 정규화
+   * 
+   * @param employeeId 직원 ID
+   * @param projectId 프로젝트 ID
+   * @param periodId 평가기간 ID
+   * @param updatedBy 업데이트 실행자 ID
+   * @param newWbsItemId 새로 추가된 WBS 항목 ID (선택적)
+   * @param targetIndex 새 WBS를 삽입할 인덱스 (newWbsItemId가 있을 때 필수)
+   */
+  private async 전체_WBS_할당_순서를_재정렬한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    updatedBy: string,
+    newWbsItemId?: string,
+    targetIndex?: number,
+  ): Promise<void> {
+    // 1. 전체 할당 조회
+    const allAssignments =
+      await this.evaluationCriteriaManagementService.WBS_할당_목록을_조회한다(
+        {
+          employeeId,
+          projectId,
+          periodId,
+        },
+        1,
+        1000,
+        'displayOrder',
+        'ASC',
+      );
+
+    // 2. 새로 추가된 WBS를 제외하고 정렬
+    let existingAssignments = allAssignments.assignments;
+    let newAssignment: WbsAssignmentListItem | undefined = undefined;
+
+    if (newWbsItemId) {
+      newAssignment = existingAssignments.find(
+        (a) => a.wbsItemId === newWbsItemId,
+      );
+      existingAssignments = existingAssignments.filter(
+        (a) => a.wbsItemId !== newWbsItemId,
+      );
+    }
+
+    // 기존 할당들을 displayOrder와 assignedDate로 정렬
+    const sortedExistingAssignments = existingAssignments.sort((a, b) => {
+      if (a.displayOrder !== b.displayOrder) {
+        return a.displayOrder - b.displayOrder;
+      }
+      return (
+        new Date(a.assignedDate).getTime() - new Date(b.assignedDate).getTime()
+      );
+    });
+
+    // 3. 새 WBS를 targetIndex 위치에 삽입
+    let finalSortedAssignments = [...sortedExistingAssignments];
+    if (newAssignment && targetIndex !== undefined) {
+      finalSortedAssignments.splice(targetIndex, 0, newAssignment);
+    }
+
+    // 4. displayOrder를 0부터 순차적으로 재설정 (Repository 직접 사용)
+    const updatePromises: Promise<UpdateResult>[] = [];
+    for (let i = 0; i < finalSortedAssignments.length; i++) {
+      const assignment = finalSortedAssignments[i];
+      if (assignment.displayOrder !== i) {
+        // Repository를 직접 사용하여 displayOrder와 updatedAt, updatedBy 업데이트
+        const updatePromise = this.wbsAssignmentRepository.update(
+          { id: assignment.id },
+          {
+            displayOrder: i,
+            updatedAt: new Date(),
+            updatedBy: updatedBy,
+          },
+        );
+
+        updatePromises.push(updatePromise);
+      }
+    }
+
+    // 모든 업데이트 완료 대기
+    await Promise.all(updatePromises);
   }
 
   /**

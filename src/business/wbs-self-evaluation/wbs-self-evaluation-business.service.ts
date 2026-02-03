@@ -55,16 +55,44 @@ export class WbsSelfEvaluationBusinessService {
     // 2. 해당 평가기간에 발생한 자기평가에 대한 재작성 요청 자동 완료 처리
     // 피평가자에게 요청된 재작성 요청 완료 처리
     // (criteria, self 단계의 경우 자동으로 1차평가자도 함께 완료 처리됨)
-    await this.revisionRequestContextService.제출자에게_요청된_재작성요청을_완료처리한다(
-      periodId,
-      employeeId,
-      'self',
-      employeeId,
-      RecipientType.EVALUATEE,
-      '자기평가 제출로 인한 재작성 완료 처리',
-    );
+    try {
+      await this.revisionRequestContextService.제출자에게_요청된_재작성요청을_완료처리한다(
+        periodId,
+        employeeId,
+        'self',
+        employeeId,
+        RecipientType.EVALUATEE,
+        '자기평가 제출로 인한 재작성 완료 처리',
+      );
+    } catch (error) {
+      // 재작성 요청이 없거나 이미 완료된 경우는 정상적인 상황일 수 있음
+      this.logger.debug(
+        `재작성 요청 자동 완료 처리 실패 (재작성 요청이 없거나 이미 완료되었을 수 있음) - 직원: ${employeeId}, 평가기간: ${periodId}`,
+        error,
+      );
+    }
 
-    // 3. 활동 내역 기록
+    // 3. StepApproval의 selfEvaluationStatus를 approved로 설정
+    try {
+      await this.stepApprovalContextService.자기평가_확인상태를_변경한다({
+        evaluationPeriodId: periodId,
+        employeeId: employeeId,
+        status: StepApprovalStatus.APPROVED,
+        updatedBy: submittedBy,
+      });
+
+      this.logger.log(
+        `자기평가 제출 시 StepApproval 상태 자동 승인 완료 - 직원: ${employeeId}, 평가기간: ${periodId}`,
+      );
+    } catch (error) {
+      // StepApproval 상태 변경 실패는 경고만 출력 (자기평가 제출은 성공)
+      this.logger.warn(
+        `자기평가 제출 시 StepApproval 상태 자동 승인 실패 - 직원: ${employeeId}, 평가기간: ${periodId}`,
+        error,
+      );
+    }
+
+    // 4. 활동 내역 기록
     try {
       await this.activityLogContextService.활동내역을_기록한다({
         periodId,

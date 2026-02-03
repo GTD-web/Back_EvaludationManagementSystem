@@ -11,6 +11,24 @@ export enum EvaluationPeriodStatus {
 }
 
 /**
+ * 결재 상태
+ */
+export enum ApprovalStatus {
+  /** 결재 요청 전 */
+  NONE = 'none',
+  /** 결재 대기 중 */
+  PENDING = 'pending',
+  /** 결재 승인됨 */
+  APPROVED = 'approved',
+  /** 결재 거부됨 */
+  REJECTED = 'rejected',
+  /** 결재 취소됨 */
+  CANCELLED = 'cancelled',
+  /** 결재 완료 후 실행됨 */
+  IMPLEMENTED = 'implemented',
+}
+
+/**
  * 평가 기간 현재 단계 (6단계)
  */
 export enum EvaluationPeriodPhase {
@@ -114,6 +132,10 @@ export interface EvaluationPeriodDto {
   maxSelfEvaluationRate: number;
   /** 등급 구간 설정 */
   gradeRanges: GradeRange[];
+  /** 결재 문서 ID */
+  approvalDocumentId?: string;
+  /** 결재 상태 */
+  approvalStatus: ApprovalStatus;
   /** 생성일시 */
   createdAt: Date;
   /** 수정일시 */

@@ -127,13 +127,23 @@ export class GetMyEvaluationTargetsStatusHandler
         ...new Set(myTargetMappings.map((m) => m.employeeId)),
       ];
 
+      if (employeeIds.length === 0) {
+        this.logger.debug(
+          `담당하는 평가 대상자가 없습니다 - 평가자: ${evaluatorId}`,
+        );
+        return [];
+      }
+
       // 2. 피평가자들의 평가기간 매핑 정보 조회 (해당 평가기간에 속한 직원, 제외된 직원 포함)
+      // 평가자에게 할당된 피평가자는 WBS 할당 여부와 관계없이 모두 조회
       const employeeMappings = await this.mappingRepository
         .createQueryBuilder('mapping')
         .where('mapping.evaluationPeriodId = :evaluationPeriodId', {
           evaluationPeriodId,
         })
-        .andWhere('mapping.employeeId IN (:...employeeIds)', { employeeIds })
+        .andWhere('mapping.employeeId IN (:...employeeIds)', {
+          employeeIds: employeeIds,
+        })
         .getMany();
 
       if (employeeMappings.length === 0) {
@@ -197,6 +207,9 @@ export class GetMyEvaluationTargetsStatusHandler
               deletedAt: IsNull(),
             },
           });
+
+          // WBS 할당이 없어도 평가자에게 할당된 피평가자는 조회
+          // (WBS가 없으면 status는 'none'으로 표시됨)
 
           // 평가항목 상태 계산
           const evaluationCriteriaStatus: EvaluationCriteriaStatus =
@@ -911,8 +924,10 @@ export class GetMyEvaluationTargetsStatusHandler
       viewedByPrimaryEvaluator,
       viewedBySecondaryEvaluator,
       primaryEvaluationViewed,
-      hasSelfEvaluationSubmitted: !!lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt,
-      hasPrimaryEvaluationSubmitted: !!lastPrimaryEvaluationSubmitTime?.completedAt,
+      hasSelfEvaluationSubmitted:
+        !!lastSelfEvaluationSubmitTime?.submittedToEvaluatorAt,
+      hasPrimaryEvaluationSubmitted:
+        !!lastPrimaryEvaluationSubmitTime?.completedAt,
     };
   }
 }

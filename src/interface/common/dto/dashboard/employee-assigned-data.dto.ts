@@ -418,6 +418,24 @@ export class AssignedWbsInfoDto implements AssignedWbsInfo {
   })
   assignedAt: Date;
 
+  @ApiPropertyOptional({
+    description: 'WBS 시작일',
+    type: 'string',
+    format: 'date',
+    example: '2024-01-01',
+    nullable: true,
+  })
+  startDate?: Date;
+
+  @ApiPropertyOptional({
+    description: 'WBS 종료일',
+    type: 'string',
+    format: 'date',
+    example: '2024-01-31',
+    nullable: true,
+  })
+  endDate?: Date;
+
   @ApiProperty({
     description: 'WBS에 할당된 평가기준 목록',
     type: [WbsEvaluationCriterionDto],

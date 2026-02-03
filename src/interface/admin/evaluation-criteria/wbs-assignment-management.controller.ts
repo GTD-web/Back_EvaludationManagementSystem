@@ -19,6 +19,7 @@ import {
   ResetEmployeeWbsAssignments,
   ResetPeriodWbsAssignments,
   ResetProjectWbsAssignments,
+  UpdateWbsAssignmentDates,
   UpdateWbsItemTitle,
 } from '@interface/common/decorators/evaluation-criteria/wbs-assignment-api.decorators';
 import {
@@ -32,6 +33,7 @@ import {
   GetUnassignedWbsItemsDto,
   ProjectWbsAssignmentsResponseDto,
   UnassignedWbsItemsResponseDto,
+  UpdateWbsAssignmentDatesDto,
   UpdateWbsItemTitleDto,
   WbsAssignmentDetailResponseDto,
   WbsAssignmentFilterDto,
@@ -354,6 +356,27 @@ export class WbsAssignmentManagementController {
         createdBy: createdBy,
       },
     );
+  }
+
+  /**
+   * WBS 할당 일자 수정
+   */
+  @UpdateWbsAssignmentDates()
+  async updateWbsAssignmentDates(
+    @Param('wbsItemId', ParseUUIDPipe) wbsItemId: string,
+    @Body() updateDto: UpdateWbsAssignmentDatesDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<any> {
+    const updatedBy = user.id;
+    return await this.wbsAssignmentBusinessService.WBS_할당_일자를_업데이트한다({
+      employeeId: updateDto.employeeId,
+      wbsItemId: wbsItemId,
+      projectId: updateDto.projectId,
+      periodId: updateDto.periodId,
+      startDate: updateDto.startDate,
+      endDate: updateDto.endDate,
+      updatedBy: updatedBy,
+    });
   }
 
   /**

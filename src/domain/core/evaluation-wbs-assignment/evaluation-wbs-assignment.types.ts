@@ -24,6 +24,10 @@ export interface EvaluationWbsAssignmentDto {
   displayOrder: number;
   /** 가중치 (0~100, 직원별 WBS 중요도 기반 자동 계산) */
   weight: number;
+  /** 시작일 */
+  startDate?: Date;
+  /** 종료일 */
+  endDate?: Date;
   /** 생성 일시 */
   createdAt: Date;
   /** 수정 일시 */
@@ -68,6 +72,10 @@ export interface CreateEvaluationWbsAssignmentData {
   assignedBy: string;
   /** 표시 순서 (선택적, 지정하지 않으면 자동 계산) */
   displayOrder?: number;
+  /** 시작일 */
+  startDate?: Date;
+  /** 종료일 */
+  endDate?: Date;
 }
 
 /**
@@ -76,6 +84,10 @@ export interface CreateEvaluationWbsAssignmentData {
 export interface UpdateEvaluationWbsAssignmentData {
   /** 할당자 ID */
   assignedBy?: string;
+  /** 시작일 */
+  startDate?: Date;
+  /** 종료일 */
+  endDate?: Date;
 }
 
 /**

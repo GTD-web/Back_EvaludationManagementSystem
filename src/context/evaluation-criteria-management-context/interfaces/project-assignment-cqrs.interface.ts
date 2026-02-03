@@ -31,6 +31,17 @@ export interface IProjectAssignmentCommandService {
   ): Promise<EvaluationProjectAssignmentDto>;
 
   /**
+   * 프로젝트 할당을 직원 ID, 프로젝트 ID, 평가기간 ID로 수정한다
+   */
+  프로젝트_할당을_직원과_프로젝트로_수정한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    data: UpdateEvaluationProjectAssignmentData,
+    updatedBy: string,
+  ): Promise<EvaluationProjectAssignmentDto>;
+
+  /**
    * 프로젝트 할당을 취소한다
    */
   프로젝트_할당을_취소한다(id: string, cancelledBy: string): Promise<void>;

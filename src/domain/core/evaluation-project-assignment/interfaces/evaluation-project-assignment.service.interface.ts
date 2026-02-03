@@ -20,6 +20,16 @@ export interface IEvaluationProjectAssignmentService {
   ): Promise<IEvaluationProjectAssignment | null>;
 
   /**
+   * 직원 ID, 프로젝트 ID, 평가기간 ID로 평가 프로젝트 할당을 조회한다
+   */
+  직원과_프로젝트와_평가기간으로_조회한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    manager?: EntityManager,
+  ): Promise<IEvaluationProjectAssignment | null>;
+
+  /**
    * 평가 프로젝트 할당을 생성한다
    */
   생성한다(

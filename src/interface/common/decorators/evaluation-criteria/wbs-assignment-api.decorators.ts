@@ -21,6 +21,7 @@ import {
   CreateAndAssignWbsDto,
   CreateAndAssignWbsBetweenDto,
   CreateWbsAssignmentDto,
+  UpdateWbsAssignmentDatesDto,
   UpdateWbsItemTitleDto,
 } from '../../dto/evaluation-criteria/wbs-assignment.dto';
 
@@ -1697,6 +1698,83 @@ export const CreateAndAssignWbsBetween = () =>
     ApiResponse({
       status: 422,
       description: '비즈니스 로직 오류 (완료된 평가기간에 할당 생성 불가 등)',
+    }),
+    ApiResponse({
+      status: 500,
+      description: '서버 내부 오류',
+    }),
+  );
+
+/**
+ * WBS 할당 일자 수정 API 데코레이터
+ */
+export const UpdateWbsAssignmentDates = () =>
+  applyDecorators(
+    Patch('wbs-item/:wbsItemId/dates'),
+    HttpCode(HttpStatus.OK),
+    ApiOperation({
+      summary: 'WBS 할당 일자 수정',
+      description: `**중요**: WBS ID를 사용하여 WBS 할당의 시작일과 종료일을 수정합니다. employeeId, wbsItemId, projectId, periodId로 할당을 찾아 시작일/종료일을 업데이트합니다.
+
+**동작:**
+- employeeId, wbsItemId, projectId, periodId로 할당을 찾아 일자 업데이트
+- startDate, endDate 중 하나 또는 둘 다 업데이트 가능
+- 시작일이 종료일보다 이후인 경우 검증 오류 발생
+- 수정자 정보 자동 기록
+
+**테스트 케이스:**
+- 기본 일자 수정: 유효한 조합으로 시작일/종료일 수정 성공
+- 시작일만 수정: 시작일만 업데이트하고 종료일은 유지
+- 종료일만 수정: 종료일만 업데이트하고 시작일은 유지
+- 둘 다 수정: 시작일과 종료일 모두 업데이트
+- 수정자 정보: updatedBy, updatedAt 정보가 올바르게 설정됨
+- UUID 형식 검증: 잘못된 UUID 형식 시 400 에러
+- 필수 필드 누락: employeeId, projectId, periodId 누락 시 400 에러
+- 존재하지 않는 할당: 유효하지 않은 조합으로 요청 시 404 에러
+- 날짜 유효성 검증: 시작일이 종료일보다 이후인 경우 400 에러
+- null 값 허용: startDate 또는 endDate를 null로 설정하여 기존 값 제거 가능`,
+    }),
+    ApiParam({
+      name: 'wbsItemId',
+      description: 'WBS 항목 ID (UUID 형식)',
+      type: 'string',
+      format: 'uuid',
+      example: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+    }),
+    ApiBody({
+      type: UpdateWbsAssignmentDatesDto,
+      description: 'WBS 할당 일자 수정 데이터',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'WBS 할당 일자가 성공적으로 수정되었습니다.',
+      schema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          employeeId: { type: 'string', format: 'uuid' },
+          wbsItemId: { type: 'string', format: 'uuid' },
+          projectId: { type: 'string', format: 'uuid' },
+          periodId: { type: 'string', format: 'uuid' },
+          startDate: { type: 'string', format: 'date', nullable: true },
+          endDate: { type: 'string', format: 'date', nullable: true },
+          assignedDate: { type: 'string', format: 'date-time' },
+          assignedBy: { type: 'string', format: 'uuid' },
+          displayOrder: { type: 'number' },
+          weight: { type: 'number' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          updatedBy: { type: 'string', format: 'uuid' },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 데이터 (UUID 형식 오류, 필수 필드 누락, 날짜 유효성 오류 등)',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'WBS 할당을 찾을 수 없습니다.',
     }),
     ApiResponse({
       status: 500,

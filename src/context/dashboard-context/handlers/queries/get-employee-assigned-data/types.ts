@@ -77,6 +77,8 @@ export interface AssignedWbsInfo {
   wbsCode: string;
   weight: number;
   assignedAt: Date;
+  startDate?: Date;
+  endDate?: Date;
   criteria: WbsEvaluationCriterion[];
   performance?: WbsPerformance | null;
   subProject?: string | null;

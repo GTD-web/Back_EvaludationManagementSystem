@@ -215,10 +215,17 @@ export class EmployeeSyncService implements OnModuleInit {
     // managerId 처리: getEmployeesManagers에서 매핑된 값 사용
     const managerId = ssoEmployee.managerId ? ssoEmployee.managerId : undefined;
 
+    // email: SSO에 없거나 빈 값이면 NOT NULL·UNIQUE 만족을 위한 대체값 사용
+    const rawEmail = ssoEmployee.email?.trim();
+    const email =
+      rawEmail && rawEmail.length > 0
+        ? rawEmail
+        : `no-email-${ssoEmployee.employeeNumber ?? ssoEmployee.id ?? 'unknown'}@internal`;
+
     return {
       employeeNumber: ssoEmployee.employeeNumber,
       name: ssoEmployee.name,
-      email: ssoEmployee.email,
+      email,
       phoneNumber: phoneNumber,
       dateOfBirth: dateOfBirth,
       gender: gender,

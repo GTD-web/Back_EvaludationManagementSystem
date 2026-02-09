@@ -1,15 +1,18 @@
 import { WbsItemDto } from '@domain/common/wbs-item/wbs-item.types';
 import { OrderDirection } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types';
+import { OptionalDateToUTC } from '@interface/common/decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -628,4 +631,58 @@ export class UpdateWbsItemTitleDto {
   @IsString()
   @IsNotEmpty()
   title: string;
+}
+
+/**
+ * WBS 할당 일자 수정 DTO
+ */
+export class UpdateWbsAssignmentDatesDto {
+  @ApiProperty({
+    description: '직원 ID (UUID 형식)',
+    example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  })
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  employeeId: string;
+
+  @ApiProperty({
+    description: '프로젝트 ID (UUID 형식)',
+    example: 'c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f',
+  })
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  projectId: string;
+
+  @ApiProperty({
+    description: '평가기간 ID (UUID 형식)',
+    example: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
+  })
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  periodId: string;
+
+  @ApiPropertyOptional({
+    description: '시작일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-01',
+    type: String,
+    format: 'date',
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  startDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '종료일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-31',
+    type: String,
+    format: 'date',
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  endDate?: Date;
 }

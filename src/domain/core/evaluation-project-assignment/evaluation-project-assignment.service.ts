@@ -64,6 +64,34 @@ export class EvaluationProjectAssignmentService
   }
 
   /**
+   * 직원 ID, 프로젝트 ID, 평가기간 ID로 평가 프로젝트 할당을 조회한다
+   */
+  async 직원과_프로젝트와_평가기간으로_조회한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    manager?: EntityManager,
+  ): Promise<IEvaluationProjectAssignment | null> {
+    return this.executeSafeDomainOperation(async () => {
+      const repository = this.transactionManager.getRepository(
+        EvaluationProjectAssignment,
+        this.evaluationProjectAssignmentRepository,
+        manager,
+      );
+
+      const assignment = await repository.findOne({
+        where: {
+          employeeId,
+          projectId,
+          periodId,
+          deletedAt: IsNull(),
+        },
+      });
+      return assignment || null;
+    }, '직원과_프로젝트와_평가기간으로_조회한다');
+  }
+
+  /**
    * 평가 프로젝트 할당을 생성한다
    */
   async 생성한다(

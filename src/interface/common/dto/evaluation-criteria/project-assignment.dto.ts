@@ -1,9 +1,11 @@
 import { OrderDirection } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.types';
+import { OptionalDateToUTC } from '@interface/common/decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsDate,
   IsEnum,
   IsIn,
   IsNotEmpty,
@@ -40,6 +42,26 @@ export class CreateProjectAssignmentDto {
   })
   @IsUUID()
   periodId: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-01',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-12-31',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectEndDate?: Date;
 }
 
 /**
@@ -134,6 +156,34 @@ export class ChangeProjectAssignmentOrderByProjectDto {
   })
   @IsEnum(OrderDirection, { message: '이동 방향은 up 또는 down이어야 합니다.' })
   direction: OrderDirection;
+}
+
+/**
+ * 프로젝트 할당 수정 DTO
+ *
+ * Note: updatedBy는 @CurrentUser() 데코레이터를 통해 자동으로 처리됩니다.
+ * 프로젝트 기간(시작일/종료일)만 수정 가능합니다.
+ */
+export class UpdateProjectAssignmentDto {
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-01',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-12-31',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectEndDate?: Date;
 }
 
 /**
@@ -247,6 +297,20 @@ export class ProjectAssignmentResponseDto {
     example: 0,
   })
   displayOrder: number;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일',
+    example: '2024-01-01T00:00:00.000Z',
+    required: false,
+  })
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일',
+    example: '2024-12-31T23:59:59.999Z',
+    required: false,
+  })
+  projectEndDate?: Date;
 
   @ApiPropertyOptional({
     description: '생성자 ID',

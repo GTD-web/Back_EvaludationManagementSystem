@@ -17,6 +17,7 @@ import { WbsItemStatus } from '@domain/common/wbs-item/wbs-item.types';
 import type {
   CreateEvaluationWbsAssignmentData,
   OrderDirection,
+  UpdateEvaluationWbsAssignmentData,
 } from '@domain/core/evaluation-wbs-assignment/evaluation-wbs-assignment.types';
 import type { WbsItemDto } from '@domain/common/wbs-item/wbs-item.types';
 
@@ -621,6 +622,72 @@ export class WbsAssignmentBusinessService {
     });
 
     return assignment;
+  }
+
+  /**
+   * WBS ID를 사용하여 WBS 할당 일자를 업데이트한다
+   */
+  async WBS_할당_일자를_업데이트한다(params: {
+    employeeId: string;
+    wbsItemId: string;
+    projectId: string;
+    periodId: string;
+    startDate?: Date;
+    endDate?: Date;
+    updatedBy: string;
+  }): Promise<any> {
+    this.logger.log('WBS ID 기반 할당 일자 업데이트 비즈니스 로직 시작', {
+      employeeId: params.employeeId,
+      wbsItemId: params.wbsItemId,
+      projectId: params.projectId,
+      periodId: params.periodId,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    });
+
+    // 1. WBS 할당 상세 조회하여 할당 ID 찾기
+    const assignmentDetail =
+      await this.evaluationCriteriaManagementService.WBS_할당_상세를_조회한다(
+        params.employeeId,
+        params.wbsItemId,
+        params.projectId,
+        params.periodId,
+      );
+
+    if (!assignmentDetail) {
+      throw new NotFoundException(
+        `WBS 할당을 찾을 수 없습니다. (employeeId: ${params.employeeId}, wbsItemId: ${params.wbsItemId}, projectId: ${params.projectId}, periodId: ${params.periodId})`,
+      );
+    }
+
+    // 2. 날짜 유효성 검증 (시작일이 종료일보다 이후인 경우)
+    if (params.startDate && params.endDate) {
+      if (params.startDate > params.endDate) {
+        throw new Error('시작일은 종료일보다 이전이어야 합니다.');
+      }
+    }
+
+    // 3. 업데이트 데이터 준비
+    const updateData: UpdateEvaluationWbsAssignmentData = {};
+    if (params.startDate !== undefined) {
+      updateData.startDate = params.startDate;
+    }
+    if (params.endDate !== undefined) {
+      updateData.endDate = params.endDate;
+    }
+
+    // 4. 할당 업데이트
+    const assignment = await this.evaluationWbsAssignmentService.업데이트한다(
+      assignmentDetail.id,
+      updateData,
+      params.updatedBy,
+    );
+
+    this.logger.log('WBS ID 기반 할당 일자 업데이트 완료', {
+      assignmentId: assignmentDetail.id,
+    });
+
+    return assignment.DTO로_변환한다();
   }
 
   /**

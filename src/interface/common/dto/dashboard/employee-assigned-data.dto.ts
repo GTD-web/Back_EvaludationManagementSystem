@@ -89,6 +89,14 @@ export class EvaluationPeriodInfoDto implements EvaluationPeriodInfo {
   })
   maxSelfEvaluationRate: number;
 
+  @ApiPropertyOptional({
+    description: '완료된 평가기간에서만 제공되는 최종등급',
+    example: 'S',
+    type: 'string',
+    nullable: true,
+  })
+  finalGrade?: string | null;
+
   @ApiProperty({
     description: '종료일',
     type: 'string',

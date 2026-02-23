@@ -197,7 +197,7 @@ export class ProjectAssignmentBusinessService {
     });
 
     // 할당 목록 조회하여 할당 ID 찾기 (활동 내역 기록을 위해 취소 전에 조회)
-    const assignmentList =
+    let assignmentList =
       await this.evaluationCriteriaManagementService.프로젝트_할당_목록을_조회한다({
         employeeId,
         projectId,
@@ -206,10 +206,69 @@ export class ProjectAssignmentBusinessService {
         limit: 1,
       });
 
-    const assignmentId =
+    let targetAssignment =
       assignmentList.assignments && assignmentList.assignments.length > 0
-        ? assignmentList.assignments[0].id
+        ? assignmentList.assignments[0]
         : null;
+
+    // my-assigned-data 조회 시 employeeId는 현재 로그인 사용자와 동일. 요청 body의 employeeId가
+    // 본인과 다를 경우 cancelledBy로 fallback 조회 (본인 할당 취소 시도)
+    if (!targetAssignment && cancelledBy !== employeeId) {
+      this.logger.log(
+        '프로젝트 할당 취소: 요청 employeeId로 할당 없음, cancelledBy(본인)로 fallback 조회',
+        { requestEmployeeId: employeeId, fallbackEmployeeId: cancelledBy },
+      );
+      assignmentList =
+        await this.evaluationCriteriaManagementService.프로젝트_할당_목록을_조회한다({
+          employeeId: cancelledBy,
+          projectId,
+          periodId,
+          page: 1,
+          limit: 1,
+        });
+      targetAssignment =
+        assignmentList.assignments && assignmentList.assignments.length > 0
+          ? assignmentList.assignments[0]
+          : null;
+      if (targetAssignment) {
+        employeeId = cancelledBy;
+      }
+    }
+
+    const assignmentId = targetAssignment?.id ?? null;
+
+    // employeeId/periodId 검증: 조회된 할당과 요청 파라미터 일치 여부 확인
+    if (targetAssignment) {
+      const employeeIdMatches = targetAssignment.employeeId === employeeId;
+      const periodIdMatches = targetAssignment.periodId === periodId;
+      const isSelfCancellation = cancelledBy === employeeId;
+
+      if (!employeeIdMatches || !periodIdMatches) {
+        this.logger.warn(
+          '프로젝트 할당 취소 검증 불일치 - my-assigned-data와 요청 파라미터 불일치 가능성',
+          {
+            assignmentEmployeeId: targetAssignment.employeeId,
+            requestEmployeeId: employeeId,
+            assignmentPeriodId: targetAssignment.periodId,
+            requestPeriodId: periodId,
+          },
+        );
+      } else if (!isSelfCancellation) {
+        this.logger.log(
+          '프로젝트 할당 취소: 타인(관리자 대신) 취소 - my-assigned-data는 취소자 본인 기준으로 조회됨',
+          { cancelledBy, targetEmployeeId: employeeId },
+        );
+      }
+    }
+
+    this.logger.log('프로젝트 할당 취소 대상 확인', {
+      assignmentId,
+      employeeId,
+      projectId,
+      periodId,
+      cancelledBy,
+      isSelfCancellation: cancelledBy === employeeId,
+    });
 
     // 프로젝트 할당 취소
     await this.evaluationCriteriaManagementService.프로젝트_할당을_프로젝트_ID로_취소한다(
@@ -245,6 +304,7 @@ export class ProjectAssignmentBusinessService {
     }
 
     this.logger.log('프로젝트 할당 취소 완료 (프로젝트 ID 기반)', {
+      assignmentId,
       employeeId,
       projectId,
       periodId,

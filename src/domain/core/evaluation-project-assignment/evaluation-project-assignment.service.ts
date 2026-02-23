@@ -209,8 +209,13 @@ export class EvaluationProjectAssignmentService
       assignment.메타데이터를_업데이트한다(deletedBy);
       await repository.softDelete(id);
 
+      // 삭제 직후 DB 검증: deletedAt 설정 여부 확인
+      const verified = await repository.findOne({
+        where: { id },
+        withDeleted: true,
+      });
       this.logger.log(
-        `평가 프로젝트 할당 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}`,
+        `평가 프로젝트 할당 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}, deletedAt 검증: ${verified?.deletedAt ? '설정됨' : '미설정(오류)'}`,
       );
     }, '삭제한다');
   }

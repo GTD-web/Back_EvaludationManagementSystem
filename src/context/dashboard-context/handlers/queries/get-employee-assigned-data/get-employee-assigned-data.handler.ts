@@ -15,7 +15,9 @@ import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-ev
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
+import { FinalEvaluation } from '@domain/core/final-evaluation/final-evaluation.entity';
 import { ExcludedEvaluationTargetAccessException } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.exceptions';
+import { 최종평가를_조회한다 } from '../get-employee-evaluation-period-status/final-evaluation.utils';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { EmployeeAssignedDataResult } from './types';
 import { getProjectsWithWbs } from './project-wbs.utils';
@@ -77,6 +79,8 @@ export class GetEmployeeAssignedDataHandler
     private readonly evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(Deliverable)
     private readonly deliverableRepository: Repository<Deliverable>,
+    @InjectRepository(FinalEvaluation)
+    private readonly finalEvaluationRepository: Repository<FinalEvaluation>,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
   ) {}
 
@@ -311,14 +315,38 @@ export class GetEmployeeAssignedDataHandler
         this.employeeRepository,
       );
 
+    // 10. 평가기간 완료 시: 1차·2차 등급 제거, 최종등급만 제공
+    const isCompleted = evaluationPeriod.status === 'completed';
+    let finalGrade: string | null = null;
+    if (isCompleted) {
+      const finalEvaluation = await 최종평가를_조회한다(
+        evaluationPeriodId,
+        employeeId,
+        this.finalEvaluationRepository,
+      );
+      finalGrade = finalEvaluation?.evaluationGrade ?? null;
+    }
+
     const summary = {
       totalProjects: projects.length,
       totalWbs,
       completedPerformances,
       completedSelfEvaluations,
       selfEvaluation,
-      primaryDownwardEvaluation,
-      secondaryDownwardEvaluation,
+      primaryDownwardEvaluation: isCompleted
+        ? {
+            ...primaryDownwardEvaluation,
+            totalScore: null,
+            grade: null,
+          }
+        : primaryDownwardEvaluation,
+      secondaryDownwardEvaluation: isCompleted
+        ? {
+            ...secondaryDownwardEvaluation,
+            totalScore: null,
+            grade: null,
+          }
+        : secondaryDownwardEvaluation,
       criteriaSubmission: {
         isSubmitted: mapping.isCriteriaSubmitted || false,
         submittedAt: mapping.criteriaSubmittedAt || null,
@@ -408,6 +436,7 @@ export class GetEmployeeAssignedDataHandler
         finalEvaluationSettingEnabled:
           evaluationPeriod.finalEvaluationSettingEnabled,
         maxSelfEvaluationRate: evaluationPeriod.maxSelfEvaluationRate,
+        ...(isCompleted && { finalGrade }),
       },
       employee: {
         id: employee.id,

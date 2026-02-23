@@ -102,6 +102,8 @@ export interface EvaluationPeriodInfo {
   selfEvaluationSettingEnabled: boolean;
   finalEvaluationSettingEnabled: boolean;
   maxSelfEvaluationRate: number;
+  /** 완료된 평가기간에서만 제공되는 최종등급 */
+  finalGrade?: string | null;
 }
 
 /**

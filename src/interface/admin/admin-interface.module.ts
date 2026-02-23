@@ -37,6 +37,7 @@ import { DeliverableManagementController } from './performance-evaluation/delive
 import { EmployeeManagementController } from './employee-management/employee-management.controller';
 import { SeedDataController } from './seed-data/seed-data.controller';
 import { StepApprovalController } from './step-approval/step-approval.controller';
+import { StepRevisionRequestController } from './step-approval/step-revision-request.controller';
 import { RevisionRequestController } from './revision-request/revision-request.controller';
 import { StepApprovalContextModule } from '../../context/step-approval-context/step-approval-context.module';
 import { RevisionRequestContextModule } from '../../context/revision-request-context/revision-request-context.module';
@@ -46,6 +47,8 @@ import { EvaluationActivityLogController } from './evaluation-activity-log/evalu
 import { ProjectManagementController } from './project/project-management.controller';
 import { NotificationController } from '../common/controllers/notification.controller';
 import { BackupController } from '../backup/backup.controller';
+import { EvaluationSubmissionController } from './evaluation-submission/evaluation-submission.controller';
+import { EvaluationSubmissionBusinessModule } from '../../business/evaluation-submission/evaluation-submission-business.module';
 
 /**
  * 관리자 인터페이스 모듈
@@ -78,6 +81,7 @@ import { BackupController } from '../backup/backup.controller';
     WbsEvaluationCriteriaModule, // WBS 평가 기준 모듈 주입
     EvaluationLineModule, // 평가 라인 모듈 주입
     EvaluationLineMappingModule, // 평가 라인 맵핑 모듈 주입
+    EvaluationSubmissionBusinessModule, // 평가 제출 관리 비즈니스 모듈 주입
   ],
   controllers: [
     AuthController, // 인증 컨트롤러
@@ -98,11 +102,13 @@ import { BackupController } from '../backup/backup.controller';
     DeliverableManagementController, // 산출물 관리 컨트롤러
     SeedDataController, // 시드 데이터 컨트롤러
     StepApprovalController, // 단계 승인 컨트롤러
+    StepRevisionRequestController, // 재작성 요청 전용 컨트롤러
     RevisionRequestController, // 재작성 요청 컨트롤러
     AuditLogController, // Audit 로그 컨트롤러
     EvaluationActivityLogController, // 평가 활동 내역 컨트롤러
     NotificationController, // 알림 컨트롤러
     BackupController, // 백업 관리 컨트롤러
+    EvaluationSubmissionController, // 평가 제출 관리 컨트롤러
   ],
   providers: [],
   exports: [],

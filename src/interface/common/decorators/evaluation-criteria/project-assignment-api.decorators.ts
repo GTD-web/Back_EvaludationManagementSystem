@@ -520,37 +520,50 @@ export function BulkCreateProjectAssignments() {
   );
 }
 
-// ==================== PUT 엔드포인트 데코레이터 ====================
+// ==================== PATCH 엔드포인트 데코레이터 ====================
 
 /**
  * 프로젝트 할당 수정 엔드포인트 데코레이터
  */
 export function UpdateProjectAssignment() {
   return applyDecorators(
-    Put(':id'),
+    Patch('employees/:employeeId/projects/:projectId'),
     ApiOperation({
-      summary: '프로젝트 할당 수정',
-      description: `**중요**: 기존 프로젝트 할당의 정보를 수정합니다. 할당된 직원, 프로젝트, 평가기간을 변경할 수 있으며, 수정 시 중복 검증과 비즈니스 로직 검증을 수행합니다.
+      summary: '프로젝트 할당 기간 수정',
+      description: `**중요**: 기존 프로젝트 할당의 프로젝트 기간(시작일/종료일)을 수정합니다.
 
-**테스트 케이스:**
-- 기본 수정: 할당된 직원, 프로젝트, 평가기간 정보 수정
+**동작:**
+- 직원 ID, 프로젝트 ID, 평가기간 ID로 할당을 찾아 수정
+- 프로젝트 시작일과 종료일만 수정 가능
 - 부분 수정: 일부 필드만 수정하고 나머지는 기존 값 유지
 - 감사 정보: 수정일시, 수정자 정보 자동 업데이트
-- 중복 검증: 수정 후 중복된 할당이 생성되지 않도록 검증
-- 존재하지 않는 할당: 유효하지 않은 할당 ID로 요청 시 404 에러
-- 존재하지 않는 리소스: 유효하지 않은 직원/프로젝트/평가기간 ID 시 404 에러
-- 잘못된 UUID: UUID 형식이 올바르지 않을 때 400 에러
-- 필수 필드 검증: 필수 필드 누락 시 400 에러
+
+**테스트 케이스:**
+- 기본 수정: 프로젝트 시작일과 종료일 수정
+- 부분 수정: 시작일만 수정하거나 종료일만 수정 가능
+- 감사 정보: 수정일시, 수정자 정보 자동 업데이트
+- 존재하지 않는 할당: 유효하지 않은 직원/프로젝트/평가기간 조합 시 404 에러
+- 잘못된 날짜 형식: 날짜 형식이 올바르지 않을 때 400 에러
 - 완료된 평가기간 제한: 완료된 평가기간의 할당 수정 시 422 에러
-- 취소된 할당 제한: 이미 취소된 할당 수정 시 404 에러
-- 동시 수정: 동일한 할당에 대한 동시 수정 요청 처리
-- 권한 검증: 적절한 권한을 가진 사용자만 수정 가능 (향후 구현)
-- 이력 관리: 수정 이력 자동 기록 및 추적`,
+- 취소된 할당 제한: 이미 취소된 할당 수정 시 404 에러`,
     }),
     ApiParam({
-      name: 'id',
-      description: '프로젝트 할당 ID (UUID 형식)',
+      name: 'employeeId',
+      description: '직원 ID (UUID 형식)',
       example: '123e4567-e89b-12d3-a456-426614174000',
+      schema: { type: 'string', format: 'uuid' },
+    }),
+    ApiParam({
+      name: 'projectId',
+      description: '프로젝트 ID (UUID 형식)',
+      example: '123e4567-e89b-12d3-a456-426614174001',
+      schema: { type: 'string', format: 'uuid' },
+    }),
+    ApiQuery({
+      name: 'periodId',
+      description: '평가기간 ID (UUID 형식, 필수)',
+      example: '123e4567-e89b-12d3-a456-426614174002',
+      required: true,
       schema: { type: 'string', format: 'uuid' },
     }),
     ApiResponse({

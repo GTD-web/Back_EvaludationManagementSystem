@@ -117,7 +117,7 @@ export class DashboardController {
 
     // 파일명 생성 (날짜 포함)
     const date = new Date().toISOString().split('T')[0];
-    const filename = `평가현황_${period.name}_${date}.xlsx`;
+    const filename = `평가결과_${period.name}_${date}.xlsx`;
 
     // 응답 헤더 설정
     res.setHeader(
@@ -185,6 +185,10 @@ export class DashboardController {
       user.id, // viewerId (본인이 조회하므로 Activity Log 기록하지 않음)
     );
 
+    // 평가기간이 완료된 경우 1차·2차 평가 등급을 모두 표시
+    if (data.evaluationPeriod.status === 'completed') {
+      return data;
+    }
     // 피평가자는 2차 평가자의 하향평가를 볼 수 없음 (1차 하향평가는 제공)
     return this.이차_하향평가_정보를_제거한다(data);
   }

@@ -19,13 +19,19 @@ import {
 
 /**
  * 전체 재작성 요청 목록 조회 API 데코레이터 (관리자용)
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function GetRevisionRequests() {
   return applyDecorators(
     Get(),
     ApiOperation({
-      summary: '전체 재작성 요청 목록 조회',
-      description: `**관리자용**: 시스템 내 모든 재작성 요청 목록을 조회합니다.
+      summary: '전체 재작성 요청 목록 조회 (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**관리자용**: 시스템 내 모든 재작성 요청 목록을 조회합니다.
 
 **동작:**
 - 시스템 내 모든 재작성 요청을 수신자별로 조회
@@ -110,13 +116,19 @@ export function GetRevisionRequests() {
 
 /**
  * 내 재작성 요청 목록 조회 API 데코레이터
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function GetMyRevisionRequests() {
   return applyDecorators(
     Get('me'),
     ApiOperation({
-      summary: '내 재작성 요청 목록 조회',
-      description: `**담당자용**: 내가 수신한 재작성 요청 목록을 조회합니다.
+      summary: '내 재작성 요청 목록 조회 (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**담당자용**: 내가 수신한 재작성 요청 목록을 조회합니다.
 
 **수신자별 재작성 요청:**
 - **피평가자**: 평가기준, 자기평가 재작성 요청
@@ -180,13 +192,19 @@ export function GetMyRevisionRequests() {
 
 /**
  * 읽지 않은 재작성 요청 수 조회 API 데코레이터
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function GetMyUnreadCount() {
   return applyDecorators(
     Get('me/unread-count'),
     ApiOperation({
-      summary: '읽지 않은 재작성 요청 수 조회',
-      description: `**담당자용**: 내가 수신한 읽지 않은 재작성 요청 수를 조회합니다.
+      summary: '읽지 않은 재작성 요청 수 조회 (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**담당자용**: 내가 수신한 읽지 않은 재작성 요청 수를 조회합니다.
 
 **사용 시나리오:**
 - 대시보드에 알림 뱃지 표시
@@ -205,13 +223,19 @@ export function GetMyUnreadCount() {
 
 /**
  * 재작성 요청 읽음 처리 API 데코레이터
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function MarkRevisionRequestAsRead() {
   return applyDecorators(
     Patch(':id/read'),
     ApiOperation({
-      summary: '재작성 요청 읽음 처리',
-      description: `**담당자용**: 재작성 요청을 읽음 처리합니다.
+      summary: '재작성 요청 읽음 처리 (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**담당자용**: 재작성 요청을 읽음 처리합니다.
 
 **처리 내용:**
 - \`isRead\` 상태를 \`true\`로 변경
@@ -252,13 +276,19 @@ export function MarkRevisionRequestAsRead() {
 
 /**
  * 재작성 완료 응답 제출 API 데코레이터
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function CompleteRevisionRequest() {
   return applyDecorators(
     Patch(':id/complete'),
     ApiOperation({
-      summary: '재작성 완료 응답 제출',
-      description: `**담당자용**: 재작성 완료 응답을 제출합니다.
+      summary: '재작성 완료 응답 제출 (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**담당자용**: 재작성 완료 응답을 제출합니다.
 
 **처리 내용:**
 - \`isCompleted\` 상태를 \`true\`로 변경
@@ -311,13 +341,19 @@ export function CompleteRevisionRequest() {
 
 /**
  * 평가기간, 직원, 평가자 기반 재작성 완료 응답 제출 API 데코레이터 (관리자용)
+ * @deprecated 이 엔드포인트는 더 이상 사용되지 않습니다.
  */
 export function CompleteRevisionRequestByEvaluator() {
   return applyDecorators(
     Patch(':evaluationPeriodId/:employeeId/:evaluatorId/complete'),
     ApiOperation({
-      summary: '재작성 완료 응답 제출 (평가기간/직원/평가자 기반)',
-      description: `**관리자용**: 평가기간, 직원, 평가자 ID를 기반으로 재작성 완료 응답을 제출합니다.
+      summary: '재작성 완료 응답 제출 (평가기간/직원/평가자 기반) (Deprecated)',
+      deprecated: true,
+      description: `**⚠️ Deprecated**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+
+---
+
+**관리자용**: 평가기간, 직원, 평가자 ID를 기반으로 재작성 완료 응답을 제출합니다.
 
 **처리 내용:**
 - 평가기간, 직원, 평가자 ID로 재작성 요청 조회

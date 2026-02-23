@@ -15,7 +15,9 @@ import { DownwardEvaluation } from '@domain/core/downward-evaluation/downward-ev
 import { EvaluationLine } from '@domain/core/evaluation-line/evaluation-line.entity';
 import { EvaluationLineMapping } from '@domain/core/evaluation-line-mapping/evaluation-line-mapping.entity';
 import { Deliverable } from '@domain/core/deliverable/deliverable.entity';
+import { FinalEvaluation } from '@domain/core/final-evaluation/final-evaluation.entity';
 import { ExcludedEvaluationTargetAccessException } from '@domain/core/evaluation-period-employee-mapping/evaluation-period-employee-mapping.exceptions';
+import { 최종평가를_조회한다 } from '../get-employee-evaluation-period-status/final-evaluation.utils';
 import { EvaluationActivityLogContextService } from '@context/evaluation-activity-log-context/evaluation-activity-log-context.service';
 import { EmployeeAssignedDataResult } from './types';
 import { getProjectsWithWbs } from './project-wbs.utils';
@@ -77,6 +79,8 @@ export class GetEmployeeAssignedDataHandler
     private readonly evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(Deliverable)
     private readonly deliverableRepository: Repository<Deliverable>,
+    @InjectRepository(FinalEvaluation)
+    private readonly finalEvaluationRepository: Repository<FinalEvaluation>,
     private readonly activityLogContextService: EvaluationActivityLogContextService,
   ) {}
 
@@ -241,7 +245,25 @@ export class GetEmployeeAssignedDataHandler
       .andWhere('project_assignment.id IS NOT NULL')
       .getCount();
 
-    const completedSelfEvaluations = submittedToManagerCount;
+    // 성과달성률(점수)이 입력된 자기평가 수 (제출 여부와 무관하게 완료로 간주)
+    const completedSelfEvaluations = await this.selfEvaluationRepository
+      .createQueryBuilder('self_eval')
+      .leftJoin(
+        'evaluation_wbs_assignment',
+        'wbs_assignment',
+        'wbs_assignment.wbsItemId = self_eval.wbsItemId AND wbs_assignment.periodId = self_eval.periodId AND wbs_assignment.employeeId = self_eval.employeeId AND wbs_assignment.deletedAt IS NULL',
+      )
+      .leftJoin(
+        'evaluation_project_assignment',
+        'project_assignment',
+        'project_assignment.projectId = wbs_assignment.projectId AND project_assignment.periodId = wbs_assignment.periodId AND project_assignment.employeeId = wbs_assignment.employeeId AND project_assignment.deletedAt IS NULL',
+      )
+      .where('self_eval.periodId = :periodId', { periodId: evaluationPeriodId })
+      .andWhere('self_eval.employeeId = :employeeId', { employeeId })
+      .andWhere('self_eval.selfEvaluationScore IS NOT NULL')
+      .andWhere('self_eval.deletedAt IS NULL')
+      .andWhere('project_assignment.id IS NOT NULL')
+      .getCount();
 
     // 7. 자기평가 점수/등급 계산
     const selfEvaluationScore = await calculateSelfEvaluationScore(
@@ -293,14 +315,38 @@ export class GetEmployeeAssignedDataHandler
         this.employeeRepository,
       );
 
+    // 10. 평가기간 완료 시: 1차·2차 등급 제거, 최종등급만 제공
+    const isCompleted = evaluationPeriod.status === 'completed';
+    let finalGrade: string | null = null;
+    if (isCompleted) {
+      const finalEvaluation = await 최종평가를_조회한다(
+        evaluationPeriodId,
+        employeeId,
+        this.finalEvaluationRepository,
+      );
+      finalGrade = finalEvaluation?.evaluationGrade ?? null;
+    }
+
     const summary = {
       totalProjects: projects.length,
       totalWbs,
       completedPerformances,
       completedSelfEvaluations,
       selfEvaluation,
-      primaryDownwardEvaluation,
-      secondaryDownwardEvaluation,
+      primaryDownwardEvaluation: isCompleted
+        ? {
+            ...primaryDownwardEvaluation,
+            totalScore: null,
+            grade: null,
+          }
+        : primaryDownwardEvaluation,
+      secondaryDownwardEvaluation: isCompleted
+        ? {
+            ...secondaryDownwardEvaluation,
+            totalScore: null,
+            grade: null,
+          }
+        : secondaryDownwardEvaluation,
       criteriaSubmission: {
         isSubmitted: mapping.isCriteriaSubmitted || false,
         submittedAt: mapping.criteriaSubmittedAt || null,
@@ -390,6 +436,7 @@ export class GetEmployeeAssignedDataHandler
         finalEvaluationSettingEnabled:
           evaluationPeriod.finalEvaluationSettingEnabled,
         maxSelfEvaluationRate: evaluationPeriod.maxSelfEvaluationRate,
+        ...(isCompleted && { finalGrade }),
       },
       employee: {
         id: employee.id,

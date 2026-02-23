@@ -170,12 +170,15 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       // Given - WAITING 상태의 평가기간 생성
       const now = new Date();
       const 과거시작일 = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1일 전
-      const 미래마감일 = new Date(now.getTime() + 180 * 60 * 60 * 1000); // 180일 후
+      const 미래평가설정마감일 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+      const 미래업무수행마감일 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+      const 미래자기평가마감일 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60일 후
+      const 미래동료평가마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
 
       const 평가기간데이터: CreateEvaluationPeriodMinimalDto = {
         name: '2024년 상반기 평가',
         startDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30일 후
-        peerEvaluationDeadline: 미래마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
         description: '테스트용 평가기간',
         maxSelfEvaluationRate: 120,
         gradeRanges: 기본등급구간,
@@ -188,20 +191,26 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       expect(createdPeriod.status).toBe(EvaluationPeriodStatus.WAITING);
       expect(createdPeriod.currentPhase).toBe(EvaluationPeriodPhase.WAITING);
 
-      // When - 시작일을 과거 날짜로 수정
-      const startDateData: UpdateEvaluationPeriodStartDateDto = {
+      // When - 시작일을 과거 날짜로 수정하고, 동시에 마감일도 설정
+      // 시작일과 마감일을 함께 수정하면 검증 오류를 피할 수 있음
+      const scheduleData: UpdateEvaluationPeriodScheduleDto = {
         startDate: 과거시작일,
+        evaluationSetupDeadline: 미래평가설정마감일,
+        performanceDeadline: 미래업무수행마감일,
+        selfEvaluationDeadline: 미래자기평가마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
       };
 
-      const result = await startDateHandler.execute(
-        new UpdateEvaluationPeriodStartDateCommand(
+      const result = await scheduleHandler.execute(
+        new UpdateEvaluationPeriodScheduleCommand(
           createdPeriod.id,
-          startDateData,
+          scheduleData,
           systemAdminId,
         ),
       );
 
       // Then - 상태가 자동으로 IN_PROGRESS로 변경되고 단계가 EVALUATION_SETUP으로 설정되어야 함
+      // (마감일이 미래로 설정되어 있어서 EVALUATION_SETUP 단계 유지)
       expect(result.status).toBe(EvaluationPeriodStatus.IN_PROGRESS);
       expect(result.currentPhase).toBe(EvaluationPeriodPhase.EVALUATION_SETUP);
 
@@ -274,8 +283,10 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
     it('전체 일정을 수정할 때 시작일이 지났으면 상태와 단계가 자동으로 조정되어야 한다', async () => {
       // Given - WAITING 상태의 평가기간 생성
       const now = new Date();
-      const 과거시작일 = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1일 전
-      const 과거평가설정마감일 = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 12시간 전
+      const 과거시작일 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2일 전 (시작일은 00:00:00)
+      // 마감일은 "해당 날짜까지"를 의미하므로, 어제 날짜로 설정해야 어제 23:59:59가 지났으므로 전이됨
+      // 시작일보다 이후여야 하므로 1일 전으로 설정
+      const 과거평가설정마감일 = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1일 전 (어제 날짜, 23:59:59까지)
       const 미래업무수행마감일 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60일 후
       const 미래자기평가마감일 = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90일 후
       const 미래동료평가마감일 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000); // 120일 후
@@ -340,12 +351,15 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       // 테스트용 평가기간 생성 및 시작
       const now = new Date();
       const 과거시작일 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7일 전
-      const 미래마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
+      const 미래평가설정마감일 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후 (EVALUATION_SETUP 단계 유지용)
+      const 미래업무수행마감일 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+      const 미래자기평가마감일 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60일 후
+      const 미래동료평가마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
 
       const 평가기간데이터: CreateEvaluationPeriodMinimalDto = {
         name: '평가설정 마감일 수정 테스트용',
         startDate: 과거시작일,
-        peerEvaluationDeadline: 미래마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
         description: '테스트용 평가기간',
         maxSelfEvaluationRate: 120,
         gradeRanges: 기본등급구간,
@@ -358,6 +372,22 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       // 평가기간 시작
       await startHandler.execute(
         new StartEvaluationPeriodCommand(createdPeriod.id, systemAdminId),
+      );
+
+      // 모든 마감일을 미래로 설정하여 EVALUATION_SETUP 단계 유지
+      const scheduleData: UpdateEvaluationPeriodScheduleDto = {
+        evaluationSetupDeadline: 미래평가설정마감일,
+        performanceDeadline: 미래업무수행마감일,
+        selfEvaluationDeadline: 미래자기평가마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
+      };
+
+      await scheduleHandler.execute(
+        new UpdateEvaluationPeriodScheduleCommand(
+          createdPeriod.id,
+          scheduleData,
+          systemAdminId,
+        ),
       );
 
       기존평가기간Id = createdPeriod.id;
@@ -429,6 +459,42 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
         },
       });
     });
+
+    it('평가설정 마감일을 오늘 날짜로 수정하면 오늘 23:59:59까지는 현재 단계가 유지되어야 한다', async () => {
+      // Given - 마감일은 "해당 날짜까지"를 의미하므로, 오늘 날짜로 설정하면 오늘 23:59:59까지 유지
+      const now = new Date();
+      // 오늘 날짜의 00:00:00으로 설정 (마감일은 해당 날짜의 23:59:59까지 유지)
+      const 오늘날짜 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+      const deadlineData: UpdateEvaluationSetupDeadlineDto = {
+        evaluationSetupDeadline: 오늘날짜,
+      };
+
+      // When
+      const result = await evaluationSetupHandler.execute(
+        new UpdateEvaluationSetupDeadlineCommand(
+          기존평가기간Id,
+          deadlineData,
+          systemAdminId,
+        ),
+      );
+
+      // Then - 오늘 날짜의 23:59:59까지는 유지되므로, 현재 시간이 오늘 23:59:59 이전이면 EVALUATION_SETUP 단계 유지
+      // (다음 날 00:00:00 이후에 크론이 실행되면 전이됨)
+      expect(result.status).toBe(EvaluationPeriodStatus.IN_PROGRESS);
+      expect(result.currentPhase).toBe(EvaluationPeriodPhase.EVALUATION_SETUP);
+
+      // 테스트 결과 저장
+      testResults.push({
+        testName: '평가설정 마감일을 오늘 날짜로 수정하면 오늘 23:59:59까지는 현재 단계가 유지되어야 한다',
+        result: {
+          periodId: 기존평가기간Id,
+          phase: result.currentPhase,
+          deadline: 오늘날짜.toISOString(),
+          note: '마감일은 해당 날짜의 23:59:59까지 유지되며, 다음 날 00:00:00 이후에 전이됨',
+        },
+      });
+    });
   });
 
   describe('업무 수행 마감일 수정 시 단계 자동 전이', () => {
@@ -439,12 +505,14 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       const now = new Date();
       const 과거시작일 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // 14일 전
       const 과거평가설정마감일 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7일 전
-      const 미래마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
+      const 미래업무수행마감일 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후 (PERFORMANCE 단계 유지용)
+      const 미래자기평가마감일 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+      const 미래동료평가마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
 
       const 평가기간데이터: CreateEvaluationPeriodMinimalDto = {
         name: '업무 수행 마감일 수정 테스트용',
         startDate: 과거시작일,
-        peerEvaluationDeadline: 미래마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
         description: '테스트용 평가기간',
         maxSelfEvaluationRate: 120,
         gradeRanges: 기본등급구간,
@@ -459,9 +527,13 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
         new StartEvaluationPeriodCommand(createdPeriod.id, systemAdminId),
       );
 
-      // 평가설정 마감일 설정 및 단계 전이
+      // 평가설정 마감일을 과거로 설정하여 PERFORMANCE 단계로 전이
+      // 다른 마감일은 미래로 설정하여 PERFORMANCE 단계 유지
       const scheduleData: UpdateEvaluationPeriodScheduleDto = {
         evaluationSetupDeadline: 과거평가설정마감일,
+        performanceDeadline: 미래업무수행마감일,
+        selfEvaluationDeadline: 미래자기평가마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
       };
 
       await scheduleHandler.execute(
@@ -763,12 +835,14 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       const now = new Date();
       const 과거시작일 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7일 전
       const 미래평가설정마감일 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후
-      const 미래마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
+      const 미래업무수행마감일 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+      const 미래자기평가마감일 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60일 후
+      const 미래동료평가마감일 = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180일 후
 
       const 평가기간데이터: CreateEvaluationPeriodMinimalDto = {
         name: '진행 중 평가기간 마감일 수정 테스트',
         startDate: 과거시작일,
-        peerEvaluationDeadline: 미래마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
         description: '테스트용 평가기간',
         maxSelfEvaluationRate: 120,
         gradeRanges: 기본등급구간,
@@ -783,9 +857,12 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
         new StartEvaluationPeriodCommand(createdPeriod.id, systemAdminId),
       );
 
-      // 평가설정 마감일을 미래로 설정 (EVALUATION_SETUP 단계 유지)
+      // 평가설정 마감일을 미래로 설정하고, 다른 마감일도 미래로 설정하여 EVALUATION_SETUP 단계 유지
       const scheduleData1: UpdateEvaluationPeriodScheduleDto = {
         evaluationSetupDeadline: 미래평가설정마감일,
+        performanceDeadline: 미래업무수행마감일,
+        selfEvaluationDeadline: 미래자기평가마감일,
+        peerEvaluationDeadline: 미래동료평가마감일,
       };
 
       await scheduleHandler.execute(
@@ -817,6 +894,7 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
       );
 
       // Then - 평가설정 마감일이 지났으므로 PERFORMANCE 단계로 전이되어야 함
+      // (다른 마감일은 미래로 설정되어 있어서 PERFORMANCE 단계에서 멈춰야 함)
       expect(result.status).toBe(EvaluationPeriodStatus.IN_PROGRESS);
       expect(result.currentPhase).toBe(EvaluationPeriodPhase.PERFORMANCE);
 
@@ -833,21 +911,37 @@ describe('평가기간 일정 수정 후 자동 조정', () => {
     });
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     // 테스트 결과를 JSON 파일로 저장
     const outputPath = path.join(
       __dirname,
       'evaluation-period-schedule-update-auto-adjustment-result.json',
     );
+    
     const output = {
       timestamp: new Date().toISOString(),
+      totalTests: testResults.length,
       testResults: testResults,
+      summary: {
+        total: testResults.length,
+        byCategory: {
+          시작일수정: testResults.filter((r) => r.testName.includes('시작일')).length,
+          마감일수정: testResults.filter((r) => r.testName.includes('마감일')).length,
+          일정수정: testResults.filter((r) => r.testName.includes('일정')).length,
+          복합시나리오: testResults.filter((r) => r.testName.includes('복합') || r.testName.includes('진행 중')).length,
+        },
+      },
     };
 
-    fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
-    console.log(
-      `✅ 테스트 결과가 저장되었습니다: ${outputPath}`,
-    );
+    try {
+      fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
+      console.log(
+        `✅ 테스트 결과가 저장되었습니다: ${outputPath}`,
+      );
+      console.log(`   총 ${testResults.length}개의 테스트 결과가 저장되었습니다.`);
+    } catch (error) {
+      console.error('❌ 테스트 결과 저장 실패:', error);
+    }
   });
 });
 

@@ -108,9 +108,8 @@ export class TestContextUsageExample {
     console.log('프로젝트 수:', testData.projects.length);
     console.log('WBS 항목 수:', testData.wbsItems.length);
 
-    // 2. 활성 프로젝트만 필터링
-    const activeProjects = testData.projects.filter((p) => p.isActive);
-    console.log('활성 프로젝트 수:', activeProjects.length);
+    // 2. 프로젝트 목록 출력
+    console.log('프로젝트 수:', testData.projects.length);
 
     // 3. 진행중인 WBS 항목만 필터링
     const inProgressWbsItems = testData.wbsItems.filter((w) => w.isInProgress);
@@ -118,7 +117,6 @@ export class TestContextUsageExample {
 
     return {
       ...testData,
-      activeProjects,
       inProgressWbsItems,
     };
   }

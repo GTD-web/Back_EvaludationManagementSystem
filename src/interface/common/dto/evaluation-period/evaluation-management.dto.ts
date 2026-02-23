@@ -460,7 +460,8 @@ export class CopyProjectWithWbsDto {
   projectId: string;
 
   @ApiPropertyOptional({
-    description: '복사할 WBS ID 목록 (선택사항, 미지정 시 프로젝트 내 모든 WBS 복사)',
+    description:
+      '복사할 WBS ID 목록 (선택사항, 미지정 시 프로젝트 내 모든 WBS 복사)',
     example: ['123e4567-e89b-12d3-a456-426614174001'],
     type: [String],
   })
@@ -475,7 +476,8 @@ export class CopyProjectWithWbsDto {
  */
 export class CopyPreviousPeriodDataApiDto {
   @ApiPropertyOptional({
-    description: '복사할 프로젝트 및 WBS 목록 (선택사항, 미지정 시 모든 프로젝트와 WBS 복사)',
+    description:
+      '복사할 프로젝트 및 WBS 목록 (선택사항, 미지정 시 모든 프로젝트와 WBS 복사)',
     example: [
       {
         projectId: '123e4567-e89b-12d3-a456-426614174000',
@@ -530,6 +532,19 @@ export class CopyPreviousPeriodDataResponseDto {
     example: 15,
   })
   copiedWbsEvaluationCriteria: number;
+}
+
+/**
+ * 결재 문서 ID 설정 API DTO
+ */
+export class SetApprovalDocumentIdApiDto {
+  @ApiProperty({
+    description: '결재 문서 ID (LIAS 서버에서 발급된 문서 ID)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString({ message: '결재 문서 ID는 문자열이어야 합니다.' })
+  @IsNotEmpty({ message: '결재 문서 ID는 필수 입력 항목입니다.' })
+  approvalDocumentId: string;
 }
 
 /**

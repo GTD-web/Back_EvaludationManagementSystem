@@ -11,8 +11,8 @@ const execAsync = promisify(exec);
  * 데이터베이스 백업 스케줄러 서비스
  *
  * 백업 전략 (한국 시간 기준):
- * - 4시간마다: 00시, 04시, 08시, 12시, 16시, 20시 (최근 24시간 복구용, 6개 파일)
- * - 매일 00시: 30일 보관
+ * - 4시간마다: 04시, 08시, 12시, 16시, 20시 (최근 24시간 복구용, 6개 파일)
+ * - 매일 00시: hourly와 daily 폴더에 동시 저장 (30일 보관)
  * - 매주 일요일 00시: 12주(3개월) 보관
  * - 매월 1일 00시: 12개월 보관
  * - 분기말/연말: 3-7년 장기 보관
@@ -64,10 +64,12 @@ export class BackupSchedulerService {
   }
 
   /**
-   * 4시간마다 백업 (한국시간 00시, 04시, 08시, 12시, 16시, 20시)
+   * 4시간마다 백업 (한국시간 04시, 08시, 12시, 16시, 20시)
    * 최근 24시간 복구용, 6개 파일만 유지
+   * 
+   * 주의: 00시는 일일_백업을_실행한다()에서 처리하므로 제외
    */
-  @Cron('0 0,4,8,12,16,20 * * *', {
+  @Cron('0 4,8,12,16,20 * * *', {
     timeZone: 'Asia/Seoul',
   })
   async 시간별_백업을_실행한다(): Promise<void> {
@@ -214,6 +216,13 @@ export class BackupSchedulerService {
         // 최신 백업 파일을 목표 디렉토리로 복사
         fs.copyFileSync(files[0].path, outputPath);
         this.logger.log(`   → ${filename} 저장 완료`);
+        // dumps 재축적 방지: 복사한 파일 삭제
+        try {
+          fs.unlinkSync(files[0].path);
+          this.logger.log(`   🗑️  dumps 정리: ${files[0].name}`);
+        } catch (unlinkErr) {
+          this.logger.warn(`   dumps 파일 삭제 실패 (무시): ${files[0].name}`);
+        }
       }
     } catch (error) {
       this.logger.error(`백업 실행 실패 (${type}): ${error.message}`);

@@ -64,26 +64,11 @@ export class EmployeeSyncService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('모듈 초기화: 직원 데이터 확인 중...');
-
       // 직원 데이터 개수 확인
       const stats = await this.employeeService.getEmployeeStats();
 
       if (stats.totalEmployees === 0) {
-        this.logger.log('직원 데이터가 없습니다. 초기 동기화를 시작합니다...');
-        const result = await this.syncEmployees(true);
-
-        if (result.success) {
-          this.logger.log(
-            `초기 동기화 완료: ${result.created}개 생성, ${result.updated}개 업데이트`,
-          );
-        } else {
-          this.logger.error(`초기 동기화 실패: ${result.errors.join(', ')}`);
-        }
-      } else {
-        this.logger.log(
-          `기존 직원 데이터 ${stats.totalEmployees}개 확인됨. 초기 동기화를 건너뜁니다.`,
-        );
+        await this.syncEmployees(true);
       }
     } catch (error) {
       this.logger.error(`모듈 초기화 중 오류 발생: ${error.message}`);
@@ -230,10 +215,17 @@ export class EmployeeSyncService implements OnModuleInit {
     // managerId 처리: getEmployeesManagers에서 매핑된 값 사용
     const managerId = ssoEmployee.managerId ? ssoEmployee.managerId : undefined;
 
+    // email: SSO에 없거나 빈 값이면 NOT NULL·UNIQUE 만족을 위한 대체값 사용
+    const rawEmail = ssoEmployee.email?.trim();
+    const email =
+      rawEmail && rawEmail.length > 0
+        ? rawEmail
+        : `no-email-${ssoEmployee.employeeNumber ?? ssoEmployee.id ?? 'unknown'}@internal`;
+
     return {
       employeeNumber: ssoEmployee.employeeNumber,
       name: ssoEmployee.name,
-      email: ssoEmployee.email,
+      email,
       phoneNumber: phoneNumber,
       dateOfBirth: dateOfBirth,
       gender: gender,
@@ -346,7 +338,28 @@ export class EmployeeSyncService implements OnModuleInit {
         // 관리자 정보 조회 실패해도 직원 동기화는 계속 진행
       }
 
-      // 3. 각 직원 데이터 처리
+      // 3. 기존 직원을 한 번에 조회하여 Map으로 변환 (커넥션 풀 최적화)
+      this.logger.log('기존 직원 데이터를 조회합니다...');
+      const existingEmployees = await this.employeeService.findAll(true);
+      
+      // employeeNumber와 externalId로 빠르게 조회할 수 있도록 Map 생성
+      const employeeByNumberMap = new Map<string, Employee>();
+      const employeeByExternalIdMap = new Map<string, Employee>();
+      
+      for (const emp of existingEmployees) {
+        if (emp.employeeNumber) {
+          employeeByNumberMap.set(emp.employeeNumber, emp);
+        }
+        if (emp.externalId) {
+          employeeByExternalIdMap.set(emp.externalId, emp);
+        }
+      }
+      
+      this.logger.log(
+        `기존 직원 ${existingEmployees.length}명을 조회했습니다. (employeeNumber: ${employeeByNumberMap.size}개, externalId: ${employeeByExternalIdMap.size}개)`,
+      );
+
+      // 4. 각 직원 데이터 처리
       const employeesToSave: Employee[] = [];
 
       for (const ssoEmp of ssoEmployees) {
@@ -358,6 +371,8 @@ export class EmployeeSyncService implements OnModuleInit {
           ssoEmp,
           forceSync,
           syncStartTime,
+          employeeByNumberMap,
+          employeeByExternalIdMap,
         );
         if (result.success && result.employee) {
           employeesToSave.push(result.employee);
@@ -380,12 +395,13 @@ export class EmployeeSyncService implements OnModuleInit {
         await this.직원들을_저장한다(employeesToSave, errors);
       }
 
-      // 4. SSO에 없는 직원을 퇴사 상태로 변경
+      // 5. SSO에 없는 직원을 퇴사 상태로 변경 (이미 조회한 데이터 재사용)
       let terminatedCount = 0;
       try {
         terminatedCount = await this.SSO에_없는_직원을_퇴사_처리한다(
           ssoEmployees,
           syncStartTime,
+          existingEmployees,
         );
         if (terminatedCount > 0) {
           this.logger.log(
@@ -447,7 +463,6 @@ export class EmployeeSyncService implements OnModuleInit {
         : true;
 
     if (!scheduledSyncEnabled) {
-      this.logger.debug('스케줄된 직원 동기화가 비활성화되어 있습니다.');
       return;
     }
 
@@ -680,11 +695,13 @@ export class EmployeeSyncService implements OnModuleInit {
    *
    * @param ssoEmployees SSO에서 가져온 직원 목록
    * @param syncStartTime 동기화 시작 시간
+   * @param existingEmployees 이미 조회한 기존 직원 목록 (커넥션 풀 최적화)
    * @returns 퇴사 처리된 직원 수
    */
   private async SSO에_없는_직원을_퇴사_처리한다(
     ssoEmployees: any[],
     syncStartTime: Date,
+    existingEmployees: Employee[],
   ): Promise<number> {
     // 환경 변수로 SSO에 없는 직원 퇴사 처리 기능 제어 (기본값: true)
     const syncDeleteMissing = this.configService.get<string | boolean>(
@@ -697,9 +714,6 @@ export class EmployeeSyncService implements OnModuleInit {
         : true;
 
     if (!syncDeleteMissingEnabled) {
-      this.logger.debug(
-        'SSO에 없는 직원 퇴사 처리가 비활성화되어 있습니다. (SYNC_DELETE_MISSING_EMPLOYEES=false)',
-      );
       return 0;
     }
 
@@ -708,8 +722,8 @@ export class EmployeeSyncService implements OnModuleInit {
       ssoEmployees.map((emp) => emp.id).filter((id) => id),
     );
 
-    // 현재 DB에 있는 모든 직원 조회 (퇴사 상태 포함)
-    const allLocalEmployees = await this.employeeService.findAll(true);
+    // 이미 조회한 기존 직원 목록 사용 (커넥션 풀 최적화)
+    const allLocalEmployees = existingEmployees;
 
     // SSO에 없고 아직 퇴사 상태가 아닌 직원 찾기
     // 단, 최근에 동기화된 직원만 대상으로 (백업 복구된 오래된 데이터 보호)
@@ -743,10 +757,6 @@ export class EmployeeSyncService implements OnModuleInit {
         employee.updatedBy = this.systemUserId;
         employeesToSave.push(employee);
         terminatedCount++;
-
-        this.logger.debug(
-          `직원 ${employee.name} (${employee.employeeNumber}, externalId: ${employee.externalId})를 퇴사 상태로 변경합니다.`,
-        );
       } catch (error) {
         this.logger.error(
           `직원 ${employee.name} (${employee.employeeNumber}) 퇴사 처리 실패: ${error.message}`,
@@ -777,6 +787,8 @@ export class EmployeeSyncService implements OnModuleInit {
     ssoEmp: any,
     forceSync: boolean,
     syncStartTime: Date,
+    employeeByNumberMap: Map<string, Employee>,
+    employeeByExternalIdMap: Map<string, Employee>,
   ): Promise<{
     success: boolean;
     employee?: Employee;
@@ -784,16 +796,12 @@ export class EmployeeSyncService implements OnModuleInit {
     error?: string;
   }> {
     try {
-      // 기존 직원 확인 (employeeNumber 우선)
-      let existingEmployee = await this.employeeService.findByEmployeeNumber(
-        ssoEmp.employeeNumber,
-      );
+      // 기존 직원 확인 (employeeNumber 우선, Map에서 조회)
+      let existingEmployee = employeeByNumberMap.get(ssoEmp.employeeNumber);
 
       // employeeNumber로 못 찾으면 externalId로 조회
       if (!existingEmployee) {
-        existingEmployee = await this.employeeService.findByExternalId(
-          ssoEmp.id,
-        );
+        existingEmployee = employeeByExternalIdMap.get(ssoEmp.id);
       }
 
       const mappedData = this.mapSSOEmployeeToDto(ssoEmp);
@@ -916,9 +924,6 @@ export class EmployeeSyncService implements OnModuleInit {
         existingEmployee.externalUpdatedAt,
       );
       if (externalUpdatedAt > existingExternalUpdatedAt) {
-        this.logger.debug(
-          `직원 ${existingEmployee.name} (${existingEmployee.employeeNumber}): 외부 서버에서 업데이트됨 (외부: ${externalUpdatedAt.toISOString()}, 로컬: ${existingExternalUpdatedAt.toISOString()})`,
-        );
         return true;
       }
     }
@@ -1030,55 +1035,100 @@ export class EmployeeSyncService implements OnModuleInit {
   }
 
   /**
-   * 직원들을 저장한다 (중복 키 에러 처리)
+   * 직원들을 저장한다 (배치 단위 저장 및 중복 키 에러 처리)
    */
   private async 직원들을_저장한다(
     employeesToSave: Employee[],
     errors: string[],
   ): Promise<void> {
-    try {
-      await this.employeeService.saveMany(employeesToSave);
-      this.logger.log(
-        `${employeesToSave.length}개의 직원 데이터를 저장했습니다.`,
-      );
-    } catch (saveError) {
-      // 중복 키 에러인 경우 개별 저장 시도
-      if (
-        saveError?.code === '23505' ||
-        saveError?.message?.includes('duplicate key')
-      ) {
-        this.logger.warn(
-          '일괄 저장 중 중복 키 에러 발생, 개별 저장으로 재시도합니다.',
+    const BATCH_SIZE = 100; // 배치 크기
+    const totalBatches = Math.ceil(employeesToSave.length / BATCH_SIZE);
+    
+    this.logger.log(
+      `직원 데이터 ${employeesToSave.length}개를 ${totalBatches}개 배치로 나눠서 저장합니다.`,
+    );
+
+    for (let i = 0; i < employeesToSave.length; i += BATCH_SIZE) {
+      const batch = employeesToSave.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      
+      try {
+        await this.employeeService.saveMany(batch);
+        this.logger.debug(
+          `배치 ${batchNumber}/${totalBatches}: ${batch.length}개의 직원 데이터를 저장했습니다.`,
         );
-        await this.개별_저장으로_재시도한다(employeesToSave, errors);
-      } else {
-        throw saveError;
-      }
-    }
-  }
-
-  /**
-   * 개별 저장으로 재시도한다
-   */
-  private async 개별_저장으로_재시도한다(
-    employeesToSave: Employee[],
-    errors: string[],
-  ): Promise<void> {
-    let savedCount = 0;
-    let skippedCount = 0;
-
-    for (const employee of employeesToSave) {
-      const result = await this.직원을_개별_저장한다(employee);
-      if (result.success) {
-        savedCount++;
-      } else {
-        errors.push(result.error!);
-        skippedCount++;
+      } catch (saveError) {
+        // 중복 키 에러인 경우 배치 단위로 재시도
+        if (
+          saveError?.code === '23505' ||
+          saveError?.message?.includes('duplicate key')
+        ) {
+          this.logger.warn(
+            `배치 ${batchNumber}/${totalBatches} 저장 중 중복 키 에러 발생, 배치 단위로 재시도합니다.`,
+          );
+          await this.배치_저장으로_재시도한다(batch, errors, batchNumber, totalBatches);
+        } else {
+          // 다른 에러인 경우 로그만 남기고 계속 진행
+          const errorMsg = `배치 ${batchNumber}/${totalBatches} 저장 실패: ${saveError.message}`;
+          this.logger.error(errorMsg);
+          errors.push(errorMsg);
+        }
       }
     }
 
     this.logger.log(
-      `개별 저장 완료: ${savedCount}개 저장, ${skippedCount}개 건너뜀`,
+      `직원 데이터 저장 완료: 총 ${employeesToSave.length}개 처리`,
+    );
+  }
+
+  /**
+   * 배치 저장으로 재시도한다 (중복 키 에러 발생 시)
+   */
+  private async 배치_저장으로_재시도한다(
+    batch: Employee[],
+    errors: string[],
+    batchNumber: number,
+    totalBatches: number,
+  ): Promise<void> {
+    let savedCount = 0;
+    let skippedCount = 0;
+
+    // 배치를 작은 단위(10개씩)로 나눠서 재시도
+    const RETRY_BATCH_SIZE = 10;
+    for (let i = 0; i < batch.length; i += RETRY_BATCH_SIZE) {
+      const retryBatch = batch.slice(i, i + RETRY_BATCH_SIZE);
+      
+      try {
+        await this.employeeService.saveMany(retryBatch);
+        savedCount += retryBatch.length;
+      } catch (retryError) {
+        // 작은 배치도 실패하면 개별 저장 시도
+        if (
+          retryError?.code === '23505' ||
+          retryError?.message?.includes('duplicate key')
+        ) {
+          // 개별 저장으로 최종 재시도
+          for (const employee of retryBatch) {
+            const result = await this.직원을_개별_저장한다(employee);
+            if (result.success) {
+              savedCount++;
+            } else {
+              errors.push(result.error!);
+              skippedCount++;
+            }
+          }
+        } else {
+          // 다른 에러인 경우 개별 저장 시도
+          const errorMsg = `배치 ${batchNumber}/${totalBatches} 재시도 실패: ${retryError.message}`;
+          this.logger.error(errorMsg);
+          errors.push(errorMsg);
+          skippedCount += retryBatch.length;
+        }
+      }
+    }
+
+    this.logger.log(
+      `배치 ${batchNumber}/${totalBatches} 재시도 완료: ${savedCount}개 저장, ${skippedCount}개 건너뜀`,
     );
   }
 

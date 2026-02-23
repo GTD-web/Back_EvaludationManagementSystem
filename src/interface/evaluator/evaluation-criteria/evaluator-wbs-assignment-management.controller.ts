@@ -6,12 +6,16 @@ import {
   CancelWbsAssignmentByWbs,
   ChangeWbsAssignmentOrderByWbs,
   CreateAndAssignWbs,
+  CreateAndAssignWbsBetween,
+  UpdateWbsAssignmentDates,
   UpdateWbsItemTitle,
 } from '@interface/common/decorators/evaluation-criteria/wbs-assignment-api.decorators';
 import {
   CancelWbsAssignmentByWbsDto,
   ChangeWbsAssignmentOrderByWbsDto,
   CreateAndAssignWbsDto,
+  CreateAndAssignWbsBetweenDto,
+  UpdateWbsAssignmentDatesDto,
   UpdateWbsItemTitleDto,
 } from '@interface/common/dto/evaluation-criteria/wbs-assignment.dto';
 import { Body, Controller, Param, ParseUUIDPipe } from '@nestjs/common';
@@ -90,6 +94,54 @@ export class EvaluatorWbsAssignmentManagementController {
       employeeId: createDto.employeeId,
       periodId: createDto.periodId,
       createdBy: createdBy,
+    });
+  }
+
+  /**
+   * WBS 사이에 생성하면서 할당
+   */
+  @CreateAndAssignWbsBetween()
+  async createAndAssignWbsBetween(
+    @Param('previousWbsItemId') previousWbsItemId: string,
+    @Param('nextWbsItemId') nextWbsItemId: string,
+    @Body() createDto: CreateAndAssignWbsBetweenDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<any> {
+    const createdBy = user.id;
+    
+    // "none"이 전달되면 undefined로 처리
+    const previousId = previousWbsItemId === 'none' ? undefined : previousWbsItemId;
+    const nextId = nextWbsItemId === 'none' ? undefined : nextWbsItemId;
+    
+    return await this.wbsAssignmentBusinessService.WBS를_사이에_생성하고_할당한다({
+      title: createDto.title,
+      projectId: createDto.projectId,
+      employeeId: createDto.employeeId,
+      periodId: createDto.periodId,
+      previousWbsItemId: previousId,
+      nextWbsItemId: nextId,
+      createdBy: createdBy,
+    });
+  }
+
+  /**
+   * WBS 할당 일자 수정
+   */
+  @UpdateWbsAssignmentDates()
+  async updateWbsAssignmentDates(
+    @Param('wbsItemId', ParseUUIDPipe) wbsItemId: string,
+    @Body() updateDto: UpdateWbsAssignmentDatesDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<any> {
+    const updatedBy = user.id;
+    return await this.wbsAssignmentBusinessService.WBS_할당_일자를_업데이트한다({
+      employeeId: updateDto.employeeId,
+      wbsItemId: wbsItemId,
+      projectId: updateDto.projectId,
+      periodId: updateDto.periodId,
+      startDate: updateDto.startDate,
+      endDate: updateDto.endDate,
+      updatedBy: updatedBy,
     });
   }
 

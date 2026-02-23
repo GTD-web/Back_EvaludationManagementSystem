@@ -248,7 +248,7 @@ export async function 하향평가_상태를_조회한다(
       })
       .andWhere('mapping.wbsItemId IS NULL') // 1차 평가자는 WBS와 무관하므로 null
       .andWhere('mapping.deletedAt IS NULL')
-      .orderBy('mapping.createdAt', 'ASC')
+      .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선 (1차 평가자 구성 API와 동일한 행 기준)
       .getMany();
 
     // 2-2. 직원별 고정 담당자 매핑이 없으면 WBS별 매핑에서 찾음
@@ -264,7 +264,7 @@ export async function 하향평가_상태를_조회한다(
         })
         .andWhere('mapping.wbsItemId IS NOT NULL') // WBS별 매핑
         .andWhere('mapping.deletedAt IS NULL')
-        .orderBy('mapping.createdAt', 'ASC')
+        .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선
         .getMany();
     }
 
@@ -355,7 +355,7 @@ export async function 하향평가_상태를_조회한다(
         lineId: secondaryLine.id,
       })
       .andWhere('mapping.deletedAt IS NULL')
-      .orderBy('mapping.createdAt', 'ASC')
+      .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선
       .getMany();
 
     const mappingEvaluatorIds = [

@@ -14,7 +14,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import dayjs from 'dayjs';
@@ -32,6 +33,8 @@ export class MappingAnalysisController {
   private readonly logger = new Logger(MappingAnalysisController.name);
 
   constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     @InjectRepository(EvaluationLineMapping)
     private readonly evaluationLineMappingRepository: Repository<EvaluationLineMapping>,
     @InjectRepository(DownwardEvaluation)
@@ -43,6 +46,233 @@ export class MappingAnalysisController {
     @InjectRepository(EvaluationPeriod)
     private readonly evaluationPeriodRepository: Repository<EvaluationPeriod>,
   ) {}
+
+  /**
+   * 1차 평가자(직원별 고정) 매핑 중복 정리 마이그레이션 적용 대상 미리보기
+   * migrations/1770200000000-DeduplicatePrimaryEvaluatorMappingsAndAddUniqueConstraint.ts 와 동일한 기준으로
+   * 어떤 행이 유지되고 어떤 행이 soft delete 대상인지 조회합니다.
+   */
+  @Get('primary-evaluator-dedup-preview')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '1차 평가자 매핑 중복 정리 적용 대상 미리보기',
+    description: `1770200000000 마이그레이션과 동일한 로직으로, 직원별 고정 1차 매핑(wbsItemId IS NULL) 중
+동일 (평가기간, 피평가자, 평가라인)에 대해 2건 이상 있을 때 유지될 행(최신 1건)과 soft delete 대상 행을 반환합니다.`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '적용 대상 미리보기 조회 성공',
+  })
+  async getPrimaryEvaluatorDedupPreview(): Promise<{
+    summary: {
+      totalPrimaryMappings: number;
+      duplicateGroupsCount: number;
+      rowsToKeep: number;
+      rowsToSoftDelete: number;
+    };
+    duplicateGroups: Array<{
+      evaluationPeriodId: string;
+      employeeId: string;
+      evaluationLineId: string;
+      count: number;
+      피평가자: { id: string; name: string; employeeNumber: string };
+      평가기간: { id: string; name: string };
+      kept: {
+        id: string;
+        evaluatorId: string;
+        createdAt: string;
+        평가자: { id: string; name: string; employeeNumber: string };
+      };
+      toSoftDelete: Array<{
+        id: string;
+        evaluatorId: string;
+        createdAt: string;
+        평가자: { id: string; name: string; employeeNumber: string };
+      }>;
+    }>;
+  }> {
+    const raw = await this.dataSource.query(`
+      WITH primary_mappings AS (
+        SELECT id, "evaluationPeriodId", "employeeId", "evaluationLineId", "evaluatorId",
+               "createdAt",
+               ROW_NUMBER() OVER (
+                 PARTITION BY "evaluationPeriodId", "employeeId", "evaluationLineId"
+                 ORDER BY "createdAt" DESC
+               ) AS rn
+        FROM evaluation_line_mappings
+        WHERE "wbsItemId" IS NULL AND "deletedAt" IS NULL
+      )
+      SELECT id, "evaluationPeriodId", "employeeId", "evaluationLineId", "evaluatorId",
+             "createdAt", rn
+      FROM primary_mappings
+      ORDER BY "evaluationPeriodId", "employeeId", "evaluationLineId", rn
+    `);
+
+    const key = (r: {
+      evaluationPeriodId: string;
+      employeeId: string;
+      evaluationLineId: string;
+    }) =>
+      `${r.evaluationPeriodId}|${r.employeeId}|${r.evaluationLineId}`;
+
+    const groups = new Map<
+      string,
+      {
+        evaluationPeriodId: string;
+        employeeId: string;
+        evaluationLineId: string;
+        rows: Array<{
+          id: string;
+          evaluatorId: string;
+          createdAt: string;
+          rn: number;
+        }>;
+      }
+    >();
+
+    for (const row of raw) {
+      const k = key(row);
+      if (!groups.has(k)) {
+        groups.set(k, {
+          evaluationPeriodId: row.evaluationPeriodId,
+          employeeId: row.employeeId,
+          evaluationLineId: row.evaluationLineId,
+          rows: [],
+        });
+      }
+      groups.get(k)!.rows.push({
+        id: row.id,
+        evaluatorId: row.evaluatorId,
+        createdAt:
+          row.createdAt instanceof Date
+            ? row.createdAt.toISOString()
+            : String(row.createdAt),
+        rn: typeof row.rn === 'string' ? parseInt(row.rn, 10) : Number(row.rn),
+      });
+    }
+
+    let duplicateGroupsCount = 0;
+    let rowsToKeep = 0;
+    let rowsToSoftDelete = 0;
+
+    const duplicateGroupsRaw: Array<{
+      evaluationPeriodId: string;
+      employeeId: string;
+      evaluationLineId: string;
+      count: number;
+      kept: { id: string; evaluatorId: string; createdAt: string };
+      toSoftDelete: Array<{
+        id: string;
+        evaluatorId: string;
+        createdAt: string;
+      }>;
+    }> = [];
+
+    for (const entry of groups.values()) {
+      const list = entry.rows;
+      if (list.length <= 1) continue;
+
+      const keptRow = list.find((r) => Number(r.rn) === 1);
+      const toSoftDeleteRows = list.filter((r) => Number(r.rn) > 1);
+      if (!keptRow) continue;
+
+      duplicateGroupsCount += 1;
+      rowsToKeep += 1;
+      rowsToSoftDelete += toSoftDeleteRows.length;
+
+      duplicateGroupsRaw.push({
+        evaluationPeriodId: entry.evaluationPeriodId,
+        employeeId: entry.employeeId,
+        evaluationLineId: entry.evaluationLineId,
+        count: list.length,
+        kept: {
+          id: keptRow.id,
+          evaluatorId: keptRow.evaluatorId,
+          createdAt: keptRow.createdAt,
+        },
+        toSoftDelete: toSoftDeleteRows.map((r) => ({
+          id: r.id,
+          evaluatorId: r.evaluatorId,
+          createdAt: r.createdAt,
+        })),
+      });
+    }
+
+    const totalPrimaryMappings = raw.length;
+
+    const employeeIds = new Set<string>();
+    const periodIds = new Set<string>();
+    for (const g of duplicateGroupsRaw) {
+      employeeIds.add(g.employeeId);
+      periodIds.add(g.evaluationPeriodId);
+      employeeIds.add(g.kept.evaluatorId);
+      for (const r of g.toSoftDelete) employeeIds.add(r.evaluatorId);
+    }
+
+    const employees = await this.employeeRepository.find({
+      where: { id: In(Array.from(employeeIds)), deletedAt: IsNull() },
+      select: ['id', 'name', 'employeeNumber'],
+    });
+    const periods = await this.evaluationPeriodRepository.find({
+      where: { id: In(Array.from(periodIds)), deletedAt: IsNull() },
+      select: ['id', 'name'],
+    });
+
+    const employeeMap = new Map(
+      employees.map((e) => [e.id, { id: e.id, name: e.name, employeeNumber: e.employeeNumber }]),
+    );
+    const periodMap = new Map(periods.map((p) => [p.id, { id: p.id, name: p.name }]));
+
+    const duplicateGroups = duplicateGroupsRaw.map((g) => ({
+      evaluationPeriodId: g.evaluationPeriodId,
+      employeeId: g.employeeId,
+      evaluationLineId: g.evaluationLineId,
+      count: g.count,
+      피평가자:
+        employeeMap.get(g.employeeId) ?? {
+          id: g.employeeId,
+          name: 'N/A',
+          employeeNumber: 'N/A',
+        },
+      평가기간:
+        periodMap.get(g.evaluationPeriodId) ?? {
+          id: g.evaluationPeriodId,
+          name: 'N/A',
+        },
+      kept: {
+        id: g.kept.id,
+        evaluatorId: g.kept.evaluatorId,
+        createdAt: g.kept.createdAt,
+        평가자:
+          employeeMap.get(g.kept.evaluatorId) ?? {
+            id: g.kept.evaluatorId,
+            name: 'N/A',
+            employeeNumber: 'N/A',
+          },
+      },
+      toSoftDelete: g.toSoftDelete.map((r) => ({
+        id: r.id,
+        evaluatorId: r.evaluatorId,
+        createdAt: r.createdAt,
+        평가자:
+          employeeMap.get(r.evaluatorId) ?? {
+            id: r.evaluatorId,
+            name: 'N/A',
+            employeeNumber: 'N/A',
+          },
+      })),
+    }));
+
+    return {
+      summary: {
+        totalPrimaryMappings,
+        duplicateGroupsCount,
+        rowsToKeep,
+        rowsToSoftDelete,
+      },
+      duplicateGroups,
+    };
+  }
 
   /**
    * 하향평가가 없는 맵핑 목록 조회 및 JSON 파일 생성

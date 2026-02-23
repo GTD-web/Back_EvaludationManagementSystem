@@ -1,7 +1,7 @@
 import { TransactionManagerService } from '@libs/database/transaction-manager.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, IsNull, Repository } from 'typeorm';
 import { EvaluationLineMappingValidationService } from './evaluation-line-mapping-validation.service';
 import { EvaluationLineMapping } from './evaluation-line-mapping.entity';
 import { EvaluationLineMappingNotFoundException } from './evaluation-line-mapping.exceptions';
@@ -353,7 +353,9 @@ export class EvaluationLineMappingService
         manager,
       );
 
-      const mapping = await repository.findOne({ where: { id } });
+      const mapping = await repository.findOne({
+        where: { id, deletedAt: IsNull() },
+      });
       if (!mapping) {
         throw new EvaluationLineMappingNotFoundException(id);
       }
@@ -408,7 +410,9 @@ export class EvaluationLineMappingService
         manager,
       );
 
-      const mapping = await repository.findOne({ where: { id } });
+      const mapping = await repository.findOne({
+        where: { id, deletedAt: IsNull() },
+      });
       if (!mapping) {
         throw new EvaluationLineMappingNotFoundException(id);
       }

@@ -159,27 +159,40 @@ export class DepartmentSyncService implements OnModuleInit {
 
       totalProcessed = ssoDepartments.length;
 
-      // 2. 각 부서 데이터 처리
+      // 2. 기존 부서를 한 번에 조회하여 Map으로 변환 (커넥션 풀 최적화)
+      this.logger.log('기존 부서 데이터를 조회합니다...');
+      const existingDepartments = await this.departmentService.findAll();
+      
+      // externalId와 code로 빠르게 조회할 수 있도록 Map 생성
+      const departmentByExternalIdMap = new Map<string, Department>();
+      const departmentByCodeMap = new Map<string, Department>();
+      
+      for (const dept of existingDepartments) {
+        if (dept.externalId) {
+          departmentByExternalIdMap.set(dept.externalId, dept);
+        }
+        if (dept.code) {
+          departmentByCodeMap.set(dept.code, dept);
+        }
+      }
+      
+      this.logger.log(
+        `기존 부서 ${existingDepartments.length}개를 조회했습니다. (externalId: ${departmentByExternalIdMap.size}개, code: ${departmentByCodeMap.size}개)`,
+      );
+
+      // 3. 각 부서 데이터 처리
       const departmentsToSave: Department[] = [];
       let restoredCount = 0;
 
       for (let i = 0; i < ssoDepartments.length; i++) {
         const ssoDept = ssoDepartments[i];
         try {
-          // 기존 부서 확인
-          let existingDepartment =
-            await this.departmentService.findByExternalId(ssoDept.id);
+          // 기존 부서 확인 (Map에서 조회)
+          let existingDepartment = departmentByExternalIdMap.get(ssoDept.id);
 
           // externalId로 못 찾으면 code로 조회
-          if (!existingDepartment) {
-            const departmentsByCode = await this.departmentService.findByFilter(
-              {
-                code: ssoDept.departmentCode,
-              },
-            );
-            if (departmentsByCode.length > 0) {
-              existingDepartment = departmentsByCode[0];
-            }
+          if (!existingDepartment && ssoDept.departmentCode) {
+            existingDepartment = departmentByCodeMap.get(ssoDept.departmentCode);
           }
 
           const mappedData = this.mapSSODepartmentToDto(ssoDept, i);
@@ -254,114 +267,23 @@ export class DepartmentSyncService implements OnModuleInit {
         }
       }
 
-      // 3. 일괄 저장 (중복 키 에러 처리)
+      // 3. 배치 단위 저장 (중복 키 에러 처리)
       if (departmentsToSave.length > 0) {
-        try {
-          await this.departmentService.saveMany(departmentsToSave);
-          this.logger.log(
-            `${departmentsToSave.length}개의 부서 데이터를 저장했습니다.`,
-          );
-        } catch (saveError) {
-          // 중복 키 에러인 경우 개별 저장 시도
-          if (
-            saveError?.code === '23505' ||
-            saveError?.message?.includes('duplicate key')
-          ) {
-            this.logger.warn(
-              '일괄 저장 중 중복 키 에러 발생, 개별 저장으로 재시도합니다.',
-            );
-
-            let savedCount = 0;
-            let skippedCount = 0;
-
-            // 개별 저장
-            for (const department of departmentsToSave) {
-              try {
-                await this.departmentService.save(department);
-                savedCount++;
-              } catch (individualError) {
-                if (
-                  individualError?.code === '23505' ||
-                  individualError?.message?.includes('duplicate key')
-                ) {
-                  // 중복 키 에러 발생 시 기존 데이터를 찾아서 업데이트
-                  this.logger.debug(
-                    `부서 ${department.name} (${department.code}) 중복 발생, 재조회 후 업데이트 시도`,
-                  );
-
-                  try {
-                    // externalId로 재조회
-                    let existingDepartment: Department | null =
-                      await this.departmentService.findByExternalId(
-                        department.externalId,
-                      );
-
-                    if (!existingDepartment) {
-                      // code로 재조회
-                      const departmentsByCode =
-                        await this.departmentService.findByFilter({
-                          code: department.code,
-                        });
-                      if (departmentsByCode.length > 0) {
-                        existingDepartment = departmentsByCode[0];
-                      }
-                    }
-
-                    if (existingDepartment) {
-                      // 기존 엔티티에 새 데이터 덮어쓰기
-                      Object.assign(existingDepartment, {
-                        name: department.name,
-                        code: department.code,
-                        order: department.order,
-                        parentDepartmentId: department.parentDepartmentId,
-                        externalId: department.externalId,
-                        externalCreatedAt: department.externalCreatedAt,
-                        externalUpdatedAt: department.externalUpdatedAt,
-                        lastSyncAt: department.lastSyncAt,
-                        updatedBy: this.systemUserId,
-                      });
-
-                      await this.departmentService.save(existingDepartment);
-                      savedCount++;
-                      this.logger.debug(
-                        `부서 ${department.name} (${department.code}) 업데이트 완료`,
-                      );
-                    } else {
-                      this.logger.warn(
-                        `부서 ${department.name} (${department.code}) 재조회 실패, 건너뜀. ` +
-                          `externalId=${department.externalId}, code=${department.code}`,
-                      );
-                      skippedCount++;
-                    }
-                  } catch (retryError) {
-                    const errorMsg = `부서 ${department.name} 재조회/업데이트 실패: ${retryError.message}`;
-                    this.logger.error(errorMsg);
-                    errors.push(errorMsg);
-                    skippedCount++;
-                  }
-                } else {
-                  const errorMsg = `부서 ${department.name} 저장 실패: ${individualError.message}`;
-                  this.logger.error(errorMsg);
-                  errors.push(errorMsg);
-                }
-              }
-            }
-
-            this.logger.log(
-              `개별 저장 완료: ${savedCount}개 저장, ${skippedCount}개 건너뜀`,
-            );
-          } else {
-            throw saveError;
-          }
-        }
+        await this.부서들을_저장한다(
+          departmentsToSave,
+          errors,
+          departmentByExternalIdMap,
+          departmentByCodeMap,
+        );
       }
 
-      // 4. SSO에 없는 부서를 삭제 처리
+      // 4. SSO에 없는 부서를 삭제 처리 (이미 조회한 데이터 재사용)
       let deletedCount = 0;
       try {
         deletedCount = await this.SSO에_없는_부서를_삭제한다(
           ssoDepartments,
           syncStartTime,
+          existingDepartments,
         );
         if (deletedCount > 0) {
           this.logger.log(`SSO에 없는 부서 ${deletedCount}개를 삭제했습니다.`);
@@ -417,11 +339,13 @@ export class DepartmentSyncService implements OnModuleInit {
    *
    * @param ssoDepartments SSO에서 가져온 부서 목록
    * @param syncStartTime 동기화 시작 시간
+   * @param existingDepartments 이미 조회한 기존 부서 목록 (커넥션 풀 최적화)
    * @returns 삭제 처리된 부서 수
    */
   private async SSO에_없는_부서를_삭제한다(
     ssoDepartments: DepartmentInfo[],
     syncStartTime: Date,
+    existingDepartments: Department[],
   ): Promise<number> {
     // 환경 변수로 SSO에 없는 부서 삭제 기능 제어 (기본값: true)
     const syncDeleteMissing = this.configService.get<string | boolean>(
@@ -445,8 +369,8 @@ export class DepartmentSyncService implements OnModuleInit {
       ssoDepartments.map((dept) => dept.id).filter((id) => id),
     );
 
-    // 현재 DB에 있는 모든 부서 조회 (삭제된 부서 포함)
-    const allLocalDepartments = await this.departmentService.findAll();
+    // 이미 조회한 기존 부서 목록 사용 (커넥션 풀 최적화)
+    const allLocalDepartments = existingDepartments;
 
     // SSO에 없고 아직 삭제되지 않은 부서 찾기
     // 단, 최근에 동기화된 부서만 대상으로 (백업 복구된 오래된 데이터 보호)
@@ -608,6 +532,145 @@ export class DepartmentSyncService implements OnModuleInit {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * 부서들을 저장한다 (배치 단위 저장 및 중복 키 에러 처리)
+   */
+  private async 부서들을_저장한다(
+    departmentsToSave: Department[],
+    errors: string[],
+    departmentByExternalIdMap: Map<string, Department>,
+    departmentByCodeMap: Map<string, Department>,
+  ): Promise<void> {
+    const BATCH_SIZE = 100; // 배치 크기
+    const totalBatches = Math.ceil(departmentsToSave.length / BATCH_SIZE);
+    
+    this.logger.log(
+      `부서 데이터 ${departmentsToSave.length}개를 ${totalBatches}개 배치로 나눠서 저장합니다.`,
+    );
+
+    for (let i = 0; i < departmentsToSave.length; i += BATCH_SIZE) {
+      const batch = departmentsToSave.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      
+      try {
+        await this.departmentService.saveMany(batch);
+        this.logger.debug(
+          `배치 ${batchNumber}/${totalBatches}: ${batch.length}개의 부서 데이터를 저장했습니다.`,
+        );
+      } catch (saveError) {
+        // 중복 키 에러인 경우 배치 단위로 재시도
+        if (
+          saveError?.code === '23505' ||
+          saveError?.message?.includes('duplicate key')
+        ) {
+          this.logger.warn(
+            `배치 ${batchNumber}/${totalBatches} 저장 중 중복 키 에러 발생, 배치 단위로 재시도합니다.`,
+          );
+          await this.배치_저장으로_재시도한다(
+            batch,
+            errors,
+            batchNumber,
+            totalBatches,
+            departmentByExternalIdMap,
+            departmentByCodeMap,
+          );
+        } else {
+          // 다른 에러인 경우 로그만 남기고 계속 진행
+          const errorMsg = `배치 ${batchNumber}/${totalBatches} 저장 실패: ${saveError.message}`;
+          this.logger.error(errorMsg);
+          errors.push(errorMsg);
+        }
+      }
+    }
+
+    this.logger.log(
+      `부서 데이터 저장 완료: 총 ${departmentsToSave.length}개 처리`,
+    );
+  }
+
+  /**
+   * 배치 저장으로 재시도한다 (중복 키 에러 발생 시)
+   */
+  private async 배치_저장으로_재시도한다(
+    batch: Department[],
+    errors: string[],
+    batchNumber: number,
+    totalBatches: number,
+    departmentByExternalIdMap: Map<string, Department>,
+    departmentByCodeMap: Map<string, Department>,
+  ): Promise<void> {
+    let savedCount = 0;
+    let skippedCount = 0;
+
+    // 배치를 작은 단위(10개씩)로 나눠서 재시도
+    const RETRY_BATCH_SIZE = 10;
+    for (let i = 0; i < batch.length; i += RETRY_BATCH_SIZE) {
+      const retryBatch = batch.slice(i, i + RETRY_BATCH_SIZE);
+      
+      try {
+        await this.departmentService.saveMany(retryBatch);
+        savedCount += retryBatch.length;
+      } catch (retryError) {
+        // 작은 배치도 실패하면 개별 저장 시도
+        if (
+          retryError?.code === '23505' ||
+          retryError?.message?.includes('duplicate key')
+        ) {
+          // 개별 저장으로 최종 재시도 (Map에서 조회하여 업데이트)
+          for (const department of retryBatch) {
+            try {
+              // Map에서 기존 부서 찾기
+              let existingDepartment = departmentByExternalIdMap.get(
+                department.externalId,
+              );
+
+              if (!existingDepartment && department.code) {
+                existingDepartment = departmentByCodeMap.get(department.code);
+              }
+
+              if (existingDepartment) {
+                // 기존 엔티티에 새 데이터 덮어쓰기
+                Object.assign(existingDepartment, {
+                  name: department.name,
+                  code: department.code,
+                  order: department.order,
+                  parentDepartmentId: department.parentDepartmentId,
+                  externalId: department.externalId,
+                  externalCreatedAt: department.externalCreatedAt,
+                  externalUpdatedAt: department.externalUpdatedAt,
+                  lastSyncAt: department.lastSyncAt,
+                  updatedBy: this.systemUserId,
+                });
+
+                await this.departmentService.save(existingDepartment);
+                savedCount++;
+              } else {
+                // Map에서 못 찾으면 개별 저장 시도
+                await this.departmentService.save(department);
+                savedCount++;
+              }
+            } catch (individualError) {
+              const errorMsg = `부서 ${department.name} (${department.code}) 저장 실패: ${individualError.message}`;
+              this.logger.error(errorMsg);
+              errors.push(errorMsg);
+              skippedCount++;
+            }
+          }
+        } else {
+          // 다른 에러인 경우 개별 저장 시도
+          const errorMsg = `배치 ${batchNumber}/${totalBatches} 재시도 실패: ${retryError.message}`;
+          this.logger.error(errorMsg);
+          errors.push(errorMsg);
+          skippedCount += retryBatch.length;
+        }
+      }
+    }
+
+    this.logger.log(
+      `배치 ${batchNumber}/${totalBatches} 재시도 완료: ${savedCount}개 저장, ${skippedCount}개 건너뜀`,
+    );
   }
 
   /**

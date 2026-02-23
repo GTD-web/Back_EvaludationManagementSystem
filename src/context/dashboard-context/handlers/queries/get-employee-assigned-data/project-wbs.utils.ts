@@ -260,6 +260,7 @@ export async function getProjectsWithWbs(
     .andWhere('line.evaluatorType = :evaluatorType', {
       evaluatorType: 'primary',
     })
+    .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선 (1차 평가자 구성 API와 동일한 행 기준)
     .getRawOne();
 
   if (primaryEvaluatorMapping?.mapping_evaluator_id) {

@@ -216,6 +216,13 @@ export class BackupSchedulerService {
         // 최신 백업 파일을 목표 디렉토리로 복사
         fs.copyFileSync(files[0].path, outputPath);
         this.logger.log(`   → ${filename} 저장 완료`);
+        // dumps 재축적 방지: 복사한 파일 삭제
+        try {
+          fs.unlinkSync(files[0].path);
+          this.logger.log(`   🗑️  dumps 정리: ${files[0].name}`);
+        } catch (unlinkErr) {
+          this.logger.warn(`   dumps 파일 삭제 실패 (무시): ${files[0].name}`);
+        }
       }
     } catch (error) {
       this.logger.error(`백업 실행 실패 (${type}): ${error.message}`);

@@ -104,6 +104,7 @@ export async function calculatePrimaryDownwardEvaluationScore(
       evaluatorType: EvaluatorType.PRIMARY,
     })
     .andWhere('mapping.deletedAt IS NULL')
+    .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선 (1차 평가자 구성 API와 동일한 행 기준)
     .getMany();
 
   // 직원별 고정 담당자 매핑이 없으면 WBS별 매핑에서 찾음
@@ -124,6 +125,7 @@ export async function calculatePrimaryDownwardEvaluationScore(
         evaluatorType: EvaluatorType.PRIMARY,
       })
       .andWhere('mapping.deletedAt IS NULL')
+      .orderBy('mapping.createdAt', 'DESC') // 최신 매핑 우선
       .getMany();
   }
 

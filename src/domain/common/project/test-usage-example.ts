@@ -6,7 +6,7 @@
  */
 
 import { ProjectTestService } from './project-test.service';
-import { ProjectStatus } from './project.types';
+import { ProjectGrade } from './project.types';
 
 /**
  * 테스트 서비스 사용 예시 클래스
@@ -22,19 +22,13 @@ export class ProjectTestUsageExample {
     const projects =
       await this.projectTestService.테스트용_목데이터를_생성한다();
     console.log('생성된 프로젝트 수:', projects.length);
-    console.log(
-      '활성 프로젝트들:',
-      projects.filter((p) => p.isActive),
-    );
+    console.log('프로젝트들:', projects);
 
     // 2. 특정 프로젝트 생성
     const customProject =
       await this.projectTestService.특정_프로젝트_테스트데이터를_생성한다({
         name: '커스텀프로젝트',
         projectCode: 'CUSTOM-001',
-        status: ProjectStatus.ACTIVE,
-        startDate: new Date('2024-06-01'),
-        endDate: new Date('2024-12-31'),
         managerId: 'custom-manager',
       });
     console.log('커스텀 프로젝트 생성:', customProject);
@@ -44,15 +38,7 @@ export class ProjectTestUsageExample {
       await this.projectTestService.랜덤_테스트데이터를_생성한다(5);
     console.log('랜덤 프로젝트 생성:', randomProjects.length);
 
-    // 4. 상태별 프로젝트 데이터 생성
-    const activeProjects =
-      await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-        ProjectStatus.ACTIVE,
-        3,
-      );
-    console.log('활성 프로젝트 생성:', activeProjects.length);
-
-    // 5. 매니저별 프로젝트 데이터 생성
+    // 4. 매니저별 프로젝트 데이터 생성
     const managerProjects =
       await this.projectTestService.매니저별_프로젝트_테스트데이터를_생성한다(
         'test-manager-001',
@@ -73,7 +59,6 @@ export class ProjectTestUsageExample {
       basic: projects,
       custom: customProject,
       random: randomProjects,
-      active: activeProjects,
       manager: managerProjects,
       period: periodProjects,
     };
@@ -105,18 +90,6 @@ export class ProjectTestUsageExample {
 
       console.log('=== 테스트 완료 ===');
       console.log('생성된 프로젝트 수:', testData.basic.length);
-      console.log(
-        '활성 프로젝트 수:',
-        testData.basic.filter((p) => p.isActive).length,
-      );
-      console.log(
-        '완료된 프로젝트 수:',
-        testData.basic.filter((p) => p.isCompleted).length,
-      );
-      console.log(
-        '취소된 프로젝트 수:',
-        testData.basic.filter((p) => p.isCancelled).length,
-      );
 
       return {
         testData,
@@ -159,17 +132,17 @@ export class ProjectTestHelpers {
     switch (testCase) {
       case 'active':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.ACTIVE,
+          ProjectGrade.GRADE_1A,
           10,
         );
       case 'completed':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.COMPLETED,
+          ProjectGrade.GRADE_2A,
           5,
         );
       case 'cancelled':
         return await this.projectTestService.상태별_프로젝트_테스트데이터를_생성한다(
-          ProjectStatus.CANCELLED,
+          ProjectGrade.GRADE_3A,
           3,
         );
       case 'manager':

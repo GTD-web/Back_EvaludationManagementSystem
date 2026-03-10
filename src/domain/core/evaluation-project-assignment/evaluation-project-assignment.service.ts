@@ -64,6 +64,34 @@ export class EvaluationProjectAssignmentService
   }
 
   /**
+   * 직원 ID, 프로젝트 ID, 평가기간 ID로 평가 프로젝트 할당을 조회한다
+   */
+  async 직원과_프로젝트와_평가기간으로_조회한다(
+    employeeId: string,
+    projectId: string,
+    periodId: string,
+    manager?: EntityManager,
+  ): Promise<IEvaluationProjectAssignment | null> {
+    return this.executeSafeDomainOperation(async () => {
+      const repository = this.transactionManager.getRepository(
+        EvaluationProjectAssignment,
+        this.evaluationProjectAssignmentRepository,
+        manager,
+      );
+
+      const assignment = await repository.findOne({
+        where: {
+          employeeId,
+          projectId,
+          periodId,
+          deletedAt: IsNull(),
+        },
+      });
+      return assignment || null;
+    }, '직원과_프로젝트와_평가기간으로_조회한다');
+  }
+
+  /**
    * 평가 프로젝트 할당을 생성한다
    */
   async 생성한다(
@@ -181,8 +209,13 @@ export class EvaluationProjectAssignmentService
       assignment.메타데이터를_업데이트한다(deletedBy);
       await repository.softDelete(id);
 
+      // 삭제 직후 DB 검증: deletedAt 설정 여부 확인
+      const verified = await repository.findOne({
+        where: { id },
+        withDeleted: true,
+      });
       this.logger.log(
-        `평가 프로젝트 할당 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}`,
+        `평가 프로젝트 할당 삭제 완료 - ID: ${id}, 삭제자: ${deletedBy}, deletedAt 검증: ${verified?.deletedAt ? '설정됨' : '미설정(오류)'}`,
       );
     }, '삭제한다');
   }

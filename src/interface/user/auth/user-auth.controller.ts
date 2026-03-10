@@ -6,8 +6,10 @@ import type { AuthenticatedUser } from '@interface/common/decorators/current-use
 import {
   GetMeAsUser,
   Login,
+  Refresh,
 } from '@interface/common/decorators/auth/auth.decorators';
 import { LoginDto } from '@interface/common/dto/auth/login.dto';
+import { RefreshTokenDto } from '@interface/common/dto/auth/refresh-token.dto';
 import { LoginResponseDto } from '@interface/common/dto/auth/login-response.dto';
 import { UserInfoDto } from '@interface/common/dto/auth/login-response.dto';
 
@@ -30,6 +32,28 @@ export class UserAuthController {
       loginDto.email,
       loginDto.password,
     );
+
+    return {
+      user: {
+        id: result.user.id,
+        externalId: result.user.externalId,
+        email: result.user.email,
+        name: result.user.name,
+        employeeNumber: result.user.employeeNumber,
+        roles: result.user.roles,
+        status: result.user.status,
+      },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    };
+  }
+
+  /**
+   * 리프레시 토큰으로 액세스 토큰 갱신 (슬라이딩 방식)
+   */
+  @Refresh()
+  async refresh(@Body() dto: RefreshTokenDto): Promise<LoginResponseDto> {
+    const result = await this.authService.토큰을갱신한다(dto.refreshToken);
 
     return {
       user: {

@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { Public, Roles } from '@interface/common/decorators';
 import { LoginDto } from '@interface/common/dto/auth/login.dto';
+import { RefreshTokenDto } from '@interface/common/dto/auth/refresh-token.dto';
 import { LoginResponseDto } from '@interface/common/dto/auth/login-response.dto';
 import { UserInfoDto } from '@interface/common/dto/auth/login-response.dto';
 
@@ -99,6 +100,61 @@ export function Login() {
               statusCode: 403,
             },
           },
+        },
+      },
+    }),
+  );
+}
+
+/**
+ * 토큰 갱신 API 데코레이터
+ */
+export function Refresh() {
+  return applyDecorators(
+    Public(), // JWT 인증 우회 (refresh token만으로 호출)
+    Post('refresh'),
+    HttpCode(HttpStatus.OK),
+    ApiOperation({
+      summary: '리프레시 토큰으로 액세스 토큰 갱신',
+      description: `리프레시 토큰을 사용하여 갱신된 액세스 토큰을 발급받습니다.
+
+**동작:**
+- SSO 서버에 grant_type: refresh_token으로 토큰 갱신 요청
+- 슬라이딩 방식: 새 accessToken과 함께 새 refreshToken도 반환 (만료 시점 연장)
+- 클라이언트는 반환된 새 refreshToken을 저장하여 다음 갱신에 사용
+
+**테스트 케이스:**
+- 정상 갱신: 유효한 refresh token으로 새 토큰 발급 성공
+- 토큰 반환: accessToken, refreshToken 포함 (슬라이딩 연장)
+- 만료된 토큰: 만료되었거나 유효하지 않은 refresh token 시 401 에러
+- 401 시 재로그인 필요`,
+    }),
+    ApiBody({
+      type: RefreshTokenDto,
+      description: '리프레시 토큰',
+    }),
+    ApiResponse({
+      status: HttpStatus.OK,
+      description: '토큰 갱신 성공',
+      type: LoginResponseDto,
+    }),
+    ApiBadRequestResponse({
+      description: '잘못된 요청 (refreshToken 누락)',
+      schema: {
+        example: {
+          message: ['리프레시 토큰은 필수입니다.'],
+          error: 'Bad Request',
+          statusCode: 400,
+        },
+      },
+    }),
+    ApiUnauthorizedResponse({
+      description: '토큰 갱신 실패 (만료된/유효하지 않은 refresh token, 재로그인 필요)',
+      schema: {
+        example: {
+          message: '토큰 갱신에 실패했습니다. 재로그인이 필요합니다.',
+          error: 'Unauthorized',
+          statusCode: 401,
         },
       },
     }),

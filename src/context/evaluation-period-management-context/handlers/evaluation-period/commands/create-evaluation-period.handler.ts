@@ -63,7 +63,7 @@ export class CreateEvaluationPeriodCommandHandler
       createdBy,
     );
 
-    return createdPeriod as EvaluationPeriodDto;
+    return createdPeriod.DTO로_변환한다();
   }
 
   /**
@@ -109,4 +109,3 @@ export class CreateEvaluationPeriodCommandHandler
     }
   }
 }
-

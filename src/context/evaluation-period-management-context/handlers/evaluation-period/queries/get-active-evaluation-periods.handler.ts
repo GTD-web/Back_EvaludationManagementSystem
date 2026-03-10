@@ -28,7 +28,6 @@ export class GetActiveEvaluationPeriodsQueryHandler
   ): Promise<EvaluationPeriodDto[]> {
     const activePeriods =
       await this.evaluationPeriodService.활성화된_평가기간_조회한다();
-    return activePeriods as EvaluationPeriodDto[];
+    return activePeriods.map((p) => p.DTO로_변환한다());
   }
 }
-

@@ -16,6 +16,10 @@ export interface IEvaluationProjectAssignment extends IBaseEntity {
   assignedDate: Date;
   /** 할당자 ID */
   assignedBy: string;
+  /** 프로젝트 시작일 */
+  projectStartDate?: Date;
+  /** 프로젝트 종료일 */
+  projectEndDate?: Date;
 
   /**
    * 특정 평가기간에 속하는지 확인한다

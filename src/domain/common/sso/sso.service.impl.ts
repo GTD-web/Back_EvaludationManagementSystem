@@ -101,18 +101,9 @@ export class SSOServiceImpl implements ISSOService, OnModuleInit {
     }
 
     try {
-      this.logger.log(
-        `SSO 클라이언트 초기화 시작... baseUrl: ${this.config.baseUrl}, systemName: ${this.systemName}`,
-      );
-      const startTime = Date.now();
-
       await this.sdkClient.initialize();
 
-      const elapsedTime = Date.now() - startTime;
       this.initialized = true;
-      this.logger.log(
-        `SSO 클라이언트 초기화 완료 (소요 시간: ${elapsedTime}ms)`,
-      );
     } catch (error) {
       this.logger.error(
         `SSO 클라이언트 초기화 실패: ${error.message}`,

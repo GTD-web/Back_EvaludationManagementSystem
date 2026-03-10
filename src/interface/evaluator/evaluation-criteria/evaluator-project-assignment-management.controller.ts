@@ -9,6 +9,7 @@ import {
   ChangeProjectAssignmentOrderByProject,
   CreateProjectAssignment,
   GetAvailableProjects,
+  UpdateProjectAssignment,
 } from '@interface/common/decorators/evaluation-criteria/project-assignment-api.decorators';
 import {
   AvailableProjectsResponseDto,
@@ -18,6 +19,7 @@ import {
   CreateProjectAssignmentDto,
   GetAvailableProjectsQueryDto,
   ProjectAssignmentResponseDto,
+  UpdateProjectAssignmentDto,
 } from '@interface/common/dto/evaluation-criteria/project-assignment.dto';
 import { Body, Controller, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -145,6 +147,30 @@ export class EvaluatorProjectAssignmentManagementController {
       projectId,
       bodyDto.periodId,
       bodyDto.direction,
+      updatedBy,
+    );
+  }
+
+  /**
+   * 프로젝트 할당 기간 수정
+   */
+  @UpdateProjectAssignment()
+  async updateProjectAssignment(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query('periodId', ParseUUIDPipe) periodId: string,
+    @Body() updateDto: UpdateProjectAssignmentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectAssignmentResponseDto> {
+    const updatedBy = user.id;
+    return await this.evaluationCriteriaManagementService.프로젝트_할당을_직원과_프로젝트로_수정한다(
+      employeeId,
+      projectId,
+      periodId,
+      {
+        projectStartDate: updateDto.projectStartDate,
+        projectEndDate: updateDto.projectEndDate,
+      },
       updatedBy,
     );
   }

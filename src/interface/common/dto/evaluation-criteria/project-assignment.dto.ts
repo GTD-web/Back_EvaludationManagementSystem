@@ -1,9 +1,11 @@
 import { OrderDirection } from '@domain/core/evaluation-project-assignment/evaluation-project-assignment.types';
+import { OptionalDateToUTC } from '@interface/common/decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsDate,
   IsEnum,
   IsIn,
   IsNotEmpty,
@@ -40,6 +42,26 @@ export class CreateProjectAssignmentDto {
   })
   @IsUUID()
   periodId: string;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-01',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-12-31',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectEndDate?: Date;
 }
 
 /**
@@ -134,6 +156,34 @@ export class ChangeProjectAssignmentOrderByProjectDto {
   })
   @IsEnum(OrderDirection, { message: '이동 방향은 up 또는 down이어야 합니다.' })
   direction: OrderDirection;
+}
+
+/**
+ * 프로젝트 할당 수정 DTO
+ *
+ * Note: updatedBy는 @CurrentUser() 데코레이터를 통해 자동으로 처리됩니다.
+ * 프로젝트 기간(시작일/종료일)만 수정 가능합니다.
+ */
+export class UpdateProjectAssignmentDto {
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-01-01',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일 (YYYY-MM-DD 또는 ISO 8601 형식)',
+    example: '2024-12-31',
+    required: false,
+  })
+  @IsOptional()
+  @OptionalDateToUTC()
+  @IsDate()
+  projectEndDate?: Date;
 }
 
 /**
@@ -247,6 +297,20 @@ export class ProjectAssignmentResponseDto {
     example: 0,
   })
   displayOrder: number;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 시작일',
+    example: '2024-01-01T00:00:00.000Z',
+    required: false,
+  })
+  projectStartDate?: Date;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 종료일',
+    example: '2024-12-31T23:59:59.999Z',
+    required: false,
+  })
+  projectEndDate?: Date;
 
   @ApiPropertyOptional({
     description: '생성자 ID',
@@ -407,25 +471,18 @@ export class ProjectInfoDto {
   })
   projectCode: string;
 
-  @ApiProperty({
-    description: '상태',
-    example: 'ACTIVE',
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
   })
-  status: string;
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
 
-  @ApiProperty({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-    required: false,
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
   })
-  startDate?: Date;
-
-  @ApiProperty({
-    description: '종료일',
-    example: '2024-12-31T23:59:59.999Z',
-    required: false,
-  })
-  endDate?: Date;
+  priority?: number;
 
   @ApiProperty({
     description: '프로젝트 매니저 ID',
@@ -762,31 +819,33 @@ export class AvailableProjectInfoDto {
   })
   projectCode?: string;
 
-  @ApiProperty({
-    description: '상태',
-    example: 'ACTIVE',
-  })
-  status: string;
-
-  @ApiProperty({
-    description: '시작일',
-    example: '2024-01-01T00:00:00.000Z',
-    required: false,
-  })
-  startDate?: Date;
-
-  @ApiProperty({
-    description: '종료일',
-    example: '2024-12-31T23:59:59.999Z',
-    required: false,
-  })
-  endDate?: Date;
-
   @ApiPropertyOptional({
     description: '프로젝트 매니저 정보',
     type: ProjectManagerInfoDto,
   })
   manager?: ProjectManagerInfoDto | null;
+
+  @ApiPropertyOptional({
+    description: '실 PM',
+    example: '김실무',
+    required: false,
+  })
+  realPM?: string | null;
+
+  @ApiPropertyOptional({
+    description: '프로젝트 등급',
+    example: '1A',
+    enum: ['1A', '1B', '2A', '2B', '3A', '3B'],
+    required: false,
+  })
+  grade?: '1A' | '1B' | '2A' | '2B' | '3A' | '3B';
+
+  @ApiPropertyOptional({
+    description: '프로젝트 우선순위',
+    example: 5,
+    required: false,
+  })
+  priority?: number;
 }
 
 /**

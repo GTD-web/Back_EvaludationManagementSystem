@@ -3,11 +3,13 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateAuditLogCommand } from './handlers/commands/create-audit-log.handler';
 import { GetAuditLogListQuery } from './handlers/queries/get-audit-log-list.handler';
 import { GetAuditLogDetailQuery } from './handlers/queries/get-audit-log-detail.handler';
+import { GetAuditLogStatsQuery } from './handlers/queries/get-audit-log-stats.handler';
 import {
   CreateAuditLogDto,
   CreateAuditLogResult,
   AuditLogFilter,
   AuditLogListResult,
+  AuditLogStatsResult,
 } from './interfaces/audit-log-context.interface';
 import { AuditLogDto } from '@domain/common/audit-log/audit-log.types';
 
@@ -50,6 +52,18 @@ export class AuditLogContextService {
    */
   async audit로그상세를_조회한다(id: string): Promise<AuditLogDto | null> {
     const query = new GetAuditLogDetailQuery(id);
+    return await this.queryBus.execute(query);
+  }
+
+  /**
+   * Audit 로그 시간대별 통계를 조회한다
+   */
+  async audit로그통계를_조회한다(
+    startDate?: Date,
+    endDate?: Date,
+    interval: number = 60,
+  ): Promise<AuditLogStatsResult> {
+    const query = new GetAuditLogStatsQuery(startDate, endDate, interval);
     return await this.queryBus.execute(query);
   }
 }

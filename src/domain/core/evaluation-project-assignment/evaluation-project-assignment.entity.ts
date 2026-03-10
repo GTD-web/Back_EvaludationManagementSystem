@@ -57,6 +57,20 @@ export class EvaluationProjectAssignment
   })
   displayOrder: number;
 
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+    comment: '프로젝트 시작일',
+  })
+  projectStartDate?: Date;
+
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+    comment: '프로젝트 종료일',
+  })
+  projectEndDate?: Date;
+
   constructor(data?: CreateEvaluationProjectAssignmentData) {
     super();
     if (data) {
@@ -66,6 +80,8 @@ export class EvaluationProjectAssignment
       this.assignedBy = data.assignedBy;
       this.assignedDate = new Date();
       this.displayOrder = data.displayOrder ?? 0;
+      this.projectStartDate = data.projectStartDate;
+      this.projectEndDate = data.projectEndDate;
 
       // 감사 정보 설정
       this.메타데이터를_업데이트한다(data.assignedBy);
@@ -115,6 +131,8 @@ export class EvaluationProjectAssignment
       assignedDate: this.assignedDate,
       assignedBy: this.assignedBy,
       displayOrder: this.displayOrder,
+      projectStartDate: this.projectStartDate,
+      projectEndDate: this.projectEndDate,
       createdBy: this.createdBy,
       updatedBy: this.updatedBy,
       createdAt: this.createdAt,

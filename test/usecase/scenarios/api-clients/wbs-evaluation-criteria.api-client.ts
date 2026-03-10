@@ -96,6 +96,47 @@ export class WbsEvaluationCriteriaApiClient {
   }
 
   /**
+   * WBS 평가기준 저장 (Upsert) with isAdditional
+   *
+   * @param config.wbsItemId - WBS 항목 ID
+   * @param config.criteria - 평가기준 내용
+   * @param config.importance - 중요도 (1-10)
+   * @param config.isAdditional - 추가 과제 여부
+   * @param config.subProject - 하위 프로젝트 (선택)
+   * @returns 저장된 평가기준 정보
+   */
+  async upsertWbsEvaluationCriteriaWithIsAdditional(config: {
+    wbsItemId: string;
+    criteria: string;
+    importance: number;
+    isAdditional?: boolean;
+    subProject?: string;
+  }): Promise<any> {
+    const requestBody: any = {
+      criteria: config.criteria,
+      importance: config.importance,
+    };
+
+    if (config.isAdditional !== undefined) {
+      requestBody.isAdditional = config.isAdditional;
+    }
+
+    if (config.subProject !== undefined) {
+      requestBody.subProject = config.subProject;
+    }
+
+    const response = await this.testSuite
+      .request()
+      .post(
+        `/admin/evaluation-criteria/wbs-evaluation-criteria/wbs-item/${config.wbsItemId}`,
+      )
+      .send(requestBody)
+      .expect(200);
+
+    return response.body;
+  }
+
+  /**
    * WBS 평가기준 삭제
    *
    * @param id - 평가기준 ID

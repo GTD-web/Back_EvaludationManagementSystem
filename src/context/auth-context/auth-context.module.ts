@@ -5,6 +5,7 @@ import {
   VerifyAndSyncUserHandler,
   GetUserWithRolesHandler,
   LoginHandler,
+  RefreshTokenHandler,
 } from './handlers';
 
 /**
@@ -20,6 +21,7 @@ import {
     VerifyAndSyncUserHandler,
     GetUserWithRolesHandler,
     LoginHandler,
+    RefreshTokenHandler,
   ],
   exports: [AuthService],
 })

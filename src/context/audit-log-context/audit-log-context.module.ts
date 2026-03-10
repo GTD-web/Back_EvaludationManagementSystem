@@ -8,6 +8,7 @@ import {
   CreateAuditLogHandler,
   GetAuditLogListHandler,
   GetAuditLogDetailHandler,
+  GetAuditLogStatsHandler,
 } from './handlers';
 
 /**
@@ -26,6 +27,7 @@ import {
     CreateAuditLogHandler,
     GetAuditLogListHandler,
     GetAuditLogDetailHandler,
+    GetAuditLogStatsHandler,
   ],
   exports: [AuditLogContextService],
 })

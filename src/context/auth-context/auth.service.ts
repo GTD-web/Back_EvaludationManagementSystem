@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { VerifyAndSyncUserHandler } from './handlers/verify-and-sync-user.handler';
 import { GetUserWithRolesHandler } from './handlers/get-user-with-roles.handler';
 import { LoginHandler } from './handlers/login.handler';
+import { RefreshTokenHandler } from './handlers/refresh-token.handler';
 import {
   VerifyAndSyncUserCommand,
   VerifyAndSyncUserResult,
@@ -9,6 +10,7 @@ import {
   GetUserWithRolesResult,
   LoginCommand,
   LoginResult,
+  RefreshTokenCommand,
 } from './interfaces/auth-context.interface';
 
 /**
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly verifyAndSyncUserHandler: VerifyAndSyncUserHandler,
     private readonly getUserWithRolesHandler: GetUserWithRolesHandler,
     private readonly loginHandler: LoginHandler,
+    private readonly refreshTokenHandler: RefreshTokenHandler,
   ) {}
 
   /**
@@ -61,5 +64,16 @@ export class AuthService {
   async 로그인한다(email: string, password: string): Promise<LoginResult> {
     const command: LoginCommand = { email, password };
     return this.loginHandler.execute(command);
+  }
+
+  /**
+   * refresh token으로 access token 갱신 (슬라이딩 방식)
+   *
+   * @param refreshToken - 리프레시 토큰
+   * @returns 사용자 정보 및 새 토큰 (accessToken, refreshToken)
+   */
+  async 토큰을갱신한다(refreshToken: string): Promise<LoginResult> {
+    const command: RefreshTokenCommand = { refreshToken };
+    return this.refreshTokenHandler.execute(command);
   }
 }

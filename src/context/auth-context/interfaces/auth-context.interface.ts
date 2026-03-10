@@ -56,3 +56,10 @@ export interface LoginResult {
   accessToken: string;
   refreshToken: string;
 }
+
+/**
+ * 토큰 갱신 명령
+ */
+export interface RefreshTokenCommand {
+  refreshToken: string;
+}
